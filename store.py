@@ -80,8 +80,26 @@ class Store:
         '''
         date = time.strftime('%Y-%m-%d %H:%M:%S')
         cols = info.keys()
-        # XXX delete name/version if they're in info
+
+        # see if we're updating or inserting
         if self.has_package(name, version):
+            # figure the changes
+            existing = self.get_package(name, version)
+            old = []
+            specials = 'name version'.split()
+            for k,v in existing.items():
+                if k not in specials and info.get(k, None) != v:
+                    if v is None: v = 'NULL'
+                    else: v = repr(v)
+                    old.append('%s was %s'%(k,v))
+
+            # no update when nothing changes
+            if not old:
+                return None
+
+            # create the journal/user message
+            message = 'update %s'%', '.join(old)
+
             # update
             args = tuple([info[k] for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
@@ -90,7 +108,8 @@ class Store:
             self.cursor.execute('''insert into journal (
                   name, version, action, submitted_date, submitted_by,
                   submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-                (name, version, 'update', date, self.username, self.userip))
+                (name, version, message, date, self.username, self.userip))
+            return message
         else:
             # insert
             info['name'] = name

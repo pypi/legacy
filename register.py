@@ -220,7 +220,7 @@ Your selection [default 1]: ''',
     def post_to_server(self, data, auth=None):
         ''' Post a query to the server, and return a string response.
         '''
-        # Build up the MIME payload for the urllib2 POST
+        # Build up the MIME payload for the urllib2 POST data
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'

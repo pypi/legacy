@@ -4,11 +4,10 @@ Now:
   - multiple download links?
 - Trove
 - change notification emails
-- password reset through the web
-- password change through the web
 - saving of login info in register command
-- better journal entries (than "update")
 - clean up HTML interface
+- "latest changes"
+- role list for packages
 
 Later:
 

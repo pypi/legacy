@@ -133,7 +133,9 @@ The web interface implements the following commands/interfaces:
     Can assign Owner Role - they decide who may submit for a given
     package name.
   Owner
-    Owns a package name, may assign Maintainer Role for that name
+    Owns a package name, may assign Maintainer Role for that name. The
+    first user to register information about a package is deemed owner
+    of the package name. The Admin user may change this if necessary.
   Maintainer
     Can submit and update info for a particular package name
 

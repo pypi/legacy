@@ -24,12 +24,31 @@ index, please visit the following URL:
 
 '''
 
+# password change request email
+password_change_message = '''Subject: Password change request
+To: %(email)s
+
+Someone, perhaps you, has requested that the password be changed for your
+username, "%(name)s". If you wish to proceed with the change, please follow
+the link below:
+
+  %(url)s?:action=password_reset&email=%(email)s
+
+You should then receive another email with the new password.
+
+'''
+
 # password reset email - indicates what the password is now
 password_message = '''Subject: Password has been reset
 To: %(email)s
 
 Your login is: %(name)s
 Your password is now: %(password)s
+'''
+
+unauth_message = '''
+<p>If you have forgotten your password, you can have it
+<a href="?:action=forgotten_password_form">reset for you</a>.</p>
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -73,7 +92,7 @@ class WebUI:
                 if not message:
                     message = 'You must login to access this feature'
                 self.fail(message, code=401, heading='Login required',
-                    headers={'WWW-Authenticate':
+                    content=unauth_message, headers={'WWW-Authenticate':
                     'Basic realm="python packages index"'})
             except Redirect, path:
                 self.handler.send_response(301)
@@ -167,7 +186,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user password_reset index role role_form'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -183,7 +202,9 @@ class WebUI:
         w('<a href="?:action=search_form">search</a>\n')
         w('| <a href="?:action=role_form">admin</a>\n')
         w('| <a href="?:action=submit_form">manual submission</a>\n')
-        w('| <a href="?:action=register_form">register for a login</a>\n')
+        w('| <a href="?:action=user_form">edit your details</a>\n')
+        if not self.username:
+            w('| <a href="?:action=register_form">register for a login</a>\n')
         w('<ul>\n')
         spec = self.form_metadata()
         if not spec.has_key('hidden'):
@@ -332,7 +353,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
         self.success(message=message, heading='Role maintenance')
 
-    def display(self):
+    def display(self, ok_message=None, error_message=None):
         ''' Print up an entry
         '''
         content = StringIO.StringIO()
@@ -376,8 +397,14 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 entry['submitted_from'], entry['action']))
         w('\n</table>\n')
 
-        self.success(heading='TEST: PyPI: Package Information: %s %s'%(name, version),
-            content=content.getvalue())
+        if error_message:
+            self.fail(error_message,
+                heading='TEST: PyPI: %s %s'%(name, version),
+                content=content.getvalue())
+        else:
+            self.success(message=ok_message,
+                heading='TEST: PyPI: %s %s'%(name, version),
+                content=content.getvalue())
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
@@ -498,13 +525,13 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 "You are not allowed to store '%s' package information"%name
 
         # save off the data
-        self.store.store_package(name, version, data)
+        message = self.store.store_package(name, version, data)
         self.store.commit()
 
         # return a display of the package
         self.form.value.append(cgi.MiniFieldStorage('name', data['name']))
         self.form.value.append(cgi.MiniFieldStorage('version', data['version']))
-        self.display()
+        self.display(ok_message=message)
 
     def submit(self):
         ''' Handle the submission of distro metadata.
@@ -534,11 +561,11 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 "You are not allowed to store '%s' package information"%name
 
         # save off the data
-        self.store.store_package(name, version, data)
+        message = self.store.store_package(name, version, data)
         self.store.commit()
 
         # return a display of the package
-        self.display()
+        self.display(ok_message=message)
 
     def form_metadata(self):
         ''' Extract metadata from the form.
@@ -582,18 +609,34 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         if data.has_key('metadata_version'):
             del data['metadata_version']
 
+
+    #
+    # User handling code (registration, password changing
+    #
+    def user_form(self):
+        ''' Make the user authenticate before viewing the "register" form.
+        '''
+        if not self.username:
+            raise Unauthorised, 'You must authenticate'
+        self.register_form()
+
     def register_form(self):
         ''' Throw up a form for regstering.
         '''
-        self.page_head('TEST: Python package index',
-            heading='Manual user registration')
-        w = self.wfile.write
-        w('''
-<form>
+        info = {'name': '', 'password': '', 'confirm': '', 'email': ''}
+        if self.username:
+            user = self.store.get_user(self.username)
+            info['name'] = cgi.escape(user['name'])
+            info['email'] = cgi.escape(user['email'])
+            heading = 'User profile'
+        else:
+            heading = 'Manual user registration'
+        content = '''
+<form method="POST">
 <input type="hidden" name=":action" value="user">
 <table class="form">
 <tr><th>Username:</th>
-    <td><input name="name"></td>
+    <td><input name="name" value="%(name)s"></td>
 </tr>
 <tr><th>Password:</th>
     <td><input type="password" name="password"></td>
@@ -602,14 +645,15 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
     <td><input type="password" name="confirm"></td>
 </tr>
 <tr><th>Email Address:</th>
-    <td><input name="email"></td>
+    <td><input name="email" value="%(email)s"></td>
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Register"></td></tr>
 </table>
 <p>A confirmation email will be sent to the address you nominate above.</p>
 <p>To complete the registration process, visit the link indicated in the
 email.</p>
-''')
+'''%info
+        self.success(content=content, heading=heading)
 
     def user(self):
         ''' Register, update or validate a user.
@@ -622,7 +666,8 @@ email.</p>
         info = {}
         for param in 'name password email otk confirm'.split():
             if self.form.has_key(param):
-                info[param] = self.form[param].value
+                v = self.form[param].value.strip()
+                if v: info[param] = v
 
         if info.has_key('otk'):
             if self.username is None:
@@ -636,6 +681,10 @@ email.</p>
                 response = 'Registration complete'
 
         elif self.username is None:
+            for param in 'name password email confirm'.split():
+                if not info.has_key(param):
+                    raise FormError, '%s is required'%param
+
             # validate a complete set of stuff
             # new user, create entry and email otk
             name = info['name']
@@ -657,25 +706,75 @@ email.</p>
             # update details
             user = self.store.get_user(self.username)
             password = info.get('password', user['password'])
+            if info.has_key('confirm') and password != info['confirm']:
+                self.fail("password and confirm don't match",
+                    heading='User profile')
+                return
             email = info.get('email', user['email'])
             self.store.store_user(self.username, password, email)
             response = 'Details updated OK'
         self.success(message=response, heading='User registration')
 
+    def forgotten_password_form(self):
+        ''' Enable the user to reset their password.
+        '''
+        self.page_head('TEST: PyPI: Forgotten Password',
+            heading='Request password reset')
+        w = self.wfile.write
+        w('''
+<p>You have two options if you have forgotten your password. If you 
+know the email address you registered with, enter it below.</p>
+<form method="POST">
+<input type="hidden" name=":action" value="password_reset">
+<table class="form">
+<tr><th>Email Address:</th>
+    <td><input name="email"></td>
+</tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
+</table>
+
+<p>Or, if you know your username, then enter it below.</p>
+within it to complete the reset process.</p>
+<form method="POST">
+<input type="hidden" name=":action" value="password_reset">
+<table class="form">
+<tr><th>Username:</th>
+    <td><input name="name"></td>
+</tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
+</table>
+
+<p>A confirmation email will be sent to you - please follow the instructions
+within it to complete the reset process.</p>
+''')
+
     def password_reset(self):
         ''' Reset the user's password and send an email to the address given.
         '''
-        email = self.form['email'].value
-        user = self.store.get_user_by_email(email)
-        if user is None:
-            self.fail('email address unknown to me')
-            return
-        pw = ''.join([whrandom.choice(chars) for x in range(10)])
-        self.store.store_user(user['name'], pw, user['email'])
-        info = {'name': user['name'], 'password': pw,
-            'email':user['email']}
-        self.send_email(email, password_message%info)
-        self.success(message='Email sent OK')
+        if self.form.has_key('email') and self.form['email'].value.strip():
+            email = self.form['email'].value.strip()
+            user = self.store.get_user_by_email(email)
+            if user is None:
+                self.fail('email address unknown to me')
+                return
+            pw = ''.join([whrandom.choice(chars) for x in range(10)])
+            self.store.store_user(user['name'], pw, user['email'])
+            info = {'name': user['name'], 'password': pw,
+                'email':user['email']}
+            self.send_email(email, password_message%info)
+            self.success(message='Email sent with new password')
+        elif self.form.has_key('name') and self.form['name'].value.strip():
+            name = self.form['name'].value.strip()
+            user = self.store.get_user(name)
+            if user is None:
+                self.fail('user name unknown to me')
+                return
+            info = {'name': user['name'], 'email':user['email'],
+                'url': self.config.url}
+            self.send_email(user['email'], password_change_message%info)
+            self.success(message='Email sent to confirm password change')
+        else:
+            self.fail(message='You must supply a username or email address')
 
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
