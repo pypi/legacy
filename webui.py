@@ -192,7 +192,7 @@ class WebUI:
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
         self.handler.end_headers()
-        template.expand(context, self.wfile)
+        template.expand(context, self.wfile, "UTF-8")
 
     def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):
