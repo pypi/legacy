@@ -1169,11 +1169,23 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(digest)
 
+    CURRENT_UPLOAD_PROTOCOL = "1"
     def file_upload(self):
         # make sure the user is identified
         if not self.username:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+        
+        # Verify protocol version
+        if self.form.has_key('protocol_version'):
+            protocol_version = self.form['protocol_version']
+        else:
+            protocol_version = self.CURRENT_UPLOAD_PROTOCOL
+            
+        if protocol_version!=self.CURRENT_UPLOAD_PROTOCOL:
+            # If a new protocol version is added, backward compatibility
+            # with old distutils upload commands needs to be preserved
+            raise NotImplementedError, "Unsupported file upload protocol"
 
         # figure the package name and version
         name = version = None
