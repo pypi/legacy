@@ -553,7 +553,7 @@ class Store:
             Returns true/false.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select count(*) from users where name='%s'"%name)
+        safe_execute(cursor, "select count(*) from users where name=%s", (name, ))
         return int(cursor.fetchone()[0])
 
     def store_user(self, name, password, email, gpg_keyid):
@@ -675,7 +675,7 @@ class Store:
         ''' Retrieve the One Time Key for the user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select * from rego_otk where name='%s'"%name)
+        safe_execute(cursor, "select * from rego_otk where name=%s", (name, ))
         res = cursor.fetchone()
         if res is None:
             return ''
@@ -801,9 +801,6 @@ class Store:
     #
     # Handle the underlying database
     #
-    def last_modified(self):
-        return os.stat(self.config.database)[stat.ST_MTIME]
-
     def get_cursor(self):
         if self._cursor is None:
             self.open()
@@ -830,8 +827,8 @@ class Store:
     def setpasswd(self, username, password):
         password = sha.sha(password).hexdigest()
         self.get_cursor().execute('''
-            update users set password='%s' where name='%s'
-            '''%(password, username))
+            update users set password=%s where name=%s
+            ''', (password, username))
 
     def close(self):
         if self._conn is None:
