@@ -1,0 +1,5 @@
+- turn off amk.ca cgi
+- update downloadable register.py module
+- copy amk.ca database over to creosote
+- remove the DEVELOPMENT header text
+
