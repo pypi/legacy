@@ -1227,8 +1227,11 @@ index.
             if k == '_pypi_hidden':
                 v = v == '1'
             elif k in ('requires', 'provides', 'obsoletes'):
-                v = re.split('\s*[\r\n]\s*', v.value)
-            elif type(v) == type([]):
+                if not isinstance(v, list):
+                    v = re.split('\s*[\r\n]\s*', v.value)
+                else:
+                    v = [x.value.strip() for x in v]
+            elif isinstance(v, list):
                 if k == 'classifiers':
                     v = [x.value.strip() for x in v]
                 else:
@@ -1260,15 +1263,23 @@ index.
         if data.has_key('metadata_version'):
             del data['metadata_version']
 
+        # check requires and obsoletes
         def validate_version_predicates(col, sequence):
             try:
                 map(versionpredicate.VersionPredicate, sequence)
             except ValueError, message:
                 raise ValueError, 'Bad "%s" syntax: %s'%(col, message)
-        for col in ('requires', 'provides', 'obsoletes'):
+        for col in ('requires', 'obsoletes'):
             if data.has_key(col):
                 validate_version_predicates(col, data[col])
 
+        # check provides
+        try:
+            map(versionpredicate.check_provision, data['provides'])
+        except ValueError, message:
+            raise ValueError, 'Bad "provides" syntax: %s'%(col, message)
+
+        # check classifiers
         if data.has_key('classifiers'):
             d = {}
             for entry in self.store.get_classifiers():
