@@ -102,7 +102,7 @@ The web interface implements the following commands/interfaces:
   Accepts a POST form submission of metadata about a package.  The
   "name" and "version" fields are mandatory, as they uniquely identify
   an entry in the index.  **Submit** will automatically determine
-  whether to create a new entry or updating an existing entry.  The
+  whether to create a new entry or update an existing entry.  The
   metadata is checked for correctness where appropriate - specifically
   the Trove discriminators are compared with the allowed set.  An
   update will update all information about the package based on the
