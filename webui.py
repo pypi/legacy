@@ -403,6 +403,7 @@ class WebUI:
         query_info = ''.join(query_info) + '</p>'
 
         choices.sort()
+        choice_data=[]
         for header, headid, options in choices:
             if not options:
                 continue
