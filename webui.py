@@ -157,8 +157,9 @@ class WebUI:
 
     navlinks = (
         ('home', 'PyPI home'),
-        ('index', 'Index of packages'),
+        ('browse', 'Browse packages'),
         ('search_form', 'Search'),
+        ('index', 'List all packages'),
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
         ('role_form', 'Admin'),
