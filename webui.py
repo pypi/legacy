@@ -743,7 +743,8 @@ available Roles are defined as:
                 heading='%s %s'%(name, version),
                 content="I can't find the package / version you're requesting")
 
-        w = self.wfile.write
+        content = StringIO.StringIO()
+        w = content.write
 
         # Some things (download-url, classifier) aren't in metadata v1.0 as
         # defined in PEP 241, but they'd be nice to publish anyway.  PEP 241
@@ -771,7 +772,13 @@ available Roles are defined as:
         classifiers = self.store.get_release_classifiers(name, version)
         for c in classifiers:
             w('Classifier: %s\n' % (c,))
-
+        w('\n')
+        # Not using self.success or page_head because we want
+        # plain-text without all the html trappings.
+        self.handler.send_response(200, "OK")
+        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.end_headers()
+        self.wfile.write(content.getvalue())
 
     def display(self, name=None, version=None, ok_message=None,
             error_message=None):
