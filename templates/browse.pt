@@ -1,5 +1,5 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
-    metal:use-macro="here/standard_template.pt/macros/page"
+    metal:use-macro="standard_template/macros/page"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
