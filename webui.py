@@ -461,8 +461,8 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
             # form field
             if property == 'hidden':
-                a = value=='1' and ' selected' or ''
-                b = value=='0' and ' selected' or ''
+                a = value=='0' and ' selected' or ''
+                b = value=='1' and ' selected' or ''
                 field = '''<select name="hidden">
                             <option value="0"%s>No</option>
                             <option value="1"%s>Yes</option>
