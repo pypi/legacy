@@ -766,7 +766,8 @@ available Roles are defined as:
                 label = "Download URL"
             else:
                 label = key.capitalize().replace('_', ' ')
-            if key in ('url', 'home_page') and value != 'UNKNOWN':
+            if (key in ('download_url', 'url', 'home_page')
+                    and value != 'UNKNOWN'):
                 w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
                     value, cgi.escape(value)))
             elif key == 'description':
