@@ -183,15 +183,19 @@ as usual and report any errors it would have reported during a normal
 submission.  This is useful for verifying correctness of Trove
 discriminators.
 
-The index server will return custom headers (inspired by PEP 243)
-which the *register* command will use to give feedback to the user:
+The index server will indicate success or failure of the register or
+verify operation through a subset of the standard HTTP response codes:
 
-**X-Pypi-Status**
-  Either "success" or "fail".
+===== ============== ================================================
+Code  Meaning        Register command implications
+===== ============== ================================================
+200   OK             Everything worked just fine
+400   Bad request    Data provided for submission was malformed
+401   Unauthorised   The username or password supplied were incorrect
+403   Forbidden      User does not have permission to update the
+                     package information (not Owner or Maintainer)
+===== ============== ================================================
 
-**X-Pypi-Reason**
-  A description of the reason for failure, or additional information
-  in the case of a success.
 
 
 Distutils Trove Categorisation
@@ -280,6 +284,22 @@ initial prototype had 45 visitors (not including myself), two of whom
 used the *register* command to submit package information.
 
 
+Rejected Proposals
+==================
+
+Originally, the index server was to return custom headers (inspired by
+PEP 243):
+
+**X-Pypi-Status**
+  Either "success" or "fail".
+
+**X-Pypi-Reason**
+  A description of the reason for failure, or additional information
+  in the case of a success.
+
+However, it has been pointed out [8]_ that this is a bad scheme to use.
+
+
 References
 ==========
 
@@ -304,6 +324,9 @@ References
 .. [7] PEP 262, A Database of Installed Python Packages
    (http://www.python.org/peps/pep-0262.html)
 
+.. [8] [PEP243] upload status is bogus
+   (http://mail.python.org/pipermail/distutils-sig/2001-March/002262.html)
+
 
 Copyright
 =========
@@ -314,8 +337,8 @@ This document has been placed in the public domain.
 Acknowledgements
 ================
 
-Anthony Baxter and Martin v. Loewis for encouragement and feedback
-during initial drafting.
+Anthony Baxter, Martin v. Loewis and David Goodger for encouragement
+and feedback during initial drafting.
 
 A.M. Kuchling for support including hosting the second prototype.
 

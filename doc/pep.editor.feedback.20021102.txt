@@ -1,0 +1,78 @@
+From goodger@users.sourceforge.net Sat Nov  2 12:05:17 2002
+X-Sieve: cmu-sieve 2.0
+Return-Path: <goodger@users.sourceforge.net>
+Received: (from uucp@localhost)
+	by crown.off.ekorp.com (8.9.3/8.9.3) id BAA13375
+	for rjones@ekit-inc.com; Sat, 2 Nov 2002 01:04:56 GMT
+Received: from fep04-mail.bloor.is.net.cable.rogers.com(66.185.86.74)
+ via SMTP by mx3.ekorp.com, id smtpdAAAK2aGcA; Sat Nov  2 01:04:51 2002
+Received: from [65.48.132.88] by fep04-mail.bloor.is.net.cable.rogers.com
+          (InterMail vM.5.01.05.06 201-253-122-126-106-20020509) with ESMTP
+          id <20021102010412.IOBP4298.fep04-mail.bloor.is.net.cable.rogers.com@[65.48.132.88]>;
+          Fri, 1 Nov 2002 20:04:12 -0500
+User-Agent: Microsoft-Outlook-Express-Macintosh-Edition/5.0.3
+Date: Fri, 01 Nov 2002 20:05:17 -0500
+Subject: Re: New PEP: Distutils Enhancements
+From: David Goodger <goodger@users.sourceforge.net>
+To: Richard Jones <rjones@ekit-inc.com>,
+ <peps@python.org>
+Message-ID: <B9E88EFC.2B1B0%goodger@users.sourceforge.net>
+In-Reply-To: <200211011741.35931.rjones@ekit-inc.com>
+Mime-version: 1.0
+Content-type: text/plain;
+  charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-Authentication-Info: Submitted using SMTP AUTH LOGIN at fep04-mail.bloor.is.net.cable.rogers.com from [65.48.132.88] using ID <dgoodger5511@rogers.com> at Fri, 1 Nov 2002 20:04:12 -0500
+Status: R 
+X-Status: N
+X-KMail-EncryptionState:  
+X-KMail-SignatureState:  
+
+(Surprise!  You probably didn't know I was moonlighting as a deputy PEP
+editor. :)
+
+The PEP looks good, Richard.  Some suggestions & questions:
+
+> Title: Distutils Enhancements
+
+Too generic IMO.  How about "Package Index and Metadata for Distutils"?
+
+> The server should be hosted in the python.org domain,
+
+What server?  No server mentioned before this.  Instead of "The
+server", perhaps "A package metadata server"?
+
+> hopefully just one command-line command for more regular users.
+
+"hopefully just a one-line command for most users", perhaps?
+
+> The original PEP which proposed such a system
+
+"PEP xxx, the original PEP which proposed such a system"
+
+> The web interface implements the following commands/interfaces:
+
+For readability, I suggest inserting blank lines between definition
+list items.  (They blob together now.)
+
+> A demonstration will be available at:
+>
+>   http://www.amk.ca/cgi-bin/pypi.cgi
+
+Is it up now?  I wasn't able to access it.  When will it be available?
+Couldn't it be hosted on a permanent basis on sf.net (with **TEST**
+prominently displayed, of course)?  The previous one at
+http://mechanicalcat.net:8081/ is not accessible either.
+
+> two of whom used the register command bo submit package information.
+                                        ^^
+
+"bo" should be "to".
+
+-- 
+David Goodger  <goodger@users.sourceforge.net>  Open-source projects:
+  - Python Docutils: http://docutils.sourceforge.net/
+    (includes reStructuredText: http://docutils.sf.net/rst.html)
+  - The Go Tools Project: http://gotools.sourceforge.net/
+
+
