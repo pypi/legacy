@@ -334,7 +334,7 @@ class WebUI:
             if self.username is None:
                 raise Unauthorised
             if self.store.get_otk(self.username):
-                raise Unauthorised
+                raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
         if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
@@ -1485,7 +1485,7 @@ class WebUI:
             self.store.store_user(self.username, password, email, gpg_keyid)
             response = 'Details updated OK'
         
-        self.write_template('message.pt', title=response)
+        self.write_template('message.pt', title=response, message="")
 
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
