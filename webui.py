@@ -285,6 +285,14 @@ class WebUI:
         # now handle the request
         if self.form.has_key(':action'):
             action = self.form[':action'].value
+        elif os.environ.has_key('PATH_INFO'):
+            # Split into path items, drop leading slash
+            items = os.environ['PATH_INFO'].split('/')[1:]
+            if len(items) == 2:
+                self.display(items[0], items[1])
+                return
+            if len(items) == 1:
+                self.search(name=items[0])
         else:
             action = 'home'
 
@@ -415,7 +423,7 @@ class WebUI:
                             query=q, title="Browse", matches=matches,
                             query_info=query_info)
 
-    def index(self, nav_current='index'):
+    def index(self, nav_current='index', name=None):
         ''' Print up an index page
         '''
         self.nav_current = nav_current
@@ -424,14 +432,16 @@ class WebUI:
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
             spec['_pypi_hidden'] = False
+        if name:
+            spec['name'] = name
         i=0
         l = self.store.query_packages(spec)
         self.write_template('index.pt', title="Index of Packages", matches=l)
 
-    def search(self):
+    def search(self, name = None):
         """Same as index, but don't disable the search or index nav links
         """
-        self.index(nav_current=None)
+        self.index(nav_current=None, name=name)
 
     def logout(self):
         raise Unauthorised
@@ -1205,8 +1215,10 @@ Are you <strong>sure</strong>?</p>
 
         # if allowed, handle file upload
         maintainer = False
-        if (self.store.has_role('Maintainer', name) or
-                self.store.has_role('Owner', name)):
+        if not ((self.store.has_role('Maintainer', name) or
+                self.store.has_role('Owner', name))):
+            raise Unauthorised
+	if 1:
             maintainer = True
             if self.form.has_key('submit_upload'):
                 self.file_upload()
@@ -1554,7 +1566,7 @@ within it to complete the reset process.</p>
     def packageURL(self, name, version):
         ''' return a URL for the link to display a particular package
         '''
-        return '%s?:action=display&name=%s&version=%s'%(self.url_path,
+        return '%s/%s/%s'%(self.url_path,
             urllib.quote(name), urllib.quote(version))
 
     def packageLink(self, name, version):
