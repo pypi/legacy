@@ -138,15 +138,11 @@ class WebUI:
 
 
     navlinks = (
-        ('index', 'index'),
-        ('search_form', 'search'),
-        ('submit_form', 'package submission'),
-        ('user_form', 'edit your details'),
-        ('register_form', 'register for a login'),
-        ('list_classifiers', 'list trove classifiers'),
-        ('role_form', 'admin'),
-        ('login', 'login'),
-        ('logout', 'logout')
+        ('index', 'Index of packages'),
+        ('search_form', 'Search'),
+        ('submit_form', 'Package submission'),
+        ('list_classifiers', 'List trove classifiers'),
+        ('role_form', 'Admin'),
     )
     def page_head(self, title, message=None, heading=None, code=200,
             headers={}):
@@ -168,53 +164,150 @@ class WebUI:
         self.handler.end_headers()
         if heading is None: heading = title
         w = self.wfile.write
+        banner_num = whrandom.randint(0,64)
+        banner_color = [
+             '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
+             '#0066cc',  '#0066cc',  '#3399ff',  '#3399ff',  '#3399ff',
+             '#3399ff',  '#6699cc',  '#3399ff',  '#3399ff',  '#ffffff',
+             '#6699cc',  '#0066cc',  '#3399ff',  '#0066cc',  '#3399ff',
+             '#6699cc',  '#0066cc',  '#6699cc',  '#3399ff',  '#3399ff',
+             '#6699cc',  '#3399ff',  '#3399ff',  '#6699cc',  '#6699cc',
+             '#0066cc',  '#6699cc',  '#0066cc',  '#6699cc',  '#0066cc',
+             '#0066cc',  '#6699cc',  '#3399ff',  '#0066cc',  '#bbd6f1',
+             '#0066cc',  '#6699cc',  '#3399ff',  '#3399ff',  '#0066cc',
+             '#0066cc',  '#0066cc',  '#6699cc',  '#6699cc',  '#3399ff',
+             '#3399ff',  '#6699cc',  '#0066cc',  '#0066cc',  '#6699cc',
+             '#0066cc',  '#6699cc',  '#3399ff',  '#6699cc',  '#3399ff',
+             '#d6ebff',  '#6699cc',  '#3399ff',  '#0066cc',
+             ][banner_num]
         w('''
-<html><head><title>TEST PyPI: %s</title>
-<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/pypi.css">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
+<html><head><title>%s</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta name="generator" content="HT2HTML/2.0">
+<link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif">
+<link rel="STYLESHEET" href="http://www.python.org/style.css" type="text/css">
+<link rel="STYLESHEET" href="http://mechanicalcat.net/pypi.css" type="text/css">
 </head>
-<body>
-<div id="header"><h1 align="left">TEST PyPI: %s</h1></div>
-<div id="navbar">
-'''%(title, heading))
+<body bgcolor="#ffffff" text="#000000"
+      marginwidth="0" marginheight="0"
+      link="#0000bb"  vlink="#551a8b"
+      alink="#ff0000">
+<!-- start of page table -->
+<table width="100%%" border="0" cellspacing="0" cellpadding="0">
+<!-- start of banner row -->
+<tr>
+<!-- start of corner cells -->
+<td width="150" valign="middle" bgcolor="%s" class="corner">
+
+<center>
+    <a href="/">
+    <img alt="" border="0"
+         src="http://www.python.org/pics/PyBanner%03d.gif"></a></center> </td>
+<td width="15" bgcolor="#99ccff">&nbsp;&nbsp;</td>
+<td width="90%%" bgcolor="#99ccff" class="banner">
+<table width="100%%" border="0" cellspacing="0" cellpadding="0"
+       bgcolor="#ffffff">
+<tr><td bgcolor="#99ccff"> <a href="/">Home</a> </td>
+    <td bgcolor="#99ccff"> <a href="/search/">Search</a> </td>
+    <td bgcolor="#99ccff"> <a href="/download/">Download</a> </td>
+    <td bgcolor="#99ccff"> <a href="/doc/">Documentation</a> </td>
+</tr><tr> <td bgcolor="#99ccff"> <a href="/Help.html">Help</a> </td>
+    <td bgcolor="#99ccff"> <a href="/dev/">Developers</a> </td>
+    <td bgcolor="#99ccff"> <a href="/psa/">Community</a> </td>
+    <td bgcolor="#99ccff"> <a href="/sigs/">SIGs</a> </td>
+</tr></table>
+
+</td></tr><!-- end of banner row -->
+
+<tr><!-- start of sidebar/body row -->
+<td width="150" valign="top" bgcolor="#99ccff" class="sidebar">
+<table width="100%%" border="0" cellspacing="0" cellpadding="3"
+       bgcolor="#ffffff">
+'''%(title, banner_color, banner_num))
 
         # add in the navbar
         l = []
         la = l.append
         if self.username:
-            u = '<em>logged in as %s</em>'%self.username
+            u = cgi.escape(self.username).replace(' ', '&nbsp;')
+            w('''
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+Logged In
+</font></b></td></tr>
+<tr><td bgcolor="#99ccff">Welcome %s</td></tr>
+<tr><td bgcolor="#99ccff">
+ <a href="/cgi-bin/pypi.cgi?:action=user_form">Your details</a></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a href="/cgi-bin/pypi.cgi?:action=logout">Logout</a></td></tr>
+'''%u)
         else:
-            u = '<em>you are anonymous</em>'
-        u = u.replace(' ', '&nbsp;')
-        la(u)
+            w('''
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+Not Logged In
+</font></b></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a href="/cgi-bin/pypi.cgi?:action=register_form">Register</a></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a href="/cgi-bin/pypi.cgi?:action=login">Login</a></td></tr>
+''')
+        w('''
+<tr><td bgcolor="#99ccff">&nbsp;</td></tr>
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+PyPI Actions
+</font></b></td></tr>
+<tr><td bgcolor="#99ccff">
+''')
         for k, v in self.navlinks:
             v = v.replace(' ', '&nbsp;')
             if k == self.nav_current:
                 la('<strong>%s</strong>'%v)
-            elif k in ('login', 'register_form'):
-                if not self.username:
-                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
-            elif k in ('logout', 'user_form'):
-                if self.username:
-                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
                     la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             else:
                 la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
-        w('\n::&nbsp;'.join(l))
+        w('</td></tr>\n<tr><td bgcolor="#99ccff">'.join(l))
 
-        w('\n</div><div id="content">\n')
+        w('''
+</td></tr>
+<tr><td bgcolor="#99ccff">&nbsp;</td></tr>
+<tr><td bgcolor="#003366"><b><font color="#ffffff"> Contact Us
+</font></b></td></tr>
+
+<tr><td bgcolor="#99ccff">
+<a href="http://sourceforge.net/projects/pypi/">Bug reports</a>
+</td></tr>
+<tr><td bgcolor="#99ccff">
+<a href="http://sourceforge.net/projects/pypi/">Support requests</a>
+</td></tr>
+<tr><td bgcolor="#99ccff">
+<a href="http://www.python.org/sigs/catalog-sig/">Comments</a>
+</td></tr>
+
+<tr><td bgcolor="#99ccff"> &nbsp; </td></tr>
+<tr><td bgcolor="#99ccff"> <a href="/"><img align="center" alt="" border="0"
+         src="http://www.python.org/pics/PythonPoweredSmall.gif"></a></td></tr>
+<tr><td bgcolor="#99ccff"> &nbsp; </td></tr>
+<tr><td bgcolor="#99ccff"> &copy; 2003 </td></tr>
+<tr><td bgcolor="#99ccff">
+<a href="http://www.python.org/psf/">Python Software Foundation</a>
+</td></tr>
+</table><!-- end of sidebar table -->
+
+</td>
+<td width="15">&nbsp;</td><!--spacer-->
+
+<!-- begin body -->
+<td bgcolor="white" valign="top"><h1 align="left">TEST PyPI: %s</h1>
+'''%heading)
+
 
     def page_foot(self):
         self.wfile.write('''
-</div>
-<div id="footer">
-Author: Richard Jones<br>
-Bug reports and support requests:
-  <a href="http://sourceforge.net/projects/pypi/">here</a><br>
-Comments to
- <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
-</div>
+
+</td> </tr> </table>
 </body></html>
 ''')
     def inner_run(self):
@@ -348,9 +441,9 @@ Comments to
                 raise Unauthorised
             package = '''
 <tr><th>Package Name:</th>
-    <td><input type="hidden" name="package_name" value="%s">%s</td>
+    <td><input type="text" readonly name="package_name" value="%s"></td>
 </tr>
-'''%(cgi.escape(package_name), cgi.escape(package_name))
+'''%cgi.escape(package_name)
         elif not self.store.has_role('Admin', ''):
             raise Unauthorised
         else:
@@ -372,6 +465,20 @@ Comments to
 
         # now write the body
         s = '''
+<p>Use this form to add or remove a user's Role for a Package. The
+available Roles are defined as:
+<dl><dt><b>Owner</b></dt><dd>
+  Owns a package name, may assign Maintainer Role for that name.  The
+  first user to register information about a package is deemed Owner
+  of the package name.  The Admin user may change this if necessary.
+  May submit updates for the package name.
+  </dd>
+<dt><b>Maintainer</b></dt><dd>
+  Can submit and update info for a particular package name.
+  </dd></dl>
+        </p>
+<p>&nbsp;</p>
+
 <form method="POST">
 <input type="hidden" name=":action" value="role">
 <table class="form">
@@ -435,14 +542,23 @@ Comments to
         if not self.store.has_user(user_name):
             raise FormError, "user doesn't exist"
 
+        # make sure if the user has the role, and is the current user
+        # and the role is Owner, that we can't do this!
+        if self.username == user_name and role_name == 'Owner':
+            raise FormError, "sanity: can't remove own Owner Role"
+
         # add or remove
         operation = self.form[':operation'].value
         if operation == 'Add Role':
+            # make sure the user doesn't have the role
             if self.store.has_role(role_name, package_name, user_name):
                 raise FormError, 'user has that role already'
             self.store.add_role(user_name, role_name, package_name)
             message = 'Role Added OK'
         else:
+            # make sure the user has the role
+            if not self.store.has_role(role_name, package_name, user_name):
+                raise FormError, "user doesn't have that role"
             self.store.delete_role(user_name, role_name, package_name)
             message = 'Role Removed OK'
 
@@ -483,7 +599,10 @@ Comments to
             if not info.has_key(key): continue
             value = info[key]
             if not value: continue
-            label = key.capitalize().replace('_', ' ')
+            if key == '_pypi_download_url':
+                label = "Download URL"
+            else:
+                label = key.capitalize().replace('_', ' ')
             if key in ('url', 'home_page') and value != 'UNKNOWN':
                 w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
                     value, cgi.escape(value)))
@@ -603,16 +722,20 @@ index.
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
             elif property.endswith('description'):
-                field = '<textarea name="%s" rows="5" cols="80">%s</textarea>'%(
-                    property, cgi.escape(value))
+                field = '<textarea wrap="hard" name="%s" rows="5" ' \
+                    'cols="80">%s</textarea>'%(property, cgi.escape(value))
             else:
-                field = '<input size="40" name="%s" value="%s">'%(property,
+                field = '<input size="60" name="%s" value="%s">'%(property,
                     cgi.escape(value))
 
             # now spit out the form line
-            label = property.replace('_', ' ').capitalize()
+            label = property.replace('_', '&nbsp;').capitalize()
             if label in ('Name', 'Version'):
                 req = 'class="required"'
+            elif property == '_pypi_download_url':
+                label = "Download URL"
+            elif property == '_pypi_hidden':
+                label = "Hidden"
             else:
                 req = ''
             w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label, field))
@@ -880,8 +1003,7 @@ email.</p>'''
                     heading='User registration')
                 return
             if not info.has_key('confirm') or info['password']<>info['confirm']:
-                self.fail("password and confirm don't match",
-                    heading='Users')
+                self.fail("password and confirm don't match", heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'])
@@ -892,11 +1014,16 @@ email.</p>'''
         else:
             # update details
             user = self.store.get_user(self.username)
-            password = info.get('password', user['password'])
-            if info.has_key('confirm') and password != info['confirm']:
-                self.fail("password and confirm don't match",
-                    heading='User profile')
-                return
+            password = info.get('password', '').strip()
+            if not password:
+                # no password entered - leave it alone
+                password = None
+            else:
+                # make sure the confirm matches
+                if password != info.get('confirm', ''):
+                    self.fail("password and confirm don't match",
+                        heading='User profile')
+                    return
             email = info.get('email', user['email'])
             self.store.store_user(self.username, password, email)
             response = 'Details updated OK'
