@@ -4,10 +4,9 @@ Now:
   - multiple download links?
 - documentation of register and classifications
 - change notification emails
-- saving of login info in register command
 - "latest changes"
 - admin inteface for user details editing (and fix theller@python.net)
-
+- "does this release supercede the existing release?"
 
 Later:
 

@@ -122,9 +122,11 @@ class register(Command):
 
         # see if we can short-cut and get the username/password from the
         # config
+        config = None
         if os.environ.has_key('HOME'):
             rc = os.path.join(os.environ['HOME'], '.pypirc')
             if os.path.exists(rc):
+                print 'Using PyPI login from %s'%rc
                 config = ConfigParser.ConfigParser()
                 config.read(rc)
                 username = config.get('server-login', 'username')
@@ -162,6 +164,26 @@ Your selection [default 1]: ''',
             code, result = self.post_to_server(self.build_post_data('submit'),
                 auth)
             print 'Server response (%s): %s'%(code, result)
+
+            # possibly save the login
+            if os.environ.has_key('HOME') and config is None and code == 200:
+                rc = os.path.join(os.environ['HOME'], '.pypirc')
+                print 'I can store your PyPI login so future submissions will be faster.'
+                print '(the login will be stored in %s)'%rc
+                choice = 'X'
+                while choice.lower() not in 'yn':
+                    choice = raw_input('Save your login (y/N)?')
+                    if not choice:
+                        choice = 'n'
+                if choice.lower() == 'y':
+                    f = open(rc, 'w')
+                    f.write('[server-login]\nusername:%s\npassword:%s\n'%(
+                        username, password))
+                    f.close()
+                    try:
+                        os.chmod(rc, 0600)
+                    except:
+                        pass
         elif choice == '2':
             data = {':action': 'user'}
             data['name'] = data['password'] = data['email'] = ''
