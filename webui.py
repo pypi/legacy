@@ -2,7 +2,11 @@
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import time, whrandom, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
-from xml.sax.saxutils import escape as xmlescape
+from xml.sax import saxutils
+
+def xmlescape(s):
+    ' make sure we escape a string '
+    return saxutils.escape(str(s))
 
 import store, config, flamenco2, trove
 
