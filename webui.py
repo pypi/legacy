@@ -361,6 +361,7 @@ Comments to
             admin = '<option value="Admin">Admin</option>'
         else:
             admin = ''
+
         # now write the body
         s = '''
 <form method="POST">
@@ -383,7 +384,24 @@ Comments to
 </table>
 </form>
 '''%(users, package, admin)
+
+        # list the existing role assignments
+        if package_name:
+            s += self.package_role_list(package_name, 'Existing Roles')
         self.success(heading='Role maintenance', content=s)
+
+    def package_role_list(self, name, heading='Assigned Roles'):
+        ''' Generate an HTML fragment for a package Role display.
+        '''
+        l = ['<table class="roles">',
+             '<tr><th class="header" colspan="2">%s</th></tr>'%heading,
+             '<tr><th>User</th><th>Role</th></tr>']
+        for assignment in self.store.get_package_roles(name):
+            l.append('<tr><td>%s</td><td>%s</td></tr>'%(
+                cgi.escape(assignment['user_name']),
+                cgi.escape(assignment['role_name'])))
+        l.append('</table>')
+        return '\n'.join(l)
 
     def role(self):
         ''' Add a Role to a user.
@@ -420,17 +438,24 @@ Comments to
             self.store.delete_role(user_name, role_name, package_name)
             message = 'Role Removed OK'
 
+        # XXX make this call display
         self.success(message=message, heading='Role maintenance')
 
-    def display(self, ok_message=None, error_message=None):
+    def display(self, name=None, version=None, ok_message=None,
+            error_message=None):
         ''' Print up an entry
         '''
         content = StringIO.StringIO()
         w = content.write
 
         # get the appropriate package info from the database
-        name = self.form['name'].value
-        version = self.form['version'].value
+        if name is None:
+            name = self.form['name'].value
+        if version is None:
+            if self.form.has_key('version'):
+                version = self.form['version'].value
+            else:
+                raise NotImplementedError, 'get the latest version'
         info = self.store.get_package(name, version)
         # top links
         un = urllib.quote(name)
@@ -472,6 +497,9 @@ Comments to
             w('\n<br>'.join([cgi.escape(x) for x in classifiers]))
             w('\n</td></tr>\n')
         w('\n</table>\n')
+
+        # package's role assignments
+        w(self.package_role_list(name))
 
         # package's journal
         w('<table class="history">\n')
@@ -568,9 +596,10 @@ index.
                            </select>'''%(a,b)
             elif property.endswith('description'):
                 field = '<textarea name="%s" rows="5" cols="80">%s</textarea>'%(
-                    property, value)
+                    property, cgi.escape(value))
             else:
-                field = '<input size="40" name="%s" value="%s">'%(property, value)
+                field = '<input size="40" name="%s" value="%s">'%(property,
+                    cgi.escape(value))
 
             # now spit out the form line
             label = property.replace('_', ' ').capitalize()
@@ -578,7 +607,7 @@ index.
                 req = 'class="required"'
             else:
                 req = ''
-            w('<tr><th %s>%s:</th><td>%s</td></tr>'%(req, label, field))
+            w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label, field))
 
         w('''
 <tr><th class="required">highlighted</th><td>information is required</td></tr>

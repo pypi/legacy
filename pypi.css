@@ -159,6 +159,32 @@ table.list tr.navigation th:first-child {
   text-align: left;
 }
 
+/* style for role lists */
+table.roles {
+  border-spacing: 0px;
+  border-collapse: separate;
+  width: 100%;
+}
+
+table.roles th.header{
+  padding-top: 10px;
+  border-bottom: 1px solid gray;
+  font-weight: bold;
+  background-color: white;
+  color: #707040;
+}
+
+table.roles th {
+  border-bottom: 1px solid #afafaf;
+  font-weight: bold;
+  text-align: left;
+}
+
+table.roles td {
+  vertical-align: top;
+  empty-cells: show;
+}
+
 
 /* style for history displays */
 table.history {

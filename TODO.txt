@@ -6,9 +6,7 @@ Now:
 - change notification emails
 - saving of login info in register command
 - "latest changes"
-- role list for packages
 - admin inteface for user details editing (and fix theller@python.net)
-- clean up HTML interface
 
 
 Later:

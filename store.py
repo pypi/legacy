@@ -225,6 +225,13 @@ class Store:
             and name=%s and version=%s order by classifier''', (name, version))
         return [x[0] for x in self.cursor.fetchall()]
 
+    def get_package_roles(self, name):
+        ''' Fetch the list of Roles for the package.
+        '''
+        self.cursor.execute('''select role_name, user_name
+            from roles where package_name=%s''', (name, ))
+        return self.cursor.fetchall()
+
     #
     # Users interface
     # 
