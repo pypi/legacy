@@ -18,7 +18,8 @@ def enumerate(sequence):
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz)$', re.I)
 safe_zipnames = re.compile(r'(purelib|platlib|headers|scripts|data).+', re.I)
-safe_username = re.compile(r'[A-Za-z0-9]+')
+safe_username = re.compile(r'^[A-Za-z0-9]+$')
+safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 
 def xmlescape(s):
     ' make sure we escape a string '
@@ -1376,6 +1377,8 @@ Are you <strong>sure</strong>?</p>
             name = info['name']
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII only)'
+            if not safe_email.match(info['email']):
+                raise FormError, 'Email is invalid (ASCII only)'
 
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
@@ -1449,6 +1452,7 @@ Are you <strong>sure</strong>?</p>
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
         '''
+        return
         smtp = smtplib.SMTP(self.config.mailhost)
         smtp.sendmail(self.config.adminemail, recipient, message)
 
