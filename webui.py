@@ -130,7 +130,7 @@ class WebUI:
                 traceback.print_exc(None, s)
                 s = cgi.escape(s.getvalue())
                 self.fail('Internal Server Error', code=500, heading='Error...',
-                    content='<pre>%s</pre>'%s)
+                    content='%s'%s)
         finally:
             self.store.close()
 
@@ -138,18 +138,22 @@ class WebUI:
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
         '''
-        self.page_head(title, message, heading, code, headers)
-        self.wfile.write('<p class="error">%s</p>'%message)
+        self.handler.send_response(code, message)
+        self.handler.send_header('Content-Type', 'text/plain')
+        for k,v in headers.items():
+            self.handler.send_header(k, v)
+        self.handler.end_headers()
+        self.wfile.write(message)
+        self.wfile.write('\n\n')
         self.wfile.write(content)
-        self.page_foot()
 
     def success(self, message=None, title="Python Packages Index",
             code=200, heading=None, headers={}, content=''):
         ''' Indicate to the user that the operation has succeeded.
         '''
+        self.page_head(title, message, heading, code, headers)
         if heading:
             title = title + ': ' + heading
-        self.page_head(title, message, heading, code, headers)
         if message:
             self.wfile.write('<p class="ok">%s</p>'%message)
         self.wfile.write(content)
@@ -179,13 +183,8 @@ class WebUI:
         '''
         if not message:
             message = 'OK'
-        self.handler.send_response(code, message)
-        self.handler.send_header('Content-Type', 'text/html')
-        for k,v in headers.items():
-            self.handler.send_header(k, v)
-        self.handler.end_headers()
+
         if heading is None: heading = title
-        w = self.wfile.write
         banner_num = random.randrange(0,64)
         banner_color = [
              '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
@@ -202,6 +201,10 @@ class WebUI:
              '#0066cc',  '#6699cc',  '#3399ff',  '#6699cc',  '#3399ff',
              '#d6ebff',  '#6699cc',  '#3399ff',  '#0066cc',
              ][banner_num]
+
+        content = StringIO.StringIO()
+        w = content.write
+
         w('''\
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
@@ -273,7 +276,7 @@ Logged In
 Your Packages
 </font></b></td></tr>
 ''')
-                for name, in packages:
+                for name,lc_name in packages:
                     un = urllib.quote(name)
                     w('''<tr><td bgcolor="#99ccff">
  <a href="%s?:action=pkg_edit&name=%s">%s</a></td></tr>\n'''%(self.url_path, un,
@@ -343,6 +346,13 @@ PyPI Actions
 <td bgcolor="white" valign="top"><h1 align="left">PyPI: %s</h1>
 '''%heading)
 
+        self.handler.send_response(code, message)
+        self.handler.send_header('Content-Type', 'text/html')
+        for k,v in headers.items():
+            self.handler.send_header(k, v)
+        self.handler.end_headers()
+
+        self.wfile.write(content.getvalue())
 
     def page_foot(self):
         self.wfile.write('''
@@ -434,7 +444,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             w('''<tr%s>
         <td>%s</td>
         <td>%s</td>
-        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', date[:10],
+        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', str(date)[:10],
                 self.packageLink(name, version), cgi.escape(str(summary))))
             i+=1
         w('''
@@ -478,7 +488,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
   <language>en</language>
 '''%(__version__, self.url_machine, self.url_path))
         for name, version, date, summary in self.store.latest_releases():
-            date = date.replace(' ','T')
+            date = str(date)
             f.write('''  <item>
     <title>%s %s</title>
     <link>http://www.python.org%s</link>
@@ -576,19 +586,19 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             w('<table class="list">\n')
             w('<tr><th>Package</th><th>Description</th></tr>\n')
             for pkg in l:
-                name = pkg['name']
-                version = pkg['version']
+                name = pkg[0]
+                version = pkg[1]
                 w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
                 self.packageLink(name, version),
-                cgi.escape(str(pkg['summary']))))
+                cgi.escape(str(pkg[2]))))
                 i+=1
             w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
 </table>
 ''')
-        self.success(heading='Index of packages', content=content.getvalue())
+        self.success(heading='Index of packages', content='OK')
 
     def search(self):
         """Same as index, but don't disable the search or index nav links
@@ -668,8 +678,8 @@ you must <a href="%s?:action=register_form">register to submit</a>)
     <td><select name="package_name">%s</select></td>
 </tr>
 '''%s
-        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x['name'],
-            x['name'], x['email']) for x in self.store.get_users()])
+        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x[0],
+            x[0], x[2]) for x in self.store.get_users()])
         users = '<select name="user_name">%s</select>'%s
         if self.store.has_role('Admin', None):
             admin = '<option value="Admin">Admin</option>'
@@ -726,8 +736,8 @@ available Roles are defined as:
              '<tr><th>User</th><th>Role</th></tr>']
         for assignment in self.store.get_package_roles(name):
             l.append('<tr><td>%s</td><td>%s</td></tr>'%(
-                cgi.escape(assignment['user_name']),
-                cgi.escape(assignment['role_name'])))
+                cgi.escape(assignment[1]),
+                cgi.escape(assignment[0])))
         l.append('</table>')
         return '\n'.join(l)
 
@@ -847,7 +857,7 @@ available Roles are defined as:
             if self.form.has_key('version'):
                 version = self.form.getfirst('version')
             else:
-                l = self.store.get_package_releases(name, hidden=0)
+                l = self.store.get_package_releases(name, hidden=False)
                 try:
                     version = l[-1][1]
                 except IndexError:
@@ -871,12 +881,9 @@ available Roles are defined as:
 
         # now the package info
         w('<table class="form">\n')
-        keys = info.keys()
-        keys.sort()
         keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
-        for key in keypref:
-            if not info.has_key(key): continue
-            value = info[key]
+        for i, key in enumerate(keypref):
+            value = info[i]
             if not value: continue
             if key == 'download_url':
                 label = "Download URL"
@@ -914,8 +921,7 @@ available Roles are defined as:
         w('<tr><th>Date</th><th>User</th><th>Action</th></tr>\n')
         for entry in self.store.get_journal(name, version):
             w('<tr><td nowrap>%s</td><td>%s</td><td>%s</td></tr>\n'%(
-                entry['submitted_date'], entry['submitted_by'],
-                entry['action']))
+                entry[1], entry[2], entry[0]))
         w('\n</table>\n')
 
         if error_message:
@@ -1235,7 +1241,7 @@ index.
         w = content.write
 
         # look up the current info about the releases
-        releases = self.store.get_package_releases(name)
+        releases = list(self.store.get_package_releases(name))
         reldict = {}
         for release in releases:
             info = {}

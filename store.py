@@ -1,9 +1,35 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, sqlite, time, sha, random, types, math, stat
+import sys, os, re, psycopg, time, sha, random, types, math, stat
 from distutils.version import LooseVersion
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+class ResultRow:
+    def __init__(self, cols, info=None):
+        self.cols = cols
+        self.cols_d = {}
+        for i, col in enumerate(cols):
+            self.cols_d[col] = i
+        self.info = info
+    def setInfo(self, info):
+        self.info = info
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self.info[item]
+        return self.info[self.cols_d[item]]
+    def items(self):
+        return [(col, self.info[i]) for i, col in enumerate(self.cols)]
+    def keys(self):
+        return self.cols
+    def values(self):
+        return self.info
+
+def Result(cols, sequence):
+    row = ResultRow(cols)
+    for item in iter(sequence):
+        row.setInfo(item)
+        yield row
 
 class StorageError(Exception):
     pass
@@ -141,7 +167,7 @@ class Store:
 
             # hide all other releases of this package
             cursor.execute('update releases set _pypi_hidden=%s where '
-                'name=%s and version <> %s', (1, name, version))
+                'name=%s and version <> %s', ('TRUE', name, version))
 
         # handle trove information
         if not info.has_key('classifiers') or old_cifiers == classifiers:
@@ -164,9 +190,6 @@ class Store:
 
             If "new_version" is supplied, insert it into the sequence and
             return the ordering value for it.
-
-            XXX Because sqlite only handles strings, we'll need to make
-            sure the values are string-sortable.
         '''
         cursor = self.get_cursor()
         # load up all the version strings for this package and sort them
@@ -233,7 +256,8 @@ class Store:
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
         cursor.execute(sql, (name, version))
-        return cursor.fetchone()
+        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
+        return ResultRow(cols, cursor.fetchone())
 
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.
@@ -251,8 +275,9 @@ class Store:
         '''
         cursor = self.get_cursor()
         # get the generic stuff or the stuff specific to the version
-        sql = '''select * from journals where name=%s and (version=%s or
-                version is NULL) order by submitted_date'''
+        sql = '''select action, submitted_date, submitted_by
+            from journals where name=%s and (version=%s or
+           version is NULL) order by submitted_date'''
         cursor.execute(sql, (name, version))
         return cursor.fetchall()
 
@@ -263,6 +288,12 @@ class Store:
         '''
         where = []
         for k, v in spec.items():
+            if k == '_pypi_hidden':
+                if v == '1': v = 'TRUE'
+                else: v = 'FALSE'
+                where.append("_pypi_hidden = %s"%v)
+                continue
+
             if type(v) != type([]): v = [v]
             # Quote the bits in the string that need it and then embed
             # in a "substring" search. Note - need to quote the '%' so
@@ -321,7 +352,7 @@ class Store:
             where j.version is not NULL
                   and j.action = 'new release'
                   and j.name = r.name and j.version = r.version
-                  and r._pypi_hidden == 0
+                  and r._pypi_hidden = FALSE
             order by submitted_date desc
         ''')
         d = {}
@@ -343,7 +374,7 @@ class Store:
             from journals j, releases r
             where j.version is not NULL
                   and j.name = r.name and j.version = r.version
-                  and r._pypi_hidden == 0
+                  and r._pypi_hidden = FALSE
             order by submitted_date desc
         ''')
         d = {}
@@ -360,25 +391,27 @@ class Store:
         ''' Fetch all releses for the package name, including hidden.
         '''
         if hidden is not None:
-            hidden = 'and _pypi_hidden == %d'%hidden
+            hidden = 'and _pypi_hidden = %s'%(str(hidden).upper())
         else:
             hidden = ''
         cursor = self.get_cursor()
         cursor.execute('''
-            select r.name name,r.version version,j.submitted_date,
-                r.summary summary,_pypi_hidden
+            select r.name as name,r.version as version,j.submitted_date,
+                r.summary as summary,_pypi_hidden
             from journals j, releases r
             where j.version is not NULL
                   and j.action = 'new release'
-                  and j.name = %%s and r.name = %%s
+                  and j.name = %%s
+                  and r.name = %%s
                   and j.version = r.version
                   %s
             order by submitted_date desc
-        '''%hidden, name, name)
+        '''%hidden, (name, name))
         res = cursor.fetchall()
         if res is None:
             return []
-        return res
+        cols = 'name version submitted_date summary _pypi_hidden'.split()
+        return Result(cols, res)
 
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
@@ -452,8 +485,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        cursor.execute("select * from users where name=%s", (name,))
-        return cursor.fetchone()
+        cursor.execute('''select name,password,email from users where
+            name=%s''', (name,))
+        return ResultRow(('name', 'password', 'email'), cursor.fetchone())
 
     def get_user_by_email(self, email):
         ''' Retrieve info about the user from the database, looked up by
@@ -534,7 +568,7 @@ class Store:
         ''' Retrieve package info for all packages of a user
         '''
         cursor = self.get_cursor()
-        sql = '''select distinct(package_name) from roles
+        sql = '''select distinct(package_name),lower(package_name) from roles
                  where roles.user_name=%s and package_name is not NULL
                  order by lower(package_name)'''
         cursor.execute(sql, (user,))
@@ -558,127 +592,9 @@ class Store:
         ''' Open the database, initialising if necessary.
         '''
         # ensure files are group readable and writable
-        self._conn = sqlite.connect(db=self.config.database)
-
-        # set a 30 second timeout (extraordinarily generous) for handling
-        # locked database
-        self._conn.db.sqlite_busy_timeout(30 * 1000)
+        self._conn = psycopg.connect(database='pypi', user='pypi')
 
         cursor = self._cursor = self._conn.cursor()
-        try:
-            cursor.execute('select count(*) from ids')
-            cursor.fetchone()
-        except sqlite.DatabaseError, error:
-            if str(error) != 'no such table: ids':
-                raise
-            cursor.execute('''
-               create table ids (
-                  name varchar,
-                  num varchar
-               )''')
-            cursor.execute('''
-               create table packages (
-                  name varchar,
-                  stable_version varchar
-               )''')
-            cursor.execute('''
-               create table releases (
-                  name varchar,
-                  version varchar,
-                  author varchar,
-                  author_email varchar,
-                  maintainer varchar,
-                  maintainer_email varchar,
-                  home_page varchar,
-                  license varchar,
-                  summary varchar,
-                  description varchar,
-                  keywords varchar,
-                  platform varchar,
-                  download_url varchar,
-                  _pypi_ordering varchar,
-                  _pypi_hidden varchar
-               )''')
-            cursor.execute('''
-               create table trove_classifiers (
-                  id varchar,
-                  classifier varchar
-               )''')
-            cursor.execute('''
-               create table release_classifiers (
-                  name varchar,
-                  version varchar,
-                  trove_id varchar
-               )''')
-            cursor.execute('''
-               create table journals (
-                  name varchar,
-                  version varchar,
-                  action varchar,
-                  submitted_date varchar,
-                  submitted_by varchar,
-                  submitted_from varchar
-               )''')
-            cursor.execute('''
-               create table users (
-                  name varchar,
-                  password varchar,
-                  email varchar,
-                  public_key varchar
-               )''')
-            cursor.execute('''
-               create table rego_otk (
-                  name varchar,
-                  otk varchar
-               )''')
-            cursor.execute('''
-               create table roles (
-                  role_name varchar,
-                  user_name varchar,
-                  package_name varchar
-               )''')
-
-            # init the id counter
-            cursor.execute('''insert into ids (name, num) values
-                ('trove_classifier', 1)''')
-
-            # indexes
-            SQLs = [
-            "create index ids_name_idx on ids(name)",
-            "create index journals_name_idx on journals(name)",
-            "create index journals_version_idx on journals(version)",
-            "create index packages_name_idx on packages(name)",
-            "create index rego_otk_name_idx on rego_otk(name)",
-            "create index rel_class_name_idx on release_classifiers(name)",
-            "create index rel_class_trove_id_idx on "
-                "release_classifiers(trove_id)",
-            "create index rel_class_version_id_idx on "
-                "release_classifiers(version)",
-            "create index release_name_idx on releases(name)",
-            "create index release_pypi_hidden_idx on releases(_pypi_hidden)",
-            "create index release_version_idx on releases(version)",
-            "create index roles_pack_name_idx on roles(package_name)",
-            "create index roles_user_name_idx on roles(user_name)",
-            "create index trove_class_class_idx on "
-                "trove_classifiers(classifier)",
-            "create index trove_class_id_idx on trove_classifiers(id)",
-            "create index users_email_idx on users(email)",
-            "create index users_name_idx on users(name)",
-            ]
-            for sql in SQLs:
-                cursor.execute(sql)
-
-            # admin user
-            adminpw = ''.join([random.choice(chars) for x in range(10)])
-            adminpw = sha.sha(adminpw).hexdigest()
-            cursor.execute('''
-               insert into users (name, password, email) values
-                ('admin', '%s', NULL)
-               '''%adminpw)
-            cursor.execute('''
-               insert into roles (user_name, role_name, package_name) values
-                ('admin', 'Admin', NULL)
-               ''')
 
     def set_user(self, username, userip):
         ''' Set the user who's doing the changes.
@@ -698,31 +614,20 @@ class Store:
     def close(self):
         if self._conn is None:
             return
-        try:
-            self._conn.close()
-            self._conn = None
-            self._cursor = None
-        except sqlite.ProgrammingError, value:
-            if str(value) != 'close failed - Connection is closed.':
-                raise
+        self._conn.close()
+        self._conn = None
+        self._cursor = None
 
     def commit(self):
         if self._conn is None:
             return
-        try:
-            self._conn.commit()
-        except sqlite.DatabaseError, error:
-            if str(error) != 'cannot commit - no transaction is active':
-                raise
+        self._conn.commit()
 
     def rollback(self):
         if self._conn is None:
             return
-        try:
-            self._conn.rollback()
-        except sqlite.ProgrammingError, value:
-            if str(value) != 'rollback failed - Connection is closed.':
-                raise
+        self._conn.rollback()
+        self._cursor = None
 
 if __name__ == '__main__':
     import config
@@ -737,6 +642,7 @@ if __name__ == '__main__':
         store.delete_otk(otk)
         store.commit()
     else:
+        import pprint;pprint.pprint(store.latest_releases())
         print "UNKNOWN COMMAND", sys.argv[2]
     store.close()
 

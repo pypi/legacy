@@ -30,7 +30,7 @@ class Query:
 select rc.trove_id, r.name, r.version, r.summary
 from releases r, release_classifiers rc
 where r.name=rc.name and r.version=rc.version
-  and r._pypi_hidden=0
+  and r._pypi_hidden=FALSE
 ''')
 
         # Now sort into useful structures
