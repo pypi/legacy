@@ -1345,7 +1345,7 @@ class WebUI:
     def list_classifiers(self):
         ''' Just return the list of classifiers.
         '''
-        c = '\n'.join(self.store.get_classifiers())
+        c = '\n'.join([c['classifier'] for c in self.store.get_classifiers()])
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
