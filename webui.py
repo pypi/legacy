@@ -739,6 +739,10 @@ available Roles are defined as:
             else:
                 raise NotImplementedError, 'get the latest version'
         info = self.store.get_package(name, version)
+        if not info:
+            return self.fail('No such package / version',
+                heading='%s %s'%(name, version),
+                content="I can't find the package / version you're requesting")
         # top links
         un = urllib.quote(name)
         uv = urllib.quote(version)
