@@ -22,18 +22,15 @@ class register(Command):
     user_options = [
         ('repository=', 'r',
          "url of repository [default: %s]"%DEFAULT_REPOSITORY),
-        ('verify', None,
-         'verify the package metadata for correctness'),
         ('list-classifiers', None,
          'list the valid Trove classifiers'),
         ('verbose', None,
          'display full response from server'),
         ]
-    boolean_options = ['verify', 'verbose', 'list-classifiers']
+    boolean_options = ['verbose', 'list-classifiers']
 
     def initialize_options(self):
         self.repository = None
-        self.verify = 0
         self.verbose = 0
         self.list_classifiers = 0
 
@@ -43,7 +40,7 @@ class register(Command):
 
     def run(self):
         self.check_metadata()
-        if self.verify:
+        if self.dry_run:
             self.verify_metadata()
         elif self.list_classifiers:
             self.classifiers()
