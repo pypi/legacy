@@ -345,6 +345,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x['name'],
             x['name'], x['email']) for x in self.store.get_users()])
         users = '<select name="user_name">%s</select>'%s
+        if self.store.has_role('Admin', None):
+            admin = '<option value="Admin">Admin</option>'
+        else:
+            admin = ''
         # now write the body
         s = '''
 <form method="POST">
@@ -358,6 +362,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
     <td><select name="role_name">
         <option value="Owner">Owner</option>
         <option value="Maintainer">Maintainer</option>
+        %s
         </select></td>
 </tr>
 <tr><td>&nbsp;</td>
@@ -365,7 +370,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         <input type="submit" name=":operation" value="Remove Role"></td></tr>
 </table>
 </form>
-'''%(users, package)
+'''%(users, package, admin)
         self.success(heading='Role maintenance', content=s)
 
     def role(self):
