@@ -875,6 +875,8 @@ available Roles are defined as:
             self.url_path, un))
         w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(self.url_path, un, uv))
+        w('| <a href="%s?:action=files&name=%s&version=%s"'
+            '>files</a>'%(self.url_path, un, uv))
         w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
             '>PKG-INFO</a>'%(self.url_path, un, uv))
         w('<br>')
