@@ -358,16 +358,14 @@ class WebUI:
         """Dump the last N days' updates as an RSS feed.
         """
         # determine whether the rss file is up to date
-        rss_file = os.path.join(os.path.split(self.config.database)[0],
-            'rss.xml')
-        if not os.path.exists(rss_file):
-            self.rss_regen(rss_file)
+        if not os.path.exists(self.config.rss_file):
+            self.rss_regen(self.config.rss_file)
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/xml; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(open(rss_file).read())
+        self.wfile.write(open(self.config.rss_file).read())
 
     def rss_regen(self, rss_file=None):
         if rss_file is None:
