@@ -586,10 +586,8 @@ class WebUI:
         content = StringIO.StringIO()
         w = content.write
 
-        # Some things (download-url, classifier) aren't in metadata v1.0 as
-        # defined in PEP 241, but they'd be nice to publish anyway.  PEP 241
-        # doesn't take an explicit stance on the handling of undefined fields.
-        w("Metadata-Version: 1.0\n")
+        # We're up to PEP 314
+        w("Metadata-Version: 1.1\n")
 
         # now the package info
         keys = info.keys()
