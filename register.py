@@ -138,7 +138,8 @@ class register(Command):
                 choice = '1'
 
         # get the user's login info
-        while choice not in '1234':
+        choices = '1 2 3 4'.split()
+        while choice not in choices:
             print '''We need to know who you are, so please choose either:
  1. use your existing login,
  2. register as a new user,
@@ -146,7 +147,9 @@ class register(Command):
  4. quit
 Your selection [default 1]: ''',
             choice = raw_input()
-            if choice not in '1234':
+            if not choice:
+                choice = '1'
+            elif choice not in choices:
                 print 'Please choose one of the four options!'
 
         if choice == '1':
