@@ -718,6 +718,12 @@ class WebUI:
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
             if l: format_list(col, l)
+
+        classifiers = self.store.get_release_classifiers(name, version)
+        w('<tr><th>Classifiers</th><td>')
+        w('\n<br>'.join([cgi.escape(x['classifier']) for x in classifiers]))
+        w('\n</td></tr>\n')
+
         dependencies = content.getvalue()
 
         content=StringIO.StringIO()
