@@ -2,14 +2,15 @@
 	     xmlns="http://www.w3.org/1999/xhtml" 
 	     xmlns:tal="http://xml.zope.org/namespaces/tal"
 	     xmlns:metal="http://xml.zope.org/namespaces/metal">
-  <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
+ <?xml version="1.0" encoding="UTF-8"?>
+ <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
 <html xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <head>
  <title tal:content="options/title"></title>
- <meta http-equiv="Content-Type" content="text/xhtml; charset=iso-8859-1" />
+ <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
  <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
  <link rel="STYLESHEET" href="http://www.python.org/style.css"
        type="text/css" />
