@@ -1498,7 +1498,8 @@ Are you <strong>sure</strong>?</p>
                 self.store.has_role('Owner', name)):
             maintainer = True
             if self.form.has_key('submit_upload'):
-                content = filetype = md5_digest = pyversion = comment = None
+                pyversion = 'source'
+                content = filetype = md5_digest = comment = None
                 if self.form.has_key('content'):
                     content = self.form['content']
                 if self.form.has_key('filetype'):
