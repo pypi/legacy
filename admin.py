@@ -34,7 +34,7 @@ def add_classifier(store, classifier):
     cursor.execute('insert into trove_classifiers (id, classifier) '
         'values (%s,%s)', (id, classifier))
     cursor.execute("update ids set num=%s where name='trove_classifiers'",
-        (id+1)
+        (id+1))
     print 'done'
 
 if __name__ == '__main__':
