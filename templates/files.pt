@@ -1,0 +1,72 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+
+<form tal:attributes="action app/url_path" method="POST"
+    enctype="multipart/form-data">
+<input type="hidden" name=":action" value="files" />
+<input type="hidden" name="name" tal:attributes="value options/name" />
+<input type="hidden" name="version" tal:attributes="value options/version" />
+File:      <input type="file" name="content" /><br />
+File Type: <select name="filetype">
+<option value="">-- Select Distribution Type --</option>
+ <option tal:repeat="type app/dist_file_types"
+    tal:attributes="value python:type[0]" tal:content="python:type[1]" />
+</select><br />
+Python Version: <select name="pyversion">
+<option value="">-- Select Python Version --</option>
+<option value="2.1">2.1</option>
+<option value="2.2">2.2</option>
+<option value="2.3">2.3</option>
+<option value="2.4">2.4</option>
+<option value="2.5">2.5</option>
+</select> (not needed for source distributions)<br />
+Comment: <input type="text" name="comment" size="40" /> (optional - use if
+there's multiple files for one distribution type)<br />
+MD5 Digest: <input type="text" name="md5_digest" size="40" /> (optional -
+will be calculated if not supplied)<br />
+<input type="submit" name="submit_upload" value="Upload new File" />
+</form>
+
+<form tal:attributes="action app/url_path" method="POST"
+    enctype="multipart/form-data">
+<input type="hidden" name="name" tal:attributes="value options/name" />
+<input type="hidden" name="version" tal:attributes="value options/version" />
+<input type="hidden" name=":action" value="files" />
+
+<table class="list" style="width: auto">
+ <tr>
+  <th tal:condition="options/maintainer">Remove?</th>
+  <th>Type</th><th>Py Version</th><th>Comment</th>
+  <th>Download</th><th>MD5 digest</th>
+ </tr>
+
+ <tr tal:repeat="file python:app.store.list_files(options['name'],
+          options['version'])">
+  <td tal:condition="options/maintainer">
+   <input type="checkbox" name="file-ids"
+          tal:attributes="value file/md5_digest" />
+  </td>
+  <td tal:content="file/packagetype" />
+  <td tal:content="file/python_version" />
+  <td tal:content="file/comment_text" />
+  <td>
+   <a tal:attributes="href python:app.store.gen_file_url(pyver, un, filename)"
+    tal:content="file/filename" />
+  </td>
+  <td style="font-size: 75%" tal:content="file/md5_digest" />
+ </tr>
+
+ <tr tal:condition="options/maintainer">
+  <td colspan="6" id="last">
+   <input type="submit" name="submit_remove" value="Remove" />
+  </td>
+ </tr>
+
+</table>
+</form>
+
+</metal:fill>
+</html>
+
