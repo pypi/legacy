@@ -1,0 +1,19 @@
+Now:
+
+- finalise database schema
+  - multiple download links?
+
+- file upload of PKG_INFO (or whole package)
+
+- clean up HTML interface
+
+- Trove
+
+- verification
+
+- change notification emails
+
+Later:
+
+- package submission
+
