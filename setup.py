@@ -22,7 +22,7 @@ setup(
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",
-    url = 'http://www.python.org/pypi'
+    url = 'http://www.python.org/pypi',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
