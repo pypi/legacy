@@ -95,6 +95,29 @@ class PyPiPageTemplate(PageTemplateFile):
         options.update(self._context)
         return options
 
+class FileUpload:
+    pass
+
+def transmute(field):
+    if hasattr(field, 'filename') and field.filename:
+        v = FileUpload()
+        v.filename = field.filename
+        v.value = field.value
+        v.type = field.type
+    else:
+        v = field.value.decode('utf-8')
+    return v
+
+def decode_form(form):
+    d = {}
+    for k in form.keys():
+        v = form[k]
+        if isinstance(v, list):
+            d[k] = [transmute(u) for i in v]
+        else:
+            d[k] = transmute(v)
+    return d
+
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
@@ -120,7 +143,8 @@ class WebUI:
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
-            self.form = cgi.FieldStorage(fp=handler.rfile, environ=env)
+            self.form = decode_form(cgi.FieldStorage(fp=handler.rfile,
+                environ=env))
         else:
             self.form = None
 
@@ -294,7 +318,7 @@ class WebUI:
 
         # now handle the request
         if self.form.has_key(':action'):
-            action = self.form[':action'].value
+            action = self.form[':action']
         elif os.environ.has_key('PATH_INFO'):
             # Split into path items, drop leading slash
             items = os.environ['PATH_INFO'].split('/')[1:]
@@ -456,7 +480,7 @@ class WebUI:
         self.nav_current = 'role_form'
         package_name = ''
         if self.form.has_key('package_name'):
-            package_name = self.form['package_name'].value
+            package_name = self.form['package_name']
             if not (self.store.has_role('Admin', package_name) or
                     self.store.has_role('Owner', package_name)):
                 raise Unauthorised
@@ -514,9 +538,9 @@ class WebUI:
             raise FormError, ':operation is required'
 
         # get the values
-        package_name = self.form['package_name'].value
-        user_name = self.form['user_name'].value
-        role_name = self.form['role_name'].value
+        package_name = self.form['package_name']
+        user_name = self.form['user_name']
+        role_name = self.form['role_name']
 
         # further validation
         if role_name not in ('Owner', 'Maintainer'):
@@ -525,7 +549,7 @@ class WebUI:
             raise FormError, "user doesn't exist"
 
         # add or remove
-        operation = self.form[':operation'].value
+        operation = self.form[':operation']
         if operation == 'Add Role':
             # make sure the user doesn't have the role
             if self.store.has_role(role_name, package_name, user_name):
@@ -547,10 +571,10 @@ class WebUI:
         '''
         # get the appropriate package info from the database
         if name is None:
-            name = self.form['name'].value
+            name = self.form['name']
         if version is None:
             if self.form.has_key('version'):
-                version = self.form['version'].value
+                version = self.form['version']
             else:
                 raise NotImplementedError, 'get the latest version'
         info = self.store.get_package(name, version)
@@ -692,8 +716,8 @@ class WebUI:
         info = {}
         name = version = None
         if self.form.has_key('name') and self.form.has_key('version'):
-            name = self.form['name'].value
-            version = self.form['version'].value
+            name = self.form['name']
+            version = self.form['version']
 
             # permission to do this?
             if not (self.store.has_role('Owner', name) or
@@ -713,7 +737,7 @@ class WebUI:
         for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_hidden'.split():
             # get the existing entry
             if self.form.has_key(property):
-                value = self.form[property].value
+                value = self.form[property]
             else:
                 value = info.get(property, '')
             if value is None:
@@ -858,8 +882,8 @@ class WebUI:
         self.store.commit()
 
         # return a display of the package
-        self.form.value.append(cgi.MiniFieldStorage('name', data['name']))
-        self.form.value.append(cgi.MiniFieldStorage('version', data['version']))
+        self.form['name'] = data['name']
+        self.form['version'] = data['version']
         self.display(ok_message=message)
 
     def submit(self):
@@ -925,17 +949,17 @@ class WebUI:
                 v = v == '1'
             elif k in ('requires', 'provides', 'obsoletes'):
                 if not isinstance(v, list):
-                    v = [x.strip() for x in re.split('\s*[\r\n]\s*', v.value)]
+                    v = [x.strip() for x in re.split('\s*[\r\n]\s*', v)]
                 else:
-                    v = [x.value.strip() for x in v]
+                    v = [x.strip() for x in v]
                 v = filter(None, v)
             elif isinstance(v, list):
                 if k == 'classifiers':
-                    v = [x.value.strip() for x in v]
+                    v = [x.strip() for x in v]
                 else:
-                    v = ','.join([x.value.strip() for x in v])
+                    v = ','.join([x.strip() for x in v])
             else:
-                v = v.value.strip()
+                v = v.strip()
             data[k.lower()] = v
         return data
 
@@ -997,7 +1021,7 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
-        name = self.form['name'].value
+        name = self.form['name']
 
         if self.form.has_key('submit_remove'):
             return self.remove_pkg()
@@ -1022,11 +1046,11 @@ class WebUI:
             if key.startswith('hid_'):
                 ver = urllib.unquote(key[4:])
                 info = reldict[ver]
-                info['_pypi_hidden'] = self.form[key].value == '1'
+                info['_pypi_hidden'] = self.form[key] == '1'
             elif key.startswith('sum_'):
                 ver = urllib.unquote(key[4:])
                 info = reldict[ver]
-                info['summary'] = self.form[key].value
+                info['summary'] = self.form[key]
 
         # update the database
         for version, info in reldict.items():
@@ -1047,13 +1071,13 @@ class WebUI:
                 "You must be identified to edit package information"
 
         # vars
-        name = self.form['name'].value
+        name = self.form['name']
         cn = cgi.escape(name)
         if self.form.has_key('version'):
             if isinstance(self.form['version'], type([])):
-                version = [x.value for x in self.form['version']]
+                version = [x for x in self.form['version']]
             else:
-                version = [self.form['version'].value]
+                version = [self.form['version']]
             cv = cgi.escape(', '.join(version))
             s = len(version)>1 and 's' or ''
             desc = 'release%s %s of package %s.'%(s, cv, cn)
@@ -1105,9 +1129,9 @@ class WebUI:
         '''
         name = version = None
         if self.form.has_key('name'):
-            name = self.form['name'].value
+            name = self.form['name']
         if self.form.has_key('version'):
-            version = self.form['version'].value
+            version = self.form['version']
         if not name or not version:
             self.fail(heading='Name and version are required',
                 message='Name and version are required')
@@ -1126,9 +1150,9 @@ class WebUI:
 
                 fids = self.form['file-ids']
                 if isinstance(fids, list):
-                    fids = [v.value for v in fids]
+                    fids = [v for v in fids]
                 else:
-                    fids = [fids.value]
+                    fids = [fids]
 
                 for digest in fids:
                     self.store.remove_file(digest)
@@ -1146,7 +1170,7 @@ class WebUI:
     def show_md5(self):
         if not self.form.has_key('digest'):
             raise ValueError, 'invalid MD5 digest'
-        digest = self.form['digest'].value
+        digest = self.form['digest']
         try:
             self.store.get_file_info(digest)
         except KeyError:
@@ -1177,9 +1201,9 @@ class WebUI:
         # figure the package name and version
         name = version = None
         if self.form.has_key('name'):
-            name = self.form['name'].value
+            name = self.form['name']
         if self.form.has_key('version'):
-            version = self.form['version'].value
+            version = self.form['version']
         if not name or not version:
             raise ValueError, 'Name and version are required'
 
@@ -1194,17 +1218,17 @@ class WebUI:
         if self.form.has_key('content'):
             content = self.form['content']
         if self.form.has_key('filetype'):
-            filetype = self.form['filetype'].value
+            filetype = self.form['filetype']
         if content is None or filetype is None:
             raise ValueError, 'Both content and filetype are required'
 
-        md5_digest = self.form['md5_digest'].value
+        md5_digest = self.form['md5_digest']
 
-        comment = self.form['comment'].value
+        comment = self.form['comment']
         
         # python version?
-        if self.form['pyversion'].value:
-            pyversion = self.form['pyversion'].value
+        if self.form['pyversion']:
+            pyversion = self.form['pyversion']
         elif filetype not in (None, 'sdist'):
             raise ValueError, 'Python version is required for binary distribution uploads'
 
@@ -1328,7 +1352,7 @@ class WebUI:
         info = {}
         for param in 'name password email otk confirm gpg_keyid'.split():
             if self.form.has_key(param):
-                v = self.form[param].value.strip()
+                v = self.form[param].strip()
                 if v: info[param] = v
 
         if info.has_key('otk'):
@@ -1397,8 +1421,8 @@ class WebUI:
     def password_reset(self):
         """Reset the user's password and send an email to the address given.
         """
-        if self.form.has_key('email') and self.form['email'].value.strip():
-            email = self.form['email'].value.strip()
+        if self.form.has_key('email') and self.form['email'].strip():
+            email = self.form['email'].strip()
             user = self.store.get_user_by_email(email)
             if user is None:
                 self.fail('email address unknown to me')
@@ -1411,8 +1435,8 @@ class WebUI:
             self.send_email(email, password_message%info)
             self.write_template('message.pt',
                 message='Email sent with new password')
-        elif self.form.has_key('name') and self.form['name'].value.strip():
-            name = self.form['name'].value.strip()
+        elif self.form.has_key('name') and self.form['name'].strip():
+            name = self.form['name'].strip()
             user = self.store.get_user(name)
             if user is None:
                 self.fail('user name unknown to me')
