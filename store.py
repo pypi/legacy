@@ -163,6 +163,12 @@ class Store:
         self.cursor.execute(sql, (name, version))
         return self.cursor.fetchone()
 
+    def get_packages(self):
+        ''' Fetch the complete list of packages from the database.
+        '''
+        self.cursor.execute('select * from packages')
+        return self.cursor.fetchall()
+
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -199,7 +205,7 @@ class Store:
             where = ''
 
         # do the fetch
-        sql = 'select name, version from releases %s'%where
+        sql = 'select name, version, summary from releases %s order by name'%where
         self.cursor.execute(sql)
         l = self.cursor.fetchall()
         return l
@@ -216,7 +222,7 @@ class Store:
         '''
         self.cursor.execute('''select classifier
             from trove_classifiers, release_classifiers where id=trove_id
-            order by classifier''')
+            and name=%s and version=%s order by classifier''', (name, version))
         return [x[0] for x in self.cursor.fetchall()]
 
     #
@@ -274,7 +280,13 @@ class Store:
         self.cursor.execute("select * from users where email=%s", (email,))
         return self.cursor.fetchone()
 
-    def has_role(self, role_name, package_name, user_name=None):
+    def get_users(self):
+        ''' Fetch the complete list of users from the database.
+        '''
+        self.cursor.execute('select name,email from users')
+        return self.cursor.fetchall()
+
+    def has_role(self, role_name, package_name=None, user_name=None):
         ''' Determine whether the current user has the named Role for the
             named package.
         '''

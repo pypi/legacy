@@ -90,7 +90,7 @@ class register(Command):
         ''' Send the metadata to the package index server to be checked.
         '''
         # send the info to the server and report the result
-        (code, result) = self.post_to_server('verify')
+        (code, result) = self.post_to_server(self.build_post_data('verify'))
         print 'Server response (%s): %s'%(code, result)
 
     def send_metadata(self):
@@ -159,7 +159,8 @@ Your selection [default 1]: ''',
             auth.add_password('pypi', host, username, password)
 
             # send the info to the server and report the result
-            code, result = self.post_to_server('submit', auth)
+            code, result = self.post_to_server(self.build_post_data('submit'),
+                auth)
             print 'Server response (%s): %s'%(code, result)
         elif choice == '2':
             data = {':action': 'user'}
@@ -192,9 +193,7 @@ Your selection [default 1]: ''',
             code, result = self.post_to_server(data)
             print 'Server response (%s): %s'%(code, result)
 
-    def post_to_server(self, action, auth=None):
-        ''' Post a query to the server, and return a string response.
-        '''
+    def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
         # information used by the package server
         meta = self.distribution.metadata
@@ -214,6 +213,11 @@ Your selection [default 1]: ''',
         }
         if hasattr(meta, 'classifiers'):
             data['classifiers'] = meta.get_classifiers()
+        return data
+
+    def post_to_server(self, data, auth=None):
+        ''' Post a query to the server, and return a string response.
+        '''
 
         # Build up the MIME payload for the urllib2 POST data
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
@@ -225,10 +229,11 @@ Your selection [default 1]: ''',
             if type(value) != type([]):
                 value = [value]
             for value in value:
+                value = str(value)
                 body.write(sep_boundary)
                 body.write('\nContent-Disposition: form-data; name="%s"'%key)
                 body.write("\n\n")
-                body.write(str(value))
+                body.write(value)
                 if value and value[-1] == '\r':
                     body.write('\n')  # write an extra newline (lurve Macs)
         body.write(end_boundary)

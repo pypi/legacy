@@ -49,6 +49,8 @@ Your password is now: %(password)s
 '''
 
 unauth_message = '''
+<p>If you are a new user, <a href="?:action=register_form">please
+register</a>.</p>
 <p>If you have forgotten your password, you can have it
 <a href="?:action=forgotten_password_form">reset for you</a>.</p>
 '''
@@ -154,11 +156,10 @@ class WebUI:
         if heading is None: heading = title
         self.wfile.write('''
 <html><head><title>TEST PyPI: %s</title>
-<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/style.css">
-<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/page.css">
+<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/pypi.css">
 </head>
 <body>
-<div id="header"><h1>TEST PyPI: %s</h1></div>
+<div id="header"><h1 align="left">TEST PyPI: %s</h1>
 <div id="content">
 '''%(title, heading))
 
@@ -198,7 +199,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -211,44 +212,67 @@ class WebUI:
         '''
         content = StringIO.StringIO()
         w = content.write
-        w('<a href="?:action=search_form">search</a>\n')
-        w('| <a href="?:action=role_form">admin</a>\n')
-        w('| <a href="?:action=submit_form">manual submission</a>\n')
-        if self.username:
-            w('| <a href="?:action=user_form">edit your details</a>\n')
-        else:
-            w('| <a href="?:action=register_form">register for a login</a>\n')
-        w('| <a href="?:action=list_classifiers">list trove classifiers</a>\n')
-        w('<ul>\n')
+        w(self.navbar('index'))
+        w('<table class="list">\n')
         spec = self.form_metadata()
         if not spec.has_key('hidden'):
             spec['hidden'] = '0'
-        for name, version in self.store.query_packages(spec):
-            w('<li><a href="?:action=display&name=%s&version=%s">%s %s</a>\n'%(
-                urllib.quote(name), urllib.quote(version), name, version))
+        for pkg in self.store.query_packages(spec):
+            name = pkg['name']
+            version = pkg['version']
+            w('''<tr>
+        <td>%s</td>
+        <td><a href="?:action=display&name=%s&version=%s">%s</a></td>
+        <td>%s</td></tr>'''%(name, urllib.quote(name), urllib.quote(version),
+                version, cgi.escape(pkg['summary'])))
         w('''
-</ul>
-<hr>
-To list your <b>distutils</b>-packaged distribution here:
-<ol>
-<li>Copy <a href="http://mechanicalcat.net/tech/pypi/register.py">register.py</a> to your
-python lib "distutils/command" directory (typically something like
-"/usr/lib/python2.1/distutils/command/").
-<li>Run "setup.py register" as you would normally run "setup.py" for your
-distribution - this will register your distribution's metadata with the
-index.
-<li>... that's <em>it</em>
-</ol>
+</table>
 <hr>
 Author: Richard Jones<br>
 Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
 ''')
         self.success(heading='Index of packages', content=content.getvalue())
 
+    navlinks = (
+        ('index', 'index'),
+        ('search_form', 'search'),
+        ('submit_form', 'package submission'),
+        ('user_form', 'edit your details'),
+        ('register_form', 'register for a login'),
+        ('list_classifiers', 'list trove classifiers'),
+        ('role_form', 'admin'),
+        ('login', 'login'),
+        ('logout', 'logout')
+    )
+    def navbar(self, current):
+        if self.username:
+            l = ['logged in as %s'%self.username]
+        else:
+            l = ['you are anonymous']
+        for k, v in self.navlinks:
+            if k == current:
+                l.append('<strong>%s</strong>'%v)
+            elif k in ('login', 'register_form'):
+                if not self.username:
+                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
+            elif k in ('logout', 'user_form'):
+                if self.username:
+                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
+            elif k == 'role_form':
+                if self.username and self.store.has_role('Admin', ''):
+                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
+            else:
+                l.append('<a href="?:action=%s">%s</a>'%(k, v))
+        return ' | '.join(l)
+
+    def logout(self):
+        raise Unauthorised
+
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
         self.page_head('Search')
+        self.wfile.write(self.navbar('search_form'))
         self.wfile.write('''
 <form method="GET">
 <input type="hidden" name=":action" value="index">
@@ -288,6 +312,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
     def role_form(self):
         ''' A form used to maintain user Roles
         '''
+        nav = self.navbar('role_form')
         package_name = ''
         if self.form.has_key('package_name'):
             package_name = self.form['package_name'].value
@@ -302,18 +327,23 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         elif not self.store.has_role('Admin', ''):
             raise Unauthorised
         else:
+            s = '\n'.join(['<option value="%s">%s</option>'%(x['name'],
+                x['name']) for x in self.store.get_packages()])
             package = '''
 <tr><th>Package Name:</th>
-    <td><input name="package_name"></td>
+    <td><select name="package_name">%s</select></td>
 </tr>
-'''
+'''%s
+        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x['name'],
+            x['name'], x['email']) for x in self.store.get_users()])
+        users = '<select name="user_name">%s</select>'%s
         # now write the body
-        s = '''
+        s = '''%s
 <form method="POST">
 <input type="hidden" name=":action" value="role">
 <table class="form">
 <tr><th>User Name:</th>
-    <td><input name="user_name"></td>
+    <td>%s</td>
 </tr>
 %s
 <tr><th>Role to Add:</th>
@@ -327,7 +357,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         <input type="submit" name=":operation" value="Remove Role"></td></tr>
 </table>
 </form>
-'''%package
+'''%(nav, users, package)
         self.success(heading='Role maintenance', content=s)
 
     def role(self):
@@ -377,15 +407,14 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         name = self.form['name'].value
         version = self.form['version'].value
         info = self.store.get_package(name, version)
+        w(self.navbar(None))
         # top links
         un = urllib.quote(name)
         uv = urllib.quote(version)
-        w('<a href="?:action=index">index</a>\n')
-        w('| <a href="?:action=search_form">search</a>\n')
-        w('| <a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
+        w('<br>Package: ')
+        w('<a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
         w('| <a href="?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(un, uv))
-        w('| <a href="?:action=list_classifiers">list trove classifiers</a>\n')
         w('<br>')
 
         # now the package info
@@ -436,7 +465,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         # submission of this form requires a login, so we should check
         # before someone fills it in ;)
         if not self.username:
-            raise Unauthorised, 'You must log in'
+            raise Unauthorised, 'You must log in.'
 
         # are we editing a specific entry?
         info = {}
@@ -455,8 +484,21 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
         content = StringIO.StringIO()
         w = content.write
+        w(self.navbar('submit_form'))
         w('''
-<p>Upload your PKG-INFO file here:</p>
+<p>To submit information to this index, you have three options:</p>
+<p>1. To list your <b>distutils</b>-packaged distribution here:</p>
+<ol>
+<li>Copy <a href="http://mechanicalcat.net/tech/pypi/register.py">register.py</a> to your
+python lib "distutils/command" directory (typically something like
+"/usr/lib/python2.1/distutils/command/").
+<li>Run "setup.py register" as you would normally run "setup.py" for your
+distribution - this will register your distribution's metadata with the
+index.
+<li>... that's <em>it</em>
+</ol>
+
+<p>2. Upload your PKG-INFO file (generated by distutils) here:</p>
 <form method="POST" enctype="multipart/form-data">
 <input type="hidden" name=":action" value="submit_pkg_info">
 <table class="form">
@@ -467,7 +509,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 </table>
 </form>
 
-<p>Or, enter the information manually:</p>
+<p>3. Or, enter the information manually:</p>
 <form method="POST">
 <input type="hidden" name=":action" value="submit">
 <table class="form">
@@ -507,7 +549,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 </form>
 ''')
 
-        self.success(heading='Manual submission form',
+        self.success(heading='Submitting package information',
             content=content.getvalue())
 
     def submit_pkg_info(self):
@@ -693,11 +735,13 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             info['email'] = cgi.escape(user['email'])
             info['action'] = 'Update details'
             heading = 'User profile'
+            content = self.navbar('user_form')
         else:
             info['action'] = 'Register'
             info['name'] = '<input name="name">'
             heading = 'Manual user registration'
-        content = '''
+            content = self.navbar('register_form')
+        content += '''
 <form method="POST">
 <input type="hidden" name=":action" value="user">
 <table class="form">
@@ -789,6 +833,7 @@ email.</p>'''
         self.page_head('Forgotten Password',
             heading='Request password reset')
         w = self.wfile.write
+        w(self.navbar(None))
         w('''
 <p>You have two options if you have forgotten your password. If you 
 know the email address you registered with, enter it below.</p>
