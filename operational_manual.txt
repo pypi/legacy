@@ -1,0 +1,13 @@
+This document is intended for administrators of the python.org host, and
+contains information about operationally maintaining the PyPI system.
+
+
+Maintenance
+-----------
+
+The cgi-bin script "pypi.cgi" has a section which should be enabled that
+informs the user that the cgi interface is down for maintenance. This is a
+simple case of changing the "if 0:" to "if 1:" above the "503" response
+line.
+
+
