@@ -10,6 +10,10 @@
  <meta tal:condition="data/release/summary | nothing"
        name="description"
        tal:attributes="content data/release/summary" />
+<style type="text/css">
+    table.form th {white-space: pre;}
+</style>
+
 </metal:fill>
 
 <metal:fill fill-slot="body">
@@ -45,7 +49,6 @@
   <td tal:content="python:app.pretty_size(file['size'])" />
  </tr>
 </table>
-
 
 <table class="form">
  <tr tal:condition="data/release/author | nothing">
