@@ -118,7 +118,7 @@ class Store:
                 self.add_role(self.username, 'Owner', name)
 
         # handle trove information
-        if old_cifiers != classifiers:
+        if old_cifiers == classifiers:
             return message
 
         # otherwise save them off
