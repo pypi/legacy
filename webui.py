@@ -21,6 +21,7 @@ __version__ = '1.1'
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
+From: %(admin)s
 To: %(email)s
 
 To complete your registration of the user "%(name)s" with the python module
@@ -32,6 +33,7 @@ index, please visit the following URL:
 
 # password change request email
 password_change_message = '''Subject: PyPI password change request
+From: %(admin)s
 To: %(email)s
 
 Someone, perhaps you, has requested that the password be changed for your
@@ -46,6 +48,7 @@ You should then receive another email with the new password.
 
 # password reset email - indicates what the password is now
 password_message = '''Subject: PyPI password has been reset
+From: %(admin)s
 To: %(email)s
 
 Your login is: %(name)s
@@ -1468,6 +1471,7 @@ email.</p>'''
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'])
             info['url'] = self.config.url
+            info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
             response = 'Registration OK'
 
@@ -1537,6 +1541,7 @@ within it to complete the reset process.</p>
             self.store.store_user(user['name'], pw, user['email'])
             info = {'name': user['name'], 'password': pw,
                 'email':user['email']}
+            info['admin'] = self.config.adminemail
             self.send_email(email, password_message%info)
             self.success(message='Email sent with new password')
         elif self.form.has_key('name') and self.form['name'].value.strip():
@@ -1547,6 +1552,7 @@ within it to complete the reset process.</p>
                 return
             info = {'name': user['name'], 'email':user['email'],
                 'url': self.config.url}
+            info['admin'] = self.config.adminemail
             self.send_email(user['email'], password_change_message%info)
             self.success(message='Email sent to confirm password change')
         else:
