@@ -9,7 +9,9 @@ Welcome to the Python Package Index (PyPI).
 </p>
 <p><strong>Tip of the week:</strong> 
 You may now upload files to the index. You may use the new "upload" setup.py command
-in python 2.5 or the "files" link in your releases pages.
+in python 2.5 or the "files" link in your releases pages. Your upload may have an
+accompanying OpenPGP signature, and an MD5 signature will be generated
+automatically.
 </p>
 <p>
 You may:
