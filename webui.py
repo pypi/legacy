@@ -433,10 +433,11 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         w('<table class="form">\n')
         keys = info.keys()
         keys.sort()
-        for key in keys:
+        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description long_description keywords platform'.split()
+        for key in keypref:
+            if not info.has_key(key): continue
             value = info[key]
-            if value is None:
-                value = ''
+            if not value: continue
             label = key.capitalize().replace('_', ' ')
             if key in ('url', 'home_page') and value != 'UNKNOWN':
                 w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
