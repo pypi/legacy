@@ -620,6 +620,7 @@ class Store:
         try:
             self._conn.close()
             self._conn = None
+            self._cursor = None
         except sqlite.ProgrammingError, value:
             if str(value) != 'close failed - Connection is closed.':
                 raise
