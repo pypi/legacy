@@ -346,7 +346,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             x['name'], x['email']) for x in self.store.get_users()])
         users = '<select name="user_name">%s</select>'%s
         # now write the body
-        s = '''%s
+        s = '''
 <form method="POST">
 <input type="hidden" name=":action" value="role">
 <table class="form">
@@ -365,7 +365,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         <input type="submit" name=":operation" value="Remove Role"></td></tr>
 </table>
 </form>
-'''%(nav, users, package)
+'''%(users, package)
         self.success(heading='Role maintenance', content=s)
 
     def role(self):
@@ -748,7 +748,7 @@ index.
             info['name'] = '<input name="name">'
             heading = 'Manual user registration'
             self.nav_current = 'register_form'
-        content += '''
+        content = '''
 <form method="POST">
 <input type="hidden" name=":action" value="user">
 <table class="form">
