@@ -16,12 +16,12 @@ You may:
 <ul>
 <li><a tal:attributes="href python:
 app.link_action('search_form')">Search</a></li>
-<li><a tal:attributes="href python: app.link_action('browse')">Browse the
+<li><a tal:attributes="href python:app.link_action('browse')">Browse the
 tree of packages</a></li>
-<li><a tal:attributes="href python: app.link_action('index')">View a flat
+<li><a tal:attributes="href python:app.link_action('index')">View a flat
 list of all packages</a></li>
-<li><a tal:attributes="href python: app.link_action('submit_form')">Submit package information</a> 
-(note that you must <a tal:attributes="href python: app.link_action('register_form')">
+<li><a tal:attributes="href python:app.link_action('submit_form')">Submit package information</a> 
+(note that you must <a tal:attributes="href python:app.link_action('register_form')">
 register to submit</a>)</li>
 </ul>
 
@@ -35,8 +35,8 @@ register to submit</a>)</li>
  date python: release[2]; 
  summary python: release[3]">
 
-<tr tal:attributes="class python: test(repeat['release'].odd(), 'alt')">
- <td tal:content="python: date[:10]">date</td>
+<tr tal:attributes="class python: test(repeat['release'].getOdd(), 'alt')">
+ <td tal:content="python:str(date)[:10]">date</td>
  <td tal:content="structure python: app.packageLink(name, version)">link</td>
  <td tal:content="summary">summary</td>
 </tr>

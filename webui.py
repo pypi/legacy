@@ -1,10 +1,11 @@
 # system imports
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile
+import re, zipfile, logging
 from simpletal import simpleTAL, simpleTALES
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
+
 
 # local imports
 import store, config, flamenco2, trove, versionpredicate
@@ -114,6 +115,19 @@ class WebUI:
         self.url_machine = '%s://%s'%(protocol, machine)
         self.url_path = path
 
+        # configure logging
+        if self.config.logging:
+            root = logging.getLogger()
+            hdlr = logging.FileHandler(self.config.logging)
+            formatter = logging.Formatter('%(asctime)s %(message)s')
+            hdlr.setFormatter(formatter)
+            root.handlers = [hdlr]
+            simpleTALLogger = logging.getLogger("simpleTAL")
+            simpleTALESLogger = logging.getLogger("simpleTALES")
+            simpleTALLogger.setLevel(logging.INFO)
+            simpleTALESLogger.setLevel(logging.INFO)
+
+
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
             cleanly.
@@ -151,7 +165,7 @@ class WebUI:
             self.store.close()
 
     def write_template(self, filename, **options):
-        context = simpleTALES.Context()
+        context = simpleTALES.Context(allowPythonPath=True)
         context.addGlobal('app', self)
 
         # standard template has macros innit
