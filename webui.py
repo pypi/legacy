@@ -1129,8 +1129,6 @@ class WebUI:
         maintainer = False
         if not ((self.store.has_role('Maintainer', name) or
                 self.store.has_role('Owner', name))):
-            raise Unauthorised
-	if 1:
             maintainer = True
             if self.form.has_key('submit_upload'):
                 self.file_upload()
