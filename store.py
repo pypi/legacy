@@ -38,6 +38,26 @@ class ResultRow:
 def Result(cols, sequence):
     return [ResultRow(cols, item) for item in iter(sequence)]
 
+def safe_execute(cursor, sql, params=None):
+    """Tries to safely execute the given sql
+
+    This will try to encode the incoming parameters into UTF-8 (where
+    possible).
+
+    """
+    # Fast path to no param queries
+    if params is None:
+        return cursor.execute(sql)
+
+    # Encode every incoming param to UTF-8 if it's a string
+    safe_params = []
+    for param in params:
+        if isinstance(param, str):
+            safe_params.append(param.encode("UTF-8", "replace"))
+        else:
+            safe_params.append(param)
+    return cursor.execute(sql, params)
+
 class StorageError(Exception):
     pass
 
@@ -73,13 +93,17 @@ class Store:
         if not self.has_package(name):
             # insert the new package entry
             sql = 'insert into packages (name) values (%s)'
-            cursor.execute(sql, (name, ))
+            safe_execute(cursor, sql, (name, ))
 
             # journal entry
-            cursor.execute('''insert into journals (name, version, action,
+            safe_execute(cursor, '''insert into journals (name, version, action,
                 submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name, None, 'create', date,
-                self.username, self.userip))
+                (%s, %s, %s, %s, %s, %s)''', (name.encode('utf-8', 'replace'),
+                                              None,
+                                              'create',
+                                              date.encode('utf-8', 'replace'),
+                                              self.username.encode('utf-8', 'replace'),
+                                              self.userip))
 
             # first person to add an entry may be considered owner - though
             # make sure they don't already have the Role (this might just
@@ -146,11 +170,11 @@ class Store:
             # update
             if cols:
                 cols = ','.join(['%s=%%s'%x for x in cols])
-                cursor.execute('''update releases set %s where name=%%s
+                safe_execute(cursor, '''update releases set %s where name=%%s
                     and version=%%s'''%cols, vals)
 
             # journal the update
-            cursor.execute('''insert into journals (name, version,
+            safe_execute(cursor, '''insert into journals (name, version,
                 action, submitted_date, submitted_by, submitted_from)
                 values (%s, %s, %s, %s, %s, %s)''', (name, version, message,
                 date, self.username, self.userip))
@@ -169,10 +193,10 @@ class Store:
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
             sql = 'insert into releases (%s) values (%s)'%(scols, params)
-            cursor.execute(sql, args)
+            safe_execute(cursor, sql, args)
 
             # journal entry
-            cursor.execute('''insert into journals (name, version, action,
+            safe_execute(cursor, '''insert into journals (name, version, action,
                 submitted_date, submitted_by, submitted_from) values
                 (%s, %s, %s, %s, %s, %s)''', (name, version, 'new release',
                 date, self.username, self.userip))
@@ -185,18 +209,18 @@ class Store:
                 self.add_role(self.username, 'Owner', name)
 
             # hide all other releases of this package
-            cursor.execute('update releases set _pypi_hidden=%s where '
+            safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
                 'name=%s and version <> %s', ('TRUE', name, version))
 
         # handle trove information
         if info.has_key('classifiers') and old_cifiers != classifiers:
-            cursor.execute('delete from release_classifiers where name=%s'
+            safe_execute(cursor, 'delete from release_classifiers where name=%s'
                 ' and version=%s', (name, version))
             for classifier in classifiers:
-                cursor.execute('select id from trove_classifiers where'
+                safe_execute(cursor, 'select id from trove_classifiers where'
                     ' classifier=%s', (classifier, ))
                 trove_id = cursor.fetchone()[0]
-                cursor.execute('insert into release_classifiers '
+                safe_execute(cursor, 'insert into release_classifiers '
                     '(name, version, trove_id) values (%s, %s, %s)',
                     (name, version, trove_id))
 
@@ -204,10 +228,10 @@ class Store:
         for col in ('requires', 'provides', 'obsoletes'):
             if not info.has_key(col) or relationships.get(col, []) == info[col]:
                 continue
-            cursor.execute('''delete from release_%s where name=%%s
+            safe_execute(cursor, '''delete from release_%s where name=%%s
                 and version=%%s'''%col, (name, version))
             for specifier in info[col]:
-                cursor.execute('''insert into release_%s (name, version,
+                safe_execute(cursor, '''insert into release_%s (name, version,
                     specifier) values (%%s, %%s, %%s)'''%col, (name,
                     version, specifier))
 
@@ -221,7 +245,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         # load up all the version strings for this package and sort them
-        cursor.execute(
+        safe_execute(cursor, 
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
         l = []
@@ -245,7 +269,7 @@ class Store:
                 new_version = order
             elif order != o[v]:
                 # ordering has changed, update
-                cursor.execute('''update releases set _pypi_ordering=%s
+                safe_execute(cursor, '''update releases set _pypi_ordering=%s
                     where name=%s and version=%s''', (order, name, v))
 
         # return the ordering for this release
@@ -258,7 +282,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         sql = 'select count(*) from packages where name=%s'
-        cursor.execute(sql, (name, ))
+        safe_execute(cursor, sql, (name, ))
         return int(cursor.fetchone()[0])
 
     def has_release(self, name, version):
@@ -268,7 +292,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         sql = 'select count(*) from releases where name=%s and version=%s'
-        cursor.execute(sql, (name, version))
+        safe_execute(cursor, sql, (name, version))
         return int(cursor.fetchone()[0])
 
     def get_package(self, name, version):
@@ -284,7 +308,7 @@ class Store:
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
-        cursor.execute(sql, (name, version))
+        safe_execute(cursor, sql, (name, version))
         cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
         return ResultRow(cols, cursor.fetchone())
 
@@ -292,7 +316,7 @@ class Store:
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        cursor.execute('select * from packages')
+        safe_execute(cursor, 'select * from packages')
         return cursor.fetchall()
 
     def get_journal(self, name, version):
@@ -307,7 +331,7 @@ class Store:
         sql = '''select action, submitted_date, submitted_by, submitted_from
             from journals where name=%s and (version=%s or
            version is NULL) order by submitted_date'''
-        cursor.execute(sql, (name, version))
+        safe_execute(cursor, sql, (name, version))
         return Result(('action', 'submitted_date', 'submitted_by',
             'submitted_from'), cursor.fetchall())
 
@@ -343,14 +367,14 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select name, version, summary from releases %s
             order by lower(name), _pypi_ordering'''%where
-        cursor.execute(sql)
+        safe_execute(cursor, sql)
         return Result(('name', 'version', 'summary'), cursor.fetchall())
 
     def get_classifiers(self):
         ''' Fetch the list of valid classifiers from the database.
         '''
         cursor = self.get_cursor()
-        cursor.execute('select classifier from trove_classifiers'
+        safe_execute(cursor, 'select classifier from trove_classifiers'
             ' order by classifier')
         return [x[0].strip() for x in cursor.fetchall()]
 
@@ -358,7 +382,7 @@ class Store:
         ''' Fetch the list of classifiers for the release.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''select classifier
+        safe_execute(cursor, '''select classifier
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
         return [x[0] for x in cursor.fetchall()]
@@ -368,7 +392,7 @@ class Store:
             "requires", "provides" or "obsoletes".
         '''
         cursor = self.get_cursor()
-        cursor.execute('''select specifier from release_%s where
+        safe_execute(cursor, '''select specifier from release_%s where
             name=%%s and version=%%s'''%relationship, (name, version))
         return [x[0] for x in cursor.fetchall()]
 
@@ -376,7 +400,7 @@ class Store:
         ''' Fetch the list of Roles for the package.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''select role_name, user_name
+        safe_execute(cursor, '''select role_name, user_name
             from roles where package_name=%s''', (name, ))
         return cursor.fetchall()
 
@@ -384,7 +408,7 @@ class Store:
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''
+        safe_execute(cursor, '''
             select j.name,j.version,j.submitted_date,r.summary
             from journals j, releases r
             where j.version is not NULL
@@ -407,7 +431,7 @@ class Store:
         ''' Fetch "number" latest updates, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''
+        safe_execute(cursor, '''
             select j.name,j.version,j.submitted_date,r.summary
             from journals j, releases r
             where j.version is not NULL
@@ -433,7 +457,7 @@ class Store:
         else:
             hidden = ''
         cursor = self.get_cursor()
-        cursor.execute('''
+        safe_execute(cursor, '''
             select r.name as name,r.version as version,j.submitted_date,
                 r.summary as summary,_pypi_hidden
             from journals j, releases r
@@ -464,11 +488,11 @@ class Store:
         # delete ancillary table entries
         for tab in ('files', 'provides', 'requires', 'obsoletes',
                 'classifiers'):
-            cursor.execute('''delete from release_%s where
+            safe_execute(cursor, '''delete from release_%s where
                 name=%%s and version=%%s'''%tab, (name, version))
 
         # delete releases table entry
-        cursor.execute('delete from releases where name=%s and version=%s',
+        safe_execute(cursor, 'delete from releases where name=%s and version=%s',
             (name, version))
 
     def remove_package(self, name):
@@ -483,13 +507,13 @@ class Store:
         # delete ancillary table entries
         for tab in ('files', 'provides', 'requires', 'obsoletes',
                 'classifiers'):
-            cursor.execute('delete from release_%s where name=%%s'%tab,
+            safe_execute(cursor, 'delete from release_%s where name=%%s'%tab,
                 (name, ))
 
-        cursor.execute('delete from releases where name=%s', (name,))
-        cursor.execute('delete from journals where name=%s', (name,))
-        cursor.execute('delete from roles where package_name=%s', (name,))
-        cursor.execute('delete from packages where name=%s', (name,))
+        safe_execute(cursor, 'delete from releases where name=%s', (name,))
+        safe_execute(cursor, 'delete from journals where name=%s', (name,))
+        safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
+        safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
 
     #
@@ -501,7 +525,7 @@ class Store:
             Returns true/false.
         '''
         cursor = self.get_cursor()
-        cursor.execute("select count(*) from users where name='%s'"%name)
+        safe_execute(cursor, "select count(*) from users where name='%s'"%name)
         return int(cursor.fetchone()[0])
 
     def store_user(self, name, password, email, gpg_keyid):
@@ -517,26 +541,26 @@ class Store:
             if password:
                 # update existing user, including password
                 password = sha.sha(password).hexdigest()
-                cursor.execute(
+                safe_execute(cursor, 
                    'update users set password=%s, email=%s, where name=%s',
                     (password, email, name))
             else:
                 # update existing user - but not password
-                cursor.execute('update users set email=%s where name=%s',
+                safe_execute(cursor, 'update users set email=%s where name=%s',
                     (email, name))
             if gpg_keyid is not None:
-                cursor.execute('update users set gpg_keyid=%s where name=%s',
+                safe_execute(cursor, 'update users set gpg_keyid=%s where name=%s',
                     (gpg_keyid, name))
             return None
 
         password = sha.sha(password).hexdigest()
 
         # new user
-        cursor.execute(
+        safe_execute(cursor, 
            'insert into users (name, password, email) values (%s, %s, %s)',
            (name, password, email))
         otk = ''.join([random.choice(chars) for x in range(32)])
-        cursor.execute('insert into rego_otk (name, otk) values (%s, %s)',
+        safe_execute(cursor, 'insert into rego_otk (name, otk) values (%s, %s)',
             (name, otk))
         return otk
 
@@ -547,7 +571,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''select name,password,email,gpg_keyid from users where
+        safe_execute(cursor, '''select name,password,email,gpg_keyid from users where
             name=%s''', (name,))
         return ResultRow(('name', 'password', 'email', 'gpg_keyid'), cursor.fetchone())
 
@@ -559,14 +583,14 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        cursor.execute("select * from users where email=%s", (email,))
+        safe_execute(cursor, "select * from users where email=%s", (email,))
         return cursor.fetchone()
 
     def get_users(self):
         ''' Fetch the complete list of users from the database.
         '''
         cursor = self.get_cursor()
-        cursor.execute('select name,email from users order by lower(name)')
+        safe_execute(cursor, 'select name,email from users order by lower(name)')
         return Result(('name', 'email'), cursor.fetchall())
 
     def has_role(self, role_name, package_name=None, user_name=None):
@@ -580,32 +604,32 @@ class Store:
         sql = '''select count(*) from roles where user_name=%s and
             role_name=%s and (package_name=%s or package_name is NULL)'''
         cursor = self.get_cursor()
-        cursor.execute(sql, (user_name, role_name, package_name))
+        safe_execute(cursor, sql, (user_name, role_name, package_name))
         return int(cursor.fetchone()[0])
 
     def add_role(self, user_name, role_name, package_name):
         ''' Add a role to the user for the package.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''
+        safe_execute(cursor, '''
             insert into roles (user_name, role_name, package_name)
             values (%s, %s, %s)''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S')
         sql = '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)'''
-        cursor.execute(sql, (package_name, 'add %s %s'%(role_name,
+        safe_execute(cursor, sql, (package_name, 'add %s %s'%(role_name,
             user_name), date, self.username, self.userip))
 
     def delete_role(self, user_name, role_name, package_name):
         ''' Delete a role for the user for the package.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''
+        safe_execute(cursor, '''
             delete from roles where user_name=%s and role_name=%s
             and package_name=%s''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute('''insert into journals (
+        safe_execute(cursor, '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
             (package_name, 'remove %s %s'%(role_name, user_name), date,
@@ -620,7 +644,7 @@ class Store:
         ''' Retrieve the One Time Key for the user.
         '''
         cursor = self.get_cursor()
-        cursor.execute("select * from rego_otk where name='%s'"%name)
+        safe_execute(cursor, "select * from rego_otk where name='%s'"%name)
         res = cursor.fetchone()
         if res is None:
             return ''
@@ -633,7 +657,7 @@ class Store:
         sql = '''select distinct(package_name),lower(package_name) from roles
                  where roles.user_name=%s and package_name is not NULL
                  order by lower(package_name)'''
-        cursor.execute(sql, (user,))
+        safe_execute(cursor, sql, (user,))
         res = cursor.fetchall()
         if res is None:
             return []
@@ -660,7 +684,7 @@ class Store:
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest) values
             (%s, %s, %s, %s, %s, %s, %s)'''
-        cursor.execute(sql, (name, version, pyversion, filetype,
+        safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
 
         # store file to disk
@@ -676,7 +700,7 @@ class Store:
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute('''insert into journals (
+        safe_execute(cursor, '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
             (name, 'add %s file %s'%(pyversion, filename), date,
@@ -687,7 +711,7 @@ class Store:
         sql = '''select packagetype, python_version, comment_text,
             filename, md5_digest from release_files where name=%s
             and version=%s'''
-        cursor.execute(sql, (name, version))
+        safe_execute(cursor, sql, (name, version))
         l = []
         cols = ('packagetype', 'python_version', 'comment_text',
             'filename', 'md5_digest', 'size')
@@ -706,9 +730,9 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select python_version, name, filename from release_files
             where md5_digest=%s'''
-        cursor.execute(sql, (digest, ))
+        safe_execute(cursor, sql, (digest, ))
         pyversion, name, filename = cursor.fetchone()
-        cursor.execute('delete from release_files where md5_digest=%s',
+        safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
@@ -720,7 +744,7 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select python_version, packagetype, name, comment_text,
             filename from release_files where md5_digest=%s'''
-        cursor.execute(sql, (digest, ))
+        safe_execute(cursor, sql, (digest, ))
         row = cursor.fetchone()
         if not row:
             raise KeyError, 'invalid digest %r'%digest
