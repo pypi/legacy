@@ -1563,5 +1563,5 @@ within it to complete the reset process.</p>
     def packageLink(self, name, version):
         ''' return a URL for the link to display a particular package
         '''
-        return '<a href="%s">%s %s</a>'%(self.packageURL(name, version),
+        return '<a href="%s">%s&nbsp;%s</a>'%(self.packageURL(name, version),
             cgi.escape(name), cgi.escape(version))
