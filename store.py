@@ -371,7 +371,8 @@ class Store:
             v = ['%%'+s.replace("'", "''")+'%%' for s in v]
 
             # now add to the where clause
-            where.append(' or '.join(["%s LIKE '%s'"%(k, s) for s in v]))
+            where.append(' or '.join(["%s LIKE '%s'"%(k, s.encode('utf-8'))
+                for s in v]))
 
         # construct the SQL
         if where:

@@ -14,6 +14,31 @@
  <tal:block tal:content="structure data/dependencies"/>
 </table>
 
+<table class="history">
+ <tr><th colspan="6" class="header">Release Files</th></tr>
+ <tr>
+  <th>Type</th><th>Py Version</th><th>Comment</th>
+  <th>Download</th><th>Size</th><th>MD5 digest</th>
+ </tr>
+
+ <tr tal:repeat="file python:app.store.list_files(data['name'],
+          data['version'])">
+  <td tal:content="file/packagetype" />
+  <td tal:content="file/python_version" />
+  <td tal:content="file/comment_text" />
+  <td>
+   <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
+        data['name'], file['filename'])"
+    tal:content="file/filename" />
+  </td>
+  <td tal:content="python:app.pretty_size(file['size'])" />
+  <td style="font-size: 75%">
+   <a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}"
+       tal:content="file/md5_digest" />
+  </td>
+ </tr>
+</table>
+
 <table tal:replace="structure python:app.package_role_list(data['name'])" />
 
 <table class="history">

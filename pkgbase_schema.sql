@@ -47,6 +47,7 @@ CREATE TABLE releases (
    license TEXT,
    summary TEXT,
    description TEXT,
+   description_html TEXT,
    keywords TEXT,
    platform TEXT,
    download_url TEXT,

@@ -319,11 +319,12 @@ class WebUI:
             # Split into path items, drop leading slash
             items = os.environ['PATH_INFO'].split('/')[1:]
             if len(items) == 2:
-                self.display(items[0].decode('utf-8'),
-                    items[1].decode('utf-8'))
-                return
+                self.form['name'] = items[0].decode('utf-8')
+                self.form['version'] = items[1].decode('utf-8')
+                action = 'display'
             if len(items) == 1:
-                self.search(name=items[0].decode('utf-8'))
+                self.form['name'] = items[0].decode('utf-8')
+                action = 'search'
         else:
             action = 'home'
 
@@ -450,6 +451,10 @@ class WebUI:
             spec['name'] = name
         i=0
         l = self.store.query_packages(spec)
+        if len(l) == 1:
+            self.form['name'] = l[0]['name']
+            self.form['version'] = l[0]['version']
+            return self.display()
         self.write_template('index.pt', title="Index of Packages", matches=l)
 
     def search(self, name = None):
@@ -628,6 +633,12 @@ class WebUI:
         name = self.form.get('name')
         if not name:
             return ''
+
+        # permission to do this?
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Maintainer', name)):
+            return ''
+
         version = self.form.get('version')
         un = urllib.quote_plus(name.encode('utf-8'))
         uv = urllib.quote_plus(version.encode('utf-8'))
@@ -756,6 +767,10 @@ class WebUI:
                 value = ''
 
             # form field
+            if property in ('name', 'version'):
+                # not editable
+                field = '<input type="hidden" name="%s" value="%s">'%(
+                    property, urllib.quote(value.encode('utf-8')))
             if property == '_pypi_hidden':
                 a = b = ''
                 if value:
@@ -812,9 +827,8 @@ class WebUI:
 ''')
         for classifier in self.store.get_classifiers():
             selected = release_cifiers.has_key(classifier) and ' selected' or ''
-            utext = urllib.quote(classifier['classifier'])
             htext = cgi.escape(classifier['classifier'])
-            w('<option%s value="%s">%s</option>'%(selected, utext, htext))
+            w('<option%s value="%s">%s</option>'%(selected, htext, htext))
 
         w('''</select></td></tr>''')
 
@@ -1014,13 +1028,13 @@ class WebUI:
             try:
                 map(versionpredicate.check_provision, data['provides'])
             except ValueError, message:
-                raise ValueError, 'Bad "provides" syntax: %s'%(col, message)
+                raise ValueError, 'Bad "provides" syntax: %s'%message
 
         # check classifiers
         if data.has_key('classifiers'):
             d = {}
             for entry in self.store.get_classifiers():
-                d[entry] = 1
+                d[entry['classifier']] = 1
             for entry in data['classifiers']:
                 if d.has_key(entry):
                     continue
