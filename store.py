@@ -3,6 +3,10 @@
 import sys, os, re, psycopg, time, sha, random, types, math, stat
 from distutils.version import LooseVersion
 
+def enumerate(sequence):
+    return [(i, sequence[i]) for i in range(len(sequence))]
+    
+
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 dist_file_types = [
@@ -31,8 +35,7 @@ class ResultRow:
         return self.info
 
 def Result(cols, sequence):
-    for item in iter(sequence):
-        yield ResultRow(cols, item)
+    return [ResultRow(cols, item) for item in iter(sequence)]
 
 class StorageError(Exception):
     pass

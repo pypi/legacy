@@ -30,7 +30,7 @@ for table in t:
     e('select %(cols)s from %(tn)s'%locals())
     for row in cursor.fetchall():
         d = list(row)
-        if '_pypi_ordering' in cols: d[-2] = d[-2] and int(float(d[-2]))
+        if '_pypi_ordering' in l[1:]: d[-2] = d[-2] and int(float(d[-2]))
         f('insert into %(tn)s (%(cols)s) values (%(args)s)'%locals(),
             tuple(d))
 
