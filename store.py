@@ -462,11 +462,12 @@ class Store:
         ''' Delete an entire package from the database.
         '''
         cursor = self.get_cursor()
-        cursor.execute('delete from packages where name=%s', name)
-        cursor.execute('delete from releases where name=%s', name)
-        cursor.execute('delete from release_classifiers where name=%s', name)
-        cursor.execute('delete from journals where name=%s', name)
-        cursor.execute('delete from roles where package_name=%s', name)
+        cursor.execute('delete from release_files where name=%s', (name,))
+        cursor.execute('delete from release_classifiers where name=%s', (name,))
+        cursor.execute('delete from releases where name=%s', (name,))
+        cursor.execute('delete from journals where name=%s', (name,))
+        cursor.execute('delete from roles where package_name=%s', (name,))
+        cursor.execute('delete from packages where name=%s', (name,))
 
 
     #
