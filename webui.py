@@ -393,7 +393,15 @@ PyPI Actions
         w = content.write
         w('''
 <p>
-Welcome to the Python Package Index (PyPI). You may:
+Welcome to the Python Package Index (PyPI).
+</p>
+<p><strong>Tip of the week:</strong> Did you know that you can get a full list
+of the available Trove classifiers online and through the <em>register</em>
+command? The online version is available through the sidebar link
+"<a href="http://www.python.org/pypi?:action=list_classifiers">List trove
+classifiers</a>", and the <em>register</em> command version using the "--list-classifiers" option (ie. <code>python setup.py register --list-classifiers</code>".)
+<p>
+You may:
 </p>
 <ul>
 <li><a href="%s?:action=search_form">Search</a>
@@ -808,6 +816,8 @@ available Roles are defined as:
             URL_PATH, un))
         w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(URL_PATH, un, uv))
+        w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
+            '>PKG-INFO</a>'%(URL_PATH, un, uv))
         w('<br>')
 
         # now the package info

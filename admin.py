@@ -24,6 +24,19 @@ def remove_package(store, name):
     cursor.execute('delete from roles where package_name=%s', name)
     print 'done'
 
+
+def add_classifier(store, classifier):
+    ''' Add a classifier to the trove_classifiers list
+    '''
+    cursor = store.cursor
+    cursor.execute("select num from ids where name='trove_classifiers'")
+    id = int(cursor.fetchone()[0])
+    cursor.execute('insert into trove_classifiers (id, classifier) '
+        'values (%s,%s)', (id, classifier))
+    cursor.execute("update ids set num=%s where name='trove_classifiers'",
+        (id+1)
+    print 'done'
+
 if __name__ == '__main__':
     config = config.Config('/usr/local/pypi/config.ini', 'webui')
     store = store.Store(config)
@@ -35,6 +48,8 @@ if __name__ == '__main__':
             set_password(*args)
         elif command == 'rmpackage':
             remove_package(*args)
+        elif command == 'addclass':
+            add_classifier(*args)
         else:
             print "unknown command '%s'!"%command
         store.commit()
