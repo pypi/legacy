@@ -628,9 +628,11 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         elif not self.store.has_role('Admin', ''):
             raise Unauthorised
         else:
-            s = '\n'.join(['<option value="%s">%s</option>'%(
-                cgi.escape(x['name']),
-                cgi.escape(x['name'])) for x in self.store.get_packages()])
+            names = [x['name'] for x in self.store.get_packages()]
+            names.sort()
+            names = map(cgi.escape, names)
+            s = '\n'.join(['<option value="%s">%s</option>'%(name, name)
+                            for name in names]
             package = '''
 <tr><th>Package Name:</th>
     <td><select name="package_name">%s</select></td>
