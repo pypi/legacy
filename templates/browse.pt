@@ -17,7 +17,7 @@ python: options['query'].query and options['matches']">
   <td tal:content="summary">summary</td>
   </tal:let>
  </tr>
- <tr><td id="last" colspan="2">&#128;</td></tr>
+ <tr><td id="last" colspan="2"></td></tr>
 </table>
 
 <p tal:condition="not: options/query/query">

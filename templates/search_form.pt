@@ -31,7 +31,7 @@
          <option value="">Don't Care</option>
         </select></td>
 </tr>
-<tr><td>&#128;</td><td><input type="submit" value="Search" /></td></tr>
+<tr><td></td><td><input type="submit" value="Search" /></td></tr>
 </table>
 </form>
 
