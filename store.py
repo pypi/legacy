@@ -397,6 +397,11 @@ class Store:
         '''
         # ensure files are group readable and writable
         self.conn = sqlite.connect(db=self.config.database)
+
+        # set a 30 second timeout (extraordinarily generous) for handling
+        # locked database
+        self.conn.db.sqlite_busy_timeout(30 * 1000)
+
         self.cursor = self.conn.cursor()
         try:
             self.cursor.execute('select count(*) from ids')
