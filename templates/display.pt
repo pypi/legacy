@@ -30,6 +30,12 @@
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])"
     tal:content="file/filename" />
+    <tal:block tal:condition="file/has_sig">
+    (<a title="PGP signature"
+       tal:attributes="href python:app.store.gen_file_url(file['python_version'],
+        data['name'], file['filename'])+'.asc'"
+       tal:content="string:sig" />)
+    </tal:block>
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
   <td style="font-size: 75%">

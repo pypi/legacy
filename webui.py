@@ -109,7 +109,7 @@ def decode_form(form):
     for k in form.keys():
         v = form[k]
         if isinstance(v, list):
-            d[k] = [transmute(u) for i in v]
+            d[k] = [transmute(i) for i in v]
         else:
             d[k] = transmute(v)
     return d
@@ -1274,9 +1274,16 @@ class WebUI:
         # grab content
         content = content.value
 
+        if self.form.has_key('gpg_signature'):
+            signature = self.form['gpg_signature'].value
+        else:
+            signature = None
+
         # nothing over 5M please
         if len(content) > 5*1024*1024:
             raise ValueError, 'invalid distribution file'
+        if signature and len(signature) > 100*1024:
+            raise ValueError, 'invalid signature'
 
         # check for valid exe
         if filename.endswith('.exe'):
@@ -1304,6 +1311,10 @@ class WebUI:
             if 'PKG-INFO' not in l:
                 raise ValueError, 'invalid distribution file'
 
+        # Check whether signature is ASCII-armored
+        if signature and not signature.startswith("-----BEGIN PGP MESSAGE-----"):
+            raise ValueError, "signature is not ASCII-armored"
+
         # digest content
         m = md5.new()
         m.update(content)
@@ -1320,7 +1331,7 @@ class WebUI:
             return
 
         self.store.add_file(name, version, content, md5_digest,
-            filetype, pyversion, comment, filename)
+            filetype, pyversion, comment, filename, signature)
 
     # 
     # classifiers listing

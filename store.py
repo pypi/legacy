@@ -699,7 +699,7 @@ class Store:
             name[0], name, filename)
 
     def add_file(self, name, version, content, md5_digest, filetype,
-            pyversion, comment, filename):
+            pyversion, comment, filename, signature):
         '''Add to the database and store the content to disk.'''
         # add database entry
         cursor = self.get_cursor()
@@ -720,6 +720,14 @@ class Store:
         finally:
             f.close()
 
+        # Store signature next to the file
+        if signature:
+            f = open(filepath + ".asc", "wb")
+            try:
+                f.write(signature)
+            finally:
+                f.close()
+
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S')
         safe_execute(cursor, '''insert into journals (
@@ -736,7 +744,7 @@ class Store:
         safe_execute(cursor, sql, (name, version))
         l = []
         cols = ('packagetype', 'python_version', 'comment_text',
-            'filename', 'md5_digest', 'size')
+            'filename', 'md5_digest', 'size', 'has_sig')
         for pt, pv, ct, fn, m5 in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
             try:
@@ -745,7 +753,8 @@ class Store:
                 if error.errno != errno.ENOENT: raise
                 # file not on disk any more - don't list it
                 continue
-            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size)))
+            has_sig = os.path.exists(path+'.asc')
+            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size, has_sig)))
         return l
 
     def remove_file(self, digest):
@@ -759,6 +768,8 @@ class Store:
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
         os.remove(filepath)
+        if os.path.exists(filepath+'.asc'):
+            os.remove(filepath+'.asc')
         if not os.listdir(dirpath):
             os.rmdir(dirpath)
 

@@ -56,6 +56,11 @@
   </td>
  </tr>
 
+ <tr>
+  <th>PGP signature (.asc):</th>
+  <td><input type="file" name="gpg_signature"/> (optional)</td>
+ </tr>
+
  <tr><th class="required">highlighted</th><td>information is required</td></tr>
 
  <tr>
@@ -91,6 +96,10 @@
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])"
     tal:content="file/filename" />
+    <a tal:condition="file/has_sig" 
+       tal:attributes="href python:app.store.gen_file_url(file['python_version'],
+        data['name'], file['filename'])+'.asc'"
+       tal:content="string:sig" />
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
   <td style="font-size: 75%">
