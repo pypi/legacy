@@ -683,6 +683,7 @@ class WebUI:
             if not info[r]: continue
             if value == 'UNKNOWN': continue
             rows.append(r)
+            if r in ('name', 'version'): continue
             if r == 'download_url':
                 row_names[r] = "Download URL"
             else:
@@ -1267,7 +1268,8 @@ class WebUI:
             content = self.form['content']
         if self.form.has_key('filetype'):
             filetype = self.form['filetype']
-            self.form['pyversion'] = 'source'
+            if filetype == 'sdist':
+                self.form['pyversion'] = 'source'
         if content is None or filetype is None:
             raise ValueError, 'Both content and filetype are required'
 
