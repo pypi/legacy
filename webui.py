@@ -701,11 +701,6 @@ available Roles are defined as:
         if not self.store.has_user(user_name):
             raise FormError, "user doesn't exist"
 
-        # make sure if the user has the role, and is the current user
-        # and the role is Owner, that we can't do this!
-        if self.username == user_name and role_name == 'Owner':
-            raise FormError, "sanity: can't remove own Owner Role"
-
         # add or remove
         operation = self.form[':operation'].value
         if operation == 'Add Role':
@@ -715,6 +710,10 @@ available Roles are defined as:
             self.store.add_role(user_name, role_name, package_name)
             message = 'Role Added OK'
         else:
+            # make sure if the user has the role, and is the current user
+            # and the role is Owner, that we can't do this!
+            if self.username == user_name and role_name == 'Owner':
+                raise FormError, "sanity: can't remove own Owner Role"
             # make sure the user has the role
             if not self.store.has_role(role_name, package_name, user_name):
                 raise FormError, "user doesn't have that role"
