@@ -681,13 +681,13 @@ class WebUI:
         for r in rows0:
             value = info[r]
             if not info[r]: continue
+            if value == 'UNKNOWN': continue
             rows.append(r)
             if r == 'download_url':
                 row_names[r] = "Download URL"
             else:
                 row_names[r] = r.capitalize().replace('_', ' ')
-            if (r in ('download_url', 'url', 'home_page')
-                    and value != 'UNKNOWN'):
+            if r in ('download_url', 'url', 'home_page'):
                 values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
             elif r == 'description' and not info['description_html']:
                 values['description_html'] = '<pre>%s</pre>'%cgi.escape(value)
@@ -794,6 +794,11 @@ class WebUI:
                             <option value="0"%s>No</option>
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
+            elif property in ('license', 'platform'):
+                field = '''<textarea wrap="hard" name="%s" rows="5" 
+                    cols="80">%s</textarea><br />You should enter a full
+                    description here only if appropriate classifiers aren't
+                    available (see below).'''%(property, cgi.escape(value))
             elif property.endswith('description'):
                 field = '''<textarea wrap="hard" name="%s" rows="5" 
                     cols="80">%s</textarea><br />You may use
