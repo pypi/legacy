@@ -72,7 +72,7 @@
  <tr>
   <th tal:condition="options/maintainer">Remove?</th>
   <th>Type</th><th>Py Version</th><th>Comment</th>
-  <th>Download</th><th>MD5 digest</th>
+  <th>Download</th><th>Size</th><th>MD5 digest</th>
  </tr>
 
  <tr tal:repeat="file python:app.store.list_files(options['name'],
@@ -89,11 +89,19 @@
         options['name'], file['filename'])"
     tal:content="file/filename" />
   </td>
-  <td style="font-size: 75%" tal:content="file/md5_digest" />
+  <td tal:content="python:app.pretty_size(file['size'])" />
+  <td style="font-size: 75%">
+   <a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}"
+       tal:content="file/md5_digest" />
+  </td>
+ </tr>
+
+ <tr tal:condition="not:options/maintainer">
+  <td colspan="6" id="last" />
  </tr>
 
  <tr tal:condition="options/maintainer">
-  <td colspan="6" id="last">
+  <td colspan="7" id="last">
    <input type="submit" name="submit_remove" value="Remove" />
   </td>
  </tr>

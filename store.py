@@ -1,6 +1,6 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, psycopg, time, sha, random, types, math, stat
+import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
 from distutils.version import LooseVersion
 
 def enumerate(sequence):
@@ -667,8 +667,19 @@ class Store:
             filename, md5_digest from release_files where name=%s
             and version=%s'''
         cursor.execute(sql, (name, version))
-        return Result(('packagetype', 'python_version', 'comment_text',
-            'filename', 'md5_digest'), cursor.fetchall())
+        l = []
+        cols = ('packagetype', 'python_version', 'comment_text',
+            'filename', 'md5_digest', 'size')
+        for pt, pv, ct, fn, m5 in cursor.fetchall():
+            path = self.gen_file_path(pv, name, fn)
+            try:
+                size = os.stat(path)[stat.ST_SIZE]
+            except os.error, error:
+                if error.errno != errno.EEXIST: raise
+                # file not on disk any more - don't list it
+                continue
+            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size)))
+        return l
 
     def remove_file(self, digest):
         cursor = self.get_cursor()
@@ -683,6 +694,17 @@ class Store:
         os.remove(filepath)
         if not os.listdir(dirpath):
             os.rmdir(dirpath)
+
+    def get_file_info(self, digest):
+        cursor = self.get_cursor()
+        sql = '''select python_version, packagetype, name, comment_text,
+            filename from release_files where md5_digest=%s'''
+        cursor.execute(sql, (digest, ))
+        row = cursor.fetchone()
+        if not row:
+            raise KeyError, 'invalid digest %r'%digest
+        return ResultRow(('python_version', 'packagetype', 'name',
+            'comment_text', 'filename'), row)
 
     #
     # Handle the underlying database

@@ -304,7 +304,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload'.split():
+        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -1191,6 +1191,26 @@ Are you <strong>sure</strong>?</p>
 
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
+
+    def pretty_size(self, size):
+        n = 0
+        while size > 1024:
+            size /= 1024
+            n += 1
+        return '%d%sB'%(size, ['', 'K', 'M', 'G'][n])
+
+    def show_md5(self):
+        if not self.form.has_key('digest'):
+            raise ValueError, 'invalid MD5 digest'
+        digest = self.form['digest'].value
+        try:
+            self.store.get_file_info(digest)
+        except KeyError:
+            raise ValueError, 'invalid MD5 digest'
+        self.handler.send_response(200, 'OK')
+        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.end_headers()
+        self.wfile.write(digest)
 
     def file_upload(self):
         # make sure the user is identified
