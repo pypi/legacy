@@ -45,12 +45,11 @@ class Store:
 
         # extract the Trove classifiers
         classifiers = info.get('classifiers', [])
-        if not isinstance(classifiers, types.ListType):
-            classifiers = [classifiers]
         classifiers.sort()
 
         # now see if we're inserting or updating a release
         message = None
+        old_cifiers = []
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
@@ -62,9 +61,9 @@ class Store:
                     else: v = repr(v)
                     old.append('%s'%k)
             # get old list
-            oldc = self.get_release_classifiers(name, version)
-            oldc.sort()
-            if oldc != classifiers:
+            old_cifiers = self.get_release_classifiers(name, version)
+            old_cifiers.sort()
+            if old_cifiers != classifiers:
                 old.append('classifiers')
             else:
                 classifiers = []
@@ -119,7 +118,7 @@ class Store:
                 self.add_role(self.username, 'Owner', name)
 
         # handle trove information
-        if not classifiers:
+        if old_cifiers != classifiers:
             return message
 
         # otherwise save them off
@@ -132,6 +131,7 @@ class Store:
             self.cursor.execute('insert into release_classifiers '
                 '(name, version, trove_id) values (%s, %s, %s)',
                 (name, version, trove_id))
+        return message
 
     def fix_ordering(self, name, new_version=None):
         ''' Fix the _pypi_ordering column for a package's releases.

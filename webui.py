@@ -18,6 +18,9 @@ class FormError(Exception):
 
 __version__ = '1.0'
 
+URL_MACHINE = 'http://www.python.org'
+URL_PATH = '/pypi'
+
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
 To: %(email)s
@@ -52,19 +55,19 @@ Your password is now: %(password)s
 '''
 
 unauth_message = '''
-<p>If you are a new user, <a href="/pypi?:action=register_form">please
+<p>If you are a new user, <a href="%s?:action=register_form">please
 register</a>.</p>
 <p>If you have forgotten your password, you can have it
-<a href="/pypi?:action=forgotten_password_form">reset for you</a>.</p>
-'''
+<a href="%s?:action=forgotten_password_form">reset for you</a>.</p>
+'''%(URL_PATH, URL_PATH)
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 def packageURL(name, version):
     ''' return a URL for the link to display a particular package
     '''
-    return '/pypi?:action=display&name=%s&version=%s'%(urllib.quote(name),
-        urllib.quote(version))
+    return '%s?:action=display&name=%s&version=%s'%(URL_PATH,
+        urllib.quote(name), urllib.quote(version))
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -248,20 +251,20 @@ Logged In
 </font></b></td></tr>
 <tr><td bgcolor="#99ccff">Welcome %s</td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/pypi?:action=user_form">Your details</a></td></tr>
+ <a href="%s?:action=user_form">Your details</a></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/pypi?:action=logout">Logout</a></td></tr>
-'''%u)
+ <a href="%s?:action=logout">Logout</a></td></tr>
+'''%(u, URL_PATH, URL_PATH))
         else:
             w('''
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
 Not Logged In
 </font></b></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/pypi?:action=register_form">Register</a></td></tr>
+ <a href="%s?:action=register_form">Register</a></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/pypi?:action=login">Login</a></td></tr>
-''')
+ <a href="%s?:action=login">Login</a></td></tr>
+'''%(URL_PATH, URL_PATH))
         w('''
 <tr><td bgcolor="#99ccff">&nbsp;</td></tr>
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
@@ -275,9 +278,9 @@ PyPI Actions
                 la('<strong>%s</strong>'%v)
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
-                    la('<a href="/pypi?:action=%s">%s</a>'%(k, v))
+                    la('<a href="%s?:action=%s">%s</a>'%(URL_PATH, k, v))
             else:
-                la('<a href="/pypi?:action=%s">%s</a>'%(k, v))
+                la('<a href="%s?:action=%s">%s</a>'%(URL_PATH, k, v))
         w('</td></tr>\n<tr><td bgcolor="#99ccff">'.join(l))
 
         w('''
@@ -370,13 +373,13 @@ PyPI Actions
 Welcome to the Python Package Index (PyPI). You may:
 </p>
 <ul>
-<li><a href="/pypi?:action=search_form">Search</a>
-<li><a href="/pypi?:action=browse">Browse the tree of packages</a>
-<li><a href="/pypi?:action=index">View a flat list of all packages</a>
+<li><a href="%s?:action=search_form">Search</a>
+<li><a href="%s?:action=browse">Browse the tree of packages</a>
+<li><a href="%s?:action=index">View a flat list of all packages</a>
 </ul>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
-''')
+'''%(URL_PATH, URL_PATH, URL_PATH))
         i=0
         for name, version, date, summary in self.store.latest_updates(7):
             w('''<tr%s>
@@ -405,10 +408,10 @@ Welcome to the Python Package Index (PyPI). You may:
 <rss version="0.91">
  <channel>
   <title>PyPI recent updates</title>
-  <link>http://www.python.org/pypi</link>
+  <link>%s%s</link>
   <description>Updates to the Python Packages Index (PyPI)</description>
   <language>en</language>
-'''%__version__)
+'''%(__version__, URL_MACHINE, URL_PATH))
         for name, version, date, summary in self.store.latest_updates(7):
             w('''  <item>
     <title>%s %s</title>
@@ -474,7 +477,7 @@ Welcome to the Python Package Index (PyPI). You may:
         self.nav_current = 'search_form'
         self.page_head('Search')
         self.wfile.write('''
-<form method="GET" action="/pypi">
+<form method="GET" action="%s">
 <input type="hidden" name=":action" value="search">
 <table class="form">
 <tr><th>Name:</th>
@@ -503,7 +506,7 @@ Welcome to the Python Package Index (PyPI). You may:
 <tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
 </table>
 </form>
-''')
+'''%URL_PATH)
         self.page_foot()
 
     def role_form(self):
@@ -662,9 +665,10 @@ available Roles are defined as:
         un = urllib.quote(name)
         uv = urllib.quote(version)
         w('<br>Package: ')
-        w('<a href="/pypi?:action=role_form&package_name=%s">admin</a>\n'%un)
-        w('| <a href="/pypi?:action=submit_form&name=%s&version=%s"'
-            '>edit</a>'%(un, uv))
+        w('<a href="%s?:action=role_form&package_name=%s">admin</a>\n'%(
+            URL_PATH, un))
+        w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
+            '>edit</a>'%(URL_PATH, un, uv))
         w('<br>')
 
         # now the package info
@@ -734,6 +738,7 @@ available Roles are defined as:
 
         # are we editing a specific entry?
         info = {}
+        name = version = None
         if self.form.has_key('name') and self.form.has_key('version'):
             name = self.form['name'].value
             version = self.form['version'].value
@@ -817,7 +822,25 @@ index.
                 req = ''
             w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label, field))
 
+        # if we're editing 
+        if name is not None:
+            release_cifiers = {}
+            for classifier in self.store.get_release_classifiers(name, version):
+                release_cifiers[classifier] = 1
+        else:
+            release_cifiers = {}
+
+        # now list 'em all
+        w('''<tr><th>Classifiers:</th>
+  <td><select multiple name="classifiers" size="10">
+''')
+        for classifier in self.store.get_classifiers():
+            selected = release_cifiers.has_key(classifier) and ' selected' or ''
+            w('<option%s value="%s">%s</option>'%(selected,
+                cgi.escape(classifier), classifier))
+
         w('''
+</select></td></tr>
 <tr><th class="required">highlighted</th><td>information is required</td></tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Add Information"></td></tr>
 </table>
@@ -864,7 +887,10 @@ index.
 
         # rename classifiers
         if data.has_key('classifier'):
-            data['classifiers'] = data['classifier']
+            classifiers = data['classifier']
+            if not isinstance(classifiers, types.ListType):
+                classifiers = [classifiers]
+            data['classifiers'] = classifiers
 
         # validate the data
         try:
@@ -905,6 +931,13 @@ index.
 
         # pull the package information out of the form submission
         data = self.form_metadata()
+
+        # make sure classifiers is a list
+        if data.has_key('classifiers'):
+            classifiers = data['classifiers']
+            if not isinstance(classifiers, types.ListType):
+                classifiers = [classifiers]
+            data['classifiers'] = classifiers
 
         # validate the data
         try:
