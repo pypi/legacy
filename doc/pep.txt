@@ -1,4 +1,4 @@
-PEP: XXX
+PEP: 301
 Title: Package Index and Metadata for Distutils
 Version: $Revision$
 Last-Modified: $Date$
@@ -14,15 +14,15 @@ Post-History:
 Abstract
 ========
 
-This PEP proposes several extensions to the distutils packaging
-system [1]_. These enhancements include a central package index
-server, tools for submitting package information to the index and
-extensions to the package metadata to include Trove [2]_ information.
+This PEP proposes several extensions to the Distutils packaging system
+[1]_.  These enhancements include a central package index server,
+tools for submitting package information to the index and extensions
+to the package metadata to include Trove [2]_ information.
 
-This PEP does not address either issues of package dependency. It
-also does not address storage and download of packages as described
-in PEP 243 [6]_. Nor is it proposing a local database of packages as
-described in PEP 262 [7]_.
+This PEP does not address issues of package dependency.  It also does
+not address storage and download of packages as described in PEP 243
+[6]_.  Nor is it proposing a local database of packages as described
+in PEP 262 [7]_.
 
 Existing package repositories such as the Vaults of Parnassus [3]_,
 CPAN [4]_ and PAUSE [5]_ will be investigated as prior art in this
@@ -33,16 +33,16 @@ Rationale
 =========
 
 Python programmers have long needed a simple method of discovering
-existing modules and systems available for their use. It is arguable
+existing modules and systems available for their use.  It is arguable
 that the existence of these systems for other languages have been a
-significant contribution to their popularity. The existence of the
-catalog-sig, and the many discussions there indicate that there is a
+significant contribution to their popularity.  The existence of the
+Catalog-SIG, and the many discussions there indicate that there is a
 large population of users who recognise this need.
 
-The introduction of the distutils packaging system to Python
+The introduction of the Distutils packaging system to Python
 simplified the process of distributing shareable code, and included
-mechanisms for capture of package metadata, but did little with the
-metadata save ship it with the package.
+mechanisms for the capture of package metadata, but did little with
+the metadata save ship it with the package.
 
 An interface to the index should be hosted in the python.org domain,
 giving it an air of legitimacy that existing catalog efforts do not
@@ -52,15 +52,15 @@ The interface for submitting information to the catalog should be as
 simple as possible - hopefully just a one-line command for most users.
 
 Issues of package dependency are not addressed due to the complexity
-of such a system. PEP 262, the original which proposed such a system
+of such a system.  The original proposal for such a system, PEP 262,
 was dropped as the author realised that platform packaging systems
 (RPM, apt, etc) already handle dependencies, installation and removal.
 
 Issues of package dissemination (storage on a central server) are
 not addressed because they require assumptions about availability of
-storage and bandwidth that I am not in a position to make. PEP 243,
+storage and bandwidth that I am not in a position to make.  PEP 243,
 which is still being developed, is tackling these issues and many
-more. This proposal is considered compatible with, and adjunct to
+more.  This proposal is considered compatible with, and adjunct to
 the proposal in PEP 243.
 
 
@@ -68,61 +68,62 @@ Specification
 =============
 
 The specification takes three parts, the `web interface`_,  the
-`distutils register command`_ and the `distutils trove
+`Distutils register command`_ and the `Distutils Trove
 categorisation`_.
+
 
 Web Interface
 -------------
 
-A web interface is implemented over a simple store. The interface is
+A web interface is implemented over a simple store.  The interface is
 available through the python.org domain, either directly or as
 packages.python.org.
 
-The store has columns for all metadata fields. The (name, version)
-double is used as a uniqueness key. Additional submissions for an
+The store has columns for all metadata fields.  The (name, version)
+double is used as a uniqueness key.  Additional submissions for an
 existing (name, version) will result in an *update* operation.
 
 The web interface implements the following commands/interfaces:
 
 **index**
-  Lists known packages, optionally filtered. An additional HTML page,
+  Lists known packages, optionally filtered.  An additional HTML page,
   **search**, presents a form to the user which is used to customise
-  the index view. The index will include a browsing interface like
-  that presented in the Trove interface design section 4.3. The
+  the index view.  The index will include a browsing interface like
+  that presented in the Trove interface design section 4.3.  The
   results will be paginated, sorted alphabetically and only showing
-  the most recent version. Most recent version information will be
-  determined using the distutils LooseVersion class.
+  the most recent version.  The most recent version information will
+  be determined using the Distutils LooseVersion class.
 
 **display**
-  Displays information about the package. All fields are displayed as
-  plain text. The "url" (or "home_page") field is hyperlinked.
+  Displays information about the package.  All fields are displayed as
+  plain text.  The "url" (or "home_page") field is hyperlinked.
 
 **submit**
-  Accepts a POST form submission of metadata about a package. The
+  Accepts a POST form submission of metadata about a package.  The
   "name" and "version" fields are mandatory, as they uniquely identify
-  an entry in the index. Submit will automatically determine whether
-  to create a new entry or updating an existing entry. The metadata
-  is checked for correctness where appropriate - specifically the
-  Trove discriminators are compared with the allowed set. An update will
-  update all information about the package based on the new submitted
-  information.
+  an entry in the index.  **Submit** will automatically determine
+  whether to create a new entry or updating an existing entry.  The
+  metadata is checked for correctness where appropriate - specifically
+  the Trove discriminators are compared with the allowed set.  An
+  update will update all information about the package based on the
+  new submitted information.
 
   There will also be a submit/edit form that will allow manual submission
-  and updating for those who do not use distutils.
+  and updating for those who do not use Distutils.
 
 **user**
-  Registers a new user with the index. Requires username, password and
-  email address. Passwords will be stored in the index database as SHA
-  hashes. If the username already exists in the database:
+  Registers a new user with the index.  Requires username, password and
+  email address.  Passwords will be stored in the index database as SHA
+  hashes.  If the username already exists in the database:
 
-  1. If valid HTTP Basic auth is provided, the password and email
-     address are updated with the submission information, or
-  2. If no valid auth is provided, the user is informed that the login
-     is already taken.
+  1. If valid HTTP Basic authentication is provided, the password and
+     email address are updated with the submission information, or
+  2. If no valid authentication is provided, the user is informed that
+     the login is already taken.
 
   Registration will be a three-step process, involving:
 
-  1. User submission of details via the distutils *register* command,
+  1. User submission of details via the Distutils *register* command,
   2. Index server sending email to the user's email address with a URL
      to visit to confirm registration with a random one-time key, and
   3. User visits URL with the key and confirms registration.
@@ -132,10 +133,12 @@ The web interface implements the following commands/interfaces:
   Admin
     Can assign Owner Role - they decide who may submit for a given
     package name.
+
   Owner
-    Owns a package name, may assign Maintainer Role for that name. The
+    Owns a package name, may assign Maintainer Role for that name.  The
     first user to register information about a package is deemed owner
-    of the package name. The Admin user may change this if necessary.
+    of the package name.  The Admin user may change this if necessary.
+
   Maintainer
     Can submit and update info for a particular package name
 
@@ -150,16 +153,16 @@ The web interface implements the following commands/interfaces:
   password and sends an email with the new password to the user.
 
 The **submit** command will require HTTP Basic authentication,
-preferrably over an HTTPS connection.
+preferably over an HTTPS connection.
 
 
-Distutils Register Command
---------------------------
+Distutils *register* Command
+----------------------------
 
-An additional distutils command, "register" is implemented which
-posts the package metadata to the central index. The register command
-automatically handles user registration; the user is presented with
-three options:
+An additional Distutils command, ``register``, is implemented which
+posts the package metadata to the central index.  The *register*
+command automatically handles user registration; the user is presented
+with three options:
 
 1. login and submit package information
 2. register as a new packager
@@ -170,18 +173,18 @@ will be prompted at exit to save their username/password to a file
 in their ``$HOME`` directory in the file ``.pythonpackagerc``.
 
 Notification of changes to a package entry will be sent to all users
-who have submitted information about the package. That is, the original
+who have submitted information about the package.  That is, the original
 submitter and any subsequent updaters.
 
-The register command will include a --verify option which performs a
-test submission to the index without actually committing the data.
-The index will perform its submission verification checks as usual
-and report any errors it would have reported during a normal
-submission. This is useful for verifying correctness of Trove
+The *register* command will include a ``--verify`` option which
+performs a test submission to the index without actually committing
+the data.  The index will perform its submission verification checks
+as usual and report any errors it would have reported during a normal
+submission.  This is useful for verifying correctness of Trove
 discriminators.
 
 The index server will return custom headers (inspired by PEP 243)
-which the register command will use to give feedback to the user:
+which the *register* command will use to give feedback to the user:
 
 **X-Pypi-Status**
   Either "success" or "fail".
@@ -196,7 +199,7 @@ Distutils Trove Categorisation
 
 The Trove concept of *discrimination* will be added to the metadata
 set available to package authors through the new attribute
-"classifiers". The list of classifiers will be available through the
+"classifiers".  The list of classifiers will be available through the
 web, and added to the package like so::
 
     setup(
@@ -228,28 +231,28 @@ formal Python structure.
 
 The original Trove specification that classification namespaces be
 separated by slashes ("/") unfortunately collides with many of the
-names having slashes in them (eg. "OS/2"). The double-colon solution
-(" :: ") implemented by Sourceforge and Freshmeat gets around this
+names having slashes in them (e.g. "OS/2").  The double-colon solution
+(" :: ") implemented by SourceForge and FreshMeat gets around this
 limitation.
 
 The list of classification values on the module index has been merged
-from Freshmeat and Sourceforge (with their permission). This list will
-be made available through the web interface as a text list which may
-then be copied to the ``setup.py`` file. The register command's
+from FreshMeat and SourceForge (with their permission).  This list
+will be made available through the web interface as a text list which
+may then be copied to the ``setup.py`` file.  The *register* command's
 ``--verify`` option will also check classifiers values.
 
 Unfortunately, the addition of the "classifiers" property is not
-backwards-compatible. A setup.py file using it will not work under
-Python 2.1.3. It is hoped that a bugfix release of Python 2.2 will
+backwards-compatible.  A setup.py file using it will not work under
+Python 2.1.3.  It is hoped that a bugfix release of Python 2.2 will
 relax the argument checking of the setup() command to allow new
-keywords, even if they're not actually used. It is preferable that
+keywords, even if they're not actually used.  It is preferable that
 a warning be produced, rather than a show-stopping error.
 
 
 Reference Implementation
 ========================
 
-Reference code is available from the sourceforge project:
+Reference code is available from the SourceForge project:
 
   http://sourceforge.net/projects/pypi/
 
@@ -264,23 +267,23 @@ Done  Feature
  Y    Index
  Y    Display
  Y    Search
- Y    User rego
+ Y    User registration
  Y    User verification
  Y    Password reset
  Y    Admin interfaces for user/package maintenance
  N    Trove
 ===== ===================================================
 
-In the two days 22nd and 23rd October after the first announcement to
-the catalog-sig (22nd) and distutils-sig (23rd), the initial prototype
-had 45 visitors (not including myself), two of whom used the register
-command to submit package information.
+In the two days of the 22nd and 23rd October 2002, after the first
+announcement to the Catalog-SIG (22nd) and Distutils-SIG (23rd), the
+initial prototype had 45 visitors (not including myself), two of whom
+used the *register* command to submit package information.
 
 
 References
 ==========
 
-.. [1] distutils packaging system
+.. [1] Distutils packaging system
    (http://www.python.org/doc/current/lib/module-distutils.html)
 
 .. [2] Trove
@@ -301,6 +304,7 @@ References
 .. [7] PEP 262, A Database of Installed Python Packages
    (http://www.python.org/peps/pep-0262.html)
 
+
 Copyright
 =========
 
@@ -315,10 +319,10 @@ during initial drafting.
 
 A.M. Kuchling for support including hosting the second prototype.
 
-The many participants of the distutils and catalog SIGs for their
+The many participants of the Distutils and Catalog SIGs for their
 ideas over the years.
 
-
+
 ..
    Local Variables:
    mode: indented-text
