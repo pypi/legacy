@@ -17,12 +17,12 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
 <input type="hidden" name="name" tal:attributes="value data/name" />
 <input type="hidden" name="version" tal:attributes="value data/version" />
 <table class="form">
- <tr>
+ <tr class="odd">
   <th class="required">File:</th>
   <td><input type="file" name="content" /></td>
  </tr>
 
- <tr>
+ <tr class="even">
   <th class="required">File Type:</th>
   <td>
    <select name="filetype">
@@ -33,7 +33,7 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
   </td>
  </tr>
 
- <tr>
+ <tr class="odd">
   <th>Python Version:</th>
   <td>
    <select name="pyversion">
@@ -48,28 +48,30 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
   </td>
  </tr>
 
- <tr>
+ <tr class="even">
   <th>Comment:</th>
   <td><input type="text" name="comment" size="40" />
     (optional - use if there's multiple files for one distribution type)
   </td>
  </tr>
 
- <tr>
+ <tr class="odd">
   <th>MD5 Digest:</th>
   <td><input type="text" name="md5_digest" size="40" />
     (optional - will be calculated if not supplied)
   </td>
  </tr>
 
- <tr>
+ <tr class="even">
   <th>PGP signature (.asc):</th>
   <td><input type="file" name="gpg_signature"/> (optional)</td>
  </tr>
 
- <tr><th class="required">highlighted</th><td>information is required</td></tr>
+ <tr class="odd">
+  <th class="required">highlighted</th><td>information is required</td>
+ </tr>
 
- <tr>
+ <tr class="even">
   <th></th>
   <td><input type="submit" name="submit_upload" value="Upload new File" /></td>
  </tr>
@@ -90,7 +92,8 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
  </tr>
 
  <tr tal:repeat="file python:app.store.list_files(data['name'],
-          data['version'])">
+          data['version'])"
+     tal:attributes="class repeat/file/parity">
   <td tal:condition="data/maintainer">
    <input type="checkbox" name="file-ids"
           tal:attributes="value file/md5_digest" />

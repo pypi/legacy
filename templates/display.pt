@@ -10,10 +10,9 @@
  <meta tal:condition="data/release/summary | nothing"
        name="description"
        tal:attributes="content data/release/summary" />
-<style type="text/css">
-    table.form th {white-space: pre;}
-</style>
-
+ <style type="text/css">
+  table.form th {white-space: pre;}
+ </style>
 </metal:fill>
 
 <metal:fill fill-slot="body">
@@ -114,8 +113,9 @@
 <table class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
  <tr><th>Action</th><th>Date</th><th>User</th><th>Address</th></tr>
- <tr tal:repeat="entry python:app.store.get_journal(data['name'],
-                            data['version'])">
+ <tr tal:repeat="
+         entry python:app.store.get_journal(data['name'], data['version'])"
+     tal:attributes="class repeat/entry/parity">
   <td nowrap="" tal:content="entry/action" />
   <td nowrap="" tal:content="python:str(entry['submitted_date'])[:-3]" />
   <td nowrap="" tal:content="entry/submitted_by" />

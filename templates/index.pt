@@ -15,7 +15,7 @@
 </tr>
 
 <tr tal:repeat="pkg data/matches"
-    tal:attributes="class python:repeat['pkg'].odd and 'alt'">
+    tal:attributes="class repeat/pkg/parity">
  <td tal:content="structure python: 
   app.packageLink(pkg['name'], pkg['version'])">
   link</td>

@@ -29,7 +29,8 @@ assigned to users for this package.</p>
   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th>
       <th colspan="3">Links</th></tr>
 
-  <tr tal:repeat="release data/releases">
+  <tr tal:repeat="release data/releases"
+      tal:attributes="class repeat/release/parity">
    <td><input type="checkbox" name="version"
         tal:attributes="value release/version" /></td>
    <td tal:content="release/version" />

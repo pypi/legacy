@@ -91,7 +91,7 @@ table.list tr.normal td {
   background-color: white;
 }
 
-table.list tr.alt td {
+table.list tr.odd td {
   background-color: #efefef;
 }
 
