@@ -267,10 +267,10 @@ Comments to
             name = pkg['name']
             version = pkg['version']
             w('''<tr%s>
-        <td>%s</td>
         <td><a href="/cgi-bin/pypi.cgi?:action=display&name=%s&version=%s">%s</a></td>
-        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', name,
-                urllib.quote(name), urllib.quote(version),
+        <td>%s</td>
+        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', 
+                urllib.quote(name), urllib.quote(version), name,
                 version, cgi.escape(str(pkg['summary']))))
             i+=1
         w('''
@@ -471,11 +471,11 @@ Comments to
         # package's journal
         w('<table class="history">\n')
         w('<tr><th colspan=4 class="header">Journal</th></tr>\n')
-        w('<tr><th>Date</th><th>User</th><th>IP Address</th><th>Action</th></tr>\n')
+        w('<tr><th>Date</th><th>User</th><th>Action</th></tr>\n')
         for entry in self.store.get_journal(name, version):
-            w('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n'%(
+            w('<tr><td nowrap>%s</td><td>%s</td><td>%s</td></tr>\n'%(
                 entry['submitted_date'], entry['submitted_by'],
-                entry['submitted_from'], entry['action']))
+                entry['action']))
         w('\n</table>\n')
 
         if error_message:
