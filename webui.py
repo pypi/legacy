@@ -1027,8 +1027,8 @@ index.
         mess = email.message_from_file(self.form['pkginfo'].file)
         data = {}
         for k, v in mess.items():
-            # clean up the keys and values
-            k = k.lower()
+            # clean up the keys and values, normalise "-" to "_"
+            k = k.lower().replace('-', '_')
             v = v.strip()
 
             # Platform, Classifiers, ...?
