@@ -441,6 +441,9 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             if key in ('url', 'home_page') and value != 'UNKNOWN':
                 w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
                     value, cgi.escape(value)))
+            elif key == 'description':
+                w('<tr><th nowrap>%s: </th><td><pre>%s</pre></td></tr>\n'%(
+                    label, cgi.escape(value)))
             else:
                 w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label,
                     cgi.escape(value)))
