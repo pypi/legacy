@@ -13,6 +13,7 @@ class Redirect(Exception):
 class FormError(Exception):
     pass
 
+# email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your registration
 To: %(email)s
 
@@ -23,6 +24,7 @@ index, please visit the following URL:
 
 '''
 
+# password reset email - indicates what the password is now
 password_message = '''Subject: Password has been reset
 To: %(email)s
 
@@ -33,8 +35,19 @@ Your password is now: %(password)s
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 class WebUI:
-    ''' Handle a request as defined by the "env" and "cgi" parameters. Use
-        the "handler" to respond to the user.
+    ''' Handle a request as defined by the "env" parameter. "handler" gives
+        access to the user via rfile and wfile, and a few convenience
+        functions (see pypi.cgi).
+        
+        The handling of a request goes as follows:
+        1. open the database
+        2. see if the request is supplied with authentication information
+        3. perform the action defined by :action ("index" if none is supplied)
+        4a. handle exceptions sanely, including special ones like NotFound,
+            Unauthorised, Redirect and FormError, or
+        4b. commit changes to the database
+        5. close the database to finish off
+
     '''
     def __init__(self, handler, env):
         self.handler = handler
@@ -113,7 +126,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_form display search_form register_form user password_reset index role role_form'.split():
+        if action in 'submit verify submit_form display search_form register_form user password_reset index role role_form'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -440,6 +453,24 @@ searching, but the web interface doesn't expose it yet :)</p>
             self.display()
         else:
             self.plain_response('Submission OK')
+
+    def verify(self):
+        ''' Validate the input data.
+        '''
+        data = {}
+        for k in self.form.keys():
+            if k.startswith(':'): continue
+            v = self.form[k]
+            if type(v) == type([]):
+                data[k.lower().replace('-','_')]=','.join([x.value for x in v])
+            else:
+                data[k.lower().replace('-','_')] = v.value
+        try:
+            self.validate_metadata(data)
+        except ValueError, message:
+            self.plain_response('Error: %s'%message)
+        else:
+            self.plain_response('Validated OK')
 
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.

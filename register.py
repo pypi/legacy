@@ -17,15 +17,19 @@ class register(Command):
 
     description = "register the distribution with the repository"
 
-    DEFAULT_REPOSITORY = 'http://localhost/cgi-bin/package_server.cgi'
+    DEFAULT_REPOSITORY = 'https://localhost/cgi-bin/pypi.cgi'
 
     user_options = [
         ('repository=', 'r',
          "url of repository [default: %s]"%DEFAULT_REPOSITORY),
+        ('verify', None,
+         'verify the package metadata for correctness'),
         ]
+    boolean_options = ['verify']
 
     def initialize_options(self):
         self.repository = None
+        self.verify = 0
 
     def finalize_options(self):
         if self.repository is None:
@@ -33,7 +37,10 @@ class register(Command):
 
     def run(self):
         self.check_metadata()
-        self.send_metadata()
+        if self.verify:
+            self.verify_metadata()
+        else:
+            self.send_metadata()
 
     def check_metadata(self):
         """Ensure that all required elements of meta-data (name, version,
@@ -64,6 +71,33 @@ class register(Command):
             self.warn("missing meta-data: either (author and author_email) " +
                       "or (maintainer and maintainer_email) " +
                       "must be supplied")
+
+    def verify_metadata(self):
+        ''' Send the metadata to the package index server to be checked.
+
+            Doesn't require a login.
+        '''
+        # figure the data to send - the metadata plus some additional
+        # information used by the package server
+        meta = self.distribution.metadata
+        data = {
+            ':action': 'verify',
+            'metadata-version' : '1.0',
+            'name': meta.get_name(),
+            'version': meta.get_version(),
+            'summary': meta.get_description(),
+            'home-page': meta.get_url(),
+            'author': meta.get_contact(),
+            'author-email': meta.get_contact_email(),
+            'license': meta.get_licence(),
+            'description': meta.get_long_description(),
+            'keywords': meta.get_keywords(),
+            'platform': meta.get_platforms(),
+        }
+
+        # send the info to the server and report the result
+        (code, result) = self.post_to_server(data)
+        print 'Server response: %s'%result
 
     def send_metadata(self):
         ''' Send the metadata to the package index server.
@@ -187,8 +221,6 @@ Your selection [default 1]: ''',
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
-
-        # MIME encode the POST data
         body = StringIO.StringIO()
         for key, value in data.items():
             # handle multiple entries for the same name

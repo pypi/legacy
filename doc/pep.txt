@@ -135,7 +135,6 @@ The web interface implements the following commands/interfaces:
 
 **roles**
   An interface for changing user Role assignments.
-
 **password_reset**
   Using a supplied email address as the key, this resets a user's
   password and sends an email with the new password to the user.
@@ -156,10 +155,9 @@ three options:
 2. register as a new packager
 3. send password reminder email
 
-On UN*X systems, the user will be prompted at exit to save their
-username/password to a file in their home directory in the file
-``.pythonpackagerc``.  A similar system could be used on Windows, I
-suppose.
+On systems where the ``$HOME`` environment variable is set, the user
+will be prompted at exit to save their username/password to a file
+in their ``$HOME`` directory in the file ``.pythonpackagerc``.
 
 Notification of changes to a package entry will be sent to all users
 who have submitted information about the package. That is, the original
