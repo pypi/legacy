@@ -89,30 +89,32 @@ CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
 -- python version is only first two digits
 -- actual file path is constructed <py version>/<a-z>/<name>/<filename>
 -- we remember filename because it can differ
-CREATE TABLE package_files ( 
+CREATE TABLE release_files ( 
    name TEXT,
    version TEXT,
    python_version TEXT,
    packagetype TEXT,
-   filename TEXT,
+   comment_text TEXT,
+   filename TEXT UNIQUE,
+   md5_digest TEXT UNIQUE,
    FOREIGN KEY (name, version) REFERENCES releases (name, version)
 );
-CREATE INDEX release_name_idx ON releases(name);
-CREATE INDEX release_version_idx ON releases(version);
-CREATE INDEX package_files_packagetype_idx ON package_files(packagetype);
+CREATE INDEX release_files_name_idx ON release_files(name);
+CREATE INDEX release_files_version_idx ON release_files(version);
+CREATE INDEX release_files_packagetype_idx ON release_files(packagetype);
 
 
 -- Table structure for table: package_urls
-CREATE TABLE package_urls ( 
+CREATE TABLE release_urls ( 
    name TEXT,
    version TEXT,
    url TEXT, 
    packagetype TEXT,
    FOREIGN KEY (name, version) REFERENCES releases (name, version)
 );
-CREATE INDEX release_name_idx ON releases(name);
-CREATE INDEX release_version_idx ON releases(version);
-CREATE INDEX package_urls_packagetype_idx ON package_urls(packagetype);
+CREATE INDEX release_urls_name_idx ON release_urls(name);
+CREATE INDEX release_urls_version_idx ON release_urls(version);
+CREATE INDEX release_urls_packagetype_idx ON release_urls(packagetype);
 
 
 -- Table structure for table: roles
