@@ -53,6 +53,8 @@
   </td>
  </tr>
 
+ <tr><th class="required">highlighted</th><td>information is required</td></tr>
+
  <tr>
   <th></th>
   <td><input type="submit" name="submit_upload" value="Upload new File" /></td>
