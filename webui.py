@@ -395,11 +395,12 @@ PyPI Actions
 <p>
 Welcome to the Python Package Index (PyPI).
 </p>
-<p><strong>Tip of the week:</strong> Did you know that you can get a full list
-of the available Trove classifiers online and through the <em>register</em>
-command? The online version is available through the sidebar link
-"<a href="http://www.python.org/pypi?:action=list_classifiers">List trove
-classifiers</a>", and the <em>register</em> command version using the "--list-classifiers" option (ie. <code>python setup.py register --list-classifiers</code>".)
+<p><strong>Tip of the week:</strong> 
+If you have submitted newer versions of a package to PyPI, you may hide the
+older versions from browsing and listing. Simply log in and select the package
+from the <strong>Your Packages</strong> menu on the left, then set the older
+version <strong>Hide?</strong> flag to <strong>Yes</strong>.
+</p>
 <p>
 You may:
 </p>
