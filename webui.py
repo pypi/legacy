@@ -243,7 +243,7 @@ Comments to
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers login logout'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -251,10 +251,10 @@ Comments to
         # commit any database changes
         self.store.commit()
 
-    def index(self):
+    def index(self, nav_current='index'):
         ''' Print up an index page
         '''
-        self.nav_current = 'index'
+        self.nav_current = nav_current
         content = StringIO.StringIO()
         w = content.write
         w('<table class="list">\n')
@@ -279,6 +279,11 @@ Comments to
 ''')
         self.success(heading='Index of packages', content=content.getvalue())
 
+    def search(self):
+        ''' Same as index, but don't disable the search or index nav links
+        '''
+        self.index(nav_current=None)
+
     def logout(self):
         raise Unauthorised
     def login(self):
@@ -293,7 +298,7 @@ Comments to
         self.page_head('Search')
         self.wfile.write('''
 <form method="GET" action="/cgi-bin/pypi.cgi">
-<input type="hidden" name=":action" value="index">
+<input type="hidden" name=":action" value="search">
 <table class="form">
 <tr><th>Name:</th>
     <td><input name="name"></td>
