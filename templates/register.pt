@@ -4,6 +4,15 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
 
+  <p>By signing up to this system, you agree to:</p>
+<ol>
+<li>Not upload inappropriate material (<b>only</b> Python packages are
+allowed).</li>
+<li>You agree that all information you post is published (email addresses are
+obfuscated).</li>
+</ol>
+
+
     <form method="POST">
       <input type="hidden" name=":action" value="user" />
       <input type="hidden" name="name" tal:condition="not:data/new_user"

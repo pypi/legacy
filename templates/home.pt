@@ -8,9 +8,8 @@
 Welcome to the Python Package Index (PyPI).
 </p>
 <p><strong>Tip of the week:</strong> 
-Jeremy Hylton has written a <a
-href="http://www.python.org/~jeremy/weblog/030924.html">Python Package
-Index Tutorial</a>. Thanks Jeremy!
+You may now upload files to the index. You may use the new "upload" setup.py command
+in python 2.5 or the "files" link in your releases pages.
 </p>
 <p>
 You may:

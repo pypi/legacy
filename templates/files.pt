@@ -33,6 +33,7 @@
   <td>
    <select name="pyversion">
     <option value="">-- Select Python Version --</option>
+    <option value="any">Any (ie. pure Python)</option>
     <option value="2.1">2.1</option>
     <option value="2.2">2.2</option>
     <option value="2.3">2.3</option>
