@@ -1,3 +1,3 @@
 
-ALTER TABLE releses ADD COLUMN document_html TEXT;
+ALTER TABLE releases ADD COLUMN description_html TEXT;
 

@@ -674,7 +674,7 @@ class WebUI:
         info = self.store.get_package(name, version)
         if not info:
             raise ValueError, 'no such %r %r'%(name, version)
-        rows0 = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
+        rows0 = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
         row_names = {}
         rows = []
         values = {}
@@ -689,8 +689,10 @@ class WebUI:
             if (r in ('download_url', 'url', 'home_page')
                     and value != 'UNKNOWN'):
                 values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
-            elif r == 'description':
-                values[r] = '<pre>%s</pre>' % cgi.escape(value)
+            elif r == 'description' and not info['description_html']:
+                values['description_html'] = '<pre>%s</pre>' % cgi.escape(value)
+            elif r == 'description_html':
+                values[r] = value
             elif r.endswith('_email'):
                 value = cgi.escape(value)
                 value = value.replace('@', ' at ')
@@ -698,6 +700,11 @@ class WebUI:
                 values[r] = cgi.escape(value)
             else:
                 values[r] = cgi.escape(value)
+
+        # switch the HMTL description
+        values['description'] = values['description_html']
+        del values['description_html']
+        rows.remove('description_html')
 
         content=StringIO.StringIO()
         w=content.write
@@ -780,8 +787,11 @@ class WebUI:
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
             elif property.endswith('description'):
-                field = '<textarea wrap="hard" name="%s" rows="5" ' \
-                    'cols="80">%s</textarea>'%(property, cgi.escape(value))
+                field = '''<textarea wrap="hard" name="%s" rows="5" 
+                    cols="80">%s</textarea><br />You may use
+                    <a target="_new" href="http://docutils.sf.net/rst.html">ReStructuredText</a>
+                    formatting for this field.'''%(property,
+                    cgi.escape(value))
             else:
                 field = '<input size="60" name="%s" value="%s">'%(property,
                     cgi.escape(value))

@@ -8,8 +8,8 @@
 
 <table class="form">
  <tr tal:repeat="row data/rows">
-   <th nowrap="nowrap" tal:content="python: data['row_names'][row]"/>
-   <td tal:content="structure python: data['values'][row]"/>
+   <th nowrap="nowrap" tal:content="python:data['row_names'][row]"/>
+   <td tal:content="structure python:data['values'][row]"/>
  </tr>
  <tal:block tal:content="structure data/dependencies"/>
 </table>

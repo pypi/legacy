@@ -1,8 +1,10 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
-import logging
+import logging, StringIO
 from distutils.version import LooseVersion
+from docutils.core import publish_parts
+from docutils.io import StringInput
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -155,6 +157,10 @@ class Store:
                 if not info.has_key(k):
                     continue
                 if k not in specials and info.get(k, None) != v:
+                    if k == 'description':
+                        cols.append('description_html')
+                        html = processDescription(info[k])
+                        vals.append(html)
                     old.append(k)
                     cols.append(k)
                     vals.append(info[k])
@@ -203,8 +209,11 @@ class Store:
             # figure the ordering
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
+            # ReST-format the description
+            info['description_html'] = processDescription(info['description'])
+
             # perform the insert
-            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
+            cols = 'name version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
@@ -319,13 +328,13 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
-                  license, summary, description, keywords,
+                  license, summary, description, description_html, keywords,
                   platform, download_url, _pypi_ordering, _pypi_hidden
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
         safe_execute(cursor, sql, (name, version))
-        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
+        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
         return ResultRow(cols, cursor.fetchone())
 
     def get_packages(self):
@@ -836,6 +845,45 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
+
+def processDescription(source, output_encoding='unicode'):
+    """Given an source string, returns an HTML fragment as a string.
+
+    The return value is the contents of the <body> tag.
+
+    Parameters:
+
+    - `source`: A multi-line text string; required.
+    - `output_encoding`: The desired encoding of the output.  If a Unicode
+      string is desired, use the default value of "unicode" .
+    """
+    
+    settings_overrides={'raw_enabled': '0',
+                        'file_insertion_enabled': '0'}
+
+    # capture publishing errors, they go to stderr
+    old_stderr = sys.stderr
+    sys.stderr = s = StringIO.StringIO()
+    parts = None
+    try:
+        parts = publish_parts(source=source, writer_name='html',
+                              settings_overrides=settings_overrides)
+    except:
+        pass
+
+    sys.stderr = old_stderr
+
+    # original text if publishing errors occur
+    if parts is None or len(s.getvalue()) > 0:
+        output = "".join('<PRE>\n' + source + '</PRE>')
+    else:
+        output = parts['body']
+
+    if output_encoding != 'unicode':
+        output = output.encode(output_encoding)
+    
+    return output
+
 
 if __name__ == '__main__':
     import config
