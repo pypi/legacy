@@ -337,7 +337,7 @@ Done  Feature
       distutils setup() function
  Y    Library reference documentation of the *register* command and
       additional *classifiers* keyword
- N    Patch Python 2.3 to apply the dist.py.patch
+ Y    Patch Python 2.3 to apply the dist.py.patch
 ===== =============================================================
 
 In the two days of the 22nd and 23rd October 2002, after the first
