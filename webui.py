@@ -90,7 +90,7 @@ class WebUI:
         finally:
             self.store.close()
 
-    def fail(self, message, title="Python Packages Index", code=400,
+    def fail(self, message, title="TEST: PyPI: Python Packages Index", code=400,
             heading=None, headers={}, content=''):
         status = ('fail', message)
         self.page_head(title, status, heading, code, headers)
@@ -98,7 +98,7 @@ class WebUI:
         self.wfile.write(content)
         self.page_foot()
 
-    def success(self, message=None, title="Python Packages Index", code=200,
+    def success(self, message=None, title="TEST: PyPI: Python Packages Index", code=200,
             heading=None, headers={}, content=''):
         if message:
             status = ('success', message)
@@ -203,7 +203,7 @@ class WebUI:
 <hr>
 To list your <b>distutils</b>-packaged distribution here:
 <ol>
-<li>Copy <a href="http://mechanicalcat.net/tech/distutils_rego/register.py">register.py</a> to your
+<li>Copy <a href="http://mechanicalcat.net/tech/pypi/register.py">register.py</a> to your
 python lib "distutils/command" directory (typically something like
 "/usr/lib/python2.1/distutils/command/").
 <li>Run "setup.py register" as you would normally run "setup.py" for your
@@ -211,25 +211,16 @@ distribution - this will register your distribution's metadata with the
 index.
 <li>... that's <em>it</em>
 </ol>
-<p>In a nutshell, this server is a set of three modules (
-<a href="http://mechanicalcat.net/tech/distutils_rego/config.py">config.py</a>
-, <a
-href="http://mechanicalcat.net/tech/distutils_rego/store.py">store.py</a> and <a
-href="http://mechanicalcat.net/tech/distutils_rego/webui.py">webui.py</a>)
-and one config file (<a 
-href="http://mechanicalcat.net/tech/distutils_rego/config.ini">config.ini</a>)
-which sit over a single <a href="http://www.hwaci.com/sw/sqlite/">sqlite</a> (simple, speedy) table. The register command posts the
-metadata and the web interface stores it away. The storage layer handles
-searching, but the web interface doesn't expose it yet :)</p>
-<p>Entries are unique by (name, version) and multiple submissions of the same
-(name, version) result in updates to the existing entry.</p>
+<hr>
+Author: Richard Jones<br>
+Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
 ''')
-        self.success(heading='Index of packages', content=content.getvalue())
+        self.success(heading='TEST: PyPI: Index of packages', content=content.getvalue())
 
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
-        self.page_head('Python modules search')
+        self.page_head('TEST: PyPI: search')
         self.wfile.write('''
 <form>
 <input type="hidden" name=":action" value="index">
@@ -358,7 +349,6 @@ searching, but the web interface doesn't expose it yet :)</p>
         name = self.form['name'].value
         version = self.form['version'].value
         info = self.store.get_package(name, version)
-
         # top links
         un = urllib.quote(name)
         uv = urllib.quote(version)
@@ -392,7 +382,7 @@ searching, but the web interface doesn't expose it yet :)</p>
                 entry['submitted_from'], entry['action']))
         w('\n</table>\n')
 
-        self.success(heading='Python module: %s %s'%(name, version),
+        self.success(heading='TEST: PyPI: Package Information: %s %s'%(name, version),
             content=content.getvalue())
 
     def submit_form(self):
@@ -518,10 +508,10 @@ searching, but the web interface doesn't expose it yet :)</p>
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            self.fail(message, heading='Package verification')
+            self.fail(message, heading='TEST: PyPI: Package verification')
             return
 
-        self.success(heading='Package verification', message='Validated OK')
+        self.success(heading='TEST: PyPI: Package verification', message='Validated OK')
 
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
@@ -539,7 +529,7 @@ searching, but the web interface doesn't expose it yet :)</p>
     def register_form(self):
         ''' Throw up a form for regstering.
         '''
-        self.page_head('Python package index',
+        self.page_head('TEST: Python package index',
             heading='Manual user registration')
         w = self.wfile.write
         w('''
