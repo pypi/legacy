@@ -1410,7 +1410,8 @@ class WebUI:
                 'email':user['email']}
             info['admin'] = self.config.adminemail
             self.send_email(email, password_message%info)
-            self.success(message='Email sent with new password')
+            self.write_template('message.pt',
+                message='Email sent with new password')
         elif self.form.has_key('name') and self.form['name'].value.strip():
             name = self.form['name'].value.strip()
             user = self.store.get_user(name)
@@ -1421,9 +1422,10 @@ class WebUI:
                 'url': self.config.url}
             info['admin'] = self.config.adminemail
             self.send_email(user['email'], password_change_message%info)
-            self.success(message='Email sent to confirm password change')
+            self.write_template('message.pt',
+                message='Email sent to confirm password change')
         else:
-            self.fail(message='You must supply a username or email address')
+            raise ValueError, 'You must supply a username or email address'
 
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
@@ -1443,3 +1445,4 @@ class WebUI:
         '''
         return '<a href="%s">%s&nbsp;%s</a>'%(self.packageURL(name, version),
             cgi.escape(name), cgi.escape(version))
+
