@@ -430,7 +430,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             self.rss_regen(rss_file)
         else:
             rss_mtime = os.stat(rss_file)[stat.ST_MTIME]
-            if rss_mtime < self.store.last_modified:
+            if rss_mtime < self.store.last_modified():
                 self.rss_regen(rss_file)
 
         # TODO: throw in a last-modified header too?
