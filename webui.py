@@ -1,13 +1,14 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re
+import re, zipfile
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz)$', re.I)
+safe_zipnames = re.compile(r'(purelib|platlib|headers|scripts|data).+', re.I)
 
 def xmlescape(s):
     ' make sure we escape a string '
@@ -1518,14 +1519,38 @@ Are you <strong>sure</strong>?</p>
                             'distribution uploads')
                     return
 
+                # check for valid filenames
                 filename = content.filename
                 if not safe_filenames.match(filename):
                     self.fail(heading='invalid distribution file',
                         message='invalid distribution file')
                     return
 
-                # grab content, digest it
+                # grab content
                 content = content.value
+
+                # check for valid exe
+                if filename.endswith('.exe'):
+                    if filetype != 'bdist_wininst':
+                        self.fail(heading='invalid distribution file',
+                            message='invalid distribution file')
+                        return
+                    try:
+                        t = StringIO.StringIO(content)
+                        t.filename = filename
+                        z = zipfile.ZipFile(t)
+                        l = z.namelist()
+                    except zipfile.error:
+                        self.fail(heading='invalid distribution file',
+                            message='invalid distribution file')
+                        return
+                    for zipname in l:
+                        if not safe_zipnames.match(zipname):
+                            self.fail(heading='invalid distribution file',
+                                message='invalid distribution file')
+                            return
+
+                # digest content
                 m = md5.new()
                 m.update(content)
                 calc_digest = m.hexdigest()
