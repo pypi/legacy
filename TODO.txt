@@ -5,9 +5,11 @@ Now:
 - Trove
 - change notification emails
 - saving of login info in register command
-- clean up HTML interface
 - "latest changes"
 - role list for packages
+- admin inteface for user details editing (and fix theller@python.net)
+- clean up HTML interface
+- multiline descriptions etc in PKG-INFO uploads
 
 Later:
 

@@ -740,6 +740,7 @@ know the email address you registered with, enter it below.</p>
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
 </table>
+</form>
 
 <p>Or, if you know your username, then enter it below.</p>
 within it to complete the reset process.</p>
@@ -750,7 +751,8 @@ within it to complete the reset process.</p>
     <td><input name="name"></td>
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
-</table>
+</</form>
+table>
 
 <p>A confirmation email will be sent to you - please follow the instructions
 within it to complete the reset process.</p>
