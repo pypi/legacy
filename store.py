@@ -1,6 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, sqlite, time, sha, whrandom, types
+import sys, os, re, sqlite, time, sha, whrandom, types, math
+from distutils.version import LooseVersion
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
@@ -76,7 +77,7 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split()
+            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
             sql = "update releases set %s where name=%%s and version=%%s"%info
@@ -93,8 +94,11 @@ class Store:
             info['name'] = name
             info['version'] = version
 
+            # figure the ordering
+            info['_pypi_ordering'] = self.fix_ordering(name, version)
+
             # perform the insert
-            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split()
+            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
@@ -128,7 +132,45 @@ class Store:
             self.cursor.execute('insert into release_classifiers '
                 '(name, version, trove_id) values (%s, %s, %s)',
                 (name, version, trove_id))
-            
+
+    def fix_ordering(self, name, new_version=None):
+        ''' Fix the _pypi_ordering column for a package's releases.
+
+            If "new_version" is supplied, insert it into the sequence and
+            return the ordering value for it.
+
+            XXX Because sqlite only handles strings, we'll need to make
+            sure the values are string-sortable.
+        '''
+        # load up all the version strings for this package and sort them
+        self.cursor.execute(
+            'select version,_pypi_ordering from releases where name=%s', name)
+        l = []
+        o = {}
+        for release in self.cursor.fetchall():
+            o[release['version']] = release['_pypi_ordering']
+            l.append(LooseVersion(release['version']))
+        if new_version is not None:
+            l.append(LooseVersion(new_version))
+        l.sort()
+        n = len(l)
+
+        # most packages won't need to renumber if we give them 100 releases
+        max = 10 ** min(math.ceil(math.log10(n)), 2)
+
+        # figure the ordering values for the releases
+        for i in range(n):
+            v = l[i].vstring
+            order = max+i
+            if v == new_version:
+                new_version = order
+            elif order != o[v]:
+                # ordering has changed, update
+                self.cursor.execute('''update releases set _pypi_ordering=%s
+                    where name=%s and version=%s''', (order, name, v))
+
+        # return the ordering for this release
+        return new_version
 
     def has_package(self, name):
         ''' Determine whether the package exists in the database.
@@ -156,7 +198,7 @@ class Store:
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, keywords,
-                  platform, download_url, hidden
+                  platform, _pypi_download_url, _pypi_ordering, _pypi_hidden
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
@@ -205,7 +247,8 @@ class Store:
             where = ''
 
         # do the fetch
-        sql = 'select name, version, summary from releases %s order by name'%where
+        sql = '''select name, version, summary from releases %s
+            order by name, _pypi_ordering'''%where
         self.cursor.execute(sql)
         l = self.cursor.fetchall()
         return l
@@ -385,8 +428,9 @@ class Store:
                   description varchar,
                   keywords varchar,
                   platform varchar,
-                  download_url varchar,
-                  hidden varchar
+                  _pypi_download_url varchar,
+                  _pypi_ordering varchar,
+                  _pypi_hidden varchar
                )''')
             cursor.execute('''
                create table trove_classifiers (

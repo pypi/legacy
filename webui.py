@@ -177,24 +177,31 @@ class WebUI:
 <div id="navbar">
 '''%(title, heading))
 
+        # add in the navbar
+        l = []
+        la = l.append
         if self.username:
-            w('<em>logged in as %s</em>'%self.username)
+            u = '<em>logged in as %s</em>'%self.username
         else:
-            w('<em>you are anonymous</em>')
+            u = '<em>you are anonymous</em>'
+        u = u.replace(' ', '&nbsp;')
+        la(u)
         for k, v in self.navlinks:
+            v = v.replace(' ', '&nbsp;')
             if k == self.nav_current:
-                w('<strong>%s</strong>'%v)
+                la('<strong>%s</strong>'%v)
             elif k in ('login', 'register_form'):
                 if not self.username:
-                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             elif k in ('logout', 'user_form'):
                 if self.username:
-                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
-                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             else:
-                w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+        w('\n::&nbsp;'.join(l))
 
         w('\n</div><div id="content">\n')
 
@@ -260,8 +267,8 @@ Comments to
         w('<table class="list">\n')
         w('<tr><th>Package</th><th>Release</th><th>Description</th></tr>\n')
         spec = self.form_metadata()
-        if not spec.has_key('hidden'):
-            spec['hidden'] = '0'
+        if not spec.has_key('_pypi_hidden'):
+            spec['_pypi_hidden'] = '0'
         i=0
         for pkg in self.store.query_packages(spec):
             name = pkg['name']
@@ -317,7 +324,7 @@ Comments to
 </tr>
 
 <tr><th>Hidden:</th>
-    <td><select name="hidden">
+    <td><select name="_pypi_hidden">
          <option value="0">No</option>
          <option value="1">Yes</option>
          <option value="">Don't Care</option>
@@ -471,7 +478,7 @@ Comments to
         w('<table class="form">\n')
         keys = info.keys()
         keys.sort()
-        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
+        keypref = 'name version author author_email maintainer maintainer_email home_page _pypi_download_url summary license description keywords platform'.split()
         for key in keypref:
             if not info.has_key(key): continue
             value = info[key]
@@ -578,7 +585,7 @@ index.
 ''')
 
         # display all the properties
-        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split():
+        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_hidden'.split():
             # get the existing entry
             if self.form.has_key(property):
                 value = self.form[property].value
@@ -588,10 +595,10 @@ index.
                 value = ''
 
             # form field
-            if property == 'hidden':
+            if property == '_pypi_hidden':
                 a = value=='0' and ' selected' or ''
                 b = value=='1' and ' selected' or ''
-                field = '''<select name="hidden">
+                field = '''<select name="_pypi_hidden">
                             <option value="0"%s>No</option>
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
@@ -669,8 +676,8 @@ index.
         version = data['version']
 
         # don't hide by default
-        if not data.has_key('hidden'):
-            data['hidden'] = '0'
+        if not data.has_key('_pypi_hidden'):
+            data['_pypi_hidden'] = '0'
 
         # make sure the user has permission to do stuff
         if self.store.has_package(name) and not (
@@ -715,9 +722,9 @@ index.
             raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
 
-        # make sure the hidden flag is set
-        if not data.has_key('hidden'):
-            data['hidden'] = '0'
+        # make sure the _pypi_hidden flag is set
+        if not data.has_key('_pypi_hidden'):
+            data['_pypi_hidden'] = '0'
 
         # save off the data
         message = self.store.store_package(name, version, data)

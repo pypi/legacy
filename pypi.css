@@ -43,20 +43,16 @@ p.error {
  margin-bottom: 5px;
 }
 
+#navbar * {
+ padding-left: 5px;
+ padding-right: 5px;
+}
+
 #footer {
  margin-top: 10px;
  background-color: #eeeeff;
  border-top: 1px solid #444;
  font-size: 90%;
-}
-
-#navbar a,strong,em {
- padding-left: 5px;
- padding-right: 5px;
-}
-
-#navbar a,strong {
- border-left: 1px solid #444;
 }
 
 #submitheader {
