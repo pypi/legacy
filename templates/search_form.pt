@@ -1,24 +1,27 @@
-<html metal:use-macro="here/standard_template.pt/macros/page">
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="here/standard_template.pt/macros/page">
 
 <metal:slot fill-slot="body">
 
 <form method="GET" tal:attributes="action options/action">
-<input type="hidden" name=":action" value="search">
+<input type="hidden" name=":action" value="search" />
 <table class="form">
 <tr><th>Name:</th>
-    <td><input name="name"></td>
+    <td><input name="name" /></td>
 </tr>
 <tr><th>Version:</th>
-    <td><input name="version"></td>
+    <td><input name="version" /></td>
 </tr>
 <tr><th>Summary:</th>
-    <td><input name="summary"></td>
+    <td><input name="summary" /></td>
 </tr>
 <tr><th>Description:</th>
-    <td><input name="description"></td>
+    <td><input name="description" /></td>
 </tr>
 <tr><th>Keywords:</th>
-    <td><input name="keywords"></td>
+    <td><input name="keywords" /></td>
 </tr>
 
 <tr><th>Hidden:</th>
@@ -28,7 +31,7 @@
          <option value="">Don't Care</option>
         </select></td>
 </tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
+<tr><td>&#128;</td><td><input type="submit" value="Search" /></td></tr>
 </table>
 </form>
 

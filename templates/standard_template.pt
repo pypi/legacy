@@ -1,5 +1,8 @@
-<metal:macro define-macro="page">
-<?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
+<metal:macro define-macro="page"
+	     xmlns="http://www.w3.org/1999/xhtml" 
+	     xmlns:tal="http://xml.zope.org/namespaces/tal"
+	     xmlns:metal="http://xml.zope.org/namespaces/metal">
+  <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
 <html xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

@@ -1,4 +1,7 @@
-<html metal:use-macro="here/standard_template.pt/macros/page">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="here/standard_template.pt/macros/page">
 <metal:slot fill-slot="body">
 
 <p tal:condition="not: options/matches">
@@ -19,7 +22,7 @@
 </tr>
 
 <tr>
- <td id="last" colspan="3">&nbsp;</td>
+ <td id="last" colspan="3">&#128;</td>
 </tr>
 </table>
 

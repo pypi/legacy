@@ -1,4 +1,8 @@
-<html metal:use-macro="here/standard_template.pt/macros/page">
+<html xmlns="http://www.w3.org/1999/xhtml"
+    metal:use-macro="here/standard_template.pt/macros/page"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+>
 <metal:slot fill-slot="body">
 
 <p tal:content="structure options/query_info"/>
@@ -13,7 +17,7 @@ python: options['query'].query and options['matches']">
   <td tal:content="summary">summary</td>
   </tal:let>
  </tr>
- <tr><td id="last" colspan="2">&nbsp;</td></tr>
+ <tr><td id="last" colspan="2">&#128;</td></tr>
 </table>
 
 <p tal:condition="not: options/query/query">
@@ -21,10 +25,10 @@ Number of matches: <span tal:replace="python:
 				      len(options['matches'])"/>
 </p>
 
-<hr>
+<hr />
 
 <div tal:repeat="choice options/choice_data">
-<strong tal:content="choice/header"/><br>
+<strong tal:content="choice/header"/><br/>
 
 <tal:for-options repeat="option_data choice/option_data">
 <a tal:attributes="href option_data/href">
