@@ -218,6 +218,13 @@ be made available through the web interface as a text list which may
 then be copied to the ``setup.py`` file. The register command's
 ``--verify`` option will also check classifiers values.
 
+Unfortunately, the addition of the "classifiers" property is not
+backwards-compatible. A setup.py file using it will not work under
+Python 2.1.3. It is hoped that a bugfix release of Python 2.2 will
+relax the argument checking of the setup() command to allow new
+keywords, even if they're not actually used. It is preferable that
+a warning be produced, rather than a show-stopping error.
+
 
 Reference Implementation
 ========================
@@ -226,7 +233,7 @@ Reference code is available from the sourceforge project:
 
   http://sourceforge.net/projects/pypi/
 
-A demonstration is available at:
+A demonstration will be available at:
 
   http://www.amk.ca/cgi-bin/pypi.cgi
 
@@ -245,9 +252,9 @@ Done  Feature
 ===== ===================================================
 
 In the two days 22nd and 23rd October after the first announcement to
-the catalog-sig (22nd) and distutils-sig (23rd), the prototype had 45
-visitors (not including myself), two of whom used the register command
-to submit package information.
+the catalog-sig (22nd) and distutils-sig (23rd), the initial prototype
+had 45 visitors (not including myself), two of whom used the register
+command bo submit package information.
 
 
 References
@@ -280,9 +287,10 @@ This document has been placed in the public domain.
 Acknowledgements
 ================
 
-Anthony Baxter for encouragement and feedback during initial drafting.
+Anthony Baxter and Martin v. Loewis for encouragement and feedback
+during initial drafting.
 
-AMK for support including hosting the second prototype.
+A.M. Kuchling for support including hosting the second prototype.
 
 The many participants of the distutils and catalog SIGs for their
 ideas over the years.
