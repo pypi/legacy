@@ -69,29 +69,70 @@ class WebUI:
             except NotFound:
                 self.handler.send_error(404)
             except Unauthorised, message:
-                self.handler.send_response(401)
-                self.handler.send_header('Content-Type', 'text/plain')
-                self.handler.send_header('WWW-Authenticate',
-                    'Basic realm="python packages index"')
-                self.handler.end_headers()
-                self.wfile.write(str(message))
+                message = str(message)
+                if not message:
+                    message = 'You must login to access this feature'
+                self.fail(message, code=401, heading='Login required',
+                    headers={'WWW-Authenticate':
+                    'Basic realm="python packages index"'})
             except Redirect, path:
                 self.handler.send_response(301)
                 self.handler.send_header('Location', path)
             except FormError, message:
-                self.page_head('Python Packages Index', 'Error processing form',
-                    400)
-                self.wfile.write('<p class="errror">Error processing form:'\
-                    ' %s</p>'%message)
+                message = str(message)
+                self.fail(message, code=400, heading='Error processing form')
             except:
-                self.page_head('Python Packages Index', 'Error...', 400)
-                self.wfile.write("<pre>")
                 s = StringIO.StringIO()
                 traceback.print_exc(None, s)
-                self.wfile.write(cgi.escape(s.getvalue()))
-                self.wfile.write("</pre>\n")
+                s = cgi.escape(s.getvalue())
+                self.fail('error', code=400, heading='Error...',
+                    content='<pre>%s</pre>'%s)
         finally:
             self.store.close()
+
+    def fail(self, message, title="Python Packages Index", code=400,
+            heading=None, headers={}, content=''):
+        status = ('fail', message)
+        self.page_head(title, status, heading, code, headers)
+        self.wfile.write('<p class="error">%s</p>'%message)
+        self.wfile.write(content)
+        self.page_foot()
+
+    def success(self, message=None, title="Python Packages Index", code=200,
+            heading=None, headers={}, content=''):
+        if message:
+            status = ('success', message)
+        else:
+            status = None
+        self.page_head(title, status, heading, code, headers)
+        if message:
+            self.wfile.write('<p class="ok">%s</p>'%message)
+        self.wfile.write(content)
+        self.page_foot()
+
+    def page_head(self, title, status=None, heading=None, code=200, headers={}):
+        self.handler.send_response(code)
+        self.handler.send_header('Content-Type', 'text/html')
+        if status is None:
+            status = ('success', 'success')
+        self.handler.send_header('X-Pypi-Status', status[0])
+        self.handler.send_header('X-Pypi-Reason', status[1])
+        for k,v in headers.items():
+            self.handler.send_header(k, v)
+        self.handler.end_headers()
+        if heading is None: heading = title
+        self.wfile.write('''
+<html><head><title>%s</title>
+<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/style.css">
+<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/page.css">
+</head>
+<body>
+<div id="header"><h1>%s</h1></div>
+<div id="content">
+'''%(title, heading))
+
+    def page_foot(self):
+        self.wfile.write('\n</div>\n</body></html>\n')
 
     def inner_run(self):
         ''' Figure out what the request is, and farm off to the appropriate
@@ -134,31 +175,11 @@ class WebUI:
         # commit any database changes
         self.store.commit()
 
-    def page_head(self, title, heading=None, code=200):
-        ''' Page header
-        '''
-        self.handler.send_response(code)
-        self.handler.send_header('Content-Type', 'text/html')
-        self.handler.end_headers()
-        if heading is None: heading = title
-        self.wfile.write('''
-<html><head><title>%s</title>
-<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/style.css">
-<link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/page.css">
-</head>
-<body>
-<div id="header"><h1>%s</h1></div>
-<div id="content">
-'''%(title, heading))
-
-    def page_foot(self):
-        self.wfile.write('\n</div>\n</body></html>\n')
-
     def index(self):
         ''' Print up an index page
         '''
-        self.page_head('Python modules index')
-        w = self.wfile.write
+        content = StringIO.StringIO()
+        w = content.write
         w('<a href="?:action=search_form">search</a>\n')
         w('| <a href="?:action=role_form">admin</a>\n')
         w('| <a href="?:action=submit_form">manual submission</a>\n')
@@ -203,7 +224,7 @@ searching, but the web interface doesn't expose it yet :)</p>
 <p>Entries are unique by (name, version) and multiple submissions of the same
 (name, version) result in updates to the existing entry.</p>
 ''')
-        self.page_foot()
+        self.success(heading='Index of packages', content=content.getvalue())
 
     def search_form(self):
         ''' A form used to generate filtered index displays
@@ -268,8 +289,7 @@ searching, but the web interface doesn't expose it yet :)</p>
 </tr>
 '''
         # now write the body
-        self.page_head('Python package index', 'Role maintenance')
-        self.wfile.write('''
+        s = '''
 <form>
 <input type="hidden" name=":action" value="role">
 <table class="form">
@@ -288,8 +308,8 @@ searching, but the web interface doesn't expose it yet :)</p>
         <input type="submit" name=":operation" value="Remove Role"></td></tr>
 </table>
 </form>
-'''%package)
-        self.page_foot()
+'''%package
+        self.success(heading='Role maintenance', content=s)
 
     def role(self):
         ''' Add a Role to a user.
@@ -321,25 +341,33 @@ searching, but the web interface doesn't expose it yet :)</p>
             if self.store.has_role(role_name, package_name, user_name):
                 raise FormError, 'user has that role already'
             self.store.add_role(user_name, role_name, package_name)
-            self.plain_response('Role Added OK')
+            message = 'Role Added OK'
         else:
             self.store.delete_role(user_name, role_name, package_name)
-            self.plain_response('Role Removed OK')
+            message = 'Role Removed OK'
+
+        self.success(message=message, heading='Role maintenance')
 
     def display(self):
         ''' Print up an entry
         '''
-        w = self.wfile.write
+        content = StringIO.StringIO()
+        w = content.write
+
+        # get the appropriate package info from the database
         name = self.form['name'].value
         version = self.form['version'].value
         info = self.store.get_package(name, version)
-        self.page_head('Python module: %s %s'%(name, version))
+
+        # top links
         un = urllib.quote(name)
         uv = urllib.quote(version)
         w('<a href="?:action=index">index</a>\n')
         w('| <a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
         w('| <a href="?:action=submit_form&name=%s&version=%s"'
             '>edit</a><br>'%(un, uv))
+
+        # now the package info
         w('<table class="form">\n')
         keys = info.keys()
         keys.sort()
@@ -355,6 +383,7 @@ searching, but the web interface doesn't expose it yet :)</p>
                 w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label, value))
         w('\n</table>\n')
 
+        # package's journal
         w('<table class="journal">\n')
         w('<tr><th>Date</th><th>User</th><th>IP Address</th><th>Action</th></tr>\n')
         for entry in self.store.get_journal(name, version):
@@ -363,7 +392,8 @@ searching, but the web interface doesn't expose it yet :)</p>
                 entry['submitted_from'], entry['action']))
         w('\n</table>\n')
 
-        self.page_foot()
+        self.success(heading='Python module: %s %s'%(name, version),
+            content=content.getvalue())
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
@@ -383,12 +413,16 @@ searching, but the web interface doesn't expose it yet :)</p>
             for k,v in self.store.get_package(name, version).items():
                 info[k] = v
 
-        self.page_head('Python package index', 'Manual submission')
-        w = self.wfile.write
+        # submission of this form requires a login, so we should check
+        # before someone fills it in ;)
+        if not self.username:
+            raise Unauthorised, 'You must log in'
+
+        content = StringIO.StringIO()
+        w = content.write
         w('''
 <form>
 <input type="hidden" name=":action" value="submit">
-<input type="hidden" name=":display" value="html">
 <table class="form">
 ''')
 
@@ -425,11 +459,19 @@ searching, but the web interface doesn't expose it yet :)</p>
 </table>
 </form>
 ''')
-        self.page_foot()
+
+        self.success(heading='Manual submission form',
+            content=content.getvalue())
 
     def submit(self):
         ''' Handle the submission of distro metadata.
         '''
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to store package information"
+
+        # pull the package information out of the form submission
         data = {}
         for k in self.form.keys():
             if k.startswith(':'): continue
@@ -438,21 +480,29 @@ searching, but the web interface doesn't expose it yet :)</p>
                 data[k.lower().replace('-','_')]=','.join([x.value for x in v])
             else:
                 data[k.lower().replace('-','_')] = v.value
-        result = 'plain'
-        if self.form.has_key(':display'):
-            result = self.form[':display'].value
+
+        # validate the data
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            if result == 'html':
-                raise FormError, message
-            raise
-        self.store.store_package(data['name'], data['version'], data)
+            raise FormError, message
+
+        name = data['name']
+        version = data['version']
+
+        # make sure the user has permission to do stuff
+        if self.store.has_package(data['name'], data['version']) and not (
+                self.store.has_role('Owner', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Unauthorised, \
+                "You are not allowed to store '%s' package information"%name
+
+        # save off the data
+        self.store.store_package(name, version, data)
         self.store.commit()
-        if result == 'html':
-            self.display()
-        else:
-            self.plain_response('Submission OK')
+
+        # return a display of the package
+        self.display()
 
     def verify(self):
         ''' Validate the input data.
@@ -468,9 +518,10 @@ searching, but the web interface doesn't expose it yet :)</p>
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            self.plain_response('Error: %s'%message)
-        else:
-            self.plain_response('Validated OK')
+            self.fail(message, heading='Package verification')
+            return
+
+        self.success(heading='Package verification', message='Validated OK')
 
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
@@ -485,18 +536,11 @@ searching, but the web interface doesn't expose it yet :)</p>
         if data.has_key('metadata_version'):
             del data['metadata_version']
 
-    def plain_response(self, message):
-        ''' Return a plain-text response to the user.
-        '''
-        self.handler.send_response(200)
-        self.handler.send_header('Content-Type', 'text/plain')
-        self.handler.end_headers()
-        self.wfile.write(message)
-
     def register_form(self):
         ''' Throw up a form for regstering.
         '''
-        self.page_head('Python package index', 'Manual user registration')
+        self.page_head('Python package index',
+            heading='Manual user registration')
         w = self.wfile.write
         w('''
 <form>
@@ -550,10 +594,12 @@ email.</p>
             # new user, create entry and email otk
             name = info['name']
             if self.store.has_user(name):
-                self.plain_response('Error: user "%s" already exists'%name)
+                self.fail('user "%s" already exists'%name,
+                    heading='User registration')
                 return
             if info.has_key('confirm') and info['password'] != info['confirm']:
-                self.plain_response("Error: password and confirm don't match")
+                self.fail("password and confirm don't match",
+                    heading='User registration')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'])
@@ -568,8 +614,7 @@ email.</p>
             email = info.get('email', user['email'])
             self.store.store_user(self.username, password, email)
             response = 'Details updated OK'
-
-        self.plain_response(response)
+        self.success(message=response, heading='User registration')
 
     def password_reset(self):
         ''' Reset the user's password and send an email to the address given.
@@ -577,15 +622,14 @@ email.</p>
         email = self.form['email'].value
         user = self.store.get_user_by_email(email)
         if user is None:
-            response = 'Error: email address unknown to me'
-        else:
-            pw = ''.join([whrandom.choice(chars) for x in range(10)])
-            self.store.store_user(user['name'], pw, user['email'])
-            info = {'name': user['name'], 'password': pw,
-                'email':user['email']}
-            self.send_email(email, password_message%info)
-            response = 'Email sent OK'
-        self.plain_response(response)
+            self.error('email address unknown to me')
+            return
+        pw = ''.join([whrandom.choice(chars) for x in range(10)])
+        self.store.store_user(user['name'], pw, user['email'])
+        info = {'name': user['name'], 'password': pw,
+            'email':user['email']}
+        self.send_email(email, password_message%info)
+        self.success(message='Email sent OK')
 
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient

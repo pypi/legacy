@@ -15,13 +15,14 @@ Abstract
 ========
 
 This PEP proposes several extensions to the distutils packaging
-system [1]_. These enhancements include a central package index, tools
-for submitting package information to the index and extensions to the
-package metadata to include Trove [2]_ information.
+system [1]_. These enhancements include a central package index
+server, tools for submitting package information to the index and
+extensions to the package metadata to include Trove [2]_ information.
 
-This PEP does not address either issues of package dependency, nor
-centralised storage of packages. Nor is it proposing a local
-database of packages as described in PEP 262 [6]_.
+This PEP does not address either issues of package dependency. It
+also does not address storage and download of packages as described
+in PEP 243 [6]_. Nor is it proposing a local database of packages as
+described in PEP 262 [7]_.
 
 Existing package repositories such as the Vaults of Parnassus [3]_,
 CPAN [4]_ and PAUSE [5]_ will be investigated as prior art in this
@@ -57,7 +58,10 @@ was dropped as the author realised that platform packaging systems
 
 Issues of package dissemination (storage on a central server) are
 not addressed because they require assumptions about availability of
-storage and bandwidth that I am not in a position to make.
+storage and bandwidth that I am not in a position to make. PEP 243,
+which is still being developed, is tackling these issues and many
+more. This proposal is considered compatible with, and adjunct to
+the proposal in PEP 243.
 
 
 Specification
@@ -108,8 +112,8 @@ The web interface implements the following commands/interfaces:
 
 **user**
   Registers a new user with the index. Requires username, password and
-  email address. Passwords will be stored on the server as SHA hashes.
-  If the username already exists in the database:
+  email address. Passwords will be stored in the index database as SHA
+  hashes. If the username already exists in the database:
 
   1. If valid HTTP Basic auth is provided, the password and email
      address are updated with the submission information, or
@@ -119,7 +123,7 @@ The web interface implements the following commands/interfaces:
   Registration will be a three-step process, involving:
 
   1. User submission of details via the distutils *register* command,
-  2. Package server sending email to the user's email address with a URL
+  2. Index server sending email to the user's email address with a URL
      to visit to confirm registration with a random one-time key, and
   3. User visits URL with the key and confirms registration.
 
@@ -151,7 +155,7 @@ Distutils Register Command
 --------------------------
 
 An additional distutils command, "register" is implemented which
-posts the package metadata to the central server. The register command
+posts the package metadata to the central index. The register command
 automatically handles user registration; the user is presented with
 three options:
 
@@ -168,11 +172,21 @@ who have submitted information about the package. That is, the original
 submitter and any subsequent updaters.
 
 The register command will include a --verify option which performs a
-test submission to the server without actually committing the data.
-The server will perform its submission verification checks as usual
+test submission to the index without actually committing the data.
+The index will perform its submission verification checks as usual
 and report any errors it would have reported during a normal
 submission. This is useful for verifying correctness of Trove
 discriminators.
+
+The index server will return custom headers (inspired by PEP 243)
+which the register command will use to give feedback to the user:
+
+**X-Pypi-Status**
+  Either "success" or "fail".
+
+**X-Pypi-Reason**
+  A description of the reason for failure, or additional information
+  in the case of a success.
 
 
 Distutils Trove Categorisation
@@ -239,7 +253,7 @@ Reference code is available from the sourceforge project:
 
 A demonstration will be available at:
 
-  http://www.amk.ca/cgi-bin/package_server.cgi
+  http://www.amk.ca/cgi-bin/pypi.cgi
 
 ===== ===================================================
 Done  Feature
@@ -279,7 +293,10 @@ References
 .. [5] PAUSE
    (http://pause.cpan.org/)
 
-.. [6] PEP 262, A Database of Installed Python Packages
+.. [6] PEP 243, Module Repository Upload Mechanism
+   (http://www.python.org/peps/pep-0243.html)
+
+.. [7] PEP 262, A Database of Installed Python Packages
    (http://www.python.org/peps/pep-0262.html)
 
 Copyright

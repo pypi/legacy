@@ -17,7 +17,9 @@ class register(Command):
 
     description = "register the distribution with the repository"
 
-    DEFAULT_REPOSITORY = 'https://localhost/cgi-bin/pypi.cgi'
+    #DEFAULT_REPOSITORY = 'http://mechanicalcat.net/cgi-bin/pypi.cgi'
+    DEFAULT_REPOSITORY = 'http://localhost/cgi-bin/pypi.cgi'
+    #DEFAULT_REPOSITORY = 'http://www.amk.ca/cgi-bin/pypi.cgi'
 
     user_options = [
         ('repository=', 'r',
@@ -97,7 +99,7 @@ class register(Command):
 
         # send the info to the server and report the result
         (code, result) = self.post_to_server(data)
-        print 'Server response: %s'%result
+        print 'Server response (%s): %s'%(code, result)
 
     def send_metadata(self):
         ''' Send the metadata to the package index server.
@@ -182,7 +184,7 @@ Your selection [default 1]: ''',
 
             # send the info to the server and report the result
             (code, result) = self.post_to_server(data, auth)
-            print 'Server response: %s'%result
+            print 'Server response (%s): %s'%(code, result)
         elif choice == '2':
             data = {':action': 'user'}
             data['name'] = data['password'] = data['email'] = ''
@@ -202,7 +204,7 @@ Your selection [default 1]: ''',
                 data['email'] = raw_input('   EMail: ')
             (code, result) = self.post_to_server(data)
             if result != 'Registration OK':
-                print 'Server response: %s'%result
+                print 'Server response (%s): %s'%(code, result)
             else:
                 print 'You will receive an email shortly.'
                 print 'Follow the instructions in it to complete registration.'
@@ -212,7 +214,7 @@ Your selection [default 1]: ''',
             while not data['email']:
                 data['email'] = raw_input('Your email address: ')
             (code, result) = self.post_to_server(data)
-            print 'Server response: %s'%result
+            print 'Server response (%s): %s'%(code, result)
 
     def post_to_server(self, data, auth=None):
         ''' Post a query to the server, and return a string response.
@@ -251,9 +253,16 @@ Your selection [default 1]: ''',
         try:
             result = opener.open(req)
         except urllib2.HTTPError, e:
-            return (e.code, e.fp.read())
+            if e.headers.has_key('x-pypi-reason'):
+                reason = e.headers['x-pypi-reason']
+                if reason == 'error':
+                    return 'fail', e.fp.read()
+                else:
+                    return 'fail', reason
+            else:
+                return 'fail', e.fp.read()
         except urllib2.URLError, e:
-            return (None, str(e))
+            return 'fail', str(e)
 
-        return (200, result.read())
+        return result.headers['x-pypi-status'], result.headers['x-pypi-reason']
 

@@ -1,0 +1,16 @@
+I've included a public_key in the user schema in anticipation of handling
+signing. I've also got a download_url in the package schema - though a
+friend has recommended that I have several. I'm not so sure. I _think_ I'd
+rather have:
+
+- a definition of download formats for each package (filename, format)
+  where
+  format is rpm, deb, source gz, source zip, ...
+- a definition of download mirrors which give (mirror name, base URL)
+
+and then each mirror can support the same paths starting from their base
+URL.
+
+None of this is intended for the initial release though.
+
+

@@ -73,27 +73,19 @@ class Store:
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
 
+            The name and version must not appear in the info dict.
+
             We automatically set the "submitted_date" column here, don't
             send it in.
         '''
-        # make sure the user is identified
-        if not self.username:
-            raise StorageError, \
-                "You must be identified to store package information"
-
         date = time.strftime('%Y-%m-%d %H:%M:%S')
         cols = info.keys()
+        # XXX delete name/version if they're in info
         if self.has_package(name, version):
-            # make sure the user has permission to do stuff
-            if not (self.has_role('Maintainer', name) or
-                    self.has_role('Owner', name)):
-                raise StorageError, \
-                    "You are not allowed to store '%s' package information"%name
             # update
-            args = [info[k] for k in cols]
+            args = tuple([info[k] for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
-            sql = "update packages set %s where name='%s' and version='%s'"%(
-                info, name, version)
+            sql = "update packages set %s where name=%%s and version=%%s"%info
             self.cursor.execute(sql, args)
             self.cursor.execute('''insert into journal (
                   name, version, action, submitted_date, submitted_by,
@@ -103,7 +95,7 @@ class Store:
             # insert
             info['name'] = name
             info['version'] = version
-            args = [info[k] for k in cols]
+            args = tuple([info[k] for k in cols])
             cols = ','.join(cols)
             params = ','.join(['%s']*len(info))
             sql = 'insert into packages (%s) values (%s)'%(cols, params)
@@ -123,8 +115,8 @@ class Store:
 
             Returns true/false.
         '''
-        self.cursor.execute("select count(*) from packages where name='%s' "
-            " and version='%s'"%(name, version))
+        sql = 'select count(*) from packages where name=%s and version=%s'
+        self.cursor.execute(sql, (name, version))
         res = int(self.cursor.fetchone()[0])
         return res
 
@@ -133,8 +125,8 @@ class Store:
 
             Returns a mapping with the package info.
         '''
-        self.cursor.execute("select * from packages where name='%s' "
-            " and version='%s'"%(name, version))
+        sql = "select * from packages where name=%s and version=%s"
+        self.cursor.execute(sql, (name, version))
         return self.cursor.fetchone()
 
     def get_journal(self, name, version):
@@ -142,8 +134,9 @@ class Store:
 
             Returns a mapping with the package info.
         '''
-        self.cursor.execute("select * from journal where name=%s "
-            " and (version=%s or version is NULL)", (name, version))
+        sql = 'select * from journal where name=%s and (version=%s '\
+            'or version is NULL)'
+        self.cursor.execute(sql, (name, version))
         return self.cursor.fetchall()
 
     def query_packages(self, spec, andor='and'):
