@@ -375,8 +375,8 @@ class WebUI:
         context['app'] = self
 
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        template = PyPiPageTemplate(context, 'rss.xml', template_dir)
-        content = template()
+        template = PyPiPageTemplate('rss.xml', template_dir)
+        content = template(**context)
 
         f = open(rss_file, 'w')
         try:
