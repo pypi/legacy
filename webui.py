@@ -671,7 +671,7 @@ class WebUI:
         w=content.write
         def format_list(title, l):
             w('<tr><th>%s</th><td>'%title.capitalize())
-            w('\n<br>'.join([cgi.escape(x) for x in l]))
+            w('\n<br>'.join([cgi.escape(x['specifier']) for x in l]))
             w('\n</td></tr>\n')
 
         for col in ('requires', 'provides', 'obsoletes'):
@@ -766,7 +766,8 @@ class WebUI:
         def relationship_input(relationship, value):
             w('''<tr><th>%s:</th>
    <td><textarea name="%s" cols="40" rows="5">%s</textarea></td>'''%(
-    relationship.capitalize(), relationship, '\n'.join(value)))
+    relationship.capitalize(), relationship,
+    '\n'.join([v['specifier'] for v in value])))
         for col in ('requires', 'provides', 'obsoletes'):
             if name is not None:
                 l = self.store.get_release_relationships(name, version, col)
@@ -789,7 +790,7 @@ class WebUI:
         for classifier in self.store.get_classifiers():
             selected = release_cifiers.has_key(classifier) and ' selected' or ''
             w('<option%s value="%s">%s</option>'%(selected,
-                cgi.escape(classifier), classifier))
+                cgi.escape(classifier['classifier']), classifier))
 
         w('''</select></td></tr>''')
 

@@ -33,10 +33,7 @@ class ResultRow:
     def __getitem__(self, item):
         if isinstance(item, int):
             return self.info[item]
-        value = self.info[self.cols_d[item]]
-        if isinstance(value, unicode):
-            return value.encode('utf-8')
-        return value
+        return self.info[self.cols_d[item]]
     def items(self):
         return [(col, self.info[i]) for i, col in enumerate(self.cols)]
     def keys(self):
@@ -107,11 +104,11 @@ class Store:
             # journal entry
             safe_execute(cursor, '''insert into journals (name, version, action,
                 submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name.encode('utf-8', 'replace'),
+                (%s, %s, %s, %s, %s, %s)''', (name,
                                               None,
                                               'create',
-                                              date.encode('utf-8', 'replace'),
-                                              self.username.encode('utf-8', 'replace'),
+                                              date,
+                                              self.username,
                                               self.userip))
 
             # first person to add an entry may be considered owner - though
