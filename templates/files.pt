@@ -52,7 +52,8 @@ will be calculated if not supplied)<br />
   <td tal:content="file/python_version" />
   <td tal:content="file/comment_text" />
   <td>
-   <a tal:attributes="href python:app.store.gen_file_url(pyver, un, filename)"
+   <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
+        options['name'], file['filename'])"
     tal:content="file/filename" />
   </td>
   <td style="font-size: 75%" tal:content="file/md5_digest" />
