@@ -647,7 +647,7 @@ class Store:
             "create index users_name_idx on users(name)",
             ]
             for sql in SQLs:
-                cur.execute(sql)
+                cursor.execute(sql)
 
             # admin user
             adminpw = ''.join([whrandom.choice(chars) for x in range(10)])

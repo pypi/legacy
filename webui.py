@@ -3,6 +3,8 @@ import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import time, whrandom, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
+esc = cgi.escape
+esq = lambda x: cgi.escape(x, True)
 
 def xmlescape(s):
     ' make sure we escape a string '
@@ -590,7 +592,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         ''' A form used to generate filtered index displays
         '''
         self.nav_current = 'search_form'
-        self.page_head('Search')
+        self.page_head('Python Packages Index: Search')
         self.wfile.write('''
 <form method="GET" action="%s">
 <input type="hidden" name=":action" value="search">
@@ -824,20 +826,25 @@ available Roles are defined as:
 
         # get the appropriate package info from the database
         if name is None:
-            name = self.form['name'].value
+            name = self.form.getfirst('name')
+            if name is None:
+                self.fail("Which package do you want to display?")
         if version is None:
             if self.form.has_key('version'):
-                version = self.form['version'].value
+                version = self.form.getfirst('version')
             else:
-                raise NotImplementedError, 'get the latest version'
+                try:
+                    version = self.store.latest_releases(1)[1]
+                except IndexError:
+                    version = "(latest release)"
         info = self.store.get_package(name, version)
         if not info:
             return self.fail('No such package / version',
-                heading='%s %s'%(name, version),
+                heading='%s %s' % (esc(name), esc(version)),
                 content="I can't find the package / version you're requesting")
         # top links
-        un = urllib.quote(name)
-        uv = urllib.quote(version)
+        un = urllib.quote_plus(name)
+        uv = urllib.quote_plus(version)
         w('<br>Package: ')
         w('<a href="%s?:action=role_form&package_name=%s">admin</a>\n'%(
             self.url_path, un))
@@ -1502,7 +1509,7 @@ email.</p>'''
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
         '''
-        self.page_head('Forgotten Password',
+        self.page_head('Python Packages Index: Forgotten Password',
             heading='Request password reset')
         w = self.wfile.write
         w('''

@@ -14,3 +14,10 @@
 - make "delete whole package" a form button
 - made wording of role admin link more helpful
 - hide all current releases when a new release is added
+
+2004-06-20
+- when displaying a package and no version is given, try to determine
+  the latest release  (bug #958515)
+- better error handling in display action
+- fixed page titles for search_form and forgotten_password_form
+- fixed typo in store.py which prevented indexes being created
