@@ -72,14 +72,21 @@ class Store:
                 if not info.has_key(k):
                     info[k] = existing[k]
 
-            old = []
+            # figure which cols in the table to update, if any
             specials = 'name version'.split()
+            old = []
+            cols = []
+            vals = []
             for k, v in existing.items():
+                if not info.has_key(k):
+                    continue
                 if k not in specials and info.get(k, None) != v:
-                    if v is None: v = 'NULL'
-                    else: v = repr(v)
-                    old.append('%s'%k)
-            # get old list
+                    old.append(k)
+                    cols.append(k)
+                    vals.append(info[k])
+            vals.extend([name, version])
+
+            # get old classifiers list
             old_cifiers = self.get_release_classifiers(name, version)
             old_cifiers.sort()
             if info.has_key('classifiers') and old_cifiers != classifiers:
@@ -93,11 +100,9 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
-            args = tuple([info.get(k, None) for k in cols] + [name, version])
-            vals = ','.join(['%s=%%s'%x for x in cols])
-            sql = "update releases set %s where name=%%s and version=%%s"%vals
-            cursor.execute(sql, args)
+            cols = ','.join(['%s=%%s'%x for x in cols])
+            sql = "update releases set %s where name=%%s and version=%%s"%cols
+            cursor.execute(sql, vals)
 
             # journal the update
             cursor.execute('''insert into journals (name, version,

@@ -1,3 +1,6 @@
+2004-07-14
+- fixed editing of package information in package summary page (bug 989597)
+
 2004-06-23
 - fixed the display of latest release (bug 977432)
 
