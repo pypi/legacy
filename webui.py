@@ -260,7 +260,7 @@ class WebUI:
         <td>%s</td>
         <td><a href="?:action=display&name=%s&version=%s">%s</a></td>
         <td>%s</td></tr>'''%(name, urllib.quote(name), urllib.quote(version),
-                version, cgi.escape(pkg['summary'])))
+                version, cgi.escape(str(pkg['summary']))))
         w('''
 </table>
 <hr>
