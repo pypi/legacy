@@ -1559,6 +1559,21 @@ Are you <strong>sure</strong>?</p>
                             self.fail(heading='invalid distribution file',
                                 message='invalid distribution file')
                             return
+                elif filename.endswith('.zip'):
+                    # check for valid zip
+                    try:
+                        t = StringIO.StringIO(content)
+                        t.filename = filename
+                        z = zipfile.ZipFile(t)
+                        l = z.namelist()
+                    except zipfile.error:
+                        self.fail(heading='invalid distribution file',
+                            message='invalid distribution file')
+                        return
+                    if 'PKG-INFO' not in l:
+                        self.fail(heading='invalid distribution file',
+                            message='invalid distribution file')
+                        return
 
                 # digest content
                 m = md5.new()
