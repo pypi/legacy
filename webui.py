@@ -113,26 +113,8 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action == 'submit':
-            self.submit()
-        elif action == 'submit_form':
-            self.submit_form()
-        elif action == 'display':
-            self.display()
-        elif action == 'search_form':
-            self.search_form()
-        elif action == 'register_form':
-            self.register_form()
-        elif action == 'user':
-            self.user()
-        elif action == 'password_reset':
-            self.password_reset()
-        elif action == 'index':
-            self.index()
-        elif action == 'role':
-            self.role()
-        elif action == 'role_form':
-            self.role_form()
+        if action in 'submit submit_form display search_form register_form user password_reset index role role_form'.split():
+            getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
 
@@ -288,7 +270,9 @@ searching, but the web interface doesn't expose it yet :)</p>
         <option value="Maintainer">Maintainer</option>
         </select></td>
 </tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Add Role"></td></tr>
+<tr><td>&nbsp;</td>
+    <td><input type="submit" name=":operation" value="Add Role">
+        <input type="submit" name=":operation" value="Remove Role"></td></tr>
 </table>
 </form>
 '''%package)
@@ -304,6 +288,8 @@ searching, but the web interface doesn't expose it yet :)</p>
             raise FormError, 'user_name is required'
         if not self.form.has_key('role_name'):
             raise FormError, 'role_name is required'
+        if not self.form.has_key(':operation'):
+            raise FormError, ':operation is required'
 
         # get the values
         package_name = self.form['package_name'].value
@@ -315,12 +301,17 @@ searching, but the web interface doesn't expose it yet :)</p>
             raise FormError, 'role_name not Owner or Maintainer'
         if not self.store.has_user(user_name):
             raise FormError, "user doesn't exist"
-        if self.store.has_role(role_name, package_name, user_name):
-            raise FormError, 'user has that role already'
 
-        self.store.add_role(user_name, role_name, package_name)
-
-        self.plain_response('Role Added OK')
+        # add or remove
+        operation = self.form[':operation'].value
+        if operation == 'Add Role':
+            if self.store.has_role(role_name, package_name, user_name):
+                raise FormError, 'user has that role already'
+            self.store.add_role(user_name, role_name, package_name)
+            self.plain_response('Role Added OK')
+        else:
+            self.store.delete_role(user_name, role_name, package_name)
+            self.plain_response('Role Removed OK')
 
     def display(self):
         ''' Print up an entry

@@ -3,6 +3,7 @@
 # $Id$
 
 import sys, os, cgi, StringIO, traceback
+from BaseHTTPServer import BaseHTTPRequestHandler, DEFAULT_ERROR_MESSAGE
 
 #
 # Provide interface to CGI HTTP response handling
@@ -10,9 +11,17 @@ import sys, os, cgi, StringIO, traceback
 class RequestWrapper:
     '''Used to make the CGI server look like a BaseHTTPRequestHandler
     '''
-    def __init__(self, config, wfile):
+    def __init__(self, config, rfile, wfile):
         self.wfile = wfile
+        self.rfile = rfile
         self.config = config
+    def send_error(self, code, message=''):
+        short, long = BaseHTTPRequestHandler.responses[code]
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/html')
+        self.end_headers()
+        self.wfile.write(DEFAULT_ERROR_MESSAGE%{'code': code,
+            'message': short, 'explain': message or long})
     def send_response(self, code):
         self.wfile.write('Status: %s\r\n'%code)
     def send_header(self, keyword, value):
@@ -21,45 +30,24 @@ class RequestWrapper:
         self.wfile.write("\r\n")
 
 #
-# Main CGI handler
-#
-def main(request):
-    handler = WebUI(request, os.environ)
-    try:
-        handler.run()
-    except Unauthorised:
-        request.send_response(403)
-        request.send_header('Content-Type', 'text/html')
-        request.end_headers()
-        request.wfile.write('Unauthorised')
-    except NotFound:
-        request.send_response(404)
-        request.send_header('Content-Type', 'text/html')
-        request.end_headers()
-        request.wfile.write('Not found: %s'%client.path)
-
-#
 # Now do the actual CGI handling
 #
-out, err = sys.stdout, sys.stderr
 try:
-    sys.path.insert(0, '/home/rjones/src/distutils_rego')
+    sys.path.insert(0, '/home/rjones/src/pypi')
     from webui import WebUI
     import config
-    cfg = config.Config('/home/rjones/src/distutils_rego/config.ini', 'webui')
-    request = RequestWrapper(cfg, out)
-    # force input/output to binary (important for file up/downloads)
-    main(request)
+    cfg = config.Config('/home/rjones/src/pypi/config.ini', 'webui')
+    request = RequestWrapper(cfg, sys.stdin, sys.stdout)
+    handler = WebUI(request, os.environ)
+    handler.run()
 except SystemExit:
     pass
 except:
-    out.write('Status: 400\nContent-Type: text/html\n\n')
-    out.write("<pre>")
+    sys.stdout.write('Status: 400\nContent-Type: text/html\n\n')
+    sys.stdout.write("<pre>")
     s = StringIO.StringIO()
     traceback.print_exc(None, s)
-    out.write(cgi.escape(s.getvalue()))
-    out.write("</pre>\n")
-
-sys.stdout.flush()
+    sys.stdout.write(cgi.escape(s.getvalue()))
+    sys.stdout.write("</pre>\n")
 
 # vim: set filetype=python ts=4 sw=4 et si

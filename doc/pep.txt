@@ -130,9 +130,15 @@ The web interface implements the following commands/interfaces:
   Maintainer
     Can submit and update info for a particular package name
 
+  Manual (through-the-web) user registration is also available through
+  an HTML form.
+
+**roles**
+  An interface for changing user Role assignments.
+
 **password_reset**
   Using a supplied email address as the key, this resets a user's
-  password and send an email with the new password.
+  password and sends an email with the new password to the user.
 
 The **submit** command will require HTTP Basic authentication,
 preferrably over an HTTPS connection.
@@ -218,9 +224,13 @@ then be copied to the ``setup.py`` file. The register command's
 Reference Implementation
 ========================
 
-Reference code and demonstration server are available at
+Reference code is available from the sourceforge project:
 
-  http://mechanicalcat.net:8081/
+  http://sourceforge.net/projects/pypi/
+
+A demonstration is available at:
+
+  http://www.amk.ca/cgi-bin/pypi.cgi
 
 ===== ===================================================
 Done  Feature
@@ -273,6 +283,8 @@ Acknowledgements
 ================
 
 Anthony Baxter for encouragement and feedback during initial drafting.
+
+AMK for support including hosting the second prototype.
 
 The many participants of the distutils and catalog SIGs for their
 ideas over the years.
