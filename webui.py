@@ -195,7 +195,7 @@ class WebUI:
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(content)
+        self.wfile.write(content.encode('utf-8'))
         
     def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):
@@ -237,7 +237,10 @@ class WebUI:
     def link_action(self, action_name=None, **vars):
         if action_name:
             vars[':action'] = action_name
-        return self.url_path + '?' + urllib.urlencode(vars)
+        l = []
+        for k,v in vars.items():
+            l.append('%s=%s'%(urllib.quote(k), urllib.quote(v)))
+        return self.url_path + '?' + '&'.join(l)
 
     navlinks = (
         ('home', 'PyPI home'),

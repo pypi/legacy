@@ -9,7 +9,7 @@
       xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <head>
- <title tal:content="options/title"></title>
+ <!-- title tal:content="options/title"></title -->
  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
  <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
  <link rel="STYLESHEET" href="http://www.python.org/style.css"
@@ -63,13 +63,13 @@
 <tr><td bgcolor="#99ccff">Welcome 
 <span tal:replace="app/username"/></td></tr>
 <tr><td bgcolor="#99ccff">
- <a tal:attributes="href python: app.link_action('user_form')">
-Your details</a></td></tr>
+ <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
+</td></tr>
 <tr><td bgcolor="#99ccff">
- <a tal:attributes="href python: app.link_action('logout')">
-Logout</a></td></tr>
+ <a tal:attributes="href python:app.link_action('logout')">Logout</a>
+</td></tr>
 
-<tal:let define="packages python: app.store.user_packages(app.username)">
+<tal:let define="packages python:app.store.user_packages(app.username)">
 <tal:if-packages condition="packages">
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
 Your Packages
@@ -77,7 +77,7 @@ Your Packages
 <tr tal:repeat="pkg_info packages">
  <td bgcolor="#99ccff">
   <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
-   tal:content="python: pkg_info[0]">package</a>
+   tal:content="python:pkg_info[0]">package</a>
  </td>
 </tr>
 </tal:if-packages>
@@ -129,7 +129,7 @@ PyPI Actions
 <tr><td bgcolor="#99ccff">
 <a href="http://www.python.org/psf/">Python Software Foundation</a>
 </td></tr>
-</table><!-- end of sidebar table -->
+</table>
 
 </td>
 <td width="15"></td>
@@ -137,7 +137,7 @@ PyPI Actions
 <!-- begin body -->
 <td bgcolor="white" valign="top">
 
-<h1 align="left">PyPI: <span tal:replace="options/title"></h1>
+<!-- h1 align="left">PyPI: <span tal:replace="options/title" /></h1 -->
 
 <p tal:condition="app/ok_message" class="ok"
  tal:content="structure app/ok_message">a status message</p>
