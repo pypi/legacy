@@ -47,7 +47,6 @@ class Store:
         if not isinstance(classifiers, types.ListType):
             classifiers = [classifiers]
         classifiers.sort()
-        print >>sys.stderr, classifiers
 
         # now see if we're inserting or updating a release
         message = None
@@ -118,7 +117,6 @@ class Store:
         # handle trove information
         if not classifiers:
             return message
-        print >>sys.stderr, classifiers
 
         # otherwise save them off
         self.cursor.execute('delete from release_classifiers where name=%s'
