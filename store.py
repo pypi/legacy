@@ -294,13 +294,20 @@ class Store:
 
             New user entries create a rego_otk entry too and return the OTK.
         '''
-        password = sha.sha(password).hexdigest()
         if self.has_user(name):
-            # update existing user
-            self.cursor.execute(
-               'update users set password=%s, email=%s where name=%s',
-                (password, email, name))
+            if password:
+                # update existing user, including password
+                password = sha.sha(password).hexdigest()
+                self.cursor.execute(
+                   'update users set password=%s, email=%s where name=%s',
+                    (password, email, name))
+            else:
+                # update existing user - but not password
+                self.cursor.execute('update users set email=%s where name=%s',
+                    (email, name))
             return None
+
+        password = sha.sha(password).hexdigest()
 
         # new user
         self.cursor.execute(
@@ -333,7 +340,7 @@ class Store:
     def get_users(self):
         ''' Fetch the complete list of users from the database.
         '''
-        self.cursor.execute('select name,email from users')
+        self.cursor.execute('select name,email from users order by name')
         return self.cursor.fetchall()
 
     def has_role(self, role_name, package_name=None, user_name=None):
