@@ -1530,6 +1530,12 @@ Are you <strong>sure</strong>?</p>
                         message='invalid distribution file')
                     return
 
+                # check for dodgy filenames
+                if '/' in filename or '\\' in filename:
+                    self.fail(heading='invalid distribution file',
+                        message='invalid distribution file')
+                    return
+
                 # grab content
                 content = content.value
 
