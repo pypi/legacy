@@ -1,6 +1,6 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
-import time, whrandom, smtplib, base64, sha, email, types, stat, urlparse
+import time, random, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
 esc = cgi.escape
@@ -91,7 +91,7 @@ class WebUI:
         self.wfile = handler.wfile
         self.env = env
         self.form = cgi.FieldStorage(fp=handler.rfile, environ=env)
-        whrandom.seed(int(time.time())%256)
+        random.seed(int(time.time())%256)
         self.nav_current = None
 
         (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
@@ -186,7 +186,7 @@ class WebUI:
         self.handler.end_headers()
         if heading is None: heading = title
         w = self.wfile.write
-        banner_num = whrandom.randrange(0,64)
+        banner_num = random.randrange(0,64)
         banner_color = [
              '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
              '#0066cc',  '#0066cc',  '#3399ff',  '#3399ff',  '#3399ff',
@@ -1565,7 +1565,7 @@ within it to complete the reset process.</p>
             if user is None:
                 self.fail('email address unknown to me')
                 return
-            pw = ''.join([whrandom.choice(chars) for x in range(10)])
+            pw = ''.join([random.choice(chars) for x in range(10)])
             self.store.store_user(user['name'], pw, user['email'])
             info = {'name': user['name'], 'password': pw,
                 'email':user['email']}

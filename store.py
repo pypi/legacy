@@ -1,6 +1,6 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, sqlite, time, sha, whrandom, types, math, stat
+import sys, os, re, sqlite, time, sha, random, types, math, stat
 from distutils.version import LooseVersion
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -440,7 +440,7 @@ class Store:
         cursor.execute(
            'insert into users (name, password, email) values (%s, %s, %s)',
            (name, password, email))
-        otk = ''.join([whrandom.choice(chars) for x in range(32)])
+        otk = ''.join([random.choice(chars) for x in range(32)])
         cursor.execute('insert into rego_otk (name, otk) values (%s, %s)',
             (name, otk))
         return otk
@@ -669,7 +669,7 @@ class Store:
                 cursor.execute(sql)
 
             # admin user
-            adminpw = ''.join([whrandom.choice(chars) for x in range(10)])
+            adminpw = ''.join([random.choice(chars) for x in range(10)])
             adminpw = sha.sha(adminpw).hexdigest()
             cursor.execute('''
                insert into users (name, password, email) values
