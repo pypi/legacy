@@ -40,7 +40,7 @@ here:</p>
 <tr tal:replace="structure data/fields" />
 
 <tr><th class="required">highlighted</th><td>information is required</td></tr>
-<tr><td></td><td><input type="submit" value="Add Information"/></td></tr>
+<tr><td></td><td><input id="manual_submit" type="submit" value="Add Information"/></td></tr>
 </table>
 </form>
 

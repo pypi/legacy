@@ -774,8 +774,8 @@ class WebUI:
             # form field
             if property in ('name', 'version'):
                 # not editable
-                field = '<input type="hidden" name="%s" value="%s">'%(
-                    property, urllib.quote(value.encode('utf-8')))
+                field = '<input id="%s" type="hidden" name="%s" value="%s">'%(
+                    "property_%s" % property, property, urllib.quote(value.encode('utf-8')))
             if property == '_pypi_hidden':
                 a = b = ''
                 if value:
@@ -793,8 +793,8 @@ class WebUI:
                     formatting for this field.'''%(property,
                     cgi.escape(value))
             else:
-                field = '<input size="60" name="%s" value="%s">'%(property,
-                    cgi.escape(value))
+                field = '<input id="%s" size="60" name="%s" value="%s">'%(
+                    "property_%s" % property, property, cgi.escape(value))
 
             # now spit out the form line
             label = property.replace('_', '&nbsp;').capitalize()

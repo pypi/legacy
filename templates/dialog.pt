@@ -22,8 +22,8 @@
 <input type="hidden" tal:repeat="field data/fields" 
        tal:attributes="name field/name; value field/value" />
 
-<input type="submit" name="submit_ok" value="OK" />
-<input type="submit" name="submit_cancel" value="CANCEL" />
+<input id="ok_submit" type="submit" name="submit_ok" value="OK" />
+<input id="cancel_submit" type="submit" name="submit_cancel" value="CANCEL" />
 </form>
 </body>
 </html>

@@ -17,7 +17,7 @@ assigned to users for this package.</p>
 <form tal:attributes="action app/url_path" method="POST">
  <input type="hidden" name=":action" value="remove_pkg" />
  <input type="hidden" name="name" tal:attributes="value data/name" />
- <input type="submit" value="Remove this package completely" />
+ <input id="remove_completely_submit" type="submit" value="Remove this package completely" />
 </form>
 </p>
 <p>Alternatively, you may edit the information about each release:</p>
