@@ -13,7 +13,7 @@ def set_password(store, name, pw):
     print 'done'
 
 if __name__ == '__main__':
-    config = config.Config('/home/rjones/src/pypi/amk_config.ini', 'webui')
+    config = config.Config('/usr/local/pypi/config.ini', 'webui')
     store = store.Store(config)
     store.open()
     try:
