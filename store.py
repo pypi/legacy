@@ -275,20 +275,19 @@ class Store:
             from roles where package_name=%s''', (name, ))
         return self.cursor.fetchall()
 
-    def latest_updates(self, days):
+    def latest_updates(self, num=20):
         ''' Fetch "number" latest updates, youngest to oldest.
         '''
-        target_date = time.localtime(time.time() - days*24*60*60)
-        date = time.strftime('%Y-%m-%d', target_date)
+        #target_date = time.localtime(time.time() - days*24*60*60)
+        #date = time.strftime('%Y-%m-%d', target_date)
         self.cursor.execute('''
             select j.name,j.version,j.submitted_date,r.summary
             from journals j, releases r
             where j.version is not NULL
                   and j.name = r.name and j.version = r.version
-                  and submitted_date > %s
                   and r._pypi_hidden == 0
             order by submitted_date desc
-        ''', (date,))
+        ''')#, (date,))
         d = {}
         l = []
         for name,version,date,summary in self.cursor.fetchall():
@@ -297,7 +296,7 @@ class Store:
                 continue
             l.append((name,version,date,summary))
             d[k] = 1   
-        return l
+        return l[:num]
 
     #
     # Users interface

@@ -374,7 +374,6 @@ PyPI Actions
     def home(self, nav_current='home'):
         content = StringIO.StringIO()
         w = content.write
-        l = self.store.latest_updates(20)
         w('''
 <p>
 Welcome to the Python Package Index (PyPI). You may:
@@ -388,7 +387,7 @@ Welcome to the Python Package Index (PyPI). You may:
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
 '''%(URL_PATH, URL_PATH, URL_PATH))
         i=0
-        for name, version, date, summary in self.store.latest_updates(7):
+        for name, version, date, summary in self.store.latest_updates():
             w('''<tr%s>
         <td>%s</td>
         <td>%s</td>
@@ -418,7 +417,7 @@ Welcome to the Python Package Index (PyPI). You may:
   <description>Updates to the Python Packages Index (PyPI)</description>
   <language>en</language>
 '''%(__version__, URL_MACHINE, URL_PATH))
-        for name, version, date, summary in self.store.latest_updates(7):
+        for name, version, date, summary in self.store.latest_updates():
             w('''  <item>
     <title>%s %s</title>
     <link>http://www.python.org%s</link>
