@@ -190,7 +190,7 @@ class WebUI:
             templateFile.close()
 
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/html')
+        self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
         self.handler.end_headers()
         template.expand(context, self.wfile)
 
@@ -199,7 +199,7 @@ class WebUI:
         ''' Indicate to the user that something has failed.
         '''
         self.handler.send_response(code, message)
-        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
@@ -338,7 +338,7 @@ class WebUI:
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/xml')
+        self.handler.send_header('Content-Type', 'text/xml; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(open(rss_file).read())
 
@@ -607,7 +607,7 @@ class WebUI:
         # Not using self.success or page_head because we want
         # plain-text without all the html trappings.
         self.handler.send_response(200, "OK")
-        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(content.getvalue())
 
@@ -1162,7 +1162,7 @@ Are you <strong>sure</strong>?</p>
         except KeyError:
             raise ValueError, 'invalid MD5 digest'
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(digest)
 
@@ -1305,7 +1305,7 @@ Are you <strong>sure</strong>?</p>
         '''
         c = '\n'.join(self.store.get_classifiers())
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(c + '\n')
 
