@@ -645,7 +645,7 @@ class WebUI:
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
-  <a href="%s&amp;:action=submit_form">PKG-INFO</a>
+  <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
 </p>'''%(self.url_path, un, url, url, url, url)
 
     def quote_plus(self, data):
