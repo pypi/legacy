@@ -1,0 +1,29 @@
+Re: Trove stuff from sf.net
+Date: Today 1:13:53 pm
+From: Patrick McGovern <pmcgovern@vasoftware.com>
+To: Richard Jones <rjones@ekit-inc.com>
+
+Thank you for the clarification.
+
+It's not clear to me if our trove categorization is Open Source or not. It's
+something I would have to ponder with our Legal folks here....
+
+Regardless, for your application I'm granting you the right to use the Trove
+info.  
+
+Pat-
+
+On Tue, Oct 29, 2002 at 01:02:46PM +1100, Richard Jones wrote:
+> Hiya, regarding alexandria-Support Requests-628367, I'd like to use the Trove 
+> info in setting up a python modules index at python.org. The set from your 
+> site will be made available to python programmers to classify their modules. 
+> That's it in a nutshell. Because it's a one-off application, it's unlikely 
+> that the source will be released - but if necessary it can.
+> 
+> 
+>     Richard
+> 
+
+-- 
+Patrick McGovern
+Director, SourceForge.net               pmcgovern@vasoftware.com 

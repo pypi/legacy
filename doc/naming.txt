@@ -1,0 +1,83 @@
+Published on The O'Reilly Network (http://www.oreillynet.com/)
+  http://www.oreillynet.com/cs/user/wlg/2225
+ 
+
+On The Naming of Things
+
+ by Simon Cozens
+ Oct. 29, 2002
+ 
+
+
+As in certain cults it is possible to kill a process if you know its true
+name. 
+
+
+-- Ken Thompson and Dennis M. Ritchie 
+
+
+I've been thinking recently about what accounts for the CPAN's success;
+well, that's not quite true. I've been trying to work out what accounts for
+the Ruby Application Archive and Python's Vaults of Parnassus comparative
+failure. 
+
+
+There are many reasons. First, there's a clear distinction in CPAN between
+libraries and applications; the RAA the Vaults don't have such a thing. But
+I've come to the conclusion that a major factor, and one which applies both
+to collections of software such as those we're looking at and the
+development world in general, is the way that libraries and aplications are
+named. (To be fair, Ruby is getting better at this and beginning to solve
+the problem the Perl way.) 
+
+
+I'd like to give a couple of principles for naming software. 
+
+Definitive names discourage wheel reinvention 
+
+Perl's modules are generally given simple, definitive names. If I want an
+XML parser, I head for XML::Parser. It's that simple. (Of course, if it's
+not that simple, I head for XML::Simple which is.) If I want to write a
+module for parsing XML and I know that XML::Parser exists, I'm forced to
+choose a name which correctly denotes what sets my parser apart; I have to
+do something new, and hence I'm not reinventing the wheel. 
+
+Descriptive names are best for libraries 
+
+There's a temptation to make up cutesy names for software projects.
+However, when it comes to libraries, this is more of a hindrance than a
+help. When I see a module called XML::Parser I know exactly what it does.
+It doesn't require any more description. If, on the other hand, it had a
+cutesy name - Expat - I would have no idea. Similarly, good naming helps me
+quickly locate the library I need. If I'm writing C code to deal with
+Unicode, I'd look for a libunicode. And behold, there is indeed a
+libunicode which does what I want and I need look no further. That would
+not have been quite so easy if it had been called libgeoff. Cutesy acronyms
+don't help either - you might know that libgail is the GNOME Accessibility
+Implementation Library, but at first sight, that might have been called
+libgeoff too. Why not, say, libaccess, or libgaccess if you must have the g
+for GNOME. 
+
+End-user projects can have non-descriptive names 
+
+There is a place for cute naming, and that's in applications and other
+end-user projects; this is because there's more space for competition.
+You'd never get away with calling a web browser "webbrowser", so "Mozilla"
+is as good a name as any. However, if you're building that as a Perl
+module, then Web::Browser (or Tk::WebBrowser) would be just fine. This
+should remind you that some things that you think are applications can turn
+out to be libraries, and vice versa - consider spamassassin as an example.
+Thankfully, that has both a catchy and a descriptive name, so turns out to
+work very well as both a library and an end-user tool. 
+
+
+Shamans have long known the value of the correct and definitive naming of
+things; programmers of libraries and modules would do well to rediscover
+it. 
+
+
+Simon Cozens 
+
+
+oreillynet.com Copyright © 2000 O'Reilly & Associates, Inc.
+

@@ -1,0 +1,14 @@
+[fm #21421] (news-admins) [fmII/contact] Trove categories
+Date: Friday 1:12:51 am
+From: Patrick Lenz via RT <news-admins@freshmeat.net>
+To: rjones@ekit-inc.com
+
+rjones@ekit-inc.com wrote (Wed, Oct 23 2002 23:49:21):
+
+> I'd like to use your list of Trove categories (or discriminators in the
+> original Trove parlance). Do you have any objections to this? Are you the
+> original authors of the list, and if not, do you know who is?
+
+We originally started out with the trove category set SourceForge.net had.  We
+both expanded that tree so we're not really in sync anymore. I don't have any
+objections wrt you re-using the list.

@@ -1,0 +1,20 @@
+> the user stuff was kinda thrown in on the train this morning. had a look
+> at PAUSE when I got in: mostly it's about registering users and they then
+> own namespaces. I
+'m not sure how the owning
+> stuff will work - trove talks about it a bit. trove is also pretty thin on
+> the ground in places ;)
+
+**** A message has arrived from pluto on Thu Oct 24 17:19! ****
+From: anthony [To: richard]
+for trove, I'd suggest something like a trove browser (but better
+than the SF one, pleeeease) that allows you to extract the data for
+insertion into your setup.py.
+Or else, categorise it via the web, and if you post a new setup.py
+register with no discriminators, tell it to leave the current one alone.
+
+
+**** A message has arrived from pluto on Thu Oct 24 17:19! ****
+From: anthony [To: richard]
+you might also want some sort of two-stage "the following things will
+be changed, do you want to proceed" thing.

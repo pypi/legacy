@@ -1,0 +1,287 @@
+PEP: XXX
+Title: Distutils Enhancements
+Version: $Revision$
+Last-Modified: $Date$
+Author: Richard Jones <rjones@ekit-inc.com>
+Status: Draft
+Type: Standards Track
+Content-Type: text/x-rst
+Created: 24-Oct-2002
+Python-Version: 2.3
+Post-History: 
+
+
+Abstract
+========
+
+This PEP proposes several extensions to the distutils packaging
+system [1]_. These enhancements include a central package index, tools
+for submitting package information to the index and extensions to the
+package metadata to include Trove [2]_ information.
+
+This PEP does not address either issues of package dependency, nor
+centralised storage of packages. Nor is it proposing a local
+database of packages as described in PEP 262 [6]_.
+
+Existing package repositories such as the Vaults of Parnassus [3]_,
+CPAN [4]_ and PAUSE [5]_ will be investigated as prior art in this
+field.
+
+
+Rationale
+=========
+
+Python programmers have long needed a simple method of discovering
+existing modules and systems available for their use. It is arguable
+that the existence of these systems for other languages have been a
+significant contribution to their popularity. The existence of the
+catalog-sig, and the many discussions there indicate that there is a
+large population of users who recognise this need.
+
+The introduction of the distutils packaging system to Python
+simplified the process of distributing shareable code, and included
+mechanisms for capture of package metadata, but did little with the
+metadata save ship it with the package.
+
+The server should be hosted in the python.org domain, giving it an air
+of legitimacy that existing catalog efforts do not have.
+
+The interface for submitting information to the catalog should be as
+simple as possible - hopefully just one command-line command for
+more regular users.
+
+Issues of package dependency are not addressed due to the complexity
+of such a system. The original PEP which proposed such a system was
+dropped as the author realised that platform packaging system (RPM,
+apt, etc) already handle dependencies, installation and removal.
+
+Issues of package dissemination (storage on a central server) are
+not addressed because they require assumptions about availability of
+storage and bandwidth that I am not in a position to make.
+
+
+Specification
+=============
+
+The specification takes three parts, the `web interface`_,  the
+`distutils register command`_ and the `distutils trove
+categorisation`_.
+
+Web Interface
+-------------
+
+A web interface is implemented over a simple store. The interface is
+available through the python.org domain, either directly or as
+packages.python.org.
+
+The store has columns for all metadata fields. The (name, version)
+double is used as a uniqueness key. Additional submissions for an
+existing (name, version) will result in an *update* operation.
+
+The web interface implements the following commands/interfaces:
+
+**index**
+  Lists known packages, optionally filtered. An additional HTML page,
+  **search**, presents a form to the user which is used to customise
+  the index view. The index will include a browsing interface like
+  that presented in the Trove interface design section 4.3. The
+  results will be paginated, sorted alphabetically and only showing
+  the most recent version. Most recent version information will be
+  determined using the distutils LooseVersion class.
+**display**
+  Displays information about the package. All fields are displayed as
+  plain text. The "url" (or "home_page") field is hyperlinked.
+**submit**
+  Accepts a POST form submission of metadata about a package. The
+  "name" and "version" fields are mandatory, as they uniquely identify
+  an entry in the index. Submit will automatically determine whether
+  to create a new entry or updating an existing entry. The metadata
+  is checked for correctness where appropriate - specifically the
+  Trove discriminators are compared with the allowed set. An update will
+  update all information about the package based on the new submitted
+  information.
+
+  There will also be a submit/edit form that will allow manual submission
+  and updating for those who do not use distutils.
+**user**
+  Registers a new user with the index. Requires username, password and
+  email address. Passwords will be stored on the server as SHA hashes.
+  If the username already exists in the database:
+
+  1. If valid HTTP Basic auth is provided, the password and email
+     address are updated with the submission information, or
+  2. If no valid auth is provided, the user is informed that the login
+     is already taken.
+
+  Registration will be a three-step process, involving:
+
+  1. User submission of details via the distutils *register* command,
+  2. Package server sending email to the user's email address with a URL
+     to visit to confirm registration with a random one-time key, and
+  3. User visits URL with the key and confirms registration.
+
+  Several user Roles will exist:
+
+  Admin
+    Can assign Owner Role - they decide who may submit for a given
+    package name.
+  Owner
+    Owns a package name, may assign Maintainer Role for that name
+  Maintainer
+    Can submit and update info for a particular package name
+
+**password_reset**
+  Using a supplied email address as the key, this resets a user's
+  password and send an email with the new password.
+
+The **submit** command will require HTTP Basic authentication,
+preferrably over an HTTPS connection.
+
+
+Distutils Register Command
+--------------------------
+
+An additional distutils command, "register" is implemented which
+posts the package metadata to the central server. The register command
+automatically handles user registration; the user is presented with
+three options:
+
+1. login and submit package information
+2. register as a new packager
+3. send password reminder email
+
+On UN*X systems, the user will be prompted at exit to save their
+username/password to a file in their home directory in the file
+``.pythonpackagerc``.  A similar system could be used on Windows, I
+suppose.
+
+Notification of changes to a package entry will be sent to all users
+who have submitted information about the package. That is, the original
+submitter and any subsequent updaters.
+
+The register command will include a --verify option which performs a
+test submission to the server without actually committing the data.
+The server will perform its submission verification checks as usual
+and report any errors it would have reported during a normal
+submission. This is useful for verifying correctness of Trove
+discriminators.
+
+
+Distutils Trove Categorisation
+------------------------------
+
+The Trove concept of *discrimination* will be added to the metadata
+set available to package authors through the new attribute
+"classifiers". The list of classifiers will be available through the
+web, and added to the package like so::
+
+    setup(
+        name = "roundup", 
+        version = __version__,
+        classifiers = [
+            'Development Status :: 4 - Beta',
+            'Environment :: Console (Text Based)',
+            'Environment :: Web Environment',
+            'Intended Audience :: End Users/Desktop',
+            'Intended Audience :: Developers',
+            'Intended Audience :: System Administrators',
+            'License :: OSI Approved :: Python License',
+            'Operating System :: MacOS X',
+            'Operating System :: Microsoft :: Windows',
+            'Operating System :: POSIX',
+            'Programming Language :: Python',
+            'Topic :: Communications :: Email',
+            'Topic :: Office/Business',
+            'Topic :: Software Development :: Bug Tracking',
+        ],
+        url = 'http://sourceforge.net/projects/roundup/',
+        ...
+    )
+
+It was decided that strings would be used for the classification
+entries due to the deep nesting that would be involved in a more
+formal Python structure.
+
+The original Trove specification that classification namespaces be
+separated by slashes ("/") unfortunately collides with many of the
+names having slashes in them (eg. "OS/2"). The double-colon solution
+(" :: ") implemented by Sourceforge and Freshmeat gets around this
+limitation.
+
+The list of classification values on the module index has been merged
+from Freshmeat and Sourceforge (with their permission). This list will
+be made available through the web interface as a text list which may
+then be copied to the ``setup.py`` file. The register command's
+``--verify`` option will also check classifiers values.
+
+
+Reference Implementation
+========================
+
+Reference code and demonstration server are available at
+
+  http://mechanicalcat.net:8081/
+
+===== ===================================================
+Done  Feature
+===== ===================================================
+ Y    Submission
+ Y    Index
+ Y    Display
+ Y    Search
+ Y    User rego
+ Y    User verification
+ Y    Password reset
+ Y    Admin interfaces for user/package maintenance
+ N    Trove
+===== ===================================================
+
+In the two days 22nd and 23rd October after the first announcement to
+the catalog-sig (22nd) and distutils-sig (23rd), the prototype had 45
+visitors (not including myself), two of whom used the register command
+to submit package information.
+
+
+References
+==========
+
+.. [1] distutils packaging system
+   (http://www.python.org/doc/current/lib/module-distutils.html)
+
+.. [2] Trove
+   (http://tuxedo.org/~esr/trove/)
+
+.. [3] Vaults of Parnassus
+   (http://www.vex.net/parnassus/)
+
+.. [4] CPAN
+   (http://www.cpan.org/)
+
+.. [5] PAUSE
+   (http://pause.cpan.org/)
+
+.. [6] PEP 262, A Database of Installed Python Packages
+   (http://www.python.org/peps/pep-0262.html)
+
+Copyright
+=========
+
+This document has been placed in the public domain.
+
+
+Acknowledgements
+================
+
+Anthony Baxter for encouragement and feedback during initial drafting.
+
+The many participants of the distutils and catalog SIGs for their
+ideas over the years.
+
+
+..
+   Local Variables:
+   mode: indented-text
+   indent-tabs-mode: nil
+   sentence-end-double-space: t
+   fill-column: 70
+   End:

@@ -1,0 +1,125 @@
+From anthony@interlink.com.au Thu Oct 24 17:08:22 2002
+X-Sieve: cmu-sieve 2.0
+Return-Path: <anthony@interlink.com.au>
+Received: (from uucp@localhost)
+	by crown.off.ekorp.com (8.9.3/8.9.3) id HAA08779
+	for rjones@ekit-inc.com; Thu, 24 Oct 2002 07:10:04 GMT
+Received: from cirrus.netspace.net.au(203.10.110.75)
+ via SMTP by mx3.ekorp.com, id smtpdAAAYMa4fr; Thu Oct 24 07:09:59 2002
+Received: from localhost.localdomain (dsl-203-113-236-58.VIC.netspace.net.au [203.113.236.58])
+	by cirrus.netspace.net.au (8.11.3/8.11.3) with ESMTP id g9O79w786906
+	for <rjones@ekit-inc.com>; Thu, 24 Oct 2002 17:09:58 +1000 (EST)
+Received: from arbhome.com.au (anthony@localhost)
+	by localhost.localdomain (8.11.6/8.11.6) with ESMTP id g9O78MG02368
+	for <rjones@ekit-inc.com>; Thu, 24 Oct 2002 17:08:22 +1000
+Message-Id: <200210240708.g9O78MG02368@localhost.localdomain>
+X-Authentication-Warning: localhost.localdomain: anthony owned process doing -bs
+X-Mailer: exmh version 2.5 07/13/2001 with nmh-1.0.4
+X-Exmh-Isig-CompType: repl
+X-Exmh-Isig-Folder: inbox
+To: Richard Jones <rjones@ekit-inc.com>
+From: Anthony Baxter <anthony@interlink.com.au>
+Reply-to: Anthony Baxter <anthony@interlink.com.au>
+Subject: Re: PEP draft 
+In-Reply-To: <200210241657.55412.rjones@ekit-inc.com> 
+Mime-Version: 1.0
+Content-Type: text/plain
+Date: Thu, 24 Oct 2002 17:08:22 +1000
+Status: R 
+X-Status: N
+X-KMail-EncryptionState:  
+X-KMail-SignatureState:  
+
+
+>>> Richard Jones wrote
+> PEP: XXX
+> Title: Distutils Enhancements
+> Version: $Revision$
+> Last-Modified: $Date$
+> Author: Richard Jones <rjones@ekit-inc.com>
+> Status: Draft
+> Type: Standards Track
+> Content-Type: text/x-rst
+> Created: 24-Oct-2002
+> Python-Version: 2.3
+> Post-History: 
+> 
+> 
+> Abstract
+> ========
+> 
+> This PEP proposes several extensions to the distutils packaging
+> system [1]_. These enhancements include a central package index, tools
+> for submitting package information to the index and extensions to the
+> package metadata to include Trove [2]_ information.
+> 
+Include Vaults of Parnassus in the "prior art" investigation.
+
+> This PEP does not address either issues of package dependency, nor
+> central storage of packages.
+  centralised
+
+> existing (name, version) will result in an *update* operation.
+> 
+> The web interface implement the following commands:
+                    implements
+> 
+>   the index view. The index will include a customisation form at the
+>   bottom a-la Roundup. The results will be paginated, sorted
+Give a reference (web site) for this.
+
+> **user**
+>   Registers a new user with the index. Requires username, password and
+>   email address. Passwords will be stored as SHA hashes. If the
+>   username exists:
+
+Should require a confirmation email, as with mailman &c.
+
+> Notification of changes to a package entry will be sent to all users
+> who have created submitted information about the package.
+
+What does this mean?
+
+>         discriminators = [
+>             'Development Status :: 4 - Beta',
+>             'Environment :: Console (Text Based)',
+>             'Environment :: Web Environment',
+>             'Intended Audience :: End Users/Desktop',
+>             'Intended Audience :: Developers',
+>             'Intended Audience :: System Administrators',
+>             'License :: OSI Approved :: Python License',
+>             'Operating System :: MacOS X',
+>             'Operating System :: Microsoft :: Windows',
+>             'Operating System :: POSIX',
+>             'Programming Language :: Python',
+>             'Topic :: Communications :: Email',
+>             'Topic :: Office/Business',
+>             'Topic :: Software Development :: Bug Tracking',
+
+Why strings like this, rather than proper structures? e.g.
+
+         discriminators = {
+             'Development Status': '4 - Beta',
+             'Environment'       : ('Console (Text Based)', 'Web Environment')
+             'Intended Audience' : ('End Users/Desktop', 'Developers', 'System Administrators'),
+.....
+
+How do people know that their trove categorisation is correct (e.g.
+that it doesn't have speling mistaiks?)
+
+> The list of discriminator values on the module index has been snarfed
+> from Freshmeat, without their permission.
+
+Should check that this is ok with them.
+
+There should be some sort of simple "check categorisation" or "update
+categorisation" thing.
+
+Who can update a package entry? ACLs? How and what can be updated 
+with 'register'? Only a new version? What about changing trove 
+categorisations, homepages, or the like? What about clashes of 
+names (I don't know if there are any out there, but it wouldn't
+suprise me). 
+
+
+
