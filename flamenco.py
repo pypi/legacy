@@ -36,7 +36,6 @@ class Query:
         boxes = []
 
         # get the per-classifier totals
-        # XXX CHECKME: I'm not sure this will actually exclude hidden
         self.cursor.execute('''
 select count(*),rc.trove_id
 from releases r, release_classifiers rc
@@ -162,14 +161,14 @@ if __name__ == '__main__':
     import trove
     trove = trove.Trove(db.cursor())
 
-    print "*** Development Status=Beta"
-    q = Query(db.cursor(), trove, [('Development Status', '4')])
-    v = q.list_choices()
-    pprint.pprint(v)
-    
-#    print "*** Topic :: Communications :: Email :: Filters and Development Status=Beta"
-#    q = Query(db.cursor(), trove, [('Topic', '241'), ('Development Status', '4')])
+#    print "*** Development Status=Beta"
+#    q = Query(db.cursor(), trove, [('Development Status', '4')])
 #    v = q.list_choices()
 #    pprint.pprint(v)
-#    print q.as_href()
+    
+    print "*** Topic :: Software Development"
+    q = Query(db.cursor(), trove, [('Topic', '405')])
+    v = q.list_choices()
+    pprint.pprint(v)
+    print q.as_href()
 

@@ -4,7 +4,7 @@ import time, whrandom, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
 from xml.sax.saxutils import escape as xmlescape
 
-import store, config, flamenco, trove
+import store, config, flamenco2, trove
 
 class NotFound(Exception):
     pass
@@ -471,24 +471,26 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         content = StringIO.StringIO()
         w = content.write
 
-        tree = trove.Trove(self.store.getCursor())
+        cursor = self.store.get_cursor()
+        tree = trove.Trove(cursor)
         qs = os.environ.get('QUERY_STRING', '')
         l = [x for x in cgi.parse_qsl(qs) if not x[0].startswith(':')]
-        q = flamenco.Query(self.store.getCursor(), tree, l)
+        q = flamenco2.Query(cursor, tree, l)
+        # we don't need the database any more, so release it
+        self.store.close()
 
         # do the query
         matches, choices = q.list_choices()
+        matches.sort()
 
         # format the result
         if q.query:
             w('<p>Current query:<br>')
             for fld, value in q.query:
-                n = q.trove[value]
-                newq = q.copy()
-                newq.remove_field(fld, value)
+                n = q.trove[int(value)]
                 w(cgi.escape(n.path))
                 w(' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
-                    self.url_path, newq.as_href()))
+                    self.url_path, q.as_href(ignore=value)))
         else:
             w('<p>Currently querying everything')
 
@@ -497,7 +499,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             w('<table class="list">')
             w('<tr><th>Package</th><th>Description</th></tr>')
             i=0
-            for summary, name, version in matches:
+            for name, version, summary in matches:
                 w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
@@ -512,20 +514,22 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         w('<hr>\n')
 
         choices.sort()
-        for field, header, options, exist_value in choices:
+        for header, headid, options in choices:
             if len(options) == 0:
                 continue
             w('<div>')
             w('<strong>%s</strong><br>'%cgi.escape(header))
             options.sort()
             l = []
-            for text, node_id, count in options:
-                newq = q.copy()
-                newq.set_field(field, exist_value, node_id)
+            for field, count in options:
+                count = len(count)
+                full = header + ' :: ' + field[-1]
+                fid = tree[tree.getid(field)].id
                 l.append('<a href="%s?:action=browse&%s">%s</a> (%i)'%(
-                    self.url_path, newq.as_href(), cgi.escape(text), count))
+                    self.url_path, q.as_href(add=fid), cgi.escape(field[-1]),
+                    count))
             w(' / \n'.join(l))
-            w("</div>")
+            w('</div>')
 
         self.success(heading='Browsing', content=content.getvalue())
 
