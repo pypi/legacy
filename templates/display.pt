@@ -1,0 +1,26 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+
+<span tal:define="un python: app.quote_plus(options['name']);uv python: app.quote_plus(options['version'])">
+<br/>Package: 
+  <a  tal:attributes="href string: ${app/urlpath}?:action=role_form&amp;package_name=${un}">admin</a>
+  <a tal:attributes="href string: ${app/urlpath}?:action=submit_form&amp;name=${un}&amp;version=${uv}">edit</a>
+  <a tal:attributes="href string: ${app/urlpath}?:action=files&amp;name=${un}&amp;version=${uv}">files</a>
+  <a tal:attributes="href string: ${app/urlpath}?:action=submit_form&amp;name=${un}&amp;version=${uv}">PKG-INFO</a>
+<br/>
+
+<table class="form">
+ <tr tal:repeat="row options/rows">
+   <th nowrap="nowrap" tal:content="python: options['row_names'][row]"/>
+   <td tal:content="structure python: options['values'][row]"/>
+ </tr>
+ <tal:block tal:content="structure options/dependencies"/>
+</table>
+</span>
+
+<tal:block tal:content="structure options/roles_and_journal"/>
+
+</metal:fill>
+</html>

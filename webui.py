@@ -646,13 +646,13 @@ available Roles are defined as:
         self.handler.end_headers()
         self.wfile.write(content.getvalue())
 
+    def quote_plus(self, data):
+        return urllib.quote_plus(data)
+
     def display(self, name=None, version=None, ok_message=None,
             error_message=None):
         ''' Print up an entry
         '''
-        content = StringIO.StringIO()
-        w = content.write
-
         # get the appropriate package info from the database
         if name is None:
             name = self.form.getfirst('name')
@@ -667,51 +667,35 @@ available Roles are defined as:
                     version = l[-1][1]
                 except IndexError:
                     version = "(latest release)"
-        info = self.store.get_package(name, version)
-        if not info:
-            return self.fail('No such package / version',
-                heading='%s %s'%(esc(name), esc(version)),
-                content="I can't find the package / version you're requesting")
-        # top links
-        un = urllib.quote_plus(name)
-        uv = urllib.quote_plus(version)
-        w('<br>Package: ')
-        w('<a href="%s?:action=role_form&package_name=%s">admin</a>\n'%(
-            self.url_path, un))
-        w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
-            '>edit</a>'%(self.url_path, un, uv))
-        w('| <a href="%s?:action=files&name=%s&version=%s"'
-            '>files</a>'%(self.url_path, un, uv))
-        w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
-            '>PKG-INFO</a>'%(self.url_path, un, uv))
-        w('<br>')
 
-        # now the package info
-        w('<table class="form">\n')
-        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
-        for key in keypref:
-            value = info[key]
-            if not value: continue
-            if key == 'download_url':
-                label = "Download URL"
+        info = self.store.get_package(name, version)
+        rows0 = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
+        row_names = {}
+        rows = []
+        values = {}
+        for r in rows0:
+            value = info[r]
+            if not info[r]: continue
+            rows.append(r)
+            if r == 'download_url':
+                row_names[r] = "Download URL"
             else:
-                label = key.capitalize().replace('_', ' ')
-            if (key in ('download_url', 'url', 'home_page')
+                row_names[r] = r.capitalize().replace('_', ' ')
+            if (r in ('download_url', 'url', 'home_page')
                     and value != 'UNKNOWN'):
-                w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
-                    value, cgi.escape(value)))
-            elif key == 'description':
-                w('<tr><th nowrap>%s: </th><td><pre>%s</pre></td></tr>\n'%(
-                    label, cgi.escape(value)))
-            elif key.endswith('_email'):
+                values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
+            elif r == 'description':
+                values[r] = '<pre">%s</pre>' % cgi.escape(value)
+            elif r.endswith('_email'):
                 value = cgi.escape(value)
                 value = value.replace('@', ' at ')
                 value = value.replace('.', ' ')
-                w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label, value))
+                values[r] = cgi.escape(value)
             else:
-                w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label,
-                    cgi.escape(value)))
+                values[r] = cgi.escape(value)
 
+        content=StringIO.StringIO()
+        w=content.write
         def format_list(title, l):
             w('<tr><th>%s: </th><td>'%title.capitalize())
             w('\n<br>'.join([cgi.escape(x) for x in l]))
@@ -720,12 +704,10 @@ available Roles are defined as:
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
             if l: format_list(col, l)
+        dependencies = content.getvalue()
 
-        classifiers = self.store.get_release_classifiers(name, version)
-        if classifiers:
-            format_list('classifiers', classifiers)
-
-        w('\n</table>\n')
+        content=StringIO.StringIO()
+        w=content.write
 
         # package's role assignments
         w(self.package_role_list(name))
@@ -739,14 +721,19 @@ available Roles are defined as:
                 entry[1], entry[2], entry[0]))
         w('\n</table>\n')
 
-        if error_message:
-            self.fail(error_message,
-                heading='%s %s'%(name, version),
-                content=content.getvalue())
-        else:
-            self.success(message=ok_message,
-                heading='%s %s'%(name, version),
-                content=content.getvalue())
+        roles_and_journal = content.getvalue()
+
+        self.write_template('display.pt', 
+                            name=name,
+                            version=version,
+                            values=values,
+                            rows=rows,
+                            row_names=row_names,
+                            dependencies=dependencies,
+                            roles_and_journal=roles_and_journal,
+                            title=name + " " +version,
+                            action=self.link_action())
+        return
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
