@@ -1,6 +1,7 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import time, whrandom, smtplib, base64, sha, email, types
+from xml.sax.saxutils import escape as xmlescape
 
 import store, config
 
@@ -14,6 +15,8 @@ class Redirect(Exception):
     pass
 class FormError(Exception):
     pass
+
+__version__ = '1.0'
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
@@ -56,6 +59,12 @@ register</a>.</p>
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+def packageURL(name, version):
+    ''' return a URL for the link to display a particular package
+    '''
+    return '/pypi?:action=display&name=%s&version=%s'%(urllib.quote(name),
+        urllib.quote(version))
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -138,6 +147,7 @@ class WebUI:
 
 
     navlinks = (
+        ('home', 'PyPI home'),
         ('index', 'Index of packages'),
         ('search_form', 'Search'),
         ('submit_form', 'Package submission'),
@@ -333,7 +343,7 @@ PyPI Actions
         if self.form.has_key(':action'):
             action = self.form[':action'].value
         else:
-            action = 'index'
+            action = 'home'
 
         # make sure the user has permission
         if action in ('submit', ):
@@ -343,13 +353,81 @@ PyPI Actions
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
+        if action in 'home browse rss submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
 
         # commit any database changes
         self.store.commit()
+
+    def home(self, nav_current='home'):
+        content = StringIO.StringIO()
+        w = content.write
+        l = self.store.latest_updates(20)
+        w('''
+<p>
+Welcome to the Python Package Index (PyPI). You may:
+</p>
+<ul>
+<li><a href="/pypi?:action=search_form">Search</a>
+<li><a href="/pypi?:action=browse">Browse the tree of packages</a>
+<li><a href="/pypi?:action=index">View a flat list of all packages</a>
+</ul>
+<table class="list">
+<tr><th>Updated</th><th>Package</th><th>Description</th></tr>
+''')
+        i=0
+        for name, version, date, summary in self.store.latest_updates(7):
+            w('''<tr%s>
+        <td>%s</td>
+        <td><a href="%s">%s %s</a></td>
+        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', date[:10],
+                packageURL(name, version), name,
+                version, cgi.escape(str(summary))))
+            i+=1
+        w('''
+<tr><td id="last" colspan="3">&nbsp;</td></tr>
+</table>
+''')
+        self.success(heading='Home', content=content.getvalue())
+
+    def rss(self):
+        ''' Dump the last N days' updates as an RSS feed.
+        '''
+        self.handler.send_response(200, 'OK')
+        self.handler.send_header('Content-Type', 'text/xml')
+        self.handler.end_headers()
+        w = self.wfile.write
+        w('''<?xml version="1.0"?>
+<!-- name="generator" content="PyPI/%s" -->
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91">
+ <channel>
+  <title>PyPI recent updates</title>
+  <link>http://www.python.org/pypi</link>
+  <description>Updates to the Python Packages Index (PyPI)</description>
+  <language>en</language>
+'''%__version__)
+        for name, version, date, summary in self.store.latest_updates(7):
+            w('''  <item>
+    <title>%s %s</title>
+    <link>http://www.python.org%s</link>
+    <description>%s</description>
+   </item>
+'''%(xmlescape(name), xmlescape(version), xmlescape(packageURL(name, version)),
+        xmlescape(summary)))
+        w('''
+  </channel>
+</rss>
+''')
+
+
+    def browse(self, nav_current='browse'):
+        content = StringIO.StringIO()
+        w = content.write
+
+        self.success(heading='Browsing', content=content.getvalue())
 
     def index(self, nav_current='index'):
         ''' Print up an index page
@@ -358,7 +436,7 @@ PyPI Actions
         content = StringIO.StringIO()
         w = content.write
         w('<table class="list">\n')
-        w('<tr><th>Package</th><th>Release</th><th>Description</th></tr>\n')
+        w('<tr><th>Package</th><th>Description</th></tr>\n')
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
             spec['_pypi_hidden'] = '0'
@@ -367,10 +445,9 @@ PyPI Actions
             name = pkg['name']
             version = pkg['version']
             w('''<tr%s>
-        <td><a href="/pypi?:action=display&name=%s&version=%s">%s</a></td>
-        <td>%s</td>
+        <td><a href="%s">%s %s</a></td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', 
-                urllib.quote(name), urllib.quote(version), name,
+                packageURL(name, version), name,
                 version, cgi.escape(str(pkg['summary']))))
             i+=1
         w('''
