@@ -351,11 +351,25 @@ class Store:
             d[k] = 1   
         return l[:num]
 
-    def get_package_releases(self, name):
+    def get_package_releases(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
         '''
+        if hidden is not None:
+            hidden = 'and _pypi_hidden == %d'%hidden
+        else:
+            hidden = ''
         cursor = self.get_cursor()
-        cursor.execute('select * from releases where name=%s', name)
+        cursor.execute('''
+            select r.name name,r.version version,j.submitted_date,
+                r.summary summary,_pypi_hidden
+            from journals j, releases r
+            where j.version is not NULL
+                  and j.action = 'new release'
+                  and j.name = %%s and r.name = %%s
+                  and j.version = r.version
+                  %s
+            order by submitted_date desc
+        '''%hidden, name, name)
         res = cursor.fetchall()
         if res is None:
             return []

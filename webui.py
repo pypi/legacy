@@ -833,14 +833,15 @@ available Roles are defined as:
             if self.form.has_key('version'):
                 version = self.form.getfirst('version')
             else:
+                l = self.store.get_package_releases(name, hidden=0)
                 try:
-                    version = self.store.latest_releases(1)[1]
+                    version = l[-1][1]
                 except IndexError:
                     version = "(latest release)"
         info = self.store.get_package(name, version)
         if not info:
             return self.fail('No such package / version',
-                heading='%s %s' % (esc(name), esc(version)),
+                heading='%s %s'%(esc(name), esc(version)),
                 content="I can't find the package / version you're requesting")
         # top links
         un = urllib.quote_plus(name)
