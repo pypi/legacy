@@ -477,11 +477,13 @@ class Store:
         return Result(('name', 'version', 'submitted_date', 'summary'),
             l[:num])
 
-    def get_package_releases(self, name, hidden=None):
+    def get_latest_release(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
         '''
+        args = [name, name]
         if hidden is not None:
-            hidden = 'and _pypi_hidden = %s'%(str(hidden).upper())
+            args.append(hidden)
+            hidden = 'and _pypi_hidden = %s'
         else:
             hidden = ''
         cursor = self.get_cursor()
@@ -496,11 +498,33 @@ class Store:
                   and j.version = r.version
                   %s
             order by submitted_date desc
-        '''%hidden, (name, name))
+        '''%hidden, tuple(args))
         res = cursor.fetchall()
         if res is None:
             return []
         cols = 'name version submitted_date summary _pypi_hidden'.split()
+        return Result(cols, res)
+
+    def get_package_releases(self, name, hidden=None):
+        ''' Fetch all releses for the package name, including hidden.
+        '''
+        args = [name]
+        if hidden is not None:
+            args.append(hidden)
+            hidden = 'and _pypi_hidden = %s'
+        else:
+            hidden = ''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''
+            select name, version, summary, _pypi_hidden
+            from releases
+            where name = %%s %s
+            order by _pypi_ordering desc
+        '''%hidden, tuple(args))
+        res = cursor.fetchall()
+        if res is None:
+            return []
+        cols = 'name version summary _pypi_hidden'.split()
         return Result(cols, res)
 
     def remove_release(self, name, version):

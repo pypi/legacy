@@ -666,7 +666,7 @@ class WebUI:
             if self.form.has_key('version'):
                 version = self.form['version']
             else:
-                l = self.store.get_package_releases(name, hidden=False)
+                l = self.store.get_latest_release(name, hidden=False)
                 try:
                     version = l[-1][1]
                 except IndexError:
