@@ -300,7 +300,7 @@ PyPI Actions
 <td width="15">&nbsp;</td><!--spacer-->
 
 <!-- begin body -->
-<td bgcolor="white" valign="top"><h1 align="left">TEST PyPI: %s</h1>
+<td bgcolor="white" valign="top"><h1 align="left">PyPI: %s</h1>
 '''%heading)
 
 
