@@ -840,7 +840,7 @@ class WebUI:
         if name is not None:
             release_cifiers = {}
             for classifier in self.store.get_release_classifiers(name, version):
-                release_cifiers[classifier] = 1
+                release_cifiers[classifier['classifier']] = 1
         else:
             release_cifiers = {}
 
@@ -849,8 +849,9 @@ class WebUI:
   <td><select multiple name="classifiers" size="10">
 ''')
         for classifier in self.store.get_classifiers():
-            selected = release_cifiers.has_key(classifier) and ' selected' or ''
-            htext = cgi.escape(classifier['classifier'])
+            ctext = classifier['classifier']
+            selected = release_cifiers.has_key(ctext) and ' selected' or ''
+            htext = cgi.escape(ctext)
             w('<option%s value="%s">%s</option>'%(selected, htext, htext))
 
         w('''</select></td></tr>''')
