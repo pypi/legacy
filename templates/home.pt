@@ -37,7 +37,7 @@ register to submit</a>)</li>
  date python: release[2]; 
  summary python: release[3]">
 
-<tr tal:attributes="class python:repeat['release'].odd and 'alt'">
+<tr tal:attributes="class python:repeat['release'].odd() and 'alt'">
  <td tal:content="python:str(date)[:10]">date</td>
  <td tal:content="structure python: app.packageLink(name, version)">link</td>
  <td tal:content="summary">summary</td>

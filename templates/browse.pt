@@ -12,7 +12,7 @@
 python: data['query'].query and data['matches']">
  <tr><th>Package</th><th>Description</th></tr>
  <tr tal:repeat="package data/matches"
-  tal:attributes="class python: test(repeat['package'].odd(), 'alt')">
+  tal:attributes="class python: repeat['package'].odd() and 'alt'">
   <tal:let define="name python: package[0]; version python: package[1]; summary python: package[2]">
   <td tal:content="structure python: app.packageLink(name, version)">link</td>
   <td tal:content="summary">summary</td>
