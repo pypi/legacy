@@ -17,7 +17,7 @@ class register(Command):
 
     description = "register the distribution with the repository"
 
-    DEFAULT_REPOSITORY = 'http://www.python.org/cgi-bin/pypi.cgi'
+    DEFAULT_REPOSITORY = 'http://www.python.org/pypi'
 
     user_options = [
         ('repository=', 'r',
@@ -88,6 +88,7 @@ class register(Command):
         '''
         # send the info to the server and report the result
         (code, result) = self.post_to_server(self.build_post_data('verify'))
+        print 'DRY RUN'
         print 'Server response (%s): %s'%(code, result)
 
     def send_metadata(self):
