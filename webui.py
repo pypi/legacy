@@ -2,7 +2,7 @@
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
 import re, zipfile, logging
-from simpletal import simpleTAL, simpleTALES
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
 
@@ -84,6 +84,12 @@ register</a>.</p>
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
+class PyPiPageTemplate(PageTemplateFile):
+    def pt_getContext(self, args=(), options={}, **kw):
+        rval = PageTemplateFile.pt_getContext(self, args=args)
+        options.update(rval)
+        return options
+
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
@@ -124,11 +130,6 @@ class WebUI:
             formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s %(message)s')
             hdlr.setFormatter(formatter)
             root.handlers = [hdlr]
-            simpleTALLogger = logging.getLogger("simpleTAL")
-            simpleTALESLogger = logging.getLogger("simpleTALES")
-            simpleTALLogger.setLevel(logging.WARNING)
-            simpleTALESLogger.setLevel(logging.WARNING)
-
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
@@ -177,30 +178,24 @@ class WebUI:
     ok_message = None
 
     def write_template(self, filename, **options):
-        context = simpleTALES.Context(allowPythonPath=True)
-        context.addGlobal('options', options)
-        context.addGlobal('app', self)
+        context = {}
+        options['title'] = 'no title'
+        context['options'] = options
+        context['app'] = self
 
-        # standard template has macros innit
-        fn = os.path.join(os.path.dirname(__file__), 'templates',
-            'standard_template.pt')
-        templateFile = open(fn, 'r')
-        standard_template = simpleTAL.compileXMLTemplate(templateFile)
-        context.addGlobal("standard_template", standard_template)
+        context['standard_template'] = PyPiPageTemplate("standard_template.pt",
+                                                        os.path.join(os.path.dirname(__file__),
+                                                                     'templates'))
 
-        filename = os.path.join(os.path.dirname(__file__), 'templates',
-            filename)
-        templateFile = open(filename, 'r')
-        try:
-            template = simpleTAL.compileXMLTemplate(templateFile)
-        finally:
-            templateFile.close()
+        template = PyPiPageTemplate(filename,
+                                    os.path.join(os.path.dirname(__file__),
+                                                 'templates'))
 
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
         self.handler.end_headers()
-        template.expand(context, self.wfile, "UTF-8")
-
+        self.wfile.write(template(**context))
+        
     def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
