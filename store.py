@@ -61,7 +61,7 @@ def safe_execute(cursor, sql, params=None):
     # Encode every incoming param to UTF-8 if it's a string
     safe_params = []
     for param in params:
-        if isinstance(param, str):
+        if isinstance(param, unicode):
             safe_params.append(param.encode("UTF-8", "replace"))
         else:
             safe_params.append(param)
