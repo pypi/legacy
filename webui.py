@@ -457,6 +457,11 @@ Comments to
             elif key == 'description':
                 w('<tr><th nowrap>%s: </th><td><pre>%s</pre></td></tr>\n'%(
                     label, cgi.escape(value)))
+            elif key.endswith('_email'):
+                value = cgi.escape(value)
+                value = value.replace('@', ' at ')
+                value = value.replace('.', ' ')
+                w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label, value))
             else:
                 w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label,
                     cgi.escape(value)))
