@@ -17,4 +17,5 @@ class Config:
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')
         self.logging = c.get('webui', 'logging')
+        self.debug_mode = c.get('webui', 'debug_mode')
 

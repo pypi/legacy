@@ -2,6 +2,7 @@
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
 from distutils.version import LooseVersion
+import logging
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -454,17 +455,37 @@ class Store:
         ''' Delete a single release from the database.
         '''
         cursor = self.get_cursor()
+
+        # delete the files
+        for file in self.list_files(name, version):
+            os.remove(self.gen_file_path(file['python_version'], name,
+                file['filename']))
+
+        # delete ancillary table entries
+        for tab in ('files', 'provides', 'requires', 'obsoletes',
+                'classifiers'):
+            cursor.execute('''delete from release_%s where
+                name=%%s and version=%%s'''%tab, (name, version))
+
+        # delete releases table entry
         cursor.execute('delete from releases where name=%s and version=%s',
             (name, version))
-        cursor.execute('delete from release_classifiers where '
-            'name=%s and version=%s', (name, version))
 
     def remove_package(self, name):
         ''' Delete an entire package from the database.
         '''
         cursor = self.get_cursor()
-        cursor.execute('delete from release_files where name=%s', (name,))
-        cursor.execute('delete from release_classifiers where name=%s', (name,))
+        for release in self.get_package_releases(name):
+            for file in self.list_files(name, release['version']):
+                os.remove(self.gen_file_path(file['python_version'], name,
+                    file['filename']))
+
+        # delete ancillary table entries
+        for tab in ('files', 'provides', 'requires', 'obsoletes',
+                'classifiers'):
+            cursor.execute('delete from release_%s where name=%%s'%tab,
+                (name, ))
+
         cursor.execute('delete from releases where name=%s', (name,))
         cursor.execute('delete from journals where name=%s', (name,))
         cursor.execute('delete from roles where package_name=%s', (name,))

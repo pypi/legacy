@@ -158,11 +158,17 @@ class WebUI:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
             except:
-                s = StringIO.StringIO()
-                traceback.print_exc(None, s)
-                s = cgi.escape(s.getvalue())
-                self.fail('Internal Server Error', code=500, heading='Error...',
-                    content='%s'%s)
+                if self.config.debug_mode == 'yes':
+                    s = StringIO.StringIO()
+                    traceback.print_exc(None, s)
+                    s = cgi.escape(s.getvalue())
+                    self.fail('Internal Server Error', code=500,
+                        heading='Error...', content='%s'%s)
+                else:
+                    exc, value, tb = sys.exc_info()
+                    s = '%s: %s'%(exc, value)
+                    self.fail("There's been a problem with your request",
+                        code=500, heading='Error...', content='%s'%s)
         finally:
             self.store.close()
 
@@ -954,7 +960,8 @@ class WebUI:
             self.fail(message, code=400, heading='Package verification')
             return
 
-        self.success(heading='Package verification', message='Validated OK')
+        self.write_template('message.pt', title='Package verification',
+            message='Validated OK')
 
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
@@ -1071,42 +1078,36 @@ class WebUI:
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
-        if not self.form.has_key('confirm'):
-            content = StringIO.StringIO()
-            w = content.write
-            w('''
-<p>You are about to remove %s
-This action <em>cannot be undone</em>!<br>
-Are you <strong>sure</strong>?</p>
-<form action="%s" method="POST">
-<input type="hidden" name=":action" value="remove_pkg">
-<input type="hidden" name="name" value="%s">
-'''%(desc, self.url_path, cn))
-            for v in version:
-                v = cgi.escape(v)
-                w('<input type="hidden" name="version" value="%s">'%v)
+        if self.form.has_key('submit_ok'):
+            # ok, do it
+            if version:
+                for v in version:
+                    self.store.remove_release(name, v)
+                self.ok_message='Release removed'
+            else:
+                self.store.remove_package(name)
+                self.ok_message='Package removed'
+                self.home()
 
-            w('''
-<input type="submit" name="confirm" value="OK">
-<input type="submit" name="confirm" value="CANCEL">
-</form>''')
+        elif self.form.has_key('submit_cancel'):
+            self.ok_message='Removal cancelled'
 
-            return self.success(heading='Confirm removal of %s'%desc,
-                content=content.getvalue())
-
-        elif self.form['confirm'].value == 'CANCEL':
-            return self.pkg_edit()
-
-        # ok, do it
-        if version:
-            for v in version:
-                self.store.remove_release(name, v)
-            self.success(heading='Removed %s'%desc,
-                message='Release removed')
         else:
-            self.store.remove_package(name)
-            self.success(heading='Removed %s'%desc,
-                message='Package removed')
+            message = '''You are about to remove %s<br />
+                This action <em>cannot be undone</em>!<br />
+                Are you <strong>sure</strong>?'''%desc
+
+            fields = [
+                {'name': ':action', 'value': 'remove_pkg'},
+                {'name': 'name', 'value': name},
+            ]
+            for v in version:
+                fields.append({'name': 'version', 'value': v})
+
+            return self.write_template('dialog.pt', message=message,
+                title='Confirm removal of %s'%desc, fields=fields)
+
+        self.pkg_edit()
 
     # alias useful for the files ZPT page
     dist_file_types = store.dist_file_types
@@ -1219,52 +1220,38 @@ Are you <strong>sure</strong>?</p>
         # check for valid filenames
         filename = content.filename
         if not safe_filenames.match(filename):
-            self.fail(heading='invalid distribution file',
-                message='invalid distribution file - reason 1')
-            return
+            raise ValueError, 'invalid distribution file'
 
         # check for dodgy filenames
         if '/' in filename or '\\' in filename:
-            self.fail(heading='invalid distribution file',
-                message='invalid distribution file - reason 2')
-            return
+            raise ValueError, 'invalid distribution file'
 
         # check for valid content-type
         mt = content.type or 'image/invalid'
         if mt.startswith('image/'):
-            self.fail(heading='invalid distribution file',
-                message='invalid distribution file - reason 9')
-            return
+            raise ValueError, 'invalid distribution file'
 
         # grab content
         content = content.value
 
         # nothing over 5M please
         if len(content) > 5*1024*1024:
-            self.fail(heading='invalid distribution file',
-                message='invalid distribution file - reason 3')
-            return
+            raise ValueError, 'invalid distribution file'
 
         # check for valid exe
         if filename.endswith('.exe'):
             if filetype != 'bdist_wininst':
-                self.fail(heading='invalid distribution file',
-                    message='invalid distribution file - reason 4')
-                return
+                raise ValueError, 'invalid distribution file'
             try:
                 t = StringIO.StringIO(content)
                 t.filename = filename
                 z = zipfile.ZipFile(t)
                 l = z.namelist()
             except zipfile.error:
-                self.fail(heading='invalid distribution file',
-                    message='invalid distribution file - reason 5')
-                return
+                raise ValueError, 'invalid distribution file'
             for zipname in l:
                 if not safe_zipnames.match(zipname):
-                    self.fail(heading='invalid distribution file',
-                        message='invalid distribution file - reason 6')
-                    return
+                    raise ValueError, 'invalid distribution file'
         elif filename.endswith('.zip'):
             # check for valid zip
             try:
@@ -1273,13 +1260,9 @@ Are you <strong>sure</strong>?</p>
                 z = zipfile.ZipFile(t)
                 l = z.namelist()
             except zipfile.error:
-                self.fail(heading='invalid distribution file',
-                    message='invalid distribution file - reason 7')
-                return
+                raise ValueError, 'invalid distribution file'
             if 'PKG-INFO' not in l:
-                self.fail(heading='invalid distribution file',
-                    message='invalid distribution file - reason 8')
-                return
+                raise ValueError, 'invalid distribution file'
 
         # digest content
         m = md5.new()

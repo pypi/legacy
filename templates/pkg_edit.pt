@@ -15,14 +15,14 @@ assigned to users for this package.</p>
 <p>
 <form tal:attributes="action app/url_path" method="POST">
  <input type="hidden" name=":action" value="remove_pkg" />
- <input type="hidden" name="name" tal:attributes="value app/form/name" />
+ <input type="hidden" name="name" tal:attributes="value options/name" />
  <input type="submit" value="Remove this package completely" />
 </form>
 </p>
 <p>Alternatively, you may edit the information about each release:</p>
 <form tal:attributes="action app/url_path" method="POST">
  <input type="hidden" name=":action" value="pkg_edit" />
- <input type="hidden" name="name" tal:attributes="value app/form/name" />
+ <input type="hidden" name="name" tal:attributes="value options/name" />
 
  <table class="list" style="width: auto">
   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th>
@@ -30,7 +30,7 @@ assigned to users for this package.</p>
 
   <tr tal:repeat="release options/releases">
    <td><input type="checkbox" name="version"
-        tal:attribute="value release/version" /></td>
+        tal:attributes="value release/version" /></td>
    <td tal:content="release/version" />
    <td>
     <select tal:attributes="name string:hid_${release/version}">
