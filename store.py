@@ -225,9 +225,9 @@ class Store:
             (name,))
         l = []
         o = {}
-        for release in cursor.fetchall():
-            o[release['version']] = release['_pypi_ordering']
-            l.append(LooseVersion(release['version']))
+        for version, ordering in cursor.fetchall():
+            o[version] = ordering
+            l.append(LooseVersion(version))
         if new_version is not None:
             l.append(LooseVersion(new_version))
         l.sort()

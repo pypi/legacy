@@ -1280,10 +1280,11 @@ index.
                 validate_version_predicates(col, data[col])
 
         # check provides
-        try:
-            map(versionpredicate.check_provision, data['provides'])
-        except ValueError, message:
-            raise ValueError, 'Bad "provides" syntax: %s'%(col, message)
+        if data.has_key('provides'):
+            try:
+                map(versionpredicate.check_provision, data['provides'])
+            except ValueError, message:
+                raise ValueError, 'Bad "provides" syntax: %s'%(col, message)
 
         # check classifiers
         if data.has_key('classifiers'):
