@@ -69,7 +69,7 @@ Specification
 
 The specification takes three parts, the `web interface`_,  the
 `Distutils register command`_ and the `Distutils Trove
-categorisation`_.
+classification`_.
 
 
 Web Interface
@@ -199,7 +199,7 @@ The index is stored in a set of relational database tables:
   Holds information about changes to package information in the
   index. Changes to the **packages**, **releases**, **roles**,
   and **release_discriminators** tables are listed here by
-  package *name* and *version( if the change is release-specific.
+  package *name* and *version* if the change is release-specific.
 
 **users**
   Holds our user database - user name, email address and password.
@@ -328,7 +328,7 @@ Done  Feature
 ===== =============================================================
  Y    Submission via *register* command (register.py module)
  Y    Web interface
- N    Handling of the *classifiers* setup() keyword
+ Y    Handling of the *classifiers* setup() keyword (dist.py.patch)
  N    Library reference documentation of the *register* command and
       additional *classifiers* keyword
  N    Patch to Python 2.2.2 to relax keyword argument checks in the
