@@ -184,19 +184,14 @@ class WebUI:
 
     def write_template(self, filename, **options):
         context = {}
-        options['title'] = 'no title'
         context['options'] = options
         context['app'] = self
 
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         context['standard_template'] = PyPiPageTemplate(context,
-                                                        "standard_template.pt",
-                                    os.path.join(os.path.dirname(__file__),
-                                    'templates'))
-        
-        template = PyPiPageTemplate(context,
-                                    filename,
-                                    os.path.join(os.path.dirname(__file__),
-                                                 'templates'))
+            "standard_template.pt", template_dir)
+
+        template = PyPiPageTemplate(context, filename, template_dir)
         content = template()
 
         self.handler.send_response(200, 'OK')
@@ -246,7 +241,8 @@ class WebUI:
             vars[':action'] = action_name
         l = []
         for k,v in vars.items():
-            l.append('%s=%s'%(urllib.quote(k), urllib.quote(v)))
+            l.append('%s=%s'%(urllib.quote(k.encode('utf-8')),
+                urllib.quote(v.encode('utf-8'))))
         return self.url_path + '?' + '&'.join(l)
 
     navlinks = (
@@ -269,7 +265,7 @@ class WebUI:
             if action_name == self.nav_current:
                 links.append('<strong>%s</strong>' % desc)
             else:
-                links.append('<a href="%s">%s</a>' % (self.link_action(action_name), desc))
+                links.append('<a href="%s">%s</a>'%(self.link_action(action_name), desc))
         return links
 
 
@@ -303,10 +299,11 @@ class WebUI:
             # Split into path items, drop leading slash
             items = os.environ['PATH_INFO'].split('/')[1:]
             if len(items) == 2:
-                self.display(items[0], items[1])
+                self.display(items[0].decode('utf-8'),
+                    items[1].decode('utf-8'))
                 return
             if len(items) == 1:
-                self.search(name=items[0])
+                self.search(name=items[0].decode('utf-8'))
         else:
             action = 'home'
 
@@ -344,10 +341,6 @@ class WebUI:
             'rss.xml')
         if not os.path.exists(rss_file):
             self.rss_regen(rss_file)
-#        else:
-#            rss_mtime = os.stat(rss_file)[stat.ST_MTIME]
-#            if rss_mtime < self.store.last_modified():
-#                self.rss_regen(rss_file)
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
@@ -358,32 +351,18 @@ class WebUI:
     def rss_regen(self, rss_file=None):
         if rss_file is None:
             rss_file = self.config.rss_file
+        context = {}
+        context['app'] = self
+
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        template = PyPiPageTemplate(context, 'rss.xml', template_dir)
+        content = template()
+
         f = open(rss_file, 'w')
-        f.write('''<?xml version="1.0"?>
-<!-- name="generator" content="PyPI/%s" -->
-<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
-<rss version="0.91">
- <channel>
-  <title>PyPI recent updates</title>
-  <link>%s%s</link>
-  <description>Updates to the Python Packages Index (PyPI)</description>
-  <language>en</language>
-'''%(__version__, self.url_machine, self.url_path))
-        for name, version, date, summary in self.store.latest_releases():
-            date = str(date)
-            f.write('''  <item>
-    <title>%s %s</title>
-    <link>http://www.python.org%s</link>
-    <description>%s</description>
-    <pubDate>%sZ</pubDate>
-   </item>
-'''%(xmlescape(name), xmlescape(version), xmlescape(self.packageURL(name,
-    version)), xmlescape(summary), date))
-        f.write('''
-  </channel>
-</rss>
-''')
-        f.close()
+        try:
+            f.write(content.encode('utf-8'))
+        finally:
+            f.close()
 
     def browse(self, nav_current='browse'):
         content = StringIO.StringIO()
@@ -648,6 +627,8 @@ class WebUI:
                     version = "(latest release)"
 
         info = self.store.get_package(name, version)
+        if not info:
+            raise ValueError, 'no such %r %r'%(name, version)
         rows0 = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
         row_names = {}
         rows = []
@@ -939,6 +920,7 @@ class WebUI:
         for k in self.form.keys():
             if k.startswith(':'): continue
             v = self.form[k]
+            logging.error(repr( (k,v)))
             if k == '_pypi_hidden':
                 v = v == '1'
             elif k in ('requires', 'provides', 'obsoletes'):
@@ -1455,7 +1437,8 @@ class WebUI:
         ''' return a URL for the link to display a particular package
         '''
         return '%s/%s/%s'%(self.url_path,
-            urllib.quote(name), urllib.quote(version))
+            urllib.quote(name.encode('utf-8')),
+            urllib.quote(version.encode('utf-8')))
 
     def packageLink(self, name, version):
         ''' return a link to display a particular package

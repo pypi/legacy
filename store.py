@@ -1,8 +1,8 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
-from distutils.version import LooseVersion
 import logging
+from distutils.version import LooseVersion
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -34,12 +34,16 @@ class ResultRow:
         if isinstance(item, int):
             value = self.info[item]
         else:
-            value = self.info[self.cols_d[item]]
+            n = self.cols_d[item]
+            value = self.info[n]
         if value is None:
             return value
         if isinstance(value, str):
+            # decode strings stored as utf-8 into unicode
             return value.decode('utf-8')
         return value
+    def __nonzero__(self):
+        return bool(self.info)
     def items(self):
         return [(col, self.info[i]) for i, col in enumerate(self.cols)]
     def keys(self):
@@ -68,7 +72,7 @@ def safe_execute(cursor, sql, params=None):
             safe_params.append(param.encode("UTF-8", "replace"))
         else:
             safe_params.append(param)
-    return cursor.execute(sql, params)
+    return cursor.execute(sql, safe_params)
 
 class StorageError(Exception):
     pass
