@@ -1,7 +1,7 @@
-*** /usr/local/src/Python-2.2.2/Doc/dist/dist.tex	Tue Jul  9 00:46:49 2002
---- dist.tex-new	Wed Dec  4 15:28:52 2002
+*** dist.tex	Wed Dec  4 15:43:33 2002
+--- dist.tex-new	Wed Dec  4 15:45:42 2002
 ***************
-*** 281,287 ****
+*** 282,288 ****
   rather than by module.  This is important since the Distutils consist of
   a couple of dozen modules split into (so far) two packages; an explicit
   list of every module would be tedious to generate and difficult to
@@ -9,7 +9,7 @@
   
   Note that any pathnames (files or directories) supplied in the setup
   script should be written using the \UNIX{} convention, i.e.
---- 281,288 ----
+--- 282,289 ----
   rather than by module.  This is important since the Distutils consist of
   a couple of dozen modules split into (so far) two packages; an explicit
   list of every module would be tedious to generate and difficult to
@@ -19,11 +19,12 @@
   Note that any pathnames (files or directories) supplied in the setup
   script should be written using the \UNIX{} convention, i.e.
 ***************
-*** 661,666 ****
---- 662,722 ----
+*** 680,685 ****
+--- 681,743 ----
   To install data files directly in the target directory, an empty
   string should be given as the directory.
   
++   
 + \subsection{Additional meta-data}
 + \label{meta-data}
 + 
@@ -79,15 +80,17 @@
 +       ...
 + )
 + \end{verbatim}
++ 
   
   \section{Writing the Setup Configuration File}
   \label{setup-config}
 ***************
-*** 1283,1288 ****
---- 1339,1396 ----
-  the bdist_wininst command with the \longprogramopt{no-target-compile} and/or
-  the \longprogramopt{no-target-optimize} option.
-  
+*** 1314,1319 ****
+--- 1372,1428 ----
+  The installer file will be written to the ``distribution directory''
+  --- normally \file{dist/}, but customizable with the
+  \longprogramopt{dist-dir} option.
++   
 + \section{Registering with the Package Index}
 + \label{package-index}
 + 
@@ -138,18 +141,6 @@
 + By default PyPI will list all versions of a given package. To hide certain
 + versions, the Hidden property should be set to yes. This must be edited
 + through the web interface.
-+ 
-+ 
-  %\section{Examples}
-  %\label{examples}
-  
-***************
-*** 1321,1327 ****
-  %\XXX{Would an uninstall command be a good example here?}
   
   
-- 
-  \section{Reference}
-  \label{reference}
-  
---- 1429,1434 ----
+  \section{Examples}
