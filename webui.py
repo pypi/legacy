@@ -696,7 +696,7 @@ available Roles are defined as:
                     and value != 'UNKNOWN'):
                 values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
             elif r == 'description':
-                values[r] = '<pre">%s</pre>' % cgi.escape(value)
+                values[r] = '<pre>%s</pre>' % cgi.escape(value)
             elif r.endswith('_email'):
                 value = cgi.escape(value)
                 value = value.replace('@', ' at ')
@@ -708,7 +708,7 @@ available Roles are defined as:
         content=StringIO.StringIO()
         w=content.write
         def format_list(title, l):
-            w('<tr><th>%s: </th><td>'%title.capitalize())
+            w('<tr><th>%s</th><td>'%title.capitalize())
             w('\n<br>'.join([cgi.escape(x) for x in l]))
             w('\n</td></tr>\n')
 
@@ -720,20 +720,6 @@ available Roles are defined as:
         content=StringIO.StringIO()
         w=content.write
 
-        # package's role assignments
-        w(self.package_role_list(name))
-
-        # package's journal
-        w('<table class="history">\n')
-        w('<tr><th colspan=4 class="header">Journal</th></tr>\n')
-        w('<tr><th>Date</th><th>User</th><th>Action</th></tr>\n')
-        for entry in self.store.get_journal(name, version):
-            w('<tr><td nowrap>%s</td><td>%s</td><td>%s</td></tr>\n'%(
-                entry[1], entry[2], entry[0]))
-        w('\n</table>\n')
-
-        roles_and_journal = content.getvalue()
-
         self.write_template('display.pt',
                             name=name,
                             version=version,
@@ -741,7 +727,6 @@ available Roles are defined as:
                             rows=rows,
                             row_names=row_names,
                             dependencies=dependencies,
-                            roles_and_journal=roles_and_journal,
                             title=name + " " +version,
                             action=self.link_action())
         return

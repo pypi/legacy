@@ -303,11 +303,12 @@ class Store:
         '''
         cursor = self.get_cursor()
         # get the generic stuff or the stuff specific to the version
-        sql = '''select action, submitted_date, submitted_by
+        sql = '''select action, submitted_date, submitted_by, submitted_from
             from journals where name=%s and (version=%s or
            version is NULL) order by submitted_date'''
         cursor.execute(sql, (name, version))
-        return cursor.fetchall()
+        return Result(('action', 'submitted_date', 'submitted_by',
+            'submitted_from'), cursor.fetchall())
 
     def query_packages(self, spec, andor='and'):
         ''' Find packages that match the spec.
