@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import sys
-import sqlite
 
 class Node:
     def __init__(self, id=None, name=None, path=None, path_split=None):
@@ -50,10 +49,4 @@ class Trove:
         'Natural Language':1,
         'License':1,
     }
-
-if __name__ == '__main__':
-    db = sqlite.connect(db=sys.argv[1])
-    trove = Trove(db.cursor())
-    import dumper
-    dumper.dump(trove)
 
