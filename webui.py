@@ -537,16 +537,15 @@ class WebUI:
             if self.store.has_role(role_name, package_name, user_name):
                 raise FormError, 'user has that role already'
             self.store.add_role(user_name, role_name, package_name)
-            message = 'Role Added OK'
+            self.ok_message = 'Role Added OK'
         else:
             # make sure the user has the role
             if not self.store.has_role(role_name, package_name, user_name):
                 raise FormError, "user doesn't have that role"
             self.store.delete_role(user_name, role_name, package_name)
-            message = 'Role Removed OK'
+            self.ok_message = 'Role Removed OK'
 
-        # XXX make this call display
-        self.success(message=message, heading='Role maintenance')
+        self.role_form()
 
 
     def display_pkginfo(self, name=None, version=None):

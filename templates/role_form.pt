@@ -31,7 +31,7 @@ available Roles are defined as:
         <option value="Owner">Owner</option>
         <option value="Maintainer">Maintainer</option>
         <option tal:replace="structure options/admin" />
-        <option tal:condition="python:self.store.has_role('Admin', None)"
+        <option tal:condition="python:app.store.has_role('Admin', None)"
             value="Admin">Admin</option>
         </select></td>
 </tr>
