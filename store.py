@@ -70,7 +70,7 @@ class Store:
             # get old list
             old_cifiers = self.get_release_classifiers(name, version)
             old_cifiers.sort()
-            if old_cifiers != classifiers:
+            if info.has_key('classifiers') and old_cifiers != classifiers:
                 old.append('classifiers')
 
             # no update when nothing changes
@@ -83,8 +83,8 @@ class Store:
             # update
             cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols] + [name, version])
-            info = ','.join(['%s=%%s'%x for x in cols])
-            sql = "update releases set %s where name=%%s and version=%%s"%info
+            vals = ','.join(['%s=%%s'%x for x in cols])
+            sql = "update releases set %s where name=%%s and version=%%s"%vals
             self.cursor.execute(sql, args)
 
             # journal the update
@@ -123,7 +123,7 @@ class Store:
                 self.add_role(self.username, 'Owner', name)
 
         # handle trove information
-        if old_cifiers == classifiers:
+        if not info.has_key('classifiers') or old_cifiers == classifiers:
             return message
 
         # otherwise save them off
