@@ -12,8 +12,6 @@ class ResultRow:
         for i, col in enumerate(cols):
             self.cols_d[col] = i
         self.info = info
-    def setInfo(self, info):
-        self.info = info
     def __getitem__(self, item):
         if isinstance(item, int):
             return self.info[item]
@@ -26,10 +24,8 @@ class ResultRow:
         return self.info
 
 def Result(cols, sequence):
-    row = ResultRow(cols)
     for item in iter(sequence):
-        row.setInfo(item)
-        yield row
+        yield ResultRow(cols, item)
 
 class StorageError(Exception):
     pass
@@ -314,8 +310,7 @@ class Store:
         sql = '''select name, version, summary from releases %s
             order by lower(name), _pypi_ordering'''%where
         cursor.execute(sql)
-        l = cursor.fetchall()
-        return l
+        return Result(('name', 'version', 'summary'), cursor.fetchall())
 
     def get_classifiers(self):
         ''' Fetch the list of valid classifiers from the database.

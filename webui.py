@@ -586,8 +586,8 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             w('<table class="list">\n')
             w('<tr><th>Package</th><th>Description</th></tr>\n')
             for pkg in l:
-                name = pkg[0]
-                version = pkg[1]
+                name = pkg['name']
+                version = pkg['version']
                 w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
@@ -598,7 +598,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
 </table>
 ''')
-        self.success(heading='Index of packages', content='OK')
+        self.success(heading='Index of packages', content=content.getvalue())
 
     def search(self):
         """Same as index, but don't disable the search or index nav links
@@ -1254,7 +1254,7 @@ index.
             if key.startswith('hid_'):
                 ver = urllib.unquote(key[4:])
                 info = reldict[ver]
-                info['_pypi_hidden'] = self.form[key].value
+                info['_pypi_hidden'] = self.form[key].value == '1'
             elif key.startswith('sum_'):
                 ver = urllib.unquote(key[4:])
                 info = reldict[ver]
@@ -1297,7 +1297,7 @@ assigned to users for this package.</p>
             cv = cgi.escape(release['version'])
             selname = 'hid_' + uv
             selyes = selno = ''
-            if release['_pypi_hidden'] == '1':
+            if release['_pypi_hidden']:
                 selyes = ' selected'
             else:
                 selno = ' selected'
