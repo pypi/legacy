@@ -1,8 +1,8 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
-import time, whrandom, smtplib, base64, sha
+import time, whrandom, smtplib, base64, sha, rfc822
 
-import store, config
+import store, config, trove
 
 class NotFound(Exception):
     pass
@@ -167,7 +167,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit verify submit_form display search_form register_form user password_reset index role role_form'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user password_reset index role role_form'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -185,16 +185,7 @@ class WebUI:
         w('| <a href="?:action=submit_form">manual submission</a>\n')
         w('| <a href="?:action=register_form">register for a login</a>\n')
         w('<ul>\n')
-        spec = {}
-        for k in self.form.keys():
-            if k.startswith(':'):
-                continue
-            value = self.form[k]
-            k = k.replace('-', '_')
-            if type(value) == type([]):
-                spec[k] = filter(None, [x.value.strip() for x in value])
-            else:
-                spec[k] = filter(None, [value.value.strip()])
+        spec = self.form_metadata()
         for name, version in self.store.query_packages(spec):
             w('<li><a href="?:action=display&name=%s&version=%s">%s %s</a>\n'%(
                 urllib.quote(name), urllib.quote(version), name, version))
@@ -411,6 +402,18 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         content = StringIO.StringIO()
         w = content.write
         w('''
+<p>Upload your PKG-INFO file here:</p>
+<form method="POST" enctype="multipart/form-data">
+<input type="hidden" name=":action" value="submit_pkg_info">
+<table class="form">
+<tr><td>PKG-INFO file</td>
+    <td><input size="40" type="file" name="pkginfo"></td>
+</tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="Add Package Info"></td></tr>
+</table>
+</form>
+
+<p>Or, enter the information manually:</p>
 <form>
 <input type="hidden" name=":action" value="submit">
 <table class="form">
@@ -453,6 +456,49 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         self.success(heading='Manual submission form',
             content=content.getvalue())
 
+    def submit_pkg_info(self):
+        ''' Handle the submission of distro metadata as a PKG-INFO file.
+        '''
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to store package information"
+
+        if not self.form.has_key('pkginfo'):
+            raise FormError, \
+                "You must supply the PKG-INFO file"
+
+        # get the data
+        mess = rfc822.Message(self.form['pkginfo'].file)
+        data = {}
+        for k,v in [x.strip().split(': ') for x in mess.headers]:
+            data[k.lower().replace('-', '_')] = v
+
+        # validate the data
+        try:
+            self.validate_metadata(data)
+        except ValueError, message:
+            raise FormError, message
+
+        name = data['name']
+        version = data['version']
+
+        # make sure the user has permission to do stuff
+        if self.store.has_package(data['name'], data['version']) and not (
+                self.store.has_role('Owner', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Unauthorised, \
+                "You are not allowed to store '%s' package information"%name
+
+        # save off the data
+        self.store.store_package(name, version, data)
+        self.store.commit()
+
+        # return a display of the package
+        self.form.value.append(cgi.MiniFieldStorage('name', data['name']))
+        self.form.value.append(cgi.MiniFieldStorage('version', data['version']))
+        self.display()
+
     def submit(self):
         ''' Handle the submission of distro metadata.
         '''
@@ -462,14 +508,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 "You must be identified to store package information"
 
         # pull the package information out of the form submission
-        data = {}
-        for k in self.form.keys():
-            if k.startswith(':'): continue
-            v = self.form[k]
-            if type(v) == type([]):
-                data[k.lower().replace('-','_')]=','.join([x.value for x in v])
-            else:
-                data[k.lower().replace('-','_')] = v.value
+        data = self.form_metadata()
 
         # validate the data
         try:
@@ -494,17 +533,26 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         # return a display of the package
         self.display()
 
-    def verify(self):
-        ''' Validate the input data.
+    def form_metadata(self):
+        ''' Extract metadata from the form.
         '''
         data = {}
         for k in self.form.keys():
             if k.startswith(':'): continue
             v = self.form[k]
             if type(v) == type([]):
-                data[k.lower().replace('-','_')]=','.join([x.value for x in v])
+                if k == 'trove':
+                    v = [x.value.strip() for x in v]
+                else:
+                    v = ','.join([x.value.strip() for x in v])
             else:
-                data[k.lower().replace('-','_')] = v.value
+                v = v.value.strip()
+            data[k.lower().replace('-','_')] = v
+
+    def verify(self):
+        ''' Validate the input data.
+        '''
+        data = self.form_metadata()
         try:
             self.validate_metadata(data)
         except ValueError, message:
@@ -612,7 +660,7 @@ email.</p>
         email = self.form['email'].value
         user = self.store.get_user_by_email(email)
         if user is None:
-            self.error('email address unknown to me')
+            self.fail('email address unknown to me')
             return
         pw = ''.join([whrandom.choice(chars) for x in range(10)])
         self.store.store_user(user['name'], pw, user['email'])
