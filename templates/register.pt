@@ -1,0 +1,45 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+
+    <form method="POST">
+      <input type="hidden" name=":action" value="user" />
+      <input type="hidden" name="name" tal:condition="not:options/new_user"
+	     tal:attributes="value options/name"/>
+      <table class="form">
+	<tr>
+	  <th>Username:</th>
+	  <td tal:condition="options/new_user"><input name="name"/></td>
+	  <td tal:condition="not:options/new_user" tal:content="options/name"></td>
+	</tr>
+	<tr>
+	  <th>Password:</th>
+	  <td><input type="password" name="password"/></td>
+	</tr>
+	<tr>
+	  <th>Confirm:</th>
+	  <td><input type="password" name="confirm" /></td>
+	</tr>
+	<tr>
+	  <th>Email Address:</th>
+	  <td><input name="email" tal:attributes="value options/email" /></td>
+	</tr>
+	<tr>
+	  <th>PGP Key ID:</th>
+	  <td><input name="gpg_keyid" tal:attributes="value options/gpg_keyid" /></td>
+	</tr>
+	<tr>
+	  <th></th>
+	  <td><input type="submit" tal:attributes="value options/action" /></td>
+	</tr>
+      </table>
+    </form>
+
+    <tal:block tal:condition="options/new_user">
+      <p>A confirmation email will be sent to the address you nominate above.</p>
+      <p>To complete the registration process, visit the link indicated in the
+      email.</p>
+    </tal:block>
+  </metal:fill>
+</html>

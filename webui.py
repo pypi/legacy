@@ -119,13 +119,13 @@ class WebUI:
         if self.config.logging:
             root = logging.getLogger()
             hdlr = logging.FileHandler(self.config.logging)
-            formatter = logging.Formatter('%(asctime)s %(message)s')
+            formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s %(message)s')
             hdlr.setFormatter(formatter)
             root.handlers = [hdlr]
             simpleTALLogger = logging.getLogger("simpleTAL")
             simpleTALESLogger = logging.getLogger("simpleTALES")
-            simpleTALLogger.setLevel(logging.INFO)
-            simpleTALESLogger.setLevel(logging.INFO)
+            simpleTALLogger.setLevel(logging.WARNING)
+            simpleTALESLogger.setLevel(logging.WARNING)
 
 
     def run(self):
@@ -1348,50 +1348,24 @@ Are you <strong>sure</strong>?</p>
     def register_form(self):
         ''' Throw up a form for regstering.
         '''
-        info = {'name': '', 'password': '', 'confirm': '', 'email': ''}
+        info = {'name': '', 'password': '', 'confirm': '', 'email': '',
+                'gpg_keyid': ''}
         if self.username:
             user = self.store.get_user(self.username)
-            info['name'] = '<input type="hidden" name="name" value="%s">%s'%(
-                urllib.quote(user['name']), cgi.escape(user['name']))
-            info['email'] = cgi.escape(user['email'])
+            info['new_user'] = False
+            info['name'] = user['name']
+            info['email'] = user['email']
             info['action'] = 'Update details'
-            info['gpg_keyid'] = cgi.escape(user['gpg_keyid'] or "")
-            heading = 'User profile'
+            info['gpg_keyid'] = user['gpg_keyid'] or ""
+            info['title'] = 'User profile'
             self.nav_current = 'user_form'
         else:
+            info['new_user'] = True
             info['action'] = 'Register'
-            info['name'] = '<input name="name">'
-            info['gpg_keyid'] = ''
-            heading = 'Manual user registration'
+            info['title'] = 'Manual user registration'
             self.nav_current = 'register_form'
-        content = '''
-<form method="POST">
-<input type="hidden" name=":action" value="user">
-<table class="form">
-<tr><th>Username:</th>
-    <td>%(name)s</td>
-</tr>
-<tr><th>Password:</th>
-    <td><input type="password" name="password"></td>
-</tr>
-<tr><th>Confirm:</th>
-    <td><input type="password" name="confirm"></td>
-</tr>
-<tr><th>Email Address:</th>
-    <td><input name="email" value="%(email)s"></td>
-</tr>
-<tr><th>PGP Key ID:</th>
-    <th><input name="gpg_keyid" value="%(gpg_keyid)s"></td>
-</tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="%(action)s"></td></tr>
-</table>
-'''%info
-        if not self.username:
-            content += '''
-<p>A confirmation email will be sent to the address you nominate above.</p>
-<p>To complete the registration process, visit the link indicated in the
-email.</p>'''
-        self.success(content=content, heading=heading)
+        
+        self.write_template('register.pt', **info)
 
     def user(self):
         ''' Register, update or validate a user.
@@ -1434,7 +1408,7 @@ email.</p>'''
                 self.fail("password and confirm don't match", heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
-                info['email'], info['gpg_keyid'])
+                                                info['email'], info.get('gpg_keyid', ''))
             info['url'] = self.config.url
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
@@ -1457,7 +1431,8 @@ email.</p>'''
             gpg_keyid = info.get('gpg_keyid', user['gpg_keyid'])
             self.store.store_user(self.username, password, email, gpg_keyid)
             response = 'Details updated OK'
-        self.success(message=response, heading='Users')
+        
+        self.write_template('message.pt', title=response)
 
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
