@@ -3,7 +3,7 @@ import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import time, whrandom, smtplib, base64, sha, email, types
 from xml.sax.saxutils import escape as xmlescape
 
-import store, config
+import store, config, flamenco, trove
 
 class NotFound(Exception):
     pass
@@ -68,6 +68,12 @@ def packageURL(name, version):
     '''
     return '%s?:action=display&name=%s&version=%s'%(URL_PATH,
         urllib.quote(name), urllib.quote(version))
+
+def packageLink(name, version):
+    ''' return a URL for the link to display a particular package
+    '''
+    return '<a href="%s">%s %s</a>'%(packageURL(name, version),
+        cgi.escape(name), cgi.escape(version))
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -384,10 +390,9 @@ Welcome to the Python Package Index (PyPI). You may:
         for name, version, date, summary in self.store.latest_updates(7):
             w('''<tr%s>
         <td>%s</td>
-        <td><a href="%s">%s %s</a></td>
+        <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', date[:10],
-                packageURL(name, version), name,
-                version, cgi.escape(str(summary))))
+                packageLink(name, version), cgi.escape(str(summary))))
             i+=1
         w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
@@ -425,10 +430,49 @@ Welcome to the Python Package Index (PyPI). You may:
 </rss>
 ''')
 
-
     def browse(self, nav_current='browse'):
         content = StringIO.StringIO()
         w = content.write
+
+        tree = trove.Trove(self.store.cursor)
+        qs = os.environ.get('QUERY_STRING', '')
+        l = [x for x in cgi.parse_qsl(qs) if not x[0].startswith(':')]
+        q = flamenco.Query(self.store.cursor, tree, l)
+
+        # do the query
+        matches, choices = q.list_choices()
+
+        # format the result
+        w("<p>Current query:<br>")
+        for fld, value in q.query:
+            n = q.trove[value]
+            newq = q.copy()
+            newq.remove_field(fld, value)
+            w(cgi.escape(n.path))
+            w(' <a href="%s?:action=browse&%s">[Remove]</a><br>\n'%(URL_PATH,
+                newq.as_href()))
+
+        w('<hr><p># of matches: %i<br>\n'%len(matches))
+        if len(q.query):
+            for n, v in matches:
+                w('%s<br>'%packageLink(n, v))
+        w('<hr>\n')
+        
+        choices.sort()
+        for field, header, options, exist_value in choices:
+            if len(options) == 0:
+                continue
+            w('<div>')
+            w('<strong>%s</strong><br>'%cgi.escape(header))
+            options.sort()
+            l = []
+            for text, node_id, count in options:
+                newq = q.copy()
+                newq.set_field(field, exist_value, node_id)
+                l.append('<a href="%s?:action=browse&%s">%s</a> (%i)'%(
+                    URL_PATH, newq.as_href(), cgi.escape(text), count))
+            w(' / \n'.join(l))
+            w("</div>")
 
         self.success(heading='Browsing', content=content.getvalue())
 
@@ -448,10 +492,9 @@ Welcome to the Python Package Index (PyPI). You may:
             name = pkg['name']
             version = pkg['version']
             w('''<tr%s>
-        <td><a href="%s">%s %s</a></td>
+        <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', 
-                packageURL(name, version), name,
-                version, cgi.escape(str(pkg['summary']))))
+                packageLink(name, version), cgi.escape(str(pkg['summary']))))
             i+=1
         w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
