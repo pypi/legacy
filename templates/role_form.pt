@@ -1,0 +1,54 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+
+<p>Use this form to add or remove a user\'s Role for a Package. The
+available Roles are defined as:
+<dl><dt><b>Owner</b></dt><dd>
+  Owns a package name, may assign Maintainer Role for that name.  The
+  first user to register information about a package is deemed Owner
+  of the package name.  The Admin user may change this if necessary.
+  May submit updates for the package name.
+  </dd>
+<dt><b>Maintainer</b></dt><dd>
+  Can submit and update info for a particular package name.
+  </dd></dl>
+        </p>
+<p> </p>
+
+<form method="POST">
+<input type="hidden" name=":action" value="role" />
+<table class="form">
+<tr><th>User Name:</th>
+    <td>
+        <select name="user_name">
+         <option tal:repeat="user app/store/get_users"
+                 tal:attributes="value user/name"
+                 tal:content="string:${user/name} (${user/email})" />
+        </select>
+    </td>
+</tr>
+
+<tr tal:content="structure options/package" />
+
+<tr><th>Role to Add:</th>
+    <td><select name="role_name">
+        <option value="Owner">Owner</option>
+        <option value="Maintainer">Maintainer</option>
+        <option tal:replace="structure options/admin" />
+        <option tal:condition="python:self.store.has_role('Admin', None)"
+            value="Admin">Admin</option>
+        </select></td>
+</tr>
+<tr><td> </td>
+    <td><input type="submit" name=":operation" value="Add Role" />
+        <input type="submit" name=":operation" value="Remove Role" /></td></tr>
+</table>
+</form>
+
+<tal:block replace="structure python:app.package_role_list(options['name'],
+    'Existing Roles'" />
+
+</metal:fill>
+</html>

@@ -484,55 +484,9 @@ class WebUI:
     <td><select name="package_name">%s</select></td>
 </tr>
 '''%s
-        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x['name'],
-            x['name'], x['email']) for x in self.store.get_users()])
-        users = '<select name="user_name">%s</select>'%s
-        if self.store.has_role('Admin', None):
-            admin = '<option value="Admin">Admin</option>'
-        else:
-            admin = ''
 
-        # now write the body
-        s = '''
-<p>Use this form to add or remove a user\'s Role for a Package. The
-available Roles are defined as:
-<dl><dt><b>Owner</b></dt><dd>
-  Owns a package name, may assign Maintainer Role for that name.  The
-  first user to register information about a package is deemed Owner
-  of the package name.  The Admin user may change this if necessary.
-  May submit updates for the package name.
-  </dd>
-<dt><b>Maintainer</b></dt><dd>
-  Can submit and update info for a particular package name.
-  </dd></dl>
-        </p>
-<p>&nbsp;</p>
-
-<form method="POST">
-<input type="hidden" name=":action" value="role">
-<table class="form">
-<tr><th>User Name:</th>
-    <td>%s</td>
-</tr>
-%s
-<tr><th>Role to Add:</th>
-    <td><select name="role_name">
-        <option value="Owner">Owner</option>
-        <option value="Maintainer">Maintainer</option>
-        %s
-        </select></td>
-</tr>
-<tr><td>&nbsp;</td>
-    <td><input type="submit" name=":operation" value="Add Role">
-        <input type="submit" name=":operation" value="Remove Role"></td></tr>
-</table>
-</form>
-'''%(users, package, admin)
-
-        # list the existing role assignments
-        if package_name:
-            s += self.package_role_list(package_name, 'Existing Roles')
-        self.success(heading='Role maintenance', content=s)
+        self.write_template('role_form.pt', title='Role maintenance',
+            name=package_name, package=package)
 
     def package_role_list(self, name, heading='Assigned Roles'):
         ''' Generate an HTML fragment for a package Role display.
