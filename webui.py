@@ -549,22 +549,26 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         self.nav_current = nav_current
         content = StringIO.StringIO()
         w = content.write
-        w('<table class="list">\n')
-        w('<tr><th>Package</th><th>Description</th></tr>\n')
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
             spec['_pypi_hidden'] = '0'
         i=0
-        for pkg in self.store.query_packages(spec):
-            name = pkg['name']
-            version = pkg['version']
-            w('''<tr%s>
+        l = self.store.query_packages(spec)
+        if not l:
+            w('''<p>There were no matches.</p>''')
+        else:
+            w('<table class="list">\n')
+            w('<tr><th>Package</th><th>Description</th></tr>\n')
+            for pkg in l:
+                name = pkg['name']
+                version = pkg['version']
+                w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
                 self.packageLink(name, version),
                 cgi.escape(str(pkg['summary']))))
-            i+=1
-        w('''
+                i+=1
+            w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
 </table>
 ''')
