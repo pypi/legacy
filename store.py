@@ -286,6 +286,7 @@ class Store:
             where j.version is not NULL
                   and j.name = r.name and j.version = r.version
                   and submitted_date > %s
+                  and r._pypi_hidden == 0
             order by submitted_date desc
         ''', (date,))
         d = {}
