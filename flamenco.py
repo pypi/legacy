@@ -102,7 +102,7 @@ group by rc.trove_id
 
         # grab all the matching release classifiers
         sql = '''
- select rc.name, rc.version
+ select r.summary, rc.name, rc.version
  from releases r, release_classifiers rc
  where rc.trove_id = %s
    and r.name=rc.name and r.version=rc.version
@@ -115,7 +115,7 @@ group by rc.trove_id
             return []
 
         # unpack the row results and ... pack them up again ;)
-        return [(row[0],row[1]) for row in result]
+        return result
 
     def get_match_count(self):
         return len(self.get_matches())

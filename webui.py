@@ -444,19 +444,35 @@ Welcome to the Python Package Index (PyPI). You may:
         matches, choices = q.list_choices()
 
         # format the result
-        w("<p>Current query:<br>")
-        for fld, value in q.query:
-            n = q.trove[value]
-            newq = q.copy()
-            newq.remove_field(fld, value)
-            w(cgi.escape(n.path))
-            w(' <a href="%s?:action=browse&%s">[Remove]</a><br>\n'%(URL_PATH,
-                newq.as_href()))
+        if q.query:
+            w('<p>Current query:<br>')
+            for fld, value in q.query:
+                n = q.trove[value]
+                newq = q.copy()
+                newq.remove_field(fld, value)
+                w(cgi.escape(n.path))
+                w(' <a href="%s?:action=browse&%s">[Remove]</a><br>\n'%(
+                    URL_PATH, newq.as_href()))
+        else:
+            w('<p>Currently querying everything')
 
-        w('<hr><p># of matches: %i<br>\n'%len(matches))
-        if len(q.query):
-            for n, v in matches:
-                w('%s<br>'%packageLink(n, v))
+        w('</p>')
+        if q.query and matches:
+            w('<table class="list">')
+            w('<tr><th>Package</th><th>Description</th></tr>')
+            i=0
+            for summary, name, version in matches:
+                w('''<tr%s>
+        <td>%s</td>
+        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
+                packageLink(name, version), cgi.escape(str(summary))))
+                i+=1
+            w('''
+<tr><td id="last" colspan="2">&nbsp;</td></tr>
+</table>
+''')
+        else:
+            w('<p>Number of matches: %i</p>\n'%len(matches))
         w('<hr>\n')
         
         choices.sort()
