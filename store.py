@@ -599,7 +599,7 @@ class Store:
                 # update existing user, including password
                 password = sha.sha(password).hexdigest()
                 safe_execute(cursor,
-                   'update users set password=%s, email=%s, where name=%s',
+                   'update users set password=%s, email=%s where name=%s',
                     (password, email, name))
             else:
                 # update existing user - but not password
