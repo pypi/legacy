@@ -418,13 +418,15 @@ Welcome to the Python Package Index (PyPI). You may:
   <language>en</language>
 '''%(__version__, URL_MACHINE, URL_PATH))
         for name, version, date, summary in self.store.latest_updates():
+            date = date.replace(' ','T')
             w('''  <item>
     <title>%s %s</title>
     <link>http://www.python.org%s</link>
     <description>%s</description>
+    <pubDate>%sZ</pubDate>
    </item>
 '''%(xmlescape(name), xmlescape(version), xmlescape(packageURL(name, version)),
-        xmlescape(summary)))
+        xmlescape(summary)), date)
         w('''
   </channel>
 </rss>
