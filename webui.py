@@ -560,6 +560,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             raise Unauthorised, \
                 "You are not allowed to store '%s' package information"%name
 
+        # make sure the hidden flag is set
+        if not data.has_key('hidden'):
+            data['hidden'] = '0'
+
         # save off the data
         message = self.store.store_package(name, version, data)
         self.store.commit()
