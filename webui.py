@@ -282,6 +282,7 @@ Not Logged In
  <a href="%s?:action=register_form">Register</a></td></tr>
 <tr><td bgcolor="#99ccff">
  <a href="%s?:action=login">Login</a></td></tr>
+<tr><td bgcolor="#99ccff">
  <a href="%s?:action=forgotten_password_form">Lost Login?</a></td></tr>
 '''%(self.url_path, self.url_path, self.url_path))
         w('''
