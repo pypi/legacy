@@ -1457,37 +1457,7 @@ Are you <strong>sure</strong>?</p>
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
         '''
-        self.page_head('Python Packages Index: Forgotten Password',
-            heading='Request password reset')
-        w = self.wfile.write
-        w('''
-<p>You have two options if you have forgotten your password. If you
-know the email address you registered with, enter it below.</p>
-<form method="POST">
-<input type="hidden" name=":action" value="password_reset">
-<table class="form">
-<tr><th>Email Address:</th>
-    <td><input name="email"></td>
-</tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
-</table>
-</form>
-
-<p>Or, if you know your username, then enter it below.</p>
-
-<form method="POST">
-<input type="hidden" name=":action" value="password_reset">
-<table class="form">
-<tr><th>Username:</th>
-    <td><input name="name"></td>
-</tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
-</</form>
-</table>
-
-<p>A confirmation email will be sent to you - please follow the instructions
-within it to complete the reset process.</p>
-''')
+        self.write_template("password_reset.pt", title="Request password reset")
 
     def password_reset(self):
         """Reset the user's password and send an email to the address given.
