@@ -741,12 +741,12 @@ available Roles are defined as:
         w('<table class="form">\n')
         keys = info.keys()
         keys.sort()
-        keypref = 'name version author author_email maintainer maintainer_email home_page _pypi_download_url summary license description keywords platform'.split()
+        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
         for key in keypref:
             if not info.has_key(key): continue
             value = info[key]
             if not value: continue
-            if key == '_pypi_download_url':
+            if key == 'download_url':
                 label = "Download URL"
             else:
                 label = key.capitalize().replace('_', ' ')
@@ -852,7 +852,7 @@ index.
 ''')
 
         # display all the properties
-        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_hidden'.split():
+        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_hidden'.split():
             # get the existing entry
             if self.form.has_key(property):
                 value = self.form[property].value
@@ -880,7 +880,7 @@ index.
             label = property.replace('_', '&nbsp;').capitalize()
             if label in ('Name', 'Version'):
                 req = 'class="required"'
-            elif property == '_pypi_download_url':
+            elif property == 'download_url':
                 label = "Download URL"
             elif property == '_pypi_hidden':
                 label = "Hidden"

@@ -76,7 +76,7 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_ordering _pypi_hidden'.split()
+            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
             sql = "update releases set %s where name=%%s and version=%%s"%info
@@ -97,7 +97,7 @@ class Store:
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
             # perform the insert
-            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform _pypi_download_url _pypi_ordering _pypi_hidden'.split()
+            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_ordering _pypi_hidden'.split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
@@ -198,7 +198,7 @@ class Store:
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, keywords,
-                  platform, _pypi_download_url, _pypi_ordering, _pypi_hidden
+                  platform, download_url, _pypi_ordering, _pypi_hidden
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
@@ -463,7 +463,7 @@ class Store:
                   description varchar,
                   keywords varchar,
                   platform varchar,
-                  _pypi_download_url varchar,
+                  download_url varchar,
                   _pypi_ordering varchar,
                   _pypi_hidden varchar
                )''')
