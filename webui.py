@@ -1312,7 +1312,7 @@ assigned to users for this package.</p>
             s = len(version)>1 and 's' or ''
             desc = 'release%s %s of package %s.'%(s, cv, cn)
         else:
-            version = None
+            version = []
             desc = 'all information about package %s.'%cn
 
         # make sure the user has permission to do stuff
