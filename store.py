@@ -190,7 +190,8 @@ class Store:
         cursor = self.get_cursor()
         # load up all the version strings for this package and sort them
         cursor.execute(
-            'select version,_pypi_ordering from releases where name=%s', name)
+            'select version,_pypi_ordering from releases where name=%s',
+            (name,))
         l = []
         o = {}
         for release in cursor.fetchall():
