@@ -583,7 +583,7 @@ class Store:
     def store_user(self, name, password, email, gpg_keyid):
         ''' Store info about the user to the database.
 
-            The "password" argument is passed in cleartext and sha'ed
+            The "password" argument is passed in cleartext and sha-ed
             before storage.
 
             New user entries create a rego_otk entry too and return the OTK.
@@ -693,17 +693,18 @@ class Store:
     def delete_otk(self, otk):
         ''' Delete the One Time Key.
         '''
-        self.get_cursor().execute('delete from rego_otk where otk=%s', (otk,))
+        safe_execute(self.get_cursor(), "delete from rego_otk where otk=%s",
+                     (otk,))
 
     def get_otk(self, name):
         ''' Retrieve the One Time Key for the user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select * from rego_otk where name=%s", (name, ))
+        safe_execute(cursor, "select otk from rego_otk where name=%s", (name, ))
         res = cursor.fetchone()
         if res is None:
             return ''
-        return ResultRow(('otk', ), res['otk'])
+        return res[0]
 
     def user_packages(self, user):
         ''' Retrieve package info for all packages of a user
