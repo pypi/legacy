@@ -8,17 +8,14 @@ from distutils.core import setup
 from webunit import __version__
 setup(
     name = "pypi", 
-    version = '2004-03-01',
+    version = '2004-03-02',
     description = 
         "PyPI is the Python Package Index at http://www.python.org/pypi",
     long_description = '''This release includes:
-
-- add meaningful titles to pages (uses page heading)
-- properly unquote version numbers for release editing page (bug #855883)
-- allow removal of more than one release at a time
-- make "delete whole package" a form button
-- made wording of role admin link more helpful
-- hide all current releases when a new release is added
+- fixed deletion of packages where there were no versions (bugs #907317 and
+  #908118)
+- list only new releases in RSS and front page, not any old edit (bug
+  #907315)
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",

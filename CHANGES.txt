@@ -1,3 +1,9 @@
+2003-03-02
+- fixed deletion of packages where there were no versions (bugs #907317 and
+  #908118)
+- list only new releases in RSS and front page, not any old edit (bug
+  #907315)
+
 2004-03-01
 - add meaningful titles to pages (uses page heading)
 - properly unquote version numbers for release editing page (bug #855883)
