@@ -6,13 +6,13 @@
 
     <form method="POST">
       <input type="hidden" name=":action" value="user" />
-      <input type="hidden" name="name" tal:condition="not:options/new_user"
-	     tal:attributes="value options/name"/>
+      <input type="hidden" name="name" tal:condition="not:data/new_user"
+	     tal:attributes="value data/name"/>
       <table class="form">
 	<tr>
 	  <th>Username:</th>
-	  <td tal:condition="options/new_user"><input name="name"/></td>
-	  <td tal:condition="not:options/new_user" tal:content="options/name"></td>
+	  <td tal:condition="data/new_user"><input name="name"/></td>
+	  <td tal:condition="not:data/new_user" tal:content="data/name"></td>
 	</tr>
 	<tr>
 	  <th>Password:</th>
@@ -24,20 +24,20 @@
 	</tr>
 	<tr>
 	  <th>Email Address:</th>
-	  <td><input name="email" tal:attributes="value options/email" /></td>
+	  <td><input name="email" tal:attributes="value data/email" /></td>
 	</tr>
 	<tr>
 	  <th>PGP Key ID:</th>
-	  <td><input name="gpg_keyid" tal:attributes="value options/gpg_keyid" /></td>
+	  <td><input name="gpg_keyid" tal:attributes="value data/gpg_keyid" /></td>
 	</tr>
 	<tr>
 	  <th></th>
-	  <td><input type="submit" tal:attributes="value options/action" /></td>
+	  <td><input type="submit" tal:attributes="value data/action" /></td>
 	</tr>
       </table>
     </form>
 
-    <tal:block tal:condition="options/new_user">
+    <tal:block tal:condition="data/new_user">
       <p>A confirmation email will be sent to the address you nominate above.</p>
       <p>To complete the registration process, visit the link indicated in the
       email.</p>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <html xmlns:tal="http://xml.zope.org/namespaces/tal">
 <head>
- <title tal:content="options/title"></title>
+ <title tal:content="data/title"></title>
  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
  <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
  <link rel="STYLESHEET" href="http://www.python.org/style.css"
@@ -15,11 +15,11 @@
       link="#0000bb"  vlink="#551a8b"
       alink="#ff0000" style="text-align: center">
 
-<p tal:content="structure options/message" />
+<p tal:content="structure data/message" />
 
 <form tal:attributes="action app/url_path" method="POST">
 
-<input type="hidden" tal:repeat="field options/fields" 
+<input type="hidden" tal:repeat="field data/fields" 
        tal:attributes="name field/name; value field/value" />
 
 <input type="submit" name="submit_ok" value="OK" />

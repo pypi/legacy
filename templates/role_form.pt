@@ -25,13 +25,13 @@ available Roles are defined as:
     <td><input type="text" name="user_name" /></td>
 </tr>
 
-<tr tal:content="structure options/package" />
+<tr tal:content="structure data/package" />
 
 <tr><th>Role to Add:</th>
     <td><select name="role_name">
         <option value="Owner">Owner</option>
         <option value="Maintainer">Maintainer</option>
-        <option tal:replace="structure options/admin" />
+        <option tal:replace="structure data/admin" />
         <option tal:condition="python:app.store.has_role('Admin', None)"
             value="Admin">Admin</option>
         </select></td>
@@ -42,7 +42,7 @@ available Roles are defined as:
 </table>
 </form>
 
-<tal:block replace="structure python:app.package_role_list(options['name'],
+<tal:block replace="structure python:app.package_role_list(data['name'],
     'Existing Roles')" />
 
 </metal:fill>

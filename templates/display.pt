@@ -7,20 +7,20 @@
 <p tal:replace="structure app/release_nav" />
 
 <table class="form">
- <tr tal:repeat="row options/rows">
-   <th nowrap="nowrap" tal:content="python: options['row_names'][row]"/>
-   <td tal:content="structure python: options['values'][row]"/>
+ <tr tal:repeat="row data/rows">
+   <th nowrap="nowrap" tal:content="python: data['row_names'][row]"/>
+   <td tal:content="structure python: data['values'][row]"/>
  </tr>
- <tal:block tal:content="structure options/dependencies"/>
+ <tal:block tal:content="structure data/dependencies"/>
 </table>
 
-<table tal:replace="structure python:app.package_role_list(options['name'])" />
+<table tal:replace="structure python:app.package_role_list(data['name'])" />
 
 <table class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
  <tr><th>Action</th><th>Date</th><th>User</th><th>Address</th></tr>
- <tr tal:repeat="entry python:app.store.get_journal(options['name'],
-                            options['version'])">
+ <tr tal:repeat="entry python:app.store.get_journal(data['name'],
+                            data['version'])">
   <td nowrap="" tal:content="entry/action" />
   <td nowrap="" tal:content="python:str(entry['submitted_date'])[:-3]" />
   <td nowrap="" tal:content="entry/submitted_by" />

@@ -37,7 +37,7 @@ here:</p>
 <input type="hidden" name=":action" value="submit" />
 <table class="form">
 
-<tr tal:replace="structure options/fields" />
+<tr tal:replace="structure data/fields" />
 
 <tr><th class="required">highlighted</th><td>information is required</td></tr>
 <tr><td></td><td><input type="submit" value="Add Information"/></td></tr>

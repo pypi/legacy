@@ -6,7 +6,7 @@
 
 <metal:slot fill-slot="body">
 
-<form method="GET" tal:attributes="action options/action">
+<form method="GET" tal:attributes="action data/action">
 <input type="hidden" name=":action" value="search" />
 <table class="form">
 <tr><th>Name:</th>

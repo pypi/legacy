@@ -85,14 +85,10 @@ register</a>.</p>
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 class PyPiPageTemplate(PageTemplateFile):
-    def __init__(self, context, filename, _prefix=None):
-        self._context = context
-        PageTemplateFile.__init__(self, filename, _prefix)
-        
     def pt_getContext(self, args=(), options={}, **kw):
+        """Add our data into ZPT's defaults"""
         rval = PageTemplateFile.pt_getContext(self, args=args)
         options.update(rval)
-        options.update(self._context)
         return options
 
 class FileUpload:
@@ -208,15 +204,15 @@ class WebUI:
 
     def write_template(self, filename, **options):
         context = {}
-        context['options'] = options
+        context['data'] = options
         context['app'] = self
 
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        context['standard_template'] = PyPiPageTemplate(context,
+        context['standard_template'] = PyPiPageTemplate(
             "standard_template.pt", template_dir)
 
-        template = PyPiPageTemplate(context, filename, template_dir)
-        content = template()
+        template = PyPiPageTemplate(filename, template_dir)
+        content = template(**context)
 
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/html; charset=utf-8')

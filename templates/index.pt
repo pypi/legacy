@@ -5,16 +5,16 @@
     metal:use-macro="here/standard_template.pt/macros/page">
 <metal:slot fill-slot="body">
 
-<p tal:condition="not: options/matches">
+<p tal:condition="not: data/matches">
   There were no matches.</p>
 
-<table class="list" tal:condition="options/matches">
+<table class="list" tal:condition="data/matches">
 <tr>
  <th>Package</th>
  <th>Description</th>
 </tr>
 
-<tr tal:repeat="pkg options/matches"
+<tr tal:repeat="pkg data/matches"
  tal:attributes="class python: test(repeat['pkg'].even(), 'alt')">
  <td tal:content="structure python: 
   app.packageLink(pkg['name'], pkg['version'])">

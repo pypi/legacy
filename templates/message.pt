@@ -3,6 +3,6 @@
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
-    <p tal:condition="options/message" tal:content="options/message"></p>
+    <p tal:condition="data/message" tal:content="data/message"></p>
   </metal:fill>
 </html>

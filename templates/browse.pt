@@ -6,12 +6,12 @@
 >
 <metal:slot fill-slot="body">
 
-<p tal:content="structure options/query_info"/>
+<p tal:content="structure data/query_info"/>
 
 <table class="list" tal:condition="
-python: options['query'].query and options['matches']">
+python: data['query'].query and data['matches']">
  <tr><th>Package</th><th>Description</th></tr>
- <tr tal:repeat="package options/matches"
+ <tr tal:repeat="package data/matches"
   tal:attributes="class python: test(repeat['package'].odd(), 'alt')">
   <tal:let define="name python: package[0]; version python: package[1]; summary python: package[2]">
   <td tal:content="structure python: app.packageLink(name, version)">link</td>
@@ -21,14 +21,14 @@ python: options['query'].query and options['matches']">
  <tr><td id="last" colspan="2"></td></tr>
 </table>
 
-<p tal:condition="not: options/query/query">
+<p tal:condition="not: data/query/query">
 Number of matches: <span tal:replace="python:
-				      len(options['matches'])"/>
+				      len(data['matches'])"/>
 </p>
 
 <hr />
 
-<div tal:repeat="choice options/choice_data">
+<div tal:repeat="choice data/choice_data">
 <strong tal:content="choice/header"/><br/>
 
 <tal:for-options repeat="option_data choice/option_data">

@@ -9,8 +9,8 @@
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
 <input type="hidden" name=":action" value="files" />
-<input type="hidden" name="name" tal:attributes="value options/name" />
-<input type="hidden" name="version" tal:attributes="value options/version" />
+<input type="hidden" name="name" tal:attributes="value data/name" />
+<input type="hidden" name="version" tal:attributes="value data/version" />
 <table class="form">
  <tr>
   <th class="required">File:</th>
@@ -67,20 +67,20 @@
 
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
-<input type="hidden" name="name" tal:attributes="value options/name" />
-<input type="hidden" name="version" tal:attributes="value options/version" />
+<input type="hidden" name="name" tal:attributes="value data/name" />
+<input type="hidden" name="version" tal:attributes="value data/version" />
 <input type="hidden" name=":action" value="files" />
 
 <table class="list" style="width: auto">
  <tr>
-  <th tal:condition="options/maintainer">Remove?</th>
+  <th tal:condition="data/maintainer">Remove?</th>
   <th>Type</th><th>Py Version</th><th>Comment</th>
   <th>Download</th><th>Size</th><th>MD5 digest</th>
  </tr>
 
- <tr tal:repeat="file python:app.store.list_files(options['name'],
-          options['version'])">
-  <td tal:condition="options/maintainer">
+ <tr tal:repeat="file python:app.store.list_files(data['name'],
+          data['version'])">
+  <td tal:condition="data/maintainer">
    <input type="checkbox" name="file-ids"
           tal:attributes="value file/md5_digest" />
   </td>
@@ -89,7 +89,7 @@
   <td tal:content="file/comment_text" />
   <td>
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
-        options['name'], file['filename'])"
+        data['name'], file['filename'])"
     tal:content="file/filename" />
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
@@ -99,11 +99,11 @@
   </td>
  </tr>
 
- <tr tal:condition="not:options/maintainer">
+ <tr tal:condition="not:data/maintainer">
   <td colspan="6" id="last" />
  </tr>
 
- <tr tal:condition="options/maintainer">
+ <tr tal:condition="data/maintainer">
   <td colspan="7" id="last">
    <input type="submit" name="submit_remove" value="Remove" />
   </td>
