@@ -448,7 +448,7 @@ class Store:
         cursor.execute("select count(*) from users where name='%s'"%name)
         return int(cursor.fetchone()[0])
 
-    def store_user(self, name, password, email):
+    def store_user(self, name, password, email, gpg_keyid):
         ''' Store info about the user to the database.
 
             The "password" argument is passed in cleartext and sha'ed
@@ -462,12 +462,15 @@ class Store:
                 # update existing user, including password
                 password = sha.sha(password).hexdigest()
                 cursor.execute(
-                   'update users set password=%s, email=%s where name=%s',
+                   'update users set password=%s, email=%s, where name=%s',
                     (password, email, name))
             else:
                 # update existing user - but not password
                 cursor.execute('update users set email=%s where name=%s',
                     (email, name))
+            if gpg_keyid is not None:
+                cursor.execute('update users set gpg_keyid=%s where name=%s',
+                    (gpg_keyid, name))
             return None
 
         password = sha.sha(password).hexdigest()
@@ -488,9 +491,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        cursor.execute('''select name,password,email from users where
+        cursor.execute('''select name,password,email,gpg_keyid from users where
             name=%s''', (name,))
-        return ResultRow(('name', 'password', 'email'), cursor.fetchone())
+        return ResultRow(('name', 'password', 'email', 'gpg_keyid'), cursor.fetchone())
 
     def get_user_by_email(self, email):
         ''' Retrieve info about the user from the database, looked up by

@@ -735,8 +735,13 @@ available Roles are defined as:
              '<tr><th class="header" colspan="2">%s</th></tr>'%heading,
              '<tr><th>User</th><th>Role</th></tr>']
         for assignment in self.store.get_package_roles(name):
+            username = assignment[1]
+            user = self.store.get_user(username)
+            keyid = user['gpg_keyid']
+            if keyid: 
+                username = "%s (PGP key %s)" % (username, keyid)
             l.append('<tr><td>%s</td><td>%s</td></tr>'%(
-                cgi.escape(assignment[1]),
+                cgi.escape(username),
                 cgi.escape(assignment[0])))
         l.append('</table>')
         return '\n'.join(l)
@@ -1581,11 +1586,13 @@ will be calculated if not supplied)<br>
                 urllib.quote(user['name']), cgi.escape(user['name']))
             info['email'] = cgi.escape(user['email'])
             info['action'] = 'Update details'
+            info['gpg_keyid'] = cgi.escape(user['gpg_keyid'] or "")
             heading = 'User profile'
             self.nav_current = 'user_form'
         else:
             info['action'] = 'Register'
             info['name'] = '<input name="name">'
+            info['gpg_keyid'] = ''
             heading = 'Manual user registration'
             self.nav_current = 'register_form'
         content = '''
@@ -1604,6 +1611,9 @@ will be calculated if not supplied)<br>
 <tr><th>Email Address:</th>
     <td><input name="email" value="%(email)s"></td>
 </tr>
+<tr><th>PGP Key ID:</th>
+    <th><input name="gpg_keyid" value="%(gpg_keyid)s"></td>
+</tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="%(action)s"></td></tr>
 </table>
 '''%info
@@ -1618,12 +1628,12 @@ email.</p>'''
         ''' Register, update or validate a user.
 
             This interface handles one of three cases:
-                1. new user sending in name, password and email
-                2. completion of rego with One Time Key
+                1. completion of rego with One Time Key
+                2. new user sending in name, password and email
                 3. updating existing user details for currently authed user
         '''
         info = {}
-        for param in 'name password email otk confirm'.split():
+        for param in 'name password email otk confirm gpg_keyid'.split():
             if self.form.has_key(param):
                 v = self.form[param].value.strip()
                 if v: info[param] = v
@@ -1655,7 +1665,7 @@ email.</p>'''
                 self.fail("password and confirm don't match", heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
-                info['email'])
+                info['email'], info['gpg_keyid'])
             info['url'] = self.config.url
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
@@ -1675,7 +1685,8 @@ email.</p>'''
                         heading='User profile')
                     return
             email = info.get('email', user['email'])
-            self.store.store_user(self.username, password, email)
+            gpg_keyid = info.get('gpg_keyid', user['gpg_keyid'])
+            self.store.store_user(self.username, password, email, gpg_keyid)
             response = 'Details updated OK'
         self.success(message=response, heading='Users')
 
@@ -1724,7 +1735,7 @@ within it to complete the reset process.</p>
                 self.fail('email address unknown to me')
                 return
             pw = ''.join([random.choice(chars) for x in range(10)])
-            self.store.store_user(user['name'], pw, user['email'])
+            self.store.store_user(user['name'], pw, user['email'], None)
             info = {'name': user['name'], 'password': pw,
                 'email':user['email']}
             info['admin'] = self.config.adminemail

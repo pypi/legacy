@@ -10,7 +10,7 @@ def set_password(store, name, pw):
     user = store.get_user(name.strip())
     if user is None:
         raise ValueError, 'user name unknown to me'
-    store.store_user(user['name'], pw.strip(), user['email'])
+    store.store_user(user['name'], pw.strip(), user['email'], None)
     print 'done'
 
 
