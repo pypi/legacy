@@ -209,7 +209,7 @@ class WebUI:
 <meta name="generator" content="HT2HTML/2.0">
 <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif">
 <link rel="STYLESHEET" href="http://www.python.org/style.css" type="text/css">
-<link rel="STYLESHEET" href="http://mechanicalcat.net/pypi.css" type="text/css">
+<link rel="STYLESHEET" href="http://www.python.org/css/pypi.css" type="text/css">
 </head>
 <body bgcolor="#ffffff" text="#000000"
       marginwidth="0" marginheight="0"
@@ -383,10 +383,14 @@ Welcome to the Python Package Index (PyPI). You may:
 <li><a href="%s?:action=search_form">Search</a>
 <li><a href="%s?:action=browse">Browse the tree of packages</a>
 <li><a href="%s?:action=index">View a flat list of all packages</a>
+<li><a href="%s?:action=submit_form">Submit package information</a> (note that
+you must <a href="%s?:action=register_form">register to submit</a>)
 </ul>
+
+<p>Last 20 updates:</p>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
-'''%(URL_PATH, URL_PATH, URL_PATH))
+'''%(URL_PATH, URL_PATH, URL_PATH, URL_PATH, URL_PATH))
         i=0
         for name, version, date, summary in self.store.latest_updates():
             w('''<tr%s>
@@ -427,7 +431,7 @@ Welcome to the Python Package Index (PyPI). You may:
     <pubDate>%sZ</pubDate>
    </item>
 '''%(xmlescape(name), xmlescape(version), xmlescape(packageURL(name, version)),
-        xmlescape(summary)), date)
+        xmlescape(summary), date))
         w('''
   </channel>
 </rss>
