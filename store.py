@@ -90,6 +90,7 @@ class Store:
 
         # now see if we're inserting or updating a release
         message = None
+        relationships = {}
         old_cifiers = []
         if self.has_release(name, version):
             # figure the changes
@@ -120,6 +121,16 @@ class Store:
             old_cifiers.sort()
             if info.has_key('classifiers') and old_cifiers != classifiers:
                 old.append('classifiers')
+
+            # get old classifiers list
+            for col in ('requires', 'provides', 'obsoletes'):
+                relationships[col] = self.get_release_relationships(name,
+                    version, col)
+                relationships[col].sort()
+                new_val = info.get(col, [])
+                new_val.sort()
+                if info.has_key(col) and relationships[col] != new_val:
+                    old.append(col)
 
             # no update when nothing changes
             if not old:
@@ -173,19 +184,28 @@ class Store:
                 'name=%s and version <> %s', ('TRUE', name, version))
 
         # handle trove information
-        if not info.has_key('classifiers') or old_cifiers == classifiers:
-            return message
+        if info.has_key('classifiers') and old_cifiers != classifiers:
+            cursor.execute('delete from release_classifiers where name=%s'
+                ' and version=%s', (name, version))
+            for classifier in classifiers:
+                cursor.execute('select id from trove_classifiers where'
+                    ' classifier=%s', (classifier, ))
+                trove_id = cursor.fetchone()[0]
+                cursor.execute('insert into release_classifiers '
+                    '(name, version, trove_id) values (%s, %s, %s)',
+                    (name, version, trove_id))
 
-        # otherwise save them off
-        cursor.execute('delete from release_classifiers where name=%s'
-            ' and version=%s', (name, version))
-        for classifier in classifiers:
-            cursor.execute('select id from trove_classifiers where'
-                ' classifier=%s', (classifier, ))
-            trove_id = cursor.fetchone()[0]
-            cursor.execute('insert into release_classifiers '
-                '(name, version, trove_id) values (%s, %s, %s)',
-                (name, version, trove_id))
+        # handle relationship specifiers
+        for col in ('requires', 'provides', 'obsoletes'):
+            if not info.has_key(col) or relationships.get(col, []) == info[col]:
+                continue
+            cursor.execute('''delete from release_%s where name=%%s
+                and version=%%s'''%col, (name, version))
+            for specifier in info[col]:
+                cursor.execute('''insert into release_%s (name, version,
+                    specifier) values (%%s, %%s, %%s)'''%col, (name,
+                    version, specifier))
+
         return message
 
     def fix_ordering(self, name, new_version=None):
@@ -335,6 +355,15 @@ class Store:
         cursor.execute('''select classifier
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
+        return [x[0] for x in cursor.fetchall()]
+
+    def get_release_relationships(self, name, version, relationship):
+        ''' Fetch the list of relationships of a particular type, either
+            "requires", "provides" or "obsoletes".
+        '''
+        cursor = self.get_cursor()
+        cursor.execute('''select specifier from release_%s where
+            name=%%s and version=%%s'''%relationship, (name, version))
         return [x[0] for x in cursor.fetchall()]
 
     def get_package_roles(self, name):

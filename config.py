@@ -15,4 +15,5 @@ class Config:
         self.adminemail = c.get('webui', 'adminemail')
         self.url = c.get('webui', 'url')
         self.files_url = c.get('webui', 'files_url')
+        self.rss_file = c.get('webui', 'rss_file')
 

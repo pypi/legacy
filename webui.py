@@ -10,7 +10,7 @@ def xmlescape(s):
     ' make sure we escape a string '
     return saxutils.escape(str(s))
 
-import store, config, flamenco2, trove
+import store, config, flamenco2, trove, versionpredicate
 
 class NotFound(Exception):
     pass
@@ -474,8 +474,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 
     def rss_regen(self, rss_file=None):
         if rss_file is None:
-            rss_file = os.path.join(os.path.split(self.config.database)[0],
-                'rss.xml')
+            rss_file = self.config.rss_file
         f = open(rss_file, 'w')
         f.write('''<?xml version="1.0"?>
 <!-- name="generator" content="PyPI/%s" -->
@@ -818,7 +817,7 @@ available Roles are defined as:
         keys.sort()
         keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
         for key in keypref:
-            value = info.get(key)
+            value = info[key]
             if not value:
                 continue
 
@@ -833,12 +832,16 @@ available Roles are defined as:
 
             w('%s: %s\n' % (label, value))
 
-        # Classifiers aren't PEP 241, but PEP 301 suggests they be in
-        # metadata files.
+        for col in ('requires', 'provides', 'obsoletes'):
+            l = self.store.get_release_relationships(name, version, col)
+            for entry in l:
+                w('%s: %s\n' %(col.capitalize(), entry))
+
         classifiers = self.store.get_release_classifiers(name, version)
         for c in classifiers:
             w('Classifier: %s\n' % (c,))
         w('\n')
+
         # Not using self.success or page_head because we want
         # plain-text without all the html trappings.
         self.handler.send_response(200, "OK")
@@ -912,11 +915,19 @@ available Roles are defined as:
                 w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label,
                     cgi.escape(value)))
 
+        def format_list(title, l):
+            w('<tr><th>%s: </th><td>'%title.capitalize())
+            w('\n<br>'.join([cgi.escape(x) for x in l]))
+            w('\n</td></tr>\n')
+
+        for col in ('requires', 'provides', 'obsoletes'):
+            l = self.store.get_release_relationships(name, version, col)
+            if l: format_list(col, l)
+
         classifiers = self.store.get_release_classifiers(name, version)
         if classifiers:
-            w('<tr><th>Classifiers: </th><td>')
-            w('\n<br>'.join([cgi.escape(x) for x in classifiers]))
-            w('\n</td></tr>\n')
+            format_list('classifiers', classifiers)
+
         w('\n</table>\n')
 
         # package's role assignments
@@ -1009,8 +1020,11 @@ index.
 
             # form field
             if property == '_pypi_hidden':
-                a = value=='0' and ' selected' or ''
-                b = value=='1' and ' selected' or ''
+                a = b = ''
+                if value:
+                    b = ' selected'
+                else:
+                    a = ' selected'
                 field = '''<select name="_pypi_hidden">
                             <option value="0"%s>No</option>
                             <option value="1"%s>Yes</option>
@@ -1033,6 +1047,18 @@ index.
             else:
                 req = ''
             w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label, field))
+
+        # format relationships
+        def relationship_input(relationship, value):
+            w('''<tr><th>%s:</th>
+   <td><textarea name="%s" cols="40" rows="5">%s</textarea></td>'''%(
+    relationship.capitalize(), relationship, '\n'.join(value)))
+        for col in ('requires', 'provides', 'obsoletes'):
+            if name is not None:
+                l = self.store.get_release_relationships(name, version, col)
+            else:
+                l = []
+            relationship_input(col, l)
 
         # if we're editing
         if name is not None:
@@ -1097,6 +1123,12 @@ index.
         if isinstance(platform, types.ListType):
             data['platform'] = ','.join(data['platform'])
 
+        # make sure relationships are lists
+        for name in ('requires', 'provides', 'obsoletes'):
+            if data.has_key(name) and not isinstance(data[name],
+                    types.ListType):
+                data[name] = [data[name]]
+
         # rename classifiers
         if data.has_key('classifier'):
             classifiers = data['classifier']
@@ -1144,6 +1176,12 @@ index.
         # pull the package information out of the form submission
         data = self.form_metadata()
 
+        # make sure relationships are lists
+        for name in ('requires', 'provides', 'obsoletes'):
+            if data.has_key(name) and not isinstance(data[name],
+                    types.ListType):
+                data[name] = [data[name]]
+
         # make sure classifiers is a list
         if data.has_key('classifiers'):
             classifiers = data['classifiers']
@@ -1169,7 +1207,7 @@ index.
 
         # make sure the _pypi_hidden flag is set
         if not data.has_key('_pypi_hidden'):
-            data['_pypi_hidden'] = '0'
+            data['_pypi_hidden'] = False
 
         # save off the data
         message = self.store.store_package(name, version, data)
@@ -1186,12 +1224,13 @@ index.
             if k.startswith(':'): continue
             v = self.form[k]
             if type(v) == type([]):
-                if k == 'classifiers':
+                if k in ('classifiers', 'requires', 'provides', 'obsoletes'):
                     v = [x.value.strip() for x in v]
                 else:
                     v = ','.join([x.value.strip() for x in v])
             else:
                 v = v.value.strip()
+            if k == '_pypi_hidden': v = v == '1'
             data[k.lower()] = v
         return data
 
@@ -1216,6 +1255,16 @@ index.
             raise ValueError, 'Missing required field "version"'
         if data.has_key('metadata_version'):
             del data['metadata_version']
+
+        def validate_version_predicates(col, sequence):
+            try:
+                map(versionpredicate.VersionPredicate, sequence)
+            except ValueError, message:
+                raise ValueError, 'Bad "%s" syntax: %s'%(col, message)
+        for col in ('requires', 'provides', 'obsoletes'):
+            if data.has_key(col):
+                validate_version_predicates(col, data[col])
+
         if data.has_key('classifiers'):
             d = {}
             for entry in self.store.get_classifiers():

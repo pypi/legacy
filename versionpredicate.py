@@ -28,9 +28,9 @@ compmap = {"<": operator.lt, "<=": operator.le, "==": operator.eq,
 class VersionPredicate:
    """Parse and test package version predicates.
 
-   >>> v = VersionPredicate("pyepat.abc (>1.0, <3333.3a1, !=1555.1b3)")
+   >>> v = VersionPredicate("pyepat.abc (>1.0, <3333.3a1, !=1555.1b3, !=1.2.3)")
    >>> print v
-   pyepat.abc (> 1.0, < 3333.3a1, != 1555.1b3)
+   pyepat.abc (> 1.0, < 3333.3a1, != 1555.1b3, != 1.2.3)
    >>> v.satisfied_by("1.1")
    True
    >>> v.satisfied_by("1.4")
