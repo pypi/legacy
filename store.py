@@ -392,8 +392,7 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'select classifier from trove_classifiers'
             ' order by classifier')
-        return Result(('classifier', ),
-            [x[0].strip() for x in cursor.fetchall()])
+        return Result(('classifier', ), cursor.fetchall())
 
     def get_release_classifiers(self, name, version):
         ''' Fetch the list of classifiers for the release.
@@ -402,8 +401,7 @@ class Store:
         safe_execute(cursor, '''select classifier
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
-        return Result(('classifier', ),
-            [x[0].strip() for x in cursor.fetchall()])
+        return Result(('classifier', ), cursor.fetchall())
 
     def get_release_relationships(self, name, version, relationship):
         ''' Fetch the list of relationships of a particular type, either
@@ -412,8 +410,7 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select specifier from release_%s where
             name=%%s and version=%%s'''%relationship, (name, version))
-        return Result(('specifier', ),
-            [x[0].strip() for x in cursor.fetchall()])
+        return Result(('specifier', ), cursor.fetchall())
 
     def get_package_roles(self, name):
         ''' Fetch the list of Roles for the package.

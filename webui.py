@@ -816,8 +816,9 @@ class WebUI:
 ''')
         for classifier in self.store.get_classifiers():
             selected = release_cifiers.has_key(classifier) and ' selected' or ''
-            w('<option%s value="%s">%s</option>'%(selected,
-                cgi.escape(classifier['classifier']), classifier))
+            utext = urllib.quote(classifier['classifier'])
+            htext = cgi.escape(classifier['classifier'])
+            w('<option%s value="%s">%s</option>'%(selected, utext, htext))
 
         w('''</select></td></tr>''')
 
