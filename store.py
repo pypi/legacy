@@ -18,6 +18,12 @@ dist_file_types = [
 ]
 
 class ResultRow:
+    '''Turn a tuple of row values into something that may be looked up by
+    both column index and name.
+
+    Also, convert any unicode values coming out of the database into UTF-8
+    encoded 8-bit strings.
+    '''
     def __init__(self, cols, info=None):
         self.cols = cols
         self.cols_d = {}
@@ -27,7 +33,10 @@ class ResultRow:
     def __getitem__(self, item):
         if isinstance(item, int):
             return self.info[item]
-        return self.info[self.cols_d[item]]
+        value = self.info[self.cols_d[item]]
+        if isinstance(value, unicode):
+            return value.encode('utf-8')
+        return value
     def items(self):
         return [(col, self.info[i]) for i, col in enumerate(self.cols)]
     def keys(self):
@@ -245,7 +254,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         # load up all the version strings for this package and sort them
-        safe_execute(cursor, 
+        safe_execute(cursor,
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
         l = []
@@ -316,8 +325,8 @@ class Store:
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select * from packages')
-        return cursor.fetchall()
+        safe_execute(cursor, 'select name,stable_version from packages')
+        return Results(('name', 'stable_version'), cursor.fetchall())
 
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
@@ -376,7 +385,8 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'select classifier from trove_classifiers'
             ' order by classifier')
-        return [x[0].strip() for x in cursor.fetchall()]
+        return Result(('classifier', ),
+            [x[0].strip() for x in cursor.fetchall()])
 
     def get_release_classifiers(self, name, version):
         ''' Fetch the list of classifiers for the release.
@@ -385,7 +395,8 @@ class Store:
         safe_execute(cursor, '''select classifier
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
-        return [x[0] for x in cursor.fetchall()]
+        return Result(('classifier', ),
+            [x[0].strip() for x in cursor.fetchall()])
 
     def get_release_relationships(self, name, version, relationship):
         ''' Fetch the list of relationships of a particular type, either
@@ -394,7 +405,8 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select specifier from release_%s where
             name=%%s and version=%%s'''%relationship, (name, version))
-        return [x[0] for x in cursor.fetchall()]
+        return Result(('specifier', ),
+            [x[0].strip() for x in cursor.fetchall()])
 
     def get_package_roles(self, name):
         ''' Fetch the list of Roles for the package.
@@ -402,7 +414,7 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select role_name, user_name
             from roles where package_name=%s''', (name, ))
-        return cursor.fetchall()
+        return Result(('role_name', 'user_name'), cursor.fetchall())
 
     def latest_releases(self, num=20):
         ''' Fetch "number" latest releases, youngest to oldest.
@@ -425,7 +437,8 @@ class Store:
                 continue
             l.append((name,version,date,summary))
             d[k] = 1   
-        return l[:num]
+        return Result(('name', 'version', 'submitted_date', 'summary'),
+            l[:num])
 
     def latest_updates(self, num=20):
         ''' Fetch "number" latest updates, youngest to oldest.
@@ -445,9 +458,10 @@ class Store:
             k = (name,version)
             if d.has_key(k):
                 continue
-            l.append((name,version,date,summary))
+            l.append((name, version, date, summary))
             d[k] = 1   
-        return l[:num]
+        return Result(('name', 'version', 'submitted_date', 'summary'),
+            l[:num])
 
     def get_package_releases(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
@@ -541,7 +555,7 @@ class Store:
             if password:
                 # update existing user, including password
                 password = sha.sha(password).hexdigest()
-                safe_execute(cursor, 
+                safe_execute(cursor,
                    'update users set password=%s, email=%s, where name=%s',
                     (password, email, name))
             else:
@@ -556,7 +570,7 @@ class Store:
         password = sha.sha(password).hexdigest()
 
         # new user
-        safe_execute(cursor, 
+        safe_execute(cursor,
            'insert into users (name, password, email) values (%s, %s, %s)',
            (name, password, email))
         otk = ''.join([random.choice(chars) for x in range(32)])
@@ -571,9 +585,10 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select name,password,email,gpg_keyid from users where
-            name=%s''', (name,))
-        return ResultRow(('name', 'password', 'email', 'gpg_keyid'), cursor.fetchone())
+        safe_execute(cursor, '''select name, password, email, gpg_keyid
+            from users where name=%s''', (name,))
+        return ResultRow(('name', 'password', 'email', 'gpg_keyid'),
+            cursor.fetchone())
 
     def get_user_by_email(self, email):
         ''' Retrieve info about the user from the database, looked up by
@@ -583,8 +598,10 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select * from users where email=%s", (email,))
-        return cursor.fetchone()
+        safe_execute(cursor, '''select name, password, email, gpg_keyid
+            from users where email=%s''', (email,))
+        return ResultRow(('name', 'password', 'email', 'gpg_keyid'),
+            cursor.fetchone())
 
     def get_users(self):
         ''' Fetch the complete list of users from the database.
@@ -648,7 +665,7 @@ class Store:
         res = cursor.fetchone()
         if res is None:
             return ''
-        return res['otk']
+        return ResultRow(('otk', ), res['otk'])
 
     def user_packages(self, user):
         ''' Retrieve package info for all packages of a user
@@ -660,8 +677,8 @@ class Store:
         safe_execute(cursor, sql, (user,))
         res = cursor.fetchall()
         if res is None:
-            return []
-        return res
+            res = []
+        return Result(('package_name',), res)
 
     #
     # File handling
