@@ -17,7 +17,7 @@ def set_password(store, name, pw):
 def remove_package(store, name):
     ''' Remove a package from the database
     '''
-    cursor = store.cursor
+    cursor = store.get_cursor()
     cursor.execute('delete from packages where name=%s', name)
     cursor.execute('delete from releases where name=%s', name)
     cursor.execute('delete from journals where name=%s', name)
@@ -28,7 +28,7 @@ def remove_package(store, name):
 def add_classifier(store, classifier):
     ''' Add a classifier to the trove_classifiers list
     '''
-    cursor = store.cursor
+    cursor = store.get_cursor()
     cursor.execute("select num from ids where name='trove_classifiers'")
     id = int(cursor.fetchone()[0])
     cursor.execute('insert into trove_classifiers (id, classifier) '

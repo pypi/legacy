@@ -388,6 +388,9 @@ PyPI Actions
         else:
             raise ValueError, 'Unknown action'
 
+        if action in 'submit submit_pkg_info pkg_edit remove_pkg'.split():
+            self.rss_regen()
+
         # commit any database changes
         self.store.commit()
 
@@ -440,10 +443,10 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             'rss.xml')
         if not os.path.exists(rss_file):
             self.rss_regen(rss_file)
-        else:
-            rss_mtime = os.stat(rss_file)[stat.ST_MTIME]
-            if rss_mtime < self.store.last_modified():
-                self.rss_regen(rss_file)
+#        else:
+#            rss_mtime = os.stat(rss_file)[stat.ST_MTIME]
+#            if rss_mtime < self.store.last_modified():
+#                self.rss_regen(rss_file)
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
@@ -451,7 +454,10 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         self.handler.end_headers()
         self.wfile.write(open(rss_file).read())
 
-    def rss_regen(self, rss_file):
+    def rss_regen(self, rss_file=None):
+        if rss_file is None:
+            rss_file = os.path.join(os.path.split(self.config.database)[0],
+                'rss.xml')
         f = open(rss_file, 'w')
         f.write('''<?xml version="1.0"?>
 <!-- name="generator" content="PyPI/%s" -->
