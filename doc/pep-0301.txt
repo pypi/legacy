@@ -333,10 +333,11 @@ Done  Feature
  Y    Submission via *register* command (register.py module)
  Y    Web interface
  Y    Handling of the *classifiers* setup() keyword (dist.py.patch)
+ Y    Patch Python 2.2.3 to relax keyword argument checks in the
+      distutils setup() function
+ N    Patch Python 2.3 to apply the dist.py.patch
  N    Library reference documentation of the *register* command and
       additional *classifiers* keyword
- N    Patch to Python 2.2.2 to relax keyword argument checks in the
-      distutils setup() function
 ===== =============================================================
 
 In the two days of the 22nd and 23rd October 2002, after the first
