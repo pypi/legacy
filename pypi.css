@@ -40,6 +40,14 @@ p.error {
 #navbar {
  background-color: #eeeeff;
  border-bottom: 1px solid #444;
+ margin-bottom: 5px;
+}
+
+#footer {
+ margin-top: 10px;
+ background-color: #eeeeff;
+ border-top: 1px solid #444;
+ font-size: 90%;
 }
 
 #navbar a,strong,em {
@@ -130,6 +138,12 @@ table.list tr.normal td {
 
 table.list tr.alt td {
   background-color: #efefef;
+}
+
+table.list td#last {
+  border-top: 1px solid #404070;
+  border-left: none;
+  border-right: none;
 }
 
 table.list td:first-child {

@@ -199,8 +199,17 @@ class WebUI:
         w('\n</div><div id="content">\n')
 
     def page_foot(self):
-        self.wfile.write('\n</div>\n</body></html>\n')
-
+        self.wfile.write('''
+</div>
+<div id="footer">
+Author: Richard Jones<br>
+Bug reports and support requests:
+  <a href="http://sourceforge.net/projects/pypi/">here</a><br>
+Comments to
+ <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
+</div>
+</body></html>
+''')
     def inner_run(self):
         ''' Figure out what the request is, and farm off to the appropriate
             handler.
@@ -253,19 +262,20 @@ class WebUI:
         spec = self.form_metadata()
         if not spec.has_key('hidden'):
             spec['hidden'] = '0'
+        i=0
         for pkg in self.store.query_packages(spec):
             name = pkg['name']
             version = pkg['version']
-            w('''<tr>
+            w('''<tr%s>
         <td>%s</td>
         <td><a href="/cgi-bin/pypi.cgi?:action=display&name=%s&version=%s">%s</a></td>
-        <td>%s</td></tr>'''%(name, urllib.quote(name), urllib.quote(version),
+        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', name,
+                urllib.quote(name), urllib.quote(version),
                 version, cgi.escape(str(pkg['summary']))))
+            i+=1
         w('''
+<tr><td id="last" colspan="3">&nbsp;</td></tr>
 </table>
-<hr>
-Author: Richard Jones<br>
-Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
 ''')
         self.success(heading='Index of packages', content=content.getvalue())
 
