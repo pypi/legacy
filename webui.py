@@ -138,6 +138,8 @@ class WebUI:
             code=200, heading=None, headers={}, content=''):
         ''' Indicate to the user that the operation has succeeded.
         '''
+        if heading:
+            title = title + ': ' + heading
         self.page_head(title, message, heading, code, headers)
         if message:
             self.wfile.write('<p class="ok">%s</p>'%message)
@@ -1185,6 +1187,9 @@ index.
 
         name = self.form['name'].value
 
+        if self.form.has_key('submit_remove'):
+            return self.remove_pkg()
+
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
                 self.store.has_role('Maintainer', name)):
@@ -1202,14 +1207,14 @@ index.
         content = StringIO.StringIO()
         w = content.write
 
-        # see if we're editing
+        # see if we're editing (note that form keys don't get unquoted)
         for key in self.form.keys():
             if key.startswith('hid_'):
-                ver = key[4:]
+                ver = urllib.unquote(key[4:])
                 info = reldict[ver]
                 info['_pypi_hidden'] = self.form[key].value
             elif key.startswith('sum_'):
-                ver = key[4:]
+                ver = urllib.unquote(key[4:])
                 info = reldict[ver]
                 info['summary'] = self.form[key].value
 
@@ -1227,15 +1232,23 @@ index.
   package that is released. You may use this form to hide releases
   from users.
 </p>
-<p><a href="%s?:action=role_form&package_name=%s">Role admin</a></p>
-<p><a href="%s?:action=remove_pkg&name=%s">Remove package</a></p>
-<form method="POST">
+<p>Administer the <a href="%s?:action=role_form&package_name=%s">Role</a>
+assigned to users for this package.</p>
+<p>
+<form action="%s" method="POST">
+<input type="hidden" name=":action" value="remove_pkg">
+<input type="hidden" name="name" value="%s">
+<input type="submit" value="Remove this package completely">
+</form>
+</p>
+<p>Alternatively, you may edit the information about each release:</p>
+<form action="%s" method="POST">
 <input type="hidden" name=":action" value="pkg_edit">
 <input type="hidden" name="name" value="%s">
-'''%(self.url_path, un, self.url_path, un, cn))
+'''%(self.url_path, un, self.url_path, cn, self.url_path, cn))
 
         w('''<table class="list" style="width: auto">
-   <tr><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="3">Actions</th></tr>''')
+   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="2">Links</th></tr>''')
         for release in releases:
             release = reldict[release['version']]
             uv = urllib.quote(release['version'])
@@ -1247,8 +1260,10 @@ index.
             else:
                 selno = ' selected'
             sumname = 'sum_' + uv
-            summary = cgi.escape(release['summary'])
-            w('''<tr><td>%(cv)s</td>
+            summary = cgi.escape(release['summary'] or '')
+            w('''<tr>
+  <td><input type="checkbox" name="version" value="%(cv)s"></td>
+  <td>%(cv)s</td>
   <td>
    <select name="%(selname)s">
     <option value="0"%(selno)s>No</option>
@@ -1258,10 +1273,18 @@ index.
   <td><input size="40" name="%(sumname)s" value="%(summary)s"></td>
   <td><a href="%(url)s?:action=display&name=%(un)s&version=%(uv)s">show</td>
   <td><a href="%(url)s?:action=submit_form&name=%(un)s&version=%(uv)s">edit</td>
-  <td><a href="%(url)s?:action=remove_pkg&name=%(un)s&version=%(uv)s">remove</td></tr>
+ </tr>
 '''%locals())
-        w('''<tr><td id="last" colspan="6">
-   <input type="submit" value="Update Releases"</td></tr></table>
+        w('''<tr>
+  <td id="last">
+   <input type="submit" name="submit_remove" value="Remove">
+  </td>
+  <td id="last">&nbsp;</td>
+  <td id="last" colspan="5">
+   <input type="submit" value="Update Releases">
+  </td>
+ </tr>
+</table>
 </form>''')
 
         self.success(heading='Package %s'%cn, content=content.getvalue())
@@ -1281,9 +1304,13 @@ index.
         name = self.form['name'].value
         cn = cgi.escape(name)
         if self.form.has_key('version'):
-            version = self.form['version'].value
-            cv = cgi.escape(version)
-            desc = 'release %s of package %s.'%(cv, cn)
+            if isinstance(self.form['version'], type([])):
+                version = [x.value for x in self.form['version']]
+            else:
+                version = [self.form['version'].value]
+            cv = cgi.escape(', '.join(version))
+            s = len(version)>1 and 's' or ''
+            desc = 'release%s %s of package %s.'%(s, cv, cn)
         else:
             version = None
             desc = 'all information about package %s.'%cn
@@ -1301,12 +1328,13 @@ index.
 <p>You are about to remove %s
 This action <em>cannot be undone</em>!<br>
 Are you <strong>sure</strong>?</p>
-<form>
+<form action="%s" method="POST">
 <input type="hidden" name=":action" value="remove_pkg">
 <input type="hidden" name="name" value="%s">
-'''%(desc, cn))
-            if version:
-                w('<input type="hidden" name="version" value="%s">'%cv)
+'''%(desc, self.url_path, cn))
+            for v in version:
+                v = cgi.escape(v)
+                w('<input type="hidden" name="version" value="%s">'%v)
 
             w('''
 <input type="submit" name="confirm" value="OK">
@@ -1320,8 +1348,9 @@ Are you <strong>sure</strong>?</p>
             return self.pkg_edit()
 
         # ok, do it
-        if self.form.has_key('version'):
-            self.store.remove_release(name, version)
+        if version:
+            for v in version:
+                self.store.remove_release(name, v)
             self.success(heading='Removed %s'%desc,
                 message='Release removed')
         else:

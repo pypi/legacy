@@ -1,0 +1,7 @@
+2004-03-01
+- add meaningful titles to pages (uses page heading)
+- properly unquote version numbers for release editing page (bug #855883)
+- allow removal of more than one release at a time
+- make "delete whole package" a form button
+- made wording of role admin link more helpful
+- hide all current releases when a new release is added

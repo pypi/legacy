@@ -23,6 +23,15 @@ class Store:
 
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
+
+        If the name doesn't exist, we add a new package with the current
+        user as the Owner of the package.
+
+        If the version doesn't exist, we add a new release, hiding all
+        previous releases.
+
+        If the name and version do exist, we just edit (in place) and add a
+        journal entry.
         '''
         date = time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -124,6 +133,10 @@ class Store:
             # the Role)
             if not self.has_role('Owner', name):
                 self.add_role(self.username, 'Owner', name)
+
+            # hide all other releases of this package
+            cursor.execute('update releases set _pypi_hidden=%s where '
+                'name=%s and version <> %s', (1, name, version))
 
         # handle trove information
         if not info.has_key('classifiers') or old_cifiers == classifiers:
