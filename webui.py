@@ -1342,7 +1342,7 @@ class WebUI:
                 raise ValueError, 'invalid distribution file'
 
         # Check whether signature is ASCII-armored
-        if signature and not signature.startswith("-----BEGIN PGP MESSAGE-----"):
+        if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
             raise ValueError, "signature is not ASCII-armored"
 
         # digest content
