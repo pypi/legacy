@@ -108,10 +108,10 @@ class register(Command):
             1. figure who the user is, and then
             2. send the data as a Basic auth'ed POST.
 
-            First we try to read the username/password from 
-            $HOME/.pythonpackagerc, which is a ConfigParser-formatted
-            file with a section [server-login] containing username and
-            password entries (both in clear text). Eg:
+            First we try to read the username/password from $HOME/.pypirc,
+            which is a ConfigParser-formatted file with a section
+            [server-login] containing username and password entries (both
+            in clear text). Eg:
 
                 [server-login]
                 username: fred
