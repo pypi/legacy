@@ -690,7 +690,7 @@ class WebUI:
                     and value != 'UNKNOWN'):
                 values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
             elif r == 'description' and not info['description_html']:
-                values['description_html'] = '<pre>%s</pre>' % cgi.escape(value)
+                values['description_html'] = '<pre>%s</pre>'%cgi.escape(value)
             elif r == 'description_html':
                 values[r] = value
             elif r.endswith('_email'):
@@ -702,9 +702,11 @@ class WebUI:
                 values[r] = cgi.escape(value)
 
         # switch the HMTL description
-        values['description'] = values['description_html']
-        del values['description_html']
-        rows.remove('description_html')
+        if values.has_key('description_html'):
+            values['description'] = values['description_html']
+            del values['description_html']
+        if 'description_html' in rows:
+            rows.remove('description_html')
 
         content=StringIO.StringIO()
         w=content.write

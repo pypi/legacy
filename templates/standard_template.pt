@@ -74,10 +74,12 @@
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
 Your Packages
 </font></b></td></tr>
-<tr tal:repeat="pkg_info packages">
+<tr>
  <td bgcolor="#99ccff">
+  <tal:block repeat="pkg_info packages">
   <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
-   tal:content="python:pkg_info[0]">package</a>
+   tal:content="python:pkg_info[0]">package</a><br />
+  </tal:block>
  </td>
 </tr>
 </tal:if-packages>
