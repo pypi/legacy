@@ -61,9 +61,9 @@ class Store:
                     else: v = repr(v)
                     old.append('%s'%k)
             # get old list
-            old = self.get_release_classifiers(name, version)
-            old.sort()
-            if old != classifiers:
+            oldc = self.get_release_classifiers(name, version)
+            oldc.sort()
+            if oldc != classifiers:
                 old.append('classifiers')
             else:
                 classifiers = []
