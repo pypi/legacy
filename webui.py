@@ -1,12 +1,14 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
-import time, whrandom, smtplib, base64, sha, rfc822
+import time, whrandom, smtplib, base64, sha, email, types
 
-import store, config, trove
+import store, config
 
 class NotFound(Exception):
     pass
 class Unauthorised(Exception):
+    pass
+class Forbidden(Exception):
     pass
 class Redirect(Exception):
     pass
@@ -57,7 +59,7 @@ class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
         functions (see pypi.cgi).
-        
+
         The handling of a request goes as follows:
         1. open the database
         2. see if the request is supplied with authentication information
@@ -86,14 +88,17 @@ class WebUI:
             try:
                 self.inner_run()
             except NotFound:
-                self.handler.send_error(404)
+                self.fail('Not Found', code=404)
             except Unauthorised, message:
                 message = str(message)
                 if not message:
                     message = 'You must login to access this feature'
                 self.fail(message, code=401, heading='Login required',
                     content=unauth_message, headers={'WWW-Authenticate':
-                    'Basic realm="python packages index"'})
+                    'Basic realm="pypi"'})
+            except Forbidden, message:
+                message = str(message)
+                self.fail(message, code=403, heading='Forbidden')
             except Redirect, path:
                 self.handler.send_response(301)
                 self.handler.send_header('Location', path)
@@ -104,49 +109,56 @@ class WebUI:
                 s = StringIO.StringIO()
                 traceback.print_exc(None, s)
                 s = cgi.escape(s.getvalue())
-                self.fail('error', code=400, heading='Error...',
+                self.fail('Internal Server Error', code=500, heading='Error...',
                     content='<pre>%s</pre>'%s)
         finally:
             self.store.close()
 
-    def fail(self, message, title="TEST: PyPI: Python Packages Index", code=400,
+    def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):
-        status = ('fail', message)
-        self.page_head(title, status, heading, code, headers)
+        ''' Indicate to the user that something has failed.
+        '''
+        self.page_head(title, message, heading, code, headers)
         self.wfile.write('<p class="error">%s</p>'%message)
         self.wfile.write(content)
         self.page_foot()
 
-    def success(self, message=None, title="TEST: PyPI: Python Packages Index", code=200,
-            heading=None, headers={}, content=''):
-        if message:
-            status = ('success', message)
-        else:
-            status = None
-        self.page_head(title, status, heading, code, headers)
+    def success(self, message=None, title="Python Packages Index",
+            code=200, heading=None, headers={}, content=''):
+        ''' Indicate to the user that the operation has succeeded.
+        '''
+        self.page_head(title, message, heading, code, headers)
         if message:
             self.wfile.write('<p class="ok">%s</p>'%message)
         self.wfile.write(content)
         self.page_foot()
 
-    def page_head(self, title, status=None, heading=None, code=200, headers={}):
-        self.handler.send_response(code)
+    def page_head(self, title, message=None, heading=None, code=200,
+            headers={}):
+        ''' Spit out HTTP and HTML headers.
+
+            "title" is the HTML page title
+            "message" is a succint error or success message
+            "code" is the HTTP response code
+            "heading" is usually a slight variation on "title" and is
+                      used in a HTML header
+            "headers" is a dictionary of additional HTTP headers to send
+        '''
+        if not message:
+            message = 'OK'
+        self.handler.send_response(code, message)
         self.handler.send_header('Content-Type', 'text/html')
-        if status is None:
-            status = ('success', 'success')
-        self.handler.send_header('X-Pypi-Status', status[0])
-        self.handler.send_header('X-Pypi-Reason', status[1])
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
         if heading is None: heading = title
         self.wfile.write('''
-<html><head><title>%s</title>
+<html><head><title>TEST PyPI: %s</title>
 <link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/style.css">
 <link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/page.css">
 </head>
 <body>
-<div id="header"><h1>%s</h1></div>
+<div id="header"><h1>TEST PyPI: %s</h1></div>
 <div id="content">
 '''%(title, heading))
 
@@ -186,7 +198,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -202,9 +214,11 @@ class WebUI:
         w('<a href="?:action=search_form">search</a>\n')
         w('| <a href="?:action=role_form">admin</a>\n')
         w('| <a href="?:action=submit_form">manual submission</a>\n')
-        w('| <a href="?:action=user_form">edit your details</a>\n')
-        if not self.username:
+        if self.username:
+            w('| <a href="?:action=user_form">edit your details</a>\n')
+        else:
             w('| <a href="?:action=register_form">register for a login</a>\n')
+        w('| <a href="?:action=list_classifiers">list trove classifiers</a>\n')
         w('<ul>\n')
         spec = self.form_metadata()
         if not spec.has_key('hidden'):
@@ -229,14 +243,14 @@ index.
 Author: Richard Jones<br>
 Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, please.
 ''')
-        self.success(heading='TEST: PyPI: Index of packages', content=content.getvalue())
+        self.success(heading='Index of packages', content=content.getvalue())
 
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
-        self.page_head('TEST: PyPI: search')
+        self.page_head('Search')
         self.wfile.write('''
-<form>
+<form method="GET">
 <input type="hidden" name=":action" value="index">
 <table class="form">
 <tr><th>Name:</th>
@@ -295,7 +309,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 '''
         # now write the body
         s = '''
-<form>
+<form method="POST">
 <input type="hidden" name=":action" value="role">
 <table class="form">
 <tr><th>User Name:</th>
@@ -370,7 +384,9 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         w('| <a href="?:action=search_form">search</a>\n')
         w('| <a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
         w('| <a href="?:action=submit_form&name=%s&version=%s"'
-            '>edit</a><br>'%(un, uv))
+            '>edit</a>'%(un, uv))
+        w('| <a href="?:action=list_classifiers">list trove classifiers</a>\n')
+        w('<br>')
 
         # now the package info
         w('<table class="form">\n')
@@ -383,13 +399,21 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             label = key.capitalize().replace('_', ' ')
             if key in ('url', 'home_page') and value != 'UNKNOWN':
                 w('<tr><th nowrap>%s: </th><td><a href="%s">%s</a></td></tr>\n'%(label,
-                    value, value))
+                    value, cgi.escape(value)))
             else:
-                w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label, value))
+                w('<tr><th nowrap>%s: </th><td>%s</td></tr>\n'%(label,
+                    cgi.escape(value)))
+
+        classifiers = self.store.get_release_classifiers(name, version)
+        if classifiers:
+            w('<tr><th>Classifiers: </th><td>')
+            w('\n<br>'.join([cgi.escape(x) for x in classifiers]))
+            w('\n</td></tr>\n')
         w('\n</table>\n')
 
         # package's journal
-        w('<table class="journal">\n')
+        w('<table class="history">\n')
+        w('<tr><th colspan=4 class="header">Journal</th></tr>\n')
         w('<tr><th>Date</th><th>User</th><th>IP Address</th><th>Action</th></tr>\n')
         for entry in self.store.get_journal(name, version):
             w('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n'%(
@@ -399,16 +423,21 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
         if error_message:
             self.fail(error_message,
-                heading='TEST: PyPI: %s %s'%(name, version),
+                heading='%s %s'%(name, version),
                 content=content.getvalue())
         else:
             self.success(message=ok_message,
-                heading='TEST: PyPI: %s %s'%(name, version),
+                heading='%s %s'%(name, version),
                 content=content.getvalue())
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
         '''
+        # submission of this form requires a login, so we should check
+        # before someone fills it in ;)
+        if not self.username:
+            raise Unauthorised, 'You must log in'
+
         # are we editing a specific entry?
         info = {}
         if self.form.has_key('name') and self.form.has_key('version'):
@@ -418,16 +447,11 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             # permission to do this?
             if not (self.store.has_role('Owner', name) or
                     self.store.has_role('Maintainer', name)):
-                raise Unauthorised, 'Not Owner or Maintainer'
+                raise Forbidden, 'Not Owner or Maintainer'
 
             # get the stored info
             for k,v in self.store.get_package(name, version).items():
                 info[k] = v
-
-        # submission of this form requires a login, so we should check
-        # before someone fills it in ;)
-        if not self.username:
-            raise Unauthorised, 'You must log in'
 
         content = StringIO.StringIO()
         w = content.write
@@ -444,7 +468,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 </form>
 
 <p>Or, enter the information manually:</p>
-<form>
+<form method="POST">
 <input type="hidden" name=":action" value="submit">
 <table class="form">
 ''')
@@ -499,10 +523,31 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 "You must supply the PKG-INFO file"
 
         # get the data
-        mess = rfc822.Message(self.form['pkginfo'].file)
+        mess = email.message_from_file(self.form['pkginfo'].file)
         data = {}
-        for k,v in [x.strip().split(': ') for x in mess.headers]:
-            data[k.lower().replace('-', '_')] = v
+        for k, v in mess.items():
+            # clean up the keys and values
+            k = k.lower()
+            v = v.strip()
+
+            # Platform, Classifiers, ...?
+            if data.has_key(k):
+                l = data[k]
+                if isinstance(l, types.ListType):
+                    l.append(v)
+                else:
+                    data[k] = [v]
+            else:
+                data[k] = v
+
+        # flatten platforms into one string
+        platform = data.get('platform', '')
+        if isinstance(platform, types.ListType):
+            data['platform'] = ','.join(data['platform'])
+
+        # rename classifiers
+        if data.has_key('classifier'):
+            data['classifiers'] = data['classifier']
 
         # validate the data
         try:
@@ -518,10 +563,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             data['hidden'] = '0'
 
         # make sure the user has permission to do stuff
-        if self.store.has_package(data['name'], data['version']) and not (
+        if self.store.has_package(name) and not (
                 self.store.has_role('Owner', name) or
                 self.store.has_role('Maintainer', name)):
-            raise Unauthorised, \
+            raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
 
         # save off the data
@@ -554,10 +599,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         version = data['version']
 
         # make sure the user has permission to do stuff
-        if self.store.has_package(data['name'], data['version']) and not (
+        if self.store.has_package(name) and not (
                 self.store.has_role('Owner', name) or
                 self.store.has_role('Maintainer', name)):
-            raise Unauthorised, \
+            raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
 
         # make sure the hidden flag is set
@@ -579,13 +624,13 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             if k.startswith(':'): continue
             v = self.form[k]
             if type(v) == type([]):
-                if k == 'trove':
+                if k == 'classifiers':
                     v = [x.value.strip() for x in v]
                 else:
                     v = ','.join([x.value.strip() for x in v])
             else:
                 v = v.value.strip()
-            data[k.lower().replace('-','_')] = v
+            data[k.lower()] = v
         return data
 
     def verify(self):
@@ -595,24 +640,37 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            self.fail(message, heading='TEST: PyPI: Package verification')
+            self.fail(message, code=400, heading='Package verification')
             return
 
-        self.success(heading='TEST: PyPI: Package verification', message='Validated OK')
+        self.success(heading='Package verification', message='Validated OK')
 
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
-
-            XXX actually _do_ this
-            XXX implement the "validate" :action
         '''
         if not data.has_key('name'):
-            raise ValueError, 'Missing required field: name'
+            raise ValueError, 'Missing required field "name"'
         if not data.has_key('version'):
-            raise ValueError, 'Missing required field: version'
+            raise ValueError, 'Missing required field "version"'
         if data.has_key('metadata_version'):
             del data['metadata_version']
+        if data.has_key('classifiers'):
+            d = {}
+            for entry in self.store.get_classifiers():
+                d[entry] = 1
+            for entry in data['classifiers']:
+                if d.has_key(entry):
+                    continue
+                raise ValueError, 'Invalid classifier "%s"'%entry
 
+    def list_classifiers(self):
+        ''' Just return the list of classifiers.
+        '''
+        c = '\n'.join(self.store.get_classifiers())
+        self.handler.send_response(200, 'OK')
+        self.handler.send_header('Content-Type', 'text/plain')
+        self.handler.end_headers()
+        self.wfile.write(c + '\n')
 
     #
     # User handling code (registration, password changing
@@ -657,10 +715,12 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="%(action)s"></td></tr>
 </table>
+'''%info
+        if not self.username:
+            content += '''
 <p>A confirmation email will be sent to the address you nominate above.</p>
 <p>To complete the registration process, visit the link indicated in the
-email.</p>
-'''%info
+email.</p>'''
         self.success(content=content, heading=heading)
 
     def user(self):
@@ -700,9 +760,9 @@ email.</p>
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
                 return
-            if info.has_key('confirm') and info['password'] != info['confirm']:
+            if not info.has_key('confirm') or info['password']<>info['confirm']:
                 self.fail("password and confirm don't match",
-                    heading='User registration')
+                    heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'])
@@ -721,12 +781,12 @@ email.</p>
             email = info.get('email', user['email'])
             self.store.store_user(self.username, password, email)
             response = 'Details updated OK'
-        self.success(message=response, heading='User registration')
+        self.success(message=response, heading='Users')
 
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
         '''
-        self.page_head('TEST: PyPI: Forgotten Password',
+        self.page_head('Forgotten Password',
             heading='Request password reset')
         w = self.wfile.write
         w('''
@@ -743,7 +803,7 @@ know the email address you registered with, enter it below.</p>
 </form>
 
 <p>Or, if you know your username, then enter it below.</p>
-within it to complete the reset process.</p>
+
 <form method="POST">
 <input type="hidden" name=":action" value="password_reset">
 <table class="form">
@@ -752,7 +812,7 @@ within it to complete the reset process.</p>
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Reset password"></td></tr>
 </</form>
-table>
+</table>
 
 <p>A confirmation email will be sent to you - please follow the instructions
 within it to complete the reset process.</p>

@@ -15,15 +15,8 @@ class RequestWrapper:
         self.wfile = wfile
         self.rfile = rfile
         self.config = config
-    def send_error(self, code, message=''):
-        short, long = BaseHTTPRequestHandler.responses[code]
-        self.send_response(code)
-        self.send_header('Content-Type', 'text/html')
-        self.end_headers()
-        self.wfile.write(DEFAULT_ERROR_MESSAGE%{'code': code,
-            'message': short, 'explain': message or long})
-    def send_response(self, code):
-        self.wfile.write('Status: %s\r\n'%code)
+    def send_response(self, code, message=''):
+        self.wfile.write('Status: %s %s\r\n'%(code, message))
     def send_header(self, keyword, value):
         self.wfile.write("%s: %s\r\n" % (keyword, value))
     def end_headers(self):
@@ -43,7 +36,8 @@ try:
 except SystemExit:
     pass
 except:
-    sys.stdout.write('Status: 400\nContent-Type: text/html\n\n')
+    sys.stdout.write('Status: 500 Internal Server Error\r\n')
+    sys.stdout.write('Content-Type: text/html\r\n\r\n')
     sys.stdout.write("<pre>")
     s = StringIO.StringIO()
     traceback.print_exc(None, s)

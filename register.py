@@ -24,12 +24,18 @@ class register(Command):
          "url of repository [default: %s]"%DEFAULT_REPOSITORY),
         ('verify', None,
          'verify the package metadata for correctness'),
+        ('list-classifiers', None,
+         'list the valid Trove classifiers'),
+        ('verbose', None,
+         'display full response from server'),
         ]
-    boolean_options = ['verify']
+    boolean_options = ['verify', 'verbose', 'list-classifiers']
 
     def initialize_options(self):
         self.repository = None
         self.verify = 0
+        self.verbose = 0
+        self.list_classifiers = 0
 
     def finalize_options(self):
         if self.repository is None:
@@ -39,6 +45,8 @@ class register(Command):
         self.check_metadata()
         if self.verify:
             self.verify_metadata()
+        if self.list_classifiers:
+            self.classifiers()
         else:
             self.send_metadata()
 
@@ -72,31 +80,17 @@ class register(Command):
                       "or (maintainer and maintainer_email) " +
                       "must be supplied")
 
+    def classifiers(self):
+        ''' Fetch the list of classifiers from the server.
+        '''
+        response = urllib2.urlopen(self.repository+'?:action=list_classifiers')
+        print response.read()
+
     def verify_metadata(self):
         ''' Send the metadata to the package index server to be checked.
-
-            Doesn't require a login.
         '''
-        # figure the data to send - the metadata plus some additional
-        # information used by the package server
-        meta = self.distribution.metadata
-        data = {
-            ':action': 'verify',
-            'metadata-version' : '1.0',
-            'name': meta.get_name(),
-            'version': meta.get_version(),
-            'summary': meta.get_description(),
-            'home-page': meta.get_url(),
-            'author': meta.get_contact(),
-            'author-email': meta.get_contact_email(),
-            'license': meta.get_licence(),
-            'description': meta.get_long_description(),
-            'keywords': meta.get_keywords(),
-            'platform': meta.get_platforms(),
-        }
-
         # send the info to the server and report the result
-        (code, result) = self.post_to_server(data)
+        (code, result) = self.post_to_server('verify')
         print 'Server response (%s): %s'%(code, result)
 
     def send_metadata(self):
@@ -162,29 +156,10 @@ Your selection [default 1]: ''',
             # set up the authentication
             auth = urllib2.HTTPPasswordMgr()
             host = urlparse.urlparse(self.repository)[1]
-            auth.add_password('python packages index', host,
-                username, password)
-
-            # figure the data to send - the metadata plus some additional
-            # information used by the package server
-            meta = self.distribution.metadata
-            data = {
-                ':action': 'submit',
-                'metadata-version' : '1.0',
-                'name': meta.get_name(),
-                'version': meta.get_version(),
-                'summary': meta.get_description(),
-                'home-page': meta.get_url(),
-                'author': meta.get_contact(),
-                'author-email': meta.get_contact_email(),
-                'license': meta.get_licence(),
-                'description': meta.get_long_description(),
-                'keywords': meta.get_keywords(),
-                'platform': meta.get_platforms(),
-            }
+            auth.add_password('pypi', host, username, password)
 
             # send the info to the server and report the result
-            (code, result) = self.post_to_server(data, auth)
+            code, result = self.post_to_server('submit', auth)
             print 'Server response (%s): %s'%(code, result)
         elif choice == '2':
             data = {':action': 'user'}
@@ -203,8 +178,8 @@ Your selection [default 1]: ''',
                     print "Password and confirm don't match!"
             while not data['email']:
                 data['email'] = raw_input('   EMail: ')
-            (code, result) = self.post_to_server(data)
-            if result != 'Registration OK':
+            code, result = self.post_to_server(data)
+            if code != 200:
                 print 'Server response (%s): %s'%(code, result)
             else:
                 print 'You will receive an email shortly.'
@@ -214,12 +189,32 @@ Your selection [default 1]: ''',
             data['email'] = ''
             while not data['email']:
                 data['email'] = raw_input('Your email address: ')
-            (code, result) = self.post_to_server(data)
+            code, result = self.post_to_server(data)
             print 'Server response (%s): %s'%(code, result)
 
-    def post_to_server(self, data, auth=None):
+    def post_to_server(self, action, auth=None):
         ''' Post a query to the server, and return a string response.
         '''
+        # figure the data to send - the metadata plus some additional
+        # information used by the package server
+        meta = self.distribution.metadata
+        data = {
+            ':action': action,
+            'metadata_version' : '1.0',
+            'name': meta.get_name(),
+            'version': meta.get_version(),
+            'summary': meta.get_description(),
+            'home_page': meta.get_url(),
+            'author': meta.get_contact(),
+            'author_email': meta.get_contact_email(),
+            'license': meta.get_licence(),
+            'description': meta.get_long_description(),
+            'keywords': meta.get_keywords(),
+            'platform': meta.get_platforms(),
+        }
+        if hasattr(meta, 'classifiers'):
+            data['classifiers'] = meta.get_classifiers()
+
         # Build up the MIME payload for the urllib2 POST data
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary
@@ -251,19 +246,20 @@ Your selection [default 1]: ''',
         opener = urllib2.build_opener(
             urllib2.HTTPBasicAuthHandler(password_mgr=auth)
         )
+        data = ''
         try:
             result = opener.open(req)
         except urllib2.HTTPError, e:
-            if e.headers.has_key('x-pypi-reason'):
-                reason = e.headers['x-pypi-reason']
-                if reason == 'error':
-                    return 'fail', e.fp.read()
-                else:
-                    return 'fail', reason
-            else:
-                return 'fail', e.fp.read()
+            if self.verbose:
+                data = e.fp.read()
+            result = e.code, e.msg
         except urllib2.URLError, e:
-            return 'fail', str(e)
-
-        return result.headers['x-pypi-status'], result.headers['x-pypi-reason']
+            result = 500, str(e)
+        else:
+            if self.verbose:
+                data = result.read()
+            result = 200, 'OK'
+        if self.verbose:
+            print '-'*75, data, '-'*75
+        return result
 

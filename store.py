@@ -1,6 +1,6 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, sqlite, time, sha, whrandom
+import sys, os, re, sqlite, time, sha, whrandom, types
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
@@ -10,60 +10,8 @@ class StorageError(Exception):
 class Store:
     ''' Store info about packages, and allow query and retrieval.
 
-        Packages are unique by (name, version).
-
-        Other package info, as defined by distutils:
-          name
-          version
-          author
-          author_email
-          maintainer
-          maintainer_email
-          home_page
-          license
-          summary
-          description
-          long_description
-          keywords
-          platform
-
-        Additional info:
-          download_url
-          hidden
-
-        Trove metadata storage:
-          name
-          version
-          category_id
-
-        Trove categories:
-          id
-          text
-
-        Package journal:
-          name
-          version
-          action
-          submitted_date
-          submitted_by
-          submitted_from
-
-        Users table:
-          username
-          password
-          email
-          public_key
-
-        Roles table:
-          user_name
-          role_name          (Admin, Owner or Maintainer)
-          package_name
-
-        Additional support for registration:
-          rego_otk (
-            name             (user)
-            otk
-          )
+        XXX update schema info ...
+            Packages are unique by (name, version).
     '''
     def __init__(self, config):
         self.config = config
@@ -72,26 +20,54 @@ class Store:
 
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
-
-            The name and version must not appear in the info dict.
-
-            We automatically set the "submitted_date" column here, don't
-            send it in.
         '''
         date = time.strftime('%Y-%m-%d %H:%M:%S')
-        cols = info.keys()
 
-        # see if we're updating or inserting
-        if self.has_package(name, version):
+        # see if we're inserting or updating a package
+        if not self.has_package(name):
+            # insert the new package entry
+            sql = 'insert into packages (name) values (%s)'
+            self.cursor.execute(sql, (name, ))
+
+            # journal entry
+            self.cursor.execute('''insert into journals (name, version, action,
+                submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (name, None, 'create', date,
+                self.username, self.userip))
+
+            # first person to add an entry may be considered owner - though
+            # make sure they don't already have the Role (this might just
+            # be a new version, or someone might have already given them
+            # the Role)
+            if not self.has_role('Owner', name):
+                self.add_role(self.username, 'Owner', name)
+
+        # extract the Trove classifiers
+        classifiers = info.get('classifiers', [])
+        if not isinstance(classifiers, types.ListType):
+            classifiers = [classifiers]
+        classifiers.sort()
+        print >>sys.stderr, classifiers
+
+        # now see if we're inserting or updating a release
+        message = None
+        if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
             old = []
             specials = 'name version'.split()
-            for k,v in existing.items():
+            for k, v in existing.items():
                 if k not in specials and info.get(k, None) != v:
                     if v is None: v = 'NULL'
                     else: v = repr(v)
-                    old.append('%s was %s'%(k,v))
+                    old.append('%s'%k)
+            # get old list
+            old = self.get_release_classifiers(name, version)
+            old.sort()
+            if old != classifiers:
+                old.append('classifiers')
+            else:
+                classifiers = []
 
             # no update when nothing changes
             if not old:
@@ -101,19 +77,25 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            args = tuple([info[k] for k in cols] + [name, version])
+            cols = 'author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split()
+            args = tuple([info.get(k, None) for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
-            sql = "update packages set %s where name=%%s and version=%%s"%info
+            sql = "update releases set %s where name=%%s and version=%%s"%info
             self.cursor.execute(sql, args)
-            self.cursor.execute('''insert into journal (
-                  name, version, action, submitted_date, submitted_by,
-                  submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-                (name, version, message, date, self.username, self.userip))
-            return message
+
+            # journal the update
+            self.cursor.execute('''insert into journals (name, version,
+                action, submitted_date, submitted_by, submitted_from)
+                values (%s, %s, %s, %s, %s, %s)''', (name, version, message,
+                date, self.username, self.userip))
         else:
-            # insert
+            # round off the information (make sure name and version are in
+            # the info dict)
             info['name'] = name
             info['version'] = version
+
+            # perform the insert
+            cols = 'name version author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split()
             args = tuple([info[k] for k in cols])
             cols = ','.join(cols)
             params = ','.join(['%s']*len(info))
@@ -121,10 +103,10 @@ class Store:
             self.cursor.execute(sql, args)
 
             # journal entry
-            self.cursor.execute('''insert into journal (
-                  name, version, action, submitted_date, submitted_by,
-                  submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-                (name, version, 'create', date, self.username, self.userip))
+            self.cursor.execute('''insert into journals (name, version, action,
+                submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (name, version, 'new release',
+                date, self.username, self.userip))
 
             # first person to add an entry may be considered owner - though
             # make sure they don't already have the Role (this might just
@@ -133,32 +115,66 @@ class Store:
             if not self.has_role('Owner', name):
                 self.add_role(self.username, 'Owner', name)
 
-    def has_package(self, name, version):
+        # handle trove information
+        if not classifiers:
+            return message
+        print >>sys.stderr, classifiers
+
+        # otherwise save them off
+        self.cursor.execute('delete from release_classifiers where name=%s'
+            ' and version=%s', (name, version))
+        for classifier in classifiers:
+            self.cursor.execute('select id from trove_classifiers where'
+                ' classifier=%s', (classifier, ))
+            trove_id = self.cursor.fetchone()[0]
+            self.cursor.execute('insert into release_classifiers '
+                '(name, version, trove_id) values (%s, %s, %s)',
+                (name, version, trove_id))
+            
+
+    def has_package(self, name):
         ''' Determine whether the package exists in the database.
 
             Returns true/false.
         '''
-        sql = 'select count(*) from packages where name=%s and version=%s'
+        sql = 'select count(*) from packages where name=%s'
+        self.cursor.execute(sql, (name, ))
+        return int(self.cursor.fetchone()[0])
+
+    def has_release(self, name, version):
+        ''' Determine whether the release exists in the database.
+
+            Returns true/false.
+        '''
+        sql = 'select count(*) from releases where name=%s and version=%s'
         self.cursor.execute(sql, (name, version))
-        res = int(self.cursor.fetchone()[0])
-        return res
+        return int(self.cursor.fetchone()[0])
 
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
 
             Returns a mapping with the package info.
         '''
-        sql = "select * from packages where name=%s and version=%s"
+        sql = '''select packages.name as name, stable_version, version, author,
+                  author_email, maintainer, maintainer_email, home_page,
+                  license, summary, description, long_description, keywords,
+                  platform, download_url, hidden
+                 from packages, releases
+                 where packages.name=%s and version=%s
+                  and packages.name = releases.name'''
         self.cursor.execute(sql, (name, version))
         return self.cursor.fetchone()
 
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
 
-            Returns a mapping with the package info.
+            Returns a list of the journal entries, giving those entries
+            specific to the nominated version and those entries not specific
+            to any version.
         '''
-        sql = 'select * from journal where name=%s and (version=%s '\
-            'or version is NULL)'
+        # get the generic stuff or the stuff specific to the version
+        sql = '''select * from journals where name=%s and (version=%s or
+                version is NULL) order by submitted_date'''
         self.cursor.execute(sql, (name, version))
         return self.cursor.fetchall()
 
@@ -185,10 +201,25 @@ class Store:
             where = ''
 
         # do the fetch
-        sql = 'select name,version from packages %s'%where
+        sql = 'select name, version from releases %s'%where
         self.cursor.execute(sql)
         l = self.cursor.fetchall()
         return l
+
+    def get_classifiers(self):
+        ''' Fetch the list of valid classifiers from the database.
+        '''
+        self.cursor.execute('select classifier from trove_classifiers'
+            ' order by classifier')
+        return [x[0] for x in self.cursor.fetchall()]
+
+    def get_release_classifiers(self, name, version):
+        ''' Fetch the list of classifiers for the release.
+        '''
+        self.cursor.execute('''select classifier
+            from trove_classifiers, release_classifiers where id=trove_id
+            order by classifier''')
+        return [x[0] for x in self.cursor.fetchall()]
 
     #
     # Users interface
@@ -265,7 +296,7 @@ class Store:
             insert into roles (user_name, role_name, package_name)
             values (%s, %s, %s)''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S')
-        sql = '''insert into journal (
+        sql = '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)'''
         self.cursor.execute(sql, (package_name, 'add %s %s'%(role_name,
@@ -278,7 +309,7 @@ class Store:
             delete from roles where user_name=%s and role_name=%s
             and package_name=%s''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S')
-        self.cursor.execute('''insert into journal (
+        self.cursor.execute('''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
             (package_name, 'remove %s %s'%(role_name, user_name), date,
@@ -308,13 +339,23 @@ class Store:
         self.conn = sqlite.connect(db=self.config.database)
         self.cursor = self.conn.cursor()
         try:
-            self.cursor.execute('select count(*) from packages')
+            self.cursor.execute('select count(*) from ids')
             self.cursor.fetchone()
         except sqlite.DatabaseError, error:
             if str(error) != 'no such table: packages':
                 raise
-            self.cursor.execute('''
+            cursor.execute('''
+               create table ids (
+                  name varchar,
+                  num varchar
+               )''')
+            cursor.execute('''
                create table packages (
+                  name varchar,
+                  stable_version varchar
+               )''')
+            cursor.execute('''
+               create table releases (
                   name varchar,
                   version varchar,
                   author varchar,
@@ -331,8 +372,19 @@ class Store:
                   download_url varchar,
                   hidden varchar
                )''')
-            self.cursor.execute('''
-               create table journal (
+            cursor.execute('''
+               create table trove_classifiers (
+                  id varchar,
+                  classifier varchar
+               )''')
+            cursor.execute('''
+               create table release_classifiers (
+                  name varchar,
+                  version varchar,
+                  trove_id varchar
+               )''')
+            cursor.execute('''
+               create table journals (
                   name varchar,
                   version varchar,
                   action varchar,
@@ -340,24 +392,28 @@ class Store:
                   submitted_by varchar,
                   submitted_from varchar
                )''')
-            self.cursor.execute('''
+            cursor.execute('''
                create table users (
                   name varchar,
                   password varchar,
                   email varchar,
                   public_key varchar
                )''')
-            self.cursor.execute('''
+            cursor.execute('''
                create table rego_otk (
                   name varchar,
                   otk varchar
                )''')
-            self.cursor.execute('''
+            cursor.execute('''
                create table roles (
-                  user_name varchar,
                   role_name varchar,
+                  user_name varchar,
                   package_name varchar
                )''')
+
+            # init the id counter
+            self.cursor.execute('''insert into ids (name, num) values
+                ('trove_classifier', 1)''')
 
             # admin user
             adminpw = ''.join([whrandom.choice(chars) for x in range(10)])
