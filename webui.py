@@ -678,8 +678,8 @@ you must <a href="%s?:action=register_form">register to submit</a>)
     <td><select name="package_name">%s</select></td>
 </tr>
 '''%s
-        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x[0],
-            x[0], x[2]) for x in self.store.get_users()])
+        s = '\n'.join(['<option value="%s">%s (%s)</option>'%(x['name'],
+            x['name'], x['email']) for x in self.store.get_users()])
         users = '<select name="user_name">%s</select>'%s
         if self.store.has_role('Admin', None):
             admin = '<option value="Admin">Admin</option>'

@@ -505,7 +505,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         cursor.execute('select name,email from users order by lower(name)')
-        return cursor.fetchall()
+        return Result(('name', 'email'), cursor.fetchall())
 
     def has_role(self, role_name, package_name=None, user_name=None):
         ''' Determine whether the current user has the named Role for the
