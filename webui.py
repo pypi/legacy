@@ -386,10 +386,9 @@ PyPI Actions
 Welcome to the Python Package Index (PyPI).
 </p>
 <p><strong>Tip of the week:</strong> 
-If you have submitted newer versions of a package to PyPI, you may hide the
-older versions from browsing and listing. Simply log in and select the package
-from the <strong>Your Packages</strong> menu on the left, then set the older
-version <strong>Hide?</strong> flag to <strong>Yes</strong>.
+Jeremy Hylton has written a <a
+href="http://www.python.org/~jeremy/weblog/030924.html">Python Package
+Index Tutorial</a>. Thanks Jeremy!
 </p>
 <p>
 You may:
