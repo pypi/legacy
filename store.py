@@ -306,6 +306,29 @@ class Store:
             from roles where package_name=%s''', (name, ))
         return cursor.fetchall()
 
+    def latest_releases(self, num=20):
+        ''' Fetch "number" latest releases, youngest to oldest.
+        '''
+        cursor = self.get_cursor()
+        cursor.execute('''
+            select j.name,j.version,j.submitted_date,r.summary
+            from journals j, releases r
+            where j.version is not NULL
+                  and j.action = 'new release'
+                  and j.name = r.name and j.version = r.version
+                  and r._pypi_hidden == 0
+            order by submitted_date desc
+        ''')
+        d = {}
+        l = []
+        for name,version,date,summary in cursor.fetchall():
+            k = (name,version)
+            if d.has_key(k):
+                continue
+            l.append((name,version,date,summary))
+            d[k] = 1   
+        return l[:num]
+
     def latest_updates(self, num=20):
         ''' Fetch "number" latest updates, youngest to oldest.
         '''

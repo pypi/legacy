@@ -408,7 +408,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
 '''%(self.url_path, self.url_path, self.url_path, self.url_path, self.url_path))
         i=0
-        for name, version, date, summary in self.store.latest_updates():
+        for name, version, date, summary in self.store.latest_releases():
             w('''<tr%s>
         <td>%s</td>
         <td>%s</td>
@@ -452,7 +452,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
   <description>Updates to the Python Packages Index (PyPI)</description>
   <language>en</language>
 '''%(__version__, self.url_machine, self.url_path))
-        for name, version, date, summary in self.store.latest_updates():
+        for name, version, date, summary in self.store.latest_releases():
             date = date.replace(' ','T')
             f.write('''  <item>
     <title>%s %s</title>
