@@ -1,6 +1,7 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
+import re
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
 esc = cgi.escape
@@ -1223,14 +1224,17 @@ index.
         for k in self.form.keys():
             if k.startswith(':'): continue
             v = self.form[k]
-            if type(v) == type([]):
-                if k in ('classifiers', 'requires', 'provides', 'obsoletes'):
+            if k == '_pypi_hidden':
+                v = v == '1'
+            elif k in ('requires', 'provides', 'obsoletes'):
+                v = re.split('\s*[\r\n]\s*', v.value)
+            elif type(v) == type([]):
+                if k == 'classifiers':
                     v = [x.value.strip() for x in v]
                 else:
                     v = ','.join([x.value.strip() for x in v])
             else:
                 v = v.value.strip()
-            if k == '_pypi_hidden': v = v == '1'
             data[k.lower()] = v
         return data
 

@@ -140,9 +140,10 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            cols = ','.join(['%s=%%s'%x for x in cols])
-            sql = "update releases set %s where name=%%s and version=%%s"%cols
-            cursor.execute(sql, vals)
+            if cols:
+                cols = ','.join(['%s=%%s'%x for x in cols])
+                cursor.execute('''update releases set %s where name=%%s
+                    and version=%%s'''%cols, vals)
 
             # journal the update
             cursor.execute('''insert into journals (name, version,
