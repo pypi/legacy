@@ -657,7 +657,7 @@ class Store:
         cursor.execute('''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
-            (package_name, 'add %s file %s'%(pyversion, filename), date,
+            (name, 'add %s file %s'%(pyversion, filename), date,
             self.username, self.userip))
 
     def list_files(self, name, version):

@@ -1206,7 +1206,6 @@ Are you <strong>sure</strong>?</p>
     def files(self):
         '''List files and handle file submissions.
         '''
-
         name = version = None
         if self.form.has_key('name'):
             name = self.form['name'].value
@@ -1237,11 +1236,25 @@ Are you <strong>sure</strong>?</p>
                 for digest in fids:
                     self.store.remove_file(digest)
 
+        self.write_template('files.pt', name=name, version=version,
+            maintainer=maintainer, title="Files for %s %s"%(name, version))
+
     def file_upload(self):
         # make sure the user is identified
         if not self.username:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+
+        # figure the package name and version
+        name = version = None
+        if self.form.has_key('name'):
+            name = self.form['name'].value
+        if self.form.has_key('version'):
+            version = self.form['version'].value
+        if not name or not version:
+            self.fail(heading='Name and version are required',
+                message='Name and version are required')
+            return
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
