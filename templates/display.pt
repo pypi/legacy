@@ -6,14 +6,6 @@
 
 <p tal:replace="structure app/release_nav" />
 
-<table class="form">
- <tr tal:repeat="row data/rows">
-   <th nowrap="nowrap" tal:content="python:data['row_names'][row]"/>
-   <td tal:content="structure python:data['values'][row]"/>
- </tr>
- <tal:block tal:content="structure data/dependencies"/>
-</table>
-
 <table class="history">
  <tr><th colspan="6" class="header">Release Files</th></tr>
  <tr>
@@ -38,6 +30,14 @@
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
  </tr>
+</table>
+
+<table class="form">
+ <tr tal:repeat="row data/rows">
+   <th nowrap="nowrap" tal:content="python:data['row_names'][row]"/>
+   <td tal:content="structure python:data['values'][row]"/>
+ </tr>
+ <tal:block tal:content="structure data/dependencies"/>
 </table>
 
 <table tal:replace="structure python:app.package_role_list(data['name'])" />
