@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<html xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal"
-      metal:use-macro="standard_template/macros/page">
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
 <p>
 Welcome to the Python Package Index (PyPI).
