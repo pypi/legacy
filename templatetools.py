@@ -49,8 +49,8 @@ in that class.
 """
 
 import os
-from ZopePageTemplates import PageTemplate
-from ZopePageTemplates import PTRuntimeError
+from zope.pagetemplate.pagetemplate import PageTemplate
+from zope.pagetemplate.pagetemplate import PTRuntimeError
 import types
 
 class TemplatePool:

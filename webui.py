@@ -184,17 +184,18 @@ class WebUI:
         context['app'] = self
 
         context['standard_template'] = PyPiPageTemplate("standard_template.pt",
-                                                        os.path.join(os.path.dirname(__file__),
-                                                                     'templates'))
+                                    os.path.join(os.path.dirname(__file__),
+                                    'templates'))
 
         template = PyPiPageTemplate(filename,
                                     os.path.join(os.path.dirname(__file__),
                                                  'templates'))
+        content = template(**context)
 
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(template(**context))
+        self.wfile.write(content)
         
     def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):

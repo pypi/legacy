@@ -33,7 +33,10 @@ class ResultRow:
     def __getitem__(self, item):
         if isinstance(item, int):
             return self.info[item]
-        return self.info[self.cols_d[item]]
+        value = self.info[self.cols_d[item]]
+        if isinstance(value, unicode):
+            return value
+        return value.decode('utf-8')
     def items(self):
         return [(col, self.info[i]) for i, col in enumerate(self.cols)]
     def keys(self):

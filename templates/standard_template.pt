@@ -9,7 +9,7 @@
       xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <head>
- <!--<title tal:content="options/title"></title>-->
+ <title tal:content="options/title"></title>
  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
  <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
  <link rel="STYLESHEET" href="http://www.python.org/style.css"
@@ -137,7 +137,7 @@ PyPI Actions
 <!-- begin body -->
 <td bgcolor="white" valign="top">
 
-<!--<h1 align="left">PyPI: <span tal:replace="options/title"></h1>-->
+<h1 align="left">PyPI: <span tal:replace="options/title"></h1>
 
 <p tal:condition="app/ok_message" class="ok"
  tal:content="structure app/ok_message">a status message</p>
