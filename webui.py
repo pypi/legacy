@@ -632,7 +632,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             names.sort()
             names = map(cgi.escape, names)
             s = '\n'.join(['<option value="%s">%s</option>'%(name, name)
-                            for name in names]
+                            for name in names])
             package = '''
 <tr><th>Package Name:</th>
     <td><select name="package_name">%s</select></td>
