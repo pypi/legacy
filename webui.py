@@ -1,6 +1,6 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
-import time, whrandom, smtplib, base64, sha, email, types
+import time, whrandom, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
 from xml.sax.saxutils import escape as xmlescape
 
@@ -17,10 +17,7 @@ class Redirect(Exception):
 class FormError(Exception):
     pass
 
-__version__ = '1.0'
-
-URL_MACHINE = 'http://www.python.org'
-URL_PATH = '/pypi'
+__version__ = '1.1'
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
@@ -56,25 +53,13 @@ Your password is now: %(password)s
 '''
 
 unauth_message = '''
-<p>If you are a new user, <a href="%s?:action=register_form">please
+<p>If you are a new user, <a href="%(url_path)s?:action=register_form">please
 register</a>.</p>
 <p>If you have forgotten your password, you can have it
-<a href="%s?:action=forgotten_password_form">reset for you</a>.</p>
-'''%(URL_PATH, URL_PATH)
+<a href="%(url_path)s?:action=forgotten_password_form">reset for you</a>.</p>
+'''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-def packageURL(name, version):
-    ''' return a URL for the link to display a particular package
-    '''
-    return '%s?:action=display&name=%s&version=%s'%(URL_PATH,
-        urllib.quote(name), urllib.quote(version))
-
-def packageLink(name, version):
-    ''' return a URL for the link to display a particular package
-    '''
-    return '<a href="%s">%s %s</a>'%(packageURL(name, version),
-        cgi.escape(name), cgi.escape(version))
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -100,12 +85,15 @@ class WebUI:
         whrandom.seed(int(time.time())%256)
         self.nav_current = None
 
+        (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
+        self.url_machine = '%s://%s'%(protocol, machine)
+        self.url_path = path
+
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
             cleanly.
         '''
         self.store = store.Store(self.config)
-        self.store.open()
         try:
             try:
                 self.inner_run()
@@ -115,8 +103,9 @@ class WebUI:
                 message = str(message)
                 if not message:
                     message = 'You must login to access this feature'
+                msg = unauth_message%self.__dict__
                 self.fail(message, code=401, heading='Login required',
-                    content=unauth_message, headers={'WWW-Authenticate':
+                    content=msg, headers={'WWW-Authenticate':
                     'Basic realm="pypi"'})
             except Forbidden, message:
                 message = str(message)
@@ -265,7 +254,7 @@ Logged In
  <a href="%s?:action=user_form">Your details</a></td></tr>
 <tr><td bgcolor="#99ccff">
  <a href="%s?:action=logout">Logout</a></td></tr>
-'''%(u, URL_PATH, URL_PATH))
+'''%(u, self.url_path, self.url_path))
             packages = self.store.user_packages(self.username)
             if packages:
                 w('''
@@ -276,7 +265,7 @@ Your Packages
                 for name, in packages:
                     un = urllib.quote(name)
                     w('''<tr><td bgcolor="#99ccff">
- <a href="%s?:action=pkg_edit&name=%s">%s</a></td></tr>\n'''%(URL_PATH, un,
+ <a href="%s?:action=pkg_edit&name=%s">%s</a></td></tr>\n'''%(self.url_path, un,
                         name))
 
         else:
@@ -288,7 +277,7 @@ Not Logged In
  <a href="%s?:action=register_form">Register</a></td></tr>
 <tr><td bgcolor="#99ccff">
  <a href="%s?:action=login">Login</a></td></tr>
-'''%(URL_PATH, URL_PATH))
+'''%(self.url_path, self.url_path))
         w('''
 <tr><td bgcolor="#99ccff">&nbsp;</td></tr>
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
@@ -302,9 +291,9 @@ PyPI Actions
                 la('<strong>%s</strong>'%v)
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
-                    la('<a href="%s?:action=%s">%s</a>'%(URL_PATH, k, v))
+                    la('<a href="%s?:action=%s">%s</a>'%(self.url_path, k, v))
             else:
-                la('<a href="%s?:action=%s">%s</a>'%(URL_PATH, k, v))
+                la('<a href="%s?:action=%s">%s</a>'%(self.url_path, k, v))
         w('</td></tr>\n<tr><td bgcolor="#99ccff">'.join(l))
 
         w('''
@@ -415,14 +404,14 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 <p>Last 20 updates:</p>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
-'''%(URL_PATH, URL_PATH, URL_PATH, URL_PATH, URL_PATH))
+'''%(self.url_path, self.url_path, self.url_path, self.url_path, self.url_path))
         i=0
         for name, version, date, summary in self.store.latest_updates():
             w('''<tr%s>
         <td>%s</td>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', date[:10],
-                packageLink(name, version), cgi.escape(str(summary))))
+                self.packageLink(name, version), cgi.escape(str(summary))))
             i+=1
         w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
@@ -433,11 +422,25 @@ you must <a href="%s?:action=register_form">register to submit</a>)
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
         """
+        # determine whether the rss file is up to date
+        rss_file = os.path.join(os.path.split(self.config.database)[0],
+            'rss.xml')
+        if not os.path.exists(rss_file):
+            self.rss_regen(rss_file)
+        else:
+            rss_mtime = os.stat(rss_file)[stat.ST_MTIME]
+            if rss_mtime < self.store.last_modified:
+                self.rss_regen(rss_file)
+
+        # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/xml')
         self.handler.end_headers()
-        w = self.wfile.write
-        w('''<?xml version="1.0"?>
+        self.wfile.write(open(rss_file).read())
+
+    def rss_regen(self, rss_file):
+        f = open(rss_file, 'w')
+        f.write('''<?xml version="1.0"?>
 <!-- name="generator" content="PyPI/%s" -->
 <!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
 <rss version="0.91">
@@ -446,30 +449,31 @@ you must <a href="%s?:action=register_form">register to submit</a>)
   <link>%s%s</link>
   <description>Updates to the Python Packages Index (PyPI)</description>
   <language>en</language>
-'''%(__version__, URL_MACHINE, URL_PATH))
+'''%(__version__, self.url_machine, self.url_path))
         for name, version, date, summary in self.store.latest_updates():
             date = date.replace(' ','T')
-            w('''  <item>
+            f.write('''  <item>
     <title>%s %s</title>
     <link>http://www.python.org%s</link>
     <description>%s</description>
     <pubDate>%sZ</pubDate>
    </item>
-'''%(xmlescape(name), xmlescape(version), xmlescape(packageURL(name, version)),
-        xmlescape(summary), date))
-        w('''
+'''%(xmlescape(name), xmlescape(version), xmlescape(self.packageURL(name,
+    version)), xmlescape(summary), date))
+        f.write('''
   </channel>
 </rss>
 ''')
+        f.close()
 
     def browse(self, nav_current='browse'):
         content = StringIO.StringIO()
         w = content.write
 
-        tree = trove.Trove(self.store.cursor)
+        tree = trove.Trove(self.store.getCursor())
         qs = os.environ.get('QUERY_STRING', '')
         l = [x for x in cgi.parse_qsl(qs) if not x[0].startswith(':')]
-        q = flamenco.Query(self.store.cursor, tree, l)
+        q = flamenco.Query(self.store.getCursor(), tree, l)
 
         # do the query
         matches, choices = q.list_choices()
@@ -483,7 +487,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
                 newq.remove_field(fld, value)
                 w(cgi.escape(n.path))
                 w(' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
-                    URL_PATH, newq.as_href()))
+                    self.url_path, newq.as_href()))
         else:
             w('<p>Currently querying everything')
 
@@ -496,7 +500,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
                 w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
-                packageLink(name, version), cgi.escape(str(summary))))
+                self.packageLink(name, version), cgi.escape(str(summary))))
                 i+=1
             w('''
 <tr><td id="last" colspan="2">&nbsp;</td></tr>
@@ -518,7 +522,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
                 newq = q.copy()
                 newq.set_field(field, exist_value, node_id)
                 l.append('<a href="%s?:action=browse&%s">%s</a> (%i)'%(
-                    URL_PATH, newq.as_href(), cgi.escape(text), count))
+                    self.url_path, newq.as_href(), cgi.escape(text), count))
             w(' / \n'.join(l))
             w("</div>")
 
@@ -542,7 +546,8 @@ you must <a href="%s?:action=register_form">register to submit</a>)
             w('''<tr%s>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
-                packageLink(name, version), cgi.escape(str(pkg['summary']))))
+                self.packageLink(name, version),
+                cgi.escape(str(pkg['summary']))))
             i+=1
         w('''
 <tr><td id="last" colspan="3">&nbsp;</td></tr>
@@ -560,7 +565,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
     def login(self):
         if not self.username:
             raise Unauthorised
-        self.index()
+        self.home()
 
     def search_form(self):
         ''' A form used to generate filtered index displays
@@ -597,7 +602,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 <tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
 </table>
 </form>
-'''%URL_PATH)
+'''%self.url_path)
         self.page_foot()
 
     def role_form(self):
@@ -814,11 +819,11 @@ available Roles are defined as:
         uv = urllib.quote(version)
         w('<br>Package: ')
         w('<a href="%s?:action=role_form&package_name=%s">admin</a>\n'%(
-            URL_PATH, un))
+            self.url_path, un))
         w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
-            '>edit</a>'%(URL_PATH, un, uv))
+            '>edit</a>'%(self.url_path, un, uv))
         w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
-            '>PKG-INFO</a>'%(URL_PATH, un, uv))
+            '>PKG-INFO</a>'%(self.url_path, un, uv))
         w('<br>')
 
         # now the package info
@@ -1027,7 +1032,7 @@ index.
                 if isinstance(l, types.ListType):
                     l.append(v)
                 else:
-                    data[k] = [v]
+                    data[k] = [l, v]
             else:
                 data[k] = v
 
@@ -1209,7 +1214,7 @@ index.
         # now display
         un = urllib.quote(name)
         cn = cgi.escape(name)
-        url = URL_PATH
+        url = self.url_path
         w('''
 <p>
   Each package may have a release for each version of the
@@ -1221,7 +1226,7 @@ index.
 <form method="POST">
 <input type="hidden" name=":action" value="pkg_edit">
 <input type="hidden" name="name" value="%s">
-'''%(URL_PATH, un, URL_PATH, un, cn))
+'''%(self.url_path, un, self.url_path, un, cn))
 
         w('''<table class="list" style="width: auto">
    <tr><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="3">Actions</th></tr>''')
@@ -1513,3 +1518,15 @@ within it to complete the reset process.</p>
         '''
         smtp = smtplib.SMTP(self.config.mailhost)
         smtp.sendmail(self.config.adminemail, recipient, message)
+
+    def packageURL(self, name, version):
+        ''' return a URL for the link to display a particular package
+        '''
+        return '%s?:action=display&name=%s&version=%s'%(self.url_path,
+            urllib.quote(name), urllib.quote(version))
+
+    def packageLink(self, name, version):
+        ''' return a URL for the link to display a particular package
+        '''
+        return '<a href="%s">%s %s</a>'%(self.packageURL(name, version),
+            cgi.escape(name), cgi.escape(version))
