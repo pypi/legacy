@@ -1,3 +1,6 @@
+2003-04-01
+- PKG-INFO download now has "obfuscated" email addresses
+
 2003-03-02
 - fixed deletion of packages where there were no versions (bugs #907317 and
   #908118)

@@ -372,8 +372,7 @@ PyPI Actions
                 raise Unauthorised
 
         # handle the action
-        # disabled: display_pkginfo 
-        if action in 'home browse rss submit submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
+        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -787,6 +786,10 @@ available Roles are defined as:
 
             if key == 'description':
                 value = rfc822_escape(value)
+            elif key.endswith('_email'):
+                value = cgi.escape(value)
+                value = value.replace('@', ' at ')
+                value = value.replace('.', ' ')
 
             w('%s: %s\n' % (label, value))
 
@@ -831,8 +834,8 @@ available Roles are defined as:
             self.url_path, un))
         w('| <a href="%s?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(self.url_path, un, uv))
-        #w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
-        #    '>PKG-INFO</a>'%(self.url_path, un, uv))
+        w('| <a href="%s?:action=display_pkginfo&name=%s&version=%s"'
+            '>PKG-INFO</a>'%(self.url_path, un, uv))
         w('<br>')
 
         # now the package info
