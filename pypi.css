@@ -1,0 +1,153 @@
+/* main page styles */
+body.body {
+  font-family: sans-serif, Arial, Helvetica;
+  color: black;
+}
+a[href]:hover { color:blue; text-decoration: underline; }
+a[href]:link { color:blue; text-decoration: none; }
+a[href] { color:blue; text-decoration: none; }
+
+p.ok {
+  background-color: #22bb22;
+  padding: 5 5 5 5;
+  color: white;
+  font-weight: bold;
+}
+p.error {
+  background-color: #bb2222;
+  padding: 5 5 5 5;
+  color: white;
+  font-weight: bold;
+}
+
+
+/* style for forms */
+table.form {
+  padding: 2;
+  border-spacing: 0px;
+  border-collapse: separate;
+}
+
+table.form th {
+  color: #333388;
+  text-align: right;
+  vertical-align: top;
+  font-weight: normal;
+}
+
+table.form th.header {
+  font-weight: bold;
+  background-color: #eeeeff;
+  text-align: left;
+}
+
+table.form th.required {
+  font-weight: bold;
+}
+
+table.form td {
+  color: #333333;
+  empty-cells: show;
+  vertical-align: top;
+}
+
+table.form td.optional {
+  font-weight: bold;
+  font-style: italic;
+}
+
+table.form td.html {
+  color: #777777;
+}
+
+/* style for lists */
+table.list {
+  border-spacing: 0px;
+  border-collapse: separate;
+  width: 100%;
+}
+
+table.list th {
+  padding: 0 4 0 4;
+  color: #404070;
+  background-color: #eeeeff;
+  border-right: 1px solid #404070;
+  border-top: 1px solid #404070;
+  border-bottom: 1px solid #404070;
+  vertical-align: top;
+  empty-cells: show;
+}
+table.list th a[href]:hover { color: #404070 }
+table.list th a[href]:link { color: #404070 }
+table.list th a[href] { color: #404070 }
+table.list th.group {
+  background-color: #f4f4ff;
+  text-align: center;
+}
+
+table.list td {
+  padding: 0 4 0 4;
+  border: 0 2 0 2;
+  border-right: 1px solid #404070;
+  color: #404070;
+  background-color: white;
+  vertical-align: top;
+  empty-cells: show;
+}
+
+table.list tr.normal td {
+  background-color: white;
+}
+
+table.list tr.alt td {
+  background-color: #efefef;
+}
+
+table.list td:first-child {
+  border-left: 1px solid #404070;
+  border-right: 1px solid #404070;
+}
+
+table.list th:first-child {
+  border-left: 1px solid #404070;
+  border-right: 1px solid #404070;
+}
+
+table.list tr.navigation th {
+  text-align: right;
+}
+table.list tr.navigation th:first-child {
+  border-right: none;
+  text-align: left;
+}
+
+
+/* style for history displays */
+table.history {
+  border-spacing: 0px;
+  border-collapse: separate;
+  width: 100%;
+}
+
+table.history th.header{
+  padding-top: 10px;
+  border-bottom: 1px solid gray;
+  font-weight: bold;
+  background-color: white;
+  color: #707040;
+  font-size: 100%;
+}
+
+table.history th {
+  border-bottom: 1px solid #afafaf;
+  font-weight: bold;
+  text-align: left;
+  font-size: 90%;
+}
+
+table.history td {
+  font-size: 90%;
+  vertical-align: top;
+  empty-cells: show;
+}
+
