@@ -186,6 +186,8 @@ class WebUI:
         w('| <a href="?:action=register_form">register for a login</a>\n')
         w('<ul>\n')
         spec = self.form_metadata()
+        if not spec.has_key('hidden'):
+            spec['hidden'] = '0'
         for name, version in self.store.query_packages(spec):
             w('<li><a href="?:action=display&name=%s&version=%s">%s %s</a>\n'%(
                 urllib.quote(name), urllib.quote(version), name, version))
@@ -435,8 +437,8 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
                 a = value=='1' and ' selected' or ''
                 b = value=='0' and ' selected' or ''
                 field = '''<select name="hidden">
-                            <option value="1"%s>Yes</option>
                             <option value="0"%s>No</option>
+                            <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
             elif property.endswith('description'):
                 field = '<textarea name="%s" rows="5" cols="80">%s</textarea>'%(
@@ -483,6 +485,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
         name = data['name']
         version = data['version']
+
+        # don't hide by default
+        if not data.has_key('hidden'):
+            data['hidden'] = '0'
 
         # make sure the user has permission to do stuff
         if self.store.has_package(data['name'], data['version']) and not (
