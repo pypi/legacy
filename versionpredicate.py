@@ -99,6 +99,6 @@ class VersionPredicate:
 
 
 def check_provision(value):
-    m = re.match("[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*(\s*\([^)]+\))?$", v)
+    m = re.match("[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*(\s*\([^)]+\))?$", value)
     if not m:
-        raise ValueError("illegal provides specification: %r" % v)
+        raise ValueError("illegal provides specification: %r" % value)
