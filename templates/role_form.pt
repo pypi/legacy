@@ -3,7 +3,7 @@
       metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
 
-<p>Use this form to add or remove a user\'s Role for a Package. The
+<p>Use this form to add or remove a user's Role for a Package. The
 available Roles are defined as:
 <dl><dt><b>Owner</b></dt><dd>
   Owns a package name, may assign Maintainer Role for that name.  The
@@ -21,13 +21,7 @@ available Roles are defined as:
 <input type="hidden" name=":action" value="role" />
 <table class="form">
 <tr><th>User Name:</th>
-    <td>
-        <select name="user_name">
-         <option tal:repeat="user app/store/get_users"
-                 tal:attributes="value user/name"
-                 tal:content="string:${user/name} (${user/email})" />
-        </select>
-    </td>
+    <td><input type="text" name="user_name" /></td>
 </tr>
 
 <tr tal:content="structure options/package" />
@@ -48,7 +42,7 @@ available Roles are defined as:
 </form>
 
 <tal:block replace="structure python:app.package_role_list(options['name'],
-    'Existing Roles'" />
+    'Existing Roles')" />
 
 </metal:fill>
 </html>
