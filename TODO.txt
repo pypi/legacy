@@ -1,6 +1,7 @@
 Now:
 
-?
+- setup.py fragment allowing use of the classifiers keyword while retaining
+  backward compatibility
 
 Later:
 
