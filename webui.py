@@ -14,7 +14,7 @@ class FormError(Exception):
     pass
 
 # email sent to user indicating how they should complete their registration
-rego_message = '''Subject: Complete your registration
+rego_message = '''Subject: Complete your PyPI registration
 To: %(email)s
 
 To complete your registration of the user "%(name)s" with the python module
@@ -25,7 +25,7 @@ index, please visit the following URL:
 '''
 
 # password change request email
-password_change_message = '''Subject: Password change request
+password_change_message = '''Subject: PyPI password change request
 To: %(email)s
 
 Someone, perhaps you, has requested that the password be changed for your
@@ -39,7 +39,7 @@ You should then receive another email with the new password.
 '''
 
 # password reset email - indicates what the password is now
-password_message = '''Subject: Password has been reset
+password_message = '''Subject: PyPI password has been reset
 To: %(email)s
 
 Your login is: %(name)s
@@ -626,17 +626,21 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         info = {'name': '', 'password': '', 'confirm': '', 'email': ''}
         if self.username:
             user = self.store.get_user(self.username)
-            info['name'] = cgi.escape(user['name'])
+            info['name'] = '<input type="hidden" name="name" value="%s">%s'%(
+                urllib.quote(user['name']), cgi.escape(user['name']))
             info['email'] = cgi.escape(user['email'])
+            info['action'] = 'Update details'
             heading = 'User profile'
         else:
+            info['action'] = 'Register'
+            info['name'] = '<input name="name">'
             heading = 'Manual user registration'
         content = '''
 <form method="POST">
 <input type="hidden" name=":action" value="user">
 <table class="form">
 <tr><th>Username:</th>
-    <td><input name="name" value="%(name)s"></td>
+    <td>%(name)s</td>
 </tr>
 <tr><th>Password:</th>
     <td><input type="password" name="password"></td>
@@ -647,7 +651,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 <tr><th>Email Address:</th>
     <td><input name="email" value="%(email)s"></td>
 </tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Register"></td></tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="%(action)s"></td></tr>
 </table>
 <p>A confirmation email will be sent to the address you nominate above.</p>
 <p>To complete the registration process, visit the link indicated in the
