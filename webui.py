@@ -1527,7 +1527,6 @@ class WebUI:
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
         '''
-        return
         smtp = smtplib.SMTP(self.config.mailhost)
         smtp.sendmail(self.config.adminemail, recipient, message)
 
