@@ -79,6 +79,7 @@ class WebUI:
         self.env = env
         self.form = cgi.FieldStorage(fp=handler.rfile, environ=env)
         whrandom.seed(int(time.time())%256)
+        self.nav_current = None
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
@@ -135,6 +136,18 @@ class WebUI:
         self.wfile.write(content)
         self.page_foot()
 
+
+    navlinks = (
+        ('index', 'index'),
+        ('search_form', 'search'),
+        ('submit_form', 'package submission'),
+        ('user_form', 'edit your details'),
+        ('register_form', 'register for a login'),
+        ('list_classifiers', 'list trove classifiers'),
+        ('role_form', 'admin'),
+        ('login', 'login'),
+        ('logout', 'logout')
+    )
     def page_head(self, title, message=None, heading=None, code=200,
             headers={}):
         ''' Spit out HTTP and HTML headers.
@@ -154,14 +167,36 @@ class WebUI:
             self.handler.send_header(k, v)
         self.handler.end_headers()
         if heading is None: heading = title
-        self.wfile.write('''
+        w = self.wfile.write
+        w('''
 <html><head><title>TEST PyPI: %s</title>
 <link rel="stylesheet" type="text/css" href="http://mechanicalcat.net/pypi.css">
 </head>
 <body>
-<div id="header"><h1 align="left">TEST PyPI: %s</h1>
-<div id="content">
+<div id="header"><h1 align="left">TEST PyPI: %s</h1></div>
+<div id="navbar">
 '''%(title, heading))
+
+        if self.username:
+            w('<em>logged in as %s</em>'%self.username)
+        else:
+            w('<em>you are anonymous</em>')
+        for k, v in self.navlinks:
+            if k == self.nav_current:
+                w('<strong>%s</strong>'%v)
+            elif k in ('login', 'register_form'):
+                if not self.username:
+                    w('<a href="?:action=%s">%s</a>'%(k, v))
+            elif k in ('logout', 'user_form'):
+                if self.username:
+                    w('<a href="?:action=%s">%s</a>'%(k, v))
+            elif k == 'role_form':
+                if self.username and self.store.has_role('Admin', ''):
+                    w('<a href="?:action=%s">%s</a>'%(k, v))
+            else:
+                w('<a href="?:action=%s">%s</a>'%(k, v))
+
+        w('\n</div><div id="content">\n')
 
     def page_foot(self):
         self.wfile.write('\n</div>\n</body></html>\n')
@@ -199,7 +234,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers logout'.split():
+        if action in 'submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -210,10 +245,11 @@ class WebUI:
     def index(self):
         ''' Print up an index page
         '''
+        self.nav_current = 'index'
         content = StringIO.StringIO()
         w = content.write
-        w(self.navbar('index'))
         w('<table class="list">\n')
+        w('<tr><th>Package</th><th>Release</th><th>Description</th></tr>\n')
         spec = self.form_metadata()
         if not spec.has_key('hidden'):
             spec['hidden'] = '0'
@@ -233,46 +269,18 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 ''')
         self.success(heading='Index of packages', content=content.getvalue())
 
-    navlinks = (
-        ('index', 'index'),
-        ('search_form', 'search'),
-        ('submit_form', 'package submission'),
-        ('user_form', 'edit your details'),
-        ('register_form', 'register for a login'),
-        ('list_classifiers', 'list trove classifiers'),
-        ('role_form', 'admin'),
-        ('login', 'login'),
-        ('logout', 'logout')
-    )
-    def navbar(self, current):
-        if self.username:
-            l = ['logged in as %s'%self.username]
-        else:
-            l = ['you are anonymous']
-        for k, v in self.navlinks:
-            if k == current:
-                l.append('<strong>%s</strong>'%v)
-            elif k in ('login', 'register_form'):
-                if not self.username:
-                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
-            elif k in ('logout', 'user_form'):
-                if self.username:
-                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
-            elif k == 'role_form':
-                if self.username and self.store.has_role('Admin', ''):
-                    l.append('<a href="?:action=%s">%s</a>'%(k, v))
-            else:
-                l.append('<a href="?:action=%s">%s</a>'%(k, v))
-        return ' | '.join(l)
-
     def logout(self):
         raise Unauthorised
+    def login(self):
+        if not self.username:
+            raise Unauthorised
+        self.index()
 
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
         self.page_head('Search')
-        self.wfile.write(self.navbar('search_form'))
+        self.nav_current = 'search_form'
         self.wfile.write('''
 <form method="GET">
 <input type="hidden" name=":action" value="index">
@@ -312,7 +320,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
     def role_form(self):
         ''' A form used to maintain user Roles
         '''
-        nav = self.navbar('role_form')
+        self.nav_current = 'role_form'
         package_name = ''
         if self.form.has_key('package_name'):
             package_name = self.form['package_name'].value
@@ -407,7 +415,6 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         name = self.form['name'].value
         version = self.form['version'].value
         info = self.store.get_package(name, version)
-        w(self.navbar(None))
         # top links
         un = urllib.quote(name)
         uv = urllib.quote(version)
@@ -484,7 +491,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 
         content = StringIO.StringIO()
         w = content.write
-        w(self.navbar('submit_form'))
+        self.nav_current = 'submit_form'
         w('''
 <p>To submit information to this index, you have three options:</p>
 <p>1. To list your <b>distutils</b>-packaged distribution here:</p>
@@ -735,12 +742,12 @@ index.
             info['email'] = cgi.escape(user['email'])
             info['action'] = 'Update details'
             heading = 'User profile'
-            content = self.navbar('user_form')
+            self.nav_current = 'user_form'
         else:
             info['action'] = 'Register'
             info['name'] = '<input name="name">'
             heading = 'Manual user registration'
-            content = self.navbar('register_form')
+            self.nav_current = 'register_form'
         content += '''
 <form method="POST">
 <input type="hidden" name=":action" value="user">
@@ -833,7 +840,6 @@ email.</p>'''
         self.page_head('Forgotten Password',
             heading='Request password reset')
         w = self.wfile.write
-        w(self.navbar(None))
         w('''
 <p>You have two options if you have forgotten your password. If you 
 know the email address you registered with, enter it below.</p>
