@@ -45,7 +45,7 @@ class register(Command):
         self.check_metadata()
         if self.verify:
             self.verify_metadata()
-        if self.list_classifiers:
+        elif self.list_classifiers:
             self.classifiers()
         else:
             self.send_metadata()
