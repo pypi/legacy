@@ -695,8 +695,8 @@ class Store:
             path = self.gen_file_path(pv, name, fn)
             try:
                 size = os.stat(path)[stat.ST_SIZE]
-            except os.error, error:
-                if error.errno != errno.EEXIST: raise
+            except OSError, error:
+                if error.errno != errno.ENOENT: raise
                 # file not on disk any more - don't list it
                 continue
             l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size)))

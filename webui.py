@@ -217,7 +217,7 @@ class WebUI:
         self.wfile.write(content)
 
     def random_banner(self):
-        banner_num = random.randint(0, 64)
+        banner_num = random.randint(0, 63)
         colors = [
              '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
              '#0066cc',  '#0066cc',  '#3399ff',  '#3399ff',  '#3399ff',
@@ -1182,9 +1182,7 @@ class WebUI:
         if self.form.has_key('version'):
             version = self.form['version'].value
         if not name or not version:
-            self.fail(heading='Name and version are required',
-                message='Name and version are required')
-            return
+            raise ValueError, 'Name and version are required'
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
@@ -1199,10 +1197,7 @@ class WebUI:
         if self.form.has_key('filetype'):
             filetype = self.form['filetype'].value
         if content is None or filetype is None:
-            self.fail(heading='Both content and filetype are required',
-                message='Both content and filetype are required %r'
-                %self.form.keys())
-            return
+            raise ValueError, 'Both content and filetype are required'
 
         md5_digest = self.form['md5_digest'].value
 
@@ -1212,10 +1207,7 @@ class WebUI:
         if self.form['pyversion'].value:
             pyversion = self.form['pyversion'].value
         elif filetype not in (None, 'sdist'):
-            self.fail(heading='Python version is required',
-                message='Python version is required for binary '
-                    'distribution uploads')
-            return
+            raise ValueError, 'Python version is required for binary distribution uploads'
 
         # check for valid filenames
         filename = content.filename
