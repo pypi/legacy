@@ -1168,7 +1168,7 @@ class WebUI:
                 self.store.has_role('Owner', name):
             maintainer = True
             if self.form.has_key('submit_upload'):
-                self.file_upload()
+                self.file_upload(response=False)
 
             elif (self.form.has_key('submit_remove') and
                     self.form.has_key('file-ids')):
@@ -1206,7 +1206,7 @@ class WebUI:
         self.wfile.write(digest)
 
     CURRENT_UPLOAD_PROTOCOL = "1"
-    def file_upload(self):
+    def file_upload(self, response=True):
         # make sure the user is identified
         if not self.username:
             raise Unauthorised, \
@@ -1332,6 +1332,12 @@ class WebUI:
 
         self.store.add_file(name, version, content, md5_digest,
             filetype, pyversion, comment, filename, signature)
+
+        if response:
+            self.handler.send_response(200, 'OK')
+            self.handler.send_header('Content-Type', 'text/plain')
+            self.handler.end_headers()
+            self.wfile.write('OK\n')
 
     # 
     # classifiers listing
