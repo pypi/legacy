@@ -1474,7 +1474,17 @@ Are you <strong>sure</strong>?</p>
                 self.store.add_file(name, version, content, md5_digest,
                     filetype, pyversion, comment, filename)
 
-                # XXX user feedback
+            elif (self.form.has_key('submit_remove') and
+                    self.form.has_key('file-ids')):
+
+                fids = self.form['file-ids']
+                if isinstance(fids, list):
+                    fids = [v.value for v in fids]
+                else:
+                    fids = [fids.value]
+
+                for digest in fids:
+                    self.store.remove_file(digest)
 
         content = StringIO.StringIO()
         w = content.write
@@ -1513,9 +1523,15 @@ will be calculated if not supplied)<br>
         else:
             remth = ''
 
-        w('''<table class="list" style="width: auto">
+        w('''
+<form action="%s" method="POST" enctype="multipart/form-data">
+<input type="hidden" name=":action" value="files">
+<input type="hidden" name="name" value="%s">
+<input type="hidden" name="version" value="%s">
+ <table class="list" style="width: auto">
    <tr>%s<th>Type</th><th>Py Version</th><th>Comment</th>
-    <th>Download</th><th>MD5 digest</th></tr>'''%remth)
+    <th>Download</th><th>MD5 digest</th></tr>'''%(self.url_path, name,
+    version, remth))
 
         un = urllib.quote(name)
         cn = cgi.escape(name)
@@ -1530,8 +1546,8 @@ will be calculated if not supplied)<br>
             filename = cgi.escape(entry['filename'])
             url = self.store.gen_file_url(pyver, un, urllib.quote(filename))
             if maintainer:
-                cb = '<td><input type="checkbox" name="version" '\
-                    'value="%s-%s"></td>'%(ftype, pyver)
+                cb = '<td><input type="checkbox" name="file-ids" '\
+                    'value="%s"></td>'%md5_digest
             else:
                 cb = ''
             w('''<tr>

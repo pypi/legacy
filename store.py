@@ -625,6 +625,20 @@ class Store:
         return Result(('packagetype', 'python_version', 'comment_text',
             'filename', 'md5_digest'), cursor.fetchall())
 
+    def remove_file(self, digest):
+        cursor = self.get_cursor()
+        sql = '''select python_version, name, filename from release_files
+            where md5_digest=%s'''
+        cursor.execute(sql, (digest, ))
+        pyversion, name, filename = cursor.fetchone()
+        cursor.execute('delete from release_files where md5_digest=%s',
+            (digest, ))
+        filepath = self.gen_file_path(pyversion, name, filename)
+        dirpath = os.path.split(filepath)[0]
+        os.remove(filepath)
+        if not os.listdir(dirpath):
+            os.rmdir(dirpath)
+
     #
     # Handle the underlying database
     #

@@ -1,5 +1,6 @@
 2004-03-19
 - migrated from sqlite to postgres
+- upload of files for releases, and removal of files
 
 
 2004-07-14
