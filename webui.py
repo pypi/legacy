@@ -1087,7 +1087,7 @@ class WebUI:
             else:
                 self.store.remove_package(name)
                 self.ok_message='Package removed'
-                self.home()
+                return self.home()
 
         elif self.form.has_key('submit_cancel'):
             self.ok_message='Removal cancelled'
