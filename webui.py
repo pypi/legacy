@@ -303,11 +303,12 @@ PyPI Actions
 </font></b></td></tr>
 
 <tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/projects/pypi/">Bug reports</a>
+<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513504">Get help</a>
 </td></tr>
 <tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/projects/pypi/">Support requests</a>
+<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513503">Bug reports</a>
 </td></tr>
+
 <tr><td bgcolor="#99ccff">
 <a href="http://www.python.org/sigs/catalog-sig/">Comments</a>
 </td></tr>
