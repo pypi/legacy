@@ -76,7 +76,7 @@ class Store:
             message = 'update %s'%', '.join(old)
 
             # update
-            cols = 'author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split()
+            cols = 'author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split()
             args = tuple([info.get(k, None) for k in cols] + [name, version])
             info = ','.join(['%s=%%s'%x for x in cols])
             sql = "update releases set %s where name=%%s and version=%%s"%info
@@ -94,7 +94,7 @@ class Store:
             info['version'] = version
 
             # perform the insert
-            cols = 'name version author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split()
+            cols = 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
@@ -155,7 +155,7 @@ class Store:
         '''
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
-                  license, summary, description, long_description, keywords,
+                  license, summary, description, keywords,
                   platform, download_url, hidden
                  from packages, releases
                  where packages.name=%s and version=%s
@@ -376,7 +376,6 @@ class Store:
                   license varchar,
                   summary varchar,
                   description varchar,
-                  long_description varchar,
                   keywords varchar,
                   platform varchar,
                   download_url varchar,

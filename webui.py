@@ -49,10 +49,10 @@ Your password is now: %(password)s
 '''
 
 unauth_message = '''
-<p>If you are a new user, <a href="?:action=register_form">please
+<p>If you are a new user, <a href="/cgi-bin/pypi.cgi?:action=register_form">please
 register</a>.</p>
 <p>If you have forgotten your password, you can have it
-<a href="?:action=forgotten_password_form">reset for you</a>.</p>
+<a href="/cgi-bin/pypi.cgi?:action=forgotten_password_form">reset for you</a>.</p>
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -60,7 +60,7 @@ chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
-        functions (see pypi.cgi).
+        functions (see /cgi-bin/pypi.cgi).
 
         The handling of a request goes as follows:
         1. open the database
@@ -186,15 +186,15 @@ class WebUI:
                 w('<strong>%s</strong>'%v)
             elif k in ('login', 'register_form'):
                 if not self.username:
-                    w('<a href="?:action=%s">%s</a>'%(k, v))
+                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             elif k in ('logout', 'user_form'):
                 if self.username:
-                    w('<a href="?:action=%s">%s</a>'%(k, v))
+                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
-                    w('<a href="?:action=%s">%s</a>'%(k, v))
+                    w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
             else:
-                w('<a href="?:action=%s">%s</a>'%(k, v))
+                w('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
 
         w('\n</div><div id="content">\n')
 
@@ -258,7 +258,7 @@ class WebUI:
             version = pkg['version']
             w('''<tr>
         <td>%s</td>
-        <td><a href="?:action=display&name=%s&version=%s">%s</a></td>
+        <td><a href="/cgi-bin/pypi.cgi?:action=display&name=%s&version=%s">%s</a></td>
         <td>%s</td></tr>'''%(name, urllib.quote(name), urllib.quote(version),
                 version, cgi.escape(str(pkg['summary']))))
         w('''
@@ -279,10 +279,10 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
-        self.page_head('Search')
         self.nav_current = 'search_form'
+        self.page_head('Search')
         self.wfile.write('''
-<form method="GET">
+<form method="GET" action="/cgi-bin/pypi.cgi">
 <input type="hidden" name=":action" value="index">
 <table class="form">
 <tr><th>Name:</th>
@@ -296,9 +296,6 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 </tr>
 <tr><th>Description:</th>
     <td><input name="description"></td>
-</tr>
-<tr><th>Long Description:</th>
-    <td><input name="long_description"></td>
 </tr>
 <tr><th>Keywords:</th>
     <td><input name="keywords"></td>
@@ -424,8 +421,8 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         un = urllib.quote(name)
         uv = urllib.quote(version)
         w('<br>Package: ')
-        w('<a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
-        w('| <a href="?:action=submit_form&name=%s&version=%s"'
+        w('<a href="/cgi-bin/pypi.cgi?:action=role_form&package_name=%s">admin</a>\n'%un)
+        w('| <a href="/cgi-bin/pypi.cgi?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(un, uv))
         w('<br>')
 
@@ -433,7 +430,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         w('<table class="form">\n')
         keys = info.keys()
         keys.sort()
-        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description long_description keywords platform'.split()
+        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
         for key in keypref:
             if not info.has_key(key): continue
             value = info[key]
@@ -532,7 +529,7 @@ index.
 ''')
 
         # display all the properties
-        for property in 'name version author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split():
+        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url hidden'.split():
             # get the existing entry
             if self.form.has_key(property):
                 value = self.form[property].value
