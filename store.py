@@ -303,6 +303,34 @@ class Store:
             d[k] = 1   
         return l[:num]
 
+    def get_package_releases(self, name):
+        ''' Fetch all releses for the package name, including hidden.
+        '''
+        self.cursor.execute('select * from releases where name=%s', name)
+        res = self.cursor.fetchall()
+        if res is None:
+            return []
+        return res
+
+    def remove_release(self, name, version):
+        ''' Delete a single release from the database.
+        '''
+        self.cursor.execute('delete from releases where name=%s and version=%s',
+            (name, version))
+        self.cursor.execute('delete from release_classifiers where '
+            'name=%s and version=%s', (name, version))
+
+    def remove_package(self, name):
+        ''' Delete an entire package from the database.
+        '''
+        self.cursor.execute('delete from packages where name=%s', name)
+        self.cursor.execute('delete from releases where name=%s', name)
+        self.cursor.execute('delete from release_classifiers where name=%s',
+            name)
+        self.cursor.execute('delete from journals where name=%s', name)
+        self.cursor.execute('delete from roles where package_name=%s', name)
+
+
     #
     # Users interface
     # 
@@ -423,6 +451,18 @@ class Store:
         if res is None:
             return ''
         return res['otk']
+
+    def user_packages(self, user):
+        ''' Retrieve package info for all packages of a user
+        '''
+        sql = '''select distinct(package_name) from roles
+                 where roles.user_name=%s and package_name is not NULL
+                 order by lower(package_name)'''
+        self.cursor.execute(sql, (user,))
+        res = self.cursor.fetchall()
+        if res is None:
+            return []
+        return res
 
     #
     # Handle the underlying database

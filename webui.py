@@ -263,6 +263,19 @@ Logged In
 <tr><td bgcolor="#99ccff">
  <a href="%s?:action=logout">Logout</a></td></tr>
 '''%(u, URL_PATH, URL_PATH))
+            packages = self.store.user_packages(self.username)
+            if packages:
+                w('''
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+Your Packages
+</font></b></td></tr>
+''')
+                for name, in packages:
+                    un = urllib.quote(name)
+                    w('''<tr><td bgcolor="#99ccff">
+ <a href="%s?:action=pkg_edit&name=%s">%s</a></td></tr>\n'''%(URL_PATH, un,
+                        name))
+
         else:
             w('''
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
@@ -364,7 +377,7 @@ PyPI Actions
                 raise Unauthorised
 
         # handle the action
-        if action in 'home browse rss submit submit_pkg_info verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
+        if action in 'home browse rss submit submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -457,7 +470,7 @@ you must <a href="%s?:action=register_form">register to submit</a>)
                 newq = q.copy()
                 newq.remove_field(fld, value)
                 w(cgi.escape(n.path))
-                w(' <a href="%s?:action=browse&%s">[Remove]</a><br>\n'%(
+                w(' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
                     URL_PATH, newq.as_href()))
         else:
             w('<p>Currently querying everything')
@@ -1078,6 +1091,161 @@ index.
                 if d.has_key(entry):
                     continue
                 raise ValueError, 'Invalid classifier "%s"'%entry
+
+    def pkg_edit(self):
+        ''' Edit info about a bunch of packages at one go
+        '''
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        name = self.form['name'].value
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        releases = self.store.get_package_releases(name)
+        reldict = {}
+        for release in releases:
+            info = {}
+            for k,v in release.items():
+                info[k] = v
+            reldict[info['version']] = info
+
+        content = StringIO.StringIO()
+        w = content.write
+
+        # see if we're editing
+        for key in self.form.keys():
+            if key.startswith('hid_'):
+                ver = key[4:]
+                info = reldict[ver]
+                info['_pypi_hidden'] = self.form[key].value
+            elif key.startswith('sum_'):
+                ver = key[4:]
+                info = reldict[ver]
+                info['summary'] = self.form[key].value
+
+        # update the database
+        for version, info in reldict.items():
+            self.store.store_package(name, version, info)
+
+        # now display
+        un = urllib.quote(name)
+        cn = cgi.escape(name)
+        url = URL_PATH
+        w('''
+<p>
+  Each package may have a release for each version of the
+  package that is released. You may use this form to hide releases
+  from users.
+</p>
+<p><a href="%s?:action=role_form&package_name=%s">Role admin</a></p>
+<p><a href="%s?:action=remove_pkg&name=%s">Remove package</a></p>
+<form method="POST">
+<input type="hidden" name=":action" value="pkg_edit">
+<input type="hidden" name="name" value="%s">
+'''%(URL_PATH, un, URL_PATH, un, cn))
+
+        w('''<table class="list" style="width: auto">
+   <tr><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="3">Actions</th></tr>''')
+        for release in releases:
+            release = reldict[release['version']]
+            uv = urllib.quote(release['version'])
+            cv = cgi.escape(release['version'])
+            selname = 'hid_' + uv
+            selyes = selno = ''
+            if release['_pypi_hidden'] == '1':
+                selyes = ' selected'
+            else:
+                selno = ' selected'
+            sumname = 'sum_' + uv
+            summary = cgi.escape(release['summary'])
+            w('''<tr><td>%(cv)s</td>
+  <td>
+   <select name="%(selname)s">
+    <option value="0"%(selno)s>No</option>
+    <option value="1"%(selyes)s>Yes</option>
+   </select>
+  </td>
+  <td><input size="40" name="%(sumname)s" value="%(summary)s"></td>
+  <td><a href="%(url)s?:action=display&name=%(un)s&version=%(uv)s">show</td>
+  <td><a href="%(url)s?:action=submit_form&name=%(un)s&version=%(uv)s">edit</td>
+  <td><a href="%(url)s?:action=remove_pkg&name=%(un)s&version=%(uv)s">remove</td></tr>
+'''%locals())
+        w('''<tr><td id="last" colspan="6">
+   <input type="submit" value="Update Releases"</td></tr></table>
+</form>''')
+
+        self.success(heading='Package %s'%cn, content=content.getvalue())
+
+    def remove_pkg(self):
+        ''' Remove a release or a whole package from the db.
+
+            Only owner may remove an entire package - Maintainers may
+            remove releases.
+        '''
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        # vars
+        name = self.form['name'].value
+        cn = cgi.escape(name)
+        if self.form.has_key('version'):
+            version = self.form['version'].value
+            cv = cgi.escape(version)
+            desc = 'release %s of package %s.'%(cv, cn)
+        else:
+            version = None
+            desc = 'all information about package %s.'%cn
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                (version and self.store.has_role('Maintainer', name))):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        if not self.form.has_key('confirm'):
+            content = StringIO.StringIO()
+            w = content.write
+            w('''
+<p>You are about to remove %s
+This action <em>cannot be undone</em>!<br>
+Are you <strong>sure</strong>?</p>
+<form>
+<input type="hidden" name=":action" value="remove_pkg">
+<input type="hidden" name="name" value="%s">
+'''%(desc, cn))
+            if version:
+                w('<input type="hidden" name="version" value="%s">'%cv)
+
+            w('''
+<input type="submit" name="confirm" value="OK">
+<input type="submit" name="confirm" value="CANCEL">
+</form>''')
+
+            return self.success(heading='Confirm removal of %s'%desc,
+                content=content.getvalue())
+
+        elif self.form['confirm'].value == 'CANCEL':
+            return self.pkg_edit()
+
+        # ok, do it
+        if self.form.has_key('version'):
+            self.store.remove_release(name, version)
+            self.success(heading='Removed %s'%desc,
+                message='Release removed')
+        else:
+            self.store.remove_package(name)
+            self.success(heading='Removed %s'%desc,
+                message='Package removed')
+
 
     def list_classifiers(self):
         ''' Just return the list of classifiers.
