@@ -2,7 +2,6 @@ Now:
 
 - finalise database schema
   - multiple download links?
-- file upload of PKG_INFO (or whole package)
 - Trove
 - change notification emails
 - password reset through the web
