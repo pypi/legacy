@@ -344,6 +344,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
         un = urllib.quote(name)
         uv = urllib.quote(version)
         w('<a href="?:action=index">index</a>\n')
+        w('| <a href="?:action=search_form">search</a>\n')
         w('| <a href="?:action=role_form&package_name=%s">admin</a>\n'%un)
         w('| <a href="?:action=submit_form&name=%s&version=%s"'
             '>edit</a><br>'%(un, uv))
@@ -406,7 +407,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
 <form method="POST" enctype="multipart/form-data">
 <input type="hidden" name=":action" value="submit_pkg_info">
 <table class="form">
-<tr><td>PKG-INFO file</td>
+<tr><th>PKG-INFO file:</th>
     <td><input size="40" type="file" name="pkginfo"></td>
 </tr>
 <tr><td>&nbsp;</td><td><input type="submit" value="Add Package Info"></td></tr>
@@ -548,6 +549,7 @@ Comments to <a href="http://www.python.org/sigs/catalog-sig/">catalog-sig</a>, p
             else:
                 v = v.value.strip()
             data[k.lower().replace('-','_')] = v
+        return data
 
     def verify(self):
         ''' Validate the input data.
