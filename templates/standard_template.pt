@@ -138,8 +138,11 @@ PyPI Actions
 
 <h1 align="left">PyPI: <span tal:replace="options/title"/></h1>
 
-<p tal:condition="options/message | nothing" class="ok"
- tal:content="structure options/message">a status message</p>
+<p tal:condition="app/ok_message" class="ok"
+ tal:content="structure app/ok_message">a status message</p>
+
+<p tal:condition="app/error_message" class="error"
+ tal:content="structure app/error_message">a status message</p>
 
 <metal:slot define-slot="body">
 

@@ -164,8 +164,13 @@ class WebUI:
         finally:
             self.store.close()
 
+    # these are inserted at the top of the standard template if set
+    error_message = None
+    ok_message = None
+
     def write_template(self, filename, **options):
         context = simpleTALES.Context(allowPythonPath=True)
+        context.addGlobal('options', options)
         context.addGlobal('app', self)
 
         # standard template has macros innit
@@ -291,7 +296,7 @@ class WebUI:
                 raise Unauthorised
 
         # handle the action
-        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files'.split():
+        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -1100,9 +1105,6 @@ index.
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
-        content = StringIO.StringIO()
-        w = content.write
-
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -1127,73 +1129,8 @@ index.
         for version, info in reldict.items():
             self.store.store_package(name, version, info)
 
-        # now display
-        un = urllib.quote(name)
-        cn = cgi.escape(name)
-        url = self.url_path
-        w('''
-<p>
-  Each package may have a release for each version of the
-  package that is released. You may use this form to hide releases
-  from users.
-</p>
-<p>Administer the <a href="%s?:action=role_form&package_name=%s">Role</a>
-assigned to users for this package.</p>
-<p>
-<form action="%s" method="POST">
-<input type="hidden" name=":action" value="remove_pkg">
-<input type="hidden" name="name" value="%s">
-<input type="submit" value="Remove this package completely">
-</form>
-</p>
-<p>Alternatively, you may edit the information about each release:</p>
-<form action="%s" method="POST">
-<input type="hidden" name=":action" value="pkg_edit">
-<input type="hidden" name="name" value="%s">
-'''%(self.url_path, un, self.url_path, cn, self.url_path, cn))
-
-        w('''<table class="list" style="width: auto">
-   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="3">Links</th></tr>''')
-        for release in releases:
-            release = reldict[release['version']]
-            uv = urllib.quote(release['version'])
-            cv = cgi.escape(release['version'])
-            selname = 'hid_' + uv
-            selyes = selno = ''
-            if release['_pypi_hidden']:
-                selyes = ' selected'
-            else:
-                selno = ' selected'
-            sumname = 'sum_' + uv
-            summary = cgi.escape(release['summary'] or '')
-            w('''<tr>
-  <td><input type="checkbox" name="version" value="%(cv)s"></td>
-  <td>%(cv)s</td>
-  <td>
-   <select name="%(selname)s">
-    <option value="0"%(selno)s>No</option>
-    <option value="1"%(selyes)s>Yes</option>
-   </select>
-  </td>
-  <td><input size="40" name="%(sumname)s" value="%(summary)s"></td>
-  <td><a href="%(url)s?:action=display&name=%(un)s&version=%(uv)s">show</td>
-  <td><a href="%(url)s?:action=submit_form&name=%(un)s&version=%(uv)s">edit</td>
-  <td><a href="%(url)s?:action=files&name=%(un)s&version=%(uv)s">files</td>
- </tr>
-'''%locals())
-        w('''<tr>
-  <td id="last">
-   <input type="submit" name="submit_remove" value="Remove">
-  </td>
-  <td id="last">&nbsp;</td>
-  <td id="last" colspan="5">
-   <input type="submit" name="submit_submit" value="Update Releases">
-  </td>
- </tr>
-</table>
-</form>''')
-
-        self.success(heading='Package %s'%cn, content=content.getvalue())
+        self.write_template('pkg_edit.pt', releases=releases,
+            title="Package '%s' Editing"%name)
 
     def remove_pkg(self):
         ''' Remove a release or a whole package from the db.
@@ -1284,100 +1221,7 @@ Are you <strong>sure</strong>?</p>
                 self.store.has_role('Owner', name)):
             maintainer = True
             if self.form.has_key('submit_upload'):
-                pyversion = 'source'
-                content = filetype = md5_digest = comment = None
-                if self.form.has_key('content'):
-                    content = self.form['content']
-                if self.form.has_key('filetype'):
-                    filetype = self.form['filetype'].value
-                if content is None or filetype is None:
-                    self.fail(heading='Both content and filetype are required',
-                        message='Both content and filetype are required %r'
-                        %self.form.keys())
-                    return
-
-                md5_digest = self.form['md5_digest'].value
-
-                comment = self.form['comment'].value
-                
-                # python version?
-                if self.form['pyversion'].value:
-                    pyversion = self.form['pyversion'].value
-                elif filetype not in (None, 'sdist'):
-                    self.fail(heading='Python version is required',
-                        message='Python version is required for binary '
-                            'distribution uploads')
-                    return
-
-                # check for valid filenames
-                filename = content.filename
-                if not safe_filenames.match(filename):
-                    self.fail(heading='invalid distribution file',
-                        message='invalid distribution file')
-                    return
-
-                # check for dodgy filenames
-                if '/' in filename or '\\' in filename:
-                    self.fail(heading='invalid distribution file',
-                        message='invalid distribution file')
-                    return
-
-                # grab content
-                content = content.value
-
-                # check for valid exe
-                if filename.endswith('.exe'):
-                    if filetype != 'bdist_wininst':
-                        self.fail(heading='invalid distribution file',
-                            message='invalid distribution file')
-                        return
-                    try:
-                        t = StringIO.StringIO(content)
-                        t.filename = filename
-                        z = zipfile.ZipFile(t)
-                        l = z.namelist()
-                    except zipfile.error:
-                        self.fail(heading='invalid distribution file',
-                            message='invalid distribution file')
-                        return
-                    for zipname in l:
-                        if not safe_zipnames.match(zipname):
-                            self.fail(heading='invalid distribution file',
-                                message='invalid distribution file')
-                            return
-                elif filename.endswith('.zip'):
-                    # check for valid zip
-                    try:
-                        t = StringIO.StringIO(content)
-                        t.filename = filename
-                        z = zipfile.ZipFile(t)
-                        l = z.namelist()
-                    except zipfile.error:
-                        self.fail(heading='invalid distribution file',
-                            message='invalid distribution file')
-                        return
-                    if 'PKG-INFO' not in l:
-                        self.fail(heading='invalid distribution file',
-                            message='invalid distribution file')
-                        return
-
-                # digest content
-                m = md5.new()
-                m.update(content)
-                calc_digest = m.hexdigest()
-
-                if not md5_digest:
-                    md5_digest = calc_digest
-                elif md5_digest != calc_digest:
-                    self.fail(heading='MD5 digest mismatch',
-                        message='''The MD5 digest supplied does not match a
-                        digest calculated from the uploaded file (m =
-                        md5.new(); m.update(content); digest =
-                        m.hexdigest())''')
-                    return
-
-                self.store.add_file(name, version, content, md5_digest,
-                    filetype, pyversion, comment, filename)
+                self.file_upload()
 
             elif (self.form.has_key('submit_remove') and
                     self.form.has_key('file-ids')):
@@ -1477,6 +1321,113 @@ will be calculated if not supplied)<br>
 
         self.success(heading='Files for %s %s'%(name, version),
             content=content.getvalue())
+
+    def file_upload(self):
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        pyversion = 'source'
+        content = filetype = md5_digest = comment = None
+        if self.form.has_key('content'):
+            content = self.form['content']
+        if self.form.has_key('filetype'):
+            filetype = self.form['filetype'].value
+        if content is None or filetype is None:
+            self.fail(heading='Both content and filetype are required',
+                message='Both content and filetype are required %r'
+                %self.form.keys())
+            return
+
+        md5_digest = self.form['md5_digest'].value
+
+        comment = self.form['comment'].value
+        
+        # python version?
+        if self.form['pyversion'].value:
+            pyversion = self.form['pyversion'].value
+        elif filetype not in (None, 'sdist'):
+            self.fail(heading='Python version is required',
+                message='Python version is required for binary '
+                    'distribution uploads')
+            return
+
+        # check for valid filenames
+        filename = content.filename
+        if not safe_filenames.match(filename):
+            self.fail(heading='invalid distribution file',
+                message='invalid distribution file')
+            return
+
+        # check for dodgy filenames
+        if '/' in filename or '\\' in filename:
+            self.fail(heading='invalid distribution file',
+                message='invalid distribution file')
+            return
+
+        # grab content
+        content = content.value
+
+        # check for valid exe
+        if filename.endswith('.exe'):
+            if filetype != 'bdist_wininst':
+                self.fail(heading='invalid distribution file',
+                    message='invalid distribution file')
+                return
+            try:
+                t = StringIO.StringIO(content)
+                t.filename = filename
+                z = zipfile.ZipFile(t)
+                l = z.namelist()
+            except zipfile.error:
+                self.fail(heading='invalid distribution file',
+                    message='invalid distribution file')
+                return
+            for zipname in l:
+                if not safe_zipnames.match(zipname):
+                    self.fail(heading='invalid distribution file',
+                        message='invalid distribution file')
+                    return
+        elif filename.endswith('.zip'):
+            # check for valid zip
+            try:
+                t = StringIO.StringIO(content)
+                t.filename = filename
+                z = zipfile.ZipFile(t)
+                l = z.namelist()
+            except zipfile.error:
+                self.fail(heading='invalid distribution file',
+                    message='invalid distribution file')
+                return
+            if 'PKG-INFO' not in l:
+                self.fail(heading='invalid distribution file',
+                    message='invalid distribution file')
+                return
+
+        # digest content
+        m = md5.new()
+        m.update(content)
+        calc_digest = m.hexdigest()
+
+        if not md5_digest:
+            md5_digest = calc_digest
+        elif md5_digest != calc_digest:
+            self.fail(heading='MD5 digest mismatch',
+                message='''The MD5 digest supplied does not match a
+                digest calculated from the uploaded file (m =
+                md5.new(); m.update(content); digest =
+                m.hexdigest())''')
+            return
+
+        self.store.add_file(name, version, content, md5_digest,
+            filetype, pyversion, comment, filename)
 
     # 
     # classifiers listing
