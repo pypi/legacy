@@ -369,6 +369,10 @@ PyPI Actions
                     self.username = un
                     self.store.set_user(un, self.env['REMOTE_ADDR'])
 
+        if self.env.get('CONTENT_TYPE') == 'text/xml':
+            self.xmlrpc()
+            return
+
         # now handle the request
         if self.form.has_key(':action'):
             action = self.form[':action'].value
@@ -393,6 +397,10 @@ PyPI Actions
 
         # commit any database changes
         self.store.commit()
+
+    def xmlrpc(self):
+        import rpc
+        rpc.handle_request(self)
 
     def home(self, nav_current='home'):
         content = StringIO.StringIO()
