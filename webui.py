@@ -18,6 +18,7 @@ def enumerate(sequence):
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz)$', re.I)
 safe_zipnames = re.compile(r'(purelib|platlib|headers|scripts|data).+', re.I)
+safe_username = re.compile(r'[A-Za-z0-9]+')
 
 def xmlescape(s):
     ' make sure we escape a string '
@@ -1373,6 +1374,9 @@ Are you <strong>sure</strong>?</p>
             # validate a complete set of stuff
             # new user, create entry and email otk
             name = info['name']
+            if not safe_username.match(name):
+                raise FormError, 'Username is invalid (ASCII only)'
+
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
@@ -1381,7 +1385,7 @@ Are you <strong>sure</strong>?</p>
                 self.fail("password and confirm don't match", heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
-                                                info['email'], info.get('gpg_keyid', ''))
+                info['email'], info.get('gpg_keyid', ''))
             info['url'] = self.config.url
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
