@@ -1256,6 +1256,7 @@ class WebUI:
             content = self.form['content']
         if self.form.has_key('filetype'):
             filetype = self.form['filetype']
+            self.form['pyversion'] = 'source'
         if content is None or filetype is None:
             raise ValueError, 'Both content and filetype are required'
 
