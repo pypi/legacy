@@ -1,14 +1,12 @@
 Now:
 
-- finalise database schema
-  - multiple download links?
-- documentation of register and classifications
-- change notification emails
-- "latest changes"
-- admin inteface for user details editing (and fix theller@python.net)
-- "does this release supercede the existing release?"
+?
 
 Later:
 
 - package submission
+- change notification emails
+- "latest changes"
+- admin inteface for user details editing (and fix theller@python.net)
+- "does this release supercede the existing release?"
 
