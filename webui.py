@@ -823,7 +823,7 @@ available Roles are defined as:
         self.nav_current = 'submit_form'
         w('''
 <p>To submit information to this index, you have three options:</p>
-<p id="submitheader">1. Use the new distutils command:</p>
+<p id="submitheader">1. Use the new distutils "<a href="http://www.python.org/dev/doc/devel/dist/package-index.html">register</a>" command. If you're not using python 2.3, you need to:</p>
 <ol>
 <li>Copy <a href="http://mechanicalcat.net/tech/pypi/register.py">register.py</a> to your
 python lib "distutils/command" directory (typically something like

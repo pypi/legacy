@@ -253,7 +253,7 @@ class Store:
 
         # do the fetch
         sql = '''select name, version, summary from releases %s
-            order by name, _pypi_ordering'''%where
+            order by lower(name), _pypi_ordering'''%where
         self.cursor.execute(sql)
         l = self.cursor.fetchall()
         return l
@@ -368,7 +368,7 @@ class Store:
     def get_users(self):
         ''' Fetch the complete list of users from the database.
         '''
-        self.cursor.execute('select name,email from users order by name')
+        self.cursor.execute('select name,email from users order by lower(name)')
         return self.cursor.fetchall()
 
     def has_role(self, role_name, package_name=None, user_name=None):
