@@ -18,7 +18,7 @@
  <tr><th colspan="6" class="header">Release Files</th></tr>
  <tr>
   <th>Type</th><th>Py Version</th><th>Comment</th>
-  <th>Download</th><th>Size</th><th>MD5 digest</th>
+  <th>Download</th><th>Size</th>
  </tr>
 
  <tr tal:repeat="file python:app.store.list_files(data['name'],
@@ -30,18 +30,13 @@
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])"
     tal:content="file/filename" />
-    <tal:block tal:condition="file/has_sig">
-    (<a title="PGP signature"
+    (<a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}">md5</a><tal:block tal:condition="file/has_sig">,
+    <a title="PGP signature"
        tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])+'.asc'"
-       tal:content="string:sig" />)
-    </tal:block>
+       tal:content="string:sig" /></tal:block>)
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
-  <td style="font-size: 75%">
-   <a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}"
-       tal:content="file/md5_digest" />
-  </td>
  </tr>
 </table>
 
