@@ -797,7 +797,7 @@ class WebUI:
             elif property in ('license', 'platform'):
                 field = '''<textarea wrap="hard" name="%s" rows="5" 
                     cols="80">%s</textarea><br />You should enter a full
-                    description here only if appropriate classifiers aren't
+                    description here only if appropriate classifiers aren\'t
                     available (see below).'''%(property, cgi.escape(value))
             elif property.endswith('description'):
                 field = '''<textarea wrap="hard" name="%s" rows="5" 
