@@ -35,7 +35,7 @@ Number of matches: <span tal:replace="python:
 <a tal:attributes="href option_data/href">
  <span tal:replace="option_data/description"/>
  (<span tal:replace="option_data/count"/>)</a>
-<tal:if condition="not: repeat/option_data/last"> / </tal:if>
+<tal:if condition="not:repeat/option_data/end"> / </tal:if>
 </tal:for-options>
 
 </div>
