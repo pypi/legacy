@@ -162,6 +162,7 @@ class WebUI:
         ('index', 'List all packages'),
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
+        ('rss', 'RSS (last 20 updates)'),
         ('role_form', 'Admin'),
     )
     def page_head(self, title, message=None, heading=None, code=200,
