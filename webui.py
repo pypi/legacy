@@ -7,6 +7,8 @@ from xml.sax import saxutils
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
 
+safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz)$', re.I)
+
 def xmlescape(s):
     ' make sure we escape a string '
     return saxutils.escape(str(s))
@@ -1503,23 +1505,26 @@ Are you <strong>sure</strong>?</p>
                         %self.form.keys())
                     return
 
-                if self.form.has_key('md5_digest'):
-                    md5_digest = self.form['md5_digest'].value
+                md5_digest = self.form['md5_digest'].value
 
-                if self.form.has_key('comment'):
-                    comment = self.form['comment'].value
+                comment = self.form['comment'].value
                 
                 # python version?
-                if self.form.has_key('pyversion'):
+                if self.form['pyversion'].value:
                     pyversion = self.form['pyversion'].value
                 elif filetype not in (None, 'sdist'):
                     self.fail(heading='Python version is required',
-                        message='''Python version is required for binary 
-                        distribution uploads''')
+                        message='Python version is required for binary '
+                            'distribution uploads')
+                    return
+
+                filename = content.filename
+                if not safe_filenames.match(filename):
+                    self.fail(heading='invalid distribution file',
+                        message='invalid distribution file')
                     return
 
                 # grab content, digest it
-                filename = content.filename
                 content = content.value
                 m = md5.new()
                 m.update(content)
