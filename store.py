@@ -574,6 +574,20 @@ class Store:
         return res
 
     #
+    # File handling
+    #
+    def gen_file_url(self, pyversion, name, filename):
+        '''Generate the URL for a given file download.'''
+        return os.path.join(self.config.files_url, pyversion,
+            name[0], name, filename)
+
+    def gen_file_path(self, pyversion, name, filename):
+        '''Generate the path to the file on disk.'''
+        return os.path.join(self.config.database_files_dir, pyversion,
+            name[0], name, filename)
+
+
+    #
     # Handle the underlying database
     #
     def last_modified(self):
@@ -588,7 +602,8 @@ class Store:
         ''' Open the database, initialising if necessary.
         '''
         # ensure files are group readable and writable
-        self._conn = psycopg.connect(database='pypi', user='pypi')
+        self._conn = psycopg.connect(database=self.config.database_name,
+            user=self.config.database_user)
 
         cursor = self._cursor = self._conn.cursor()
 
@@ -638,7 +653,6 @@ if __name__ == '__main__':
         store.delete_otk(otk)
         store.commit()
     else:
-        import pprint;pprint.pprint(store.latest_releases())
         print "UNKNOWN COMMAND", sys.argv[2]
     store.close()
 

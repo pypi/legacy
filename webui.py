@@ -397,7 +397,7 @@ PyPI Actions
                 raise Unauthorised
 
         # handle the action
-        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
+        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -1290,7 +1290,7 @@ assigned to users for this package.</p>
 '''%(self.url_path, un, self.url_path, cn, self.url_path, cn))
 
         w('''<table class="list" style="width: auto">
-   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="2">Links</th></tr>''')
+   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th><th colspan="3">Links</th></tr>''')
         for release in releases:
             release = reldict[release['version']]
             uv = urllib.quote(release['version'])
@@ -1315,6 +1315,7 @@ assigned to users for this package.</p>
   <td><input size="40" name="%(sumname)s" value="%(summary)s"></td>
   <td><a href="%(url)s?:action=display&name=%(un)s&version=%(uv)s">show</td>
   <td><a href="%(url)s?:action=submit_form&name=%(un)s&version=%(uv)s">edit</td>
+  <td><a href="%(url)s?:action=files&name=%(un)s&version=%(uv)s">files</td>
  </tr>
 '''%locals())
         w('''<tr>
@@ -1400,7 +1401,131 @@ Are you <strong>sure</strong>?</p>
             self.success(heading='Removed %s'%desc,
                 message='Package removed')
 
+    def files(self):
+        '''List files and handle file submissions.
+        '''
 
+        name = version = None
+        if self.form.has_key('name'):
+            name = self.form['name'].value
+        if self.form.has_key('version'):
+            version = self.form['version'].value
+        if not name or not version:
+            self.fail(heading='Name and version are required',
+                message='Name and version are required')
+            return
+
+        # if allowed, handle file upload
+        maintainer = False
+        if self.store.has_role('Maintainer', name):
+            maintainer = True
+            if self.form.has_key('submit_upload'):
+                content = filetype = pyversion = None
+                if self.form.has_key('content'):
+                    content = self.form['content'].value
+                if self.form.has_key('filetype'):
+                    filetype = self.form['filetype'].value
+                if (content is not None and filetype is None) or (content
+                        is None and filetype is not None):
+                    self.fail(heading='Both content and filetype are required',
+                        message='Both content and filetype are required')
+                    return
+                
+                # python version?
+                if self.form.has_key('pyversion'):
+                    pyversion = self.form['pyversion'].value
+                elif filetype not in (None, 'sdist'):
+                    self.fail(heading='Python version is required',
+                        message='''Python version is required for binary 
+                        distribution uploads''')
+                    return
+
+                if content is not None:
+                    self.store.add_file(name, version, content, filetype,
+                        pyversion)
+
+                    # XXX user feedback
+
+        content = StringIO.StringIO()
+        w = content.write
+        w('<h1>Files for %s %s</h1>'%(name, version))
+
+        if maintainer:
+            w('''
+<form action="%s" method="POST">
+<input type="hidden" name=":action" value="files">
+<input type="hidden" name="name" value="%s">
+<input type="hidden" name="version" value="%s">
+File:      <input type="file" name="content"><br>
+File Type: <select name="filetype">
+<option value="">-- Select Distribution Type --</option>
+<option value="sdist">Source</option>
+<option value="bdist_dumb">"dumb" binary</option>
+<option value="bdist_rpm">RPM</option>
+<option value="bdist_wininst">MS Windows installer</option>
+</select><br>
+Python Version: <select name="filetype">
+<option value="">-- Select Python Version --</option>
+<option value="2.1">2.1</option>
+<option value="2.2">2.2</option>
+<option value="2.3">2.3</option>
+<option value="2.4">2.4</option>
+<option value="2.5">2.5</option>
+</select> (not needed for source distributions)<br>
+<input type="submit" name="submit_upload" value="Upload new File">
+</form>
+''')
+
+        # listing table
+        if maintainer:
+            remth = '<th>Remove?</th>'
+        else:
+            remth = ''
+
+        w('''<table class="list" style="width: auto">
+   <tr>%s<th>Type</th><th>Py Version</th>
+    <th>Download</th></tr>'''%remth)
+
+        un = urllib.quote(name)
+        cn = cgi.escape(name)
+        uv = urllib.quote(version)
+        cv = cgi.escape(version)
+
+        for entry in []: # XXX self.store.list_files(name, version):
+            ftype = entry['packagetype']
+            pyver = entry['python_version']
+            filename = cgi.escape(entry['filename'])
+            url = urllib.quote(self.store.gen_file_url(entry['filename']))
+            if maintainer:
+                cb = '<td><input type="checkbox" name="version" '\
+                    'value="%s-%s"></td>'%(ftype, pyver)
+            else:
+                cb = ''
+            w('''<tr>
+  %(cb)s
+  <td>%(ftype)s</td>
+  <td>%(pyver)s</td>
+  <td><a href="%(url)s">%(filename)s</td>
+ </tr>
+'''%locals())
+        w('''<tr>
+  <td id="last">
+   <input type="submit" name="submit_remove" value="Remove">
+  </td>
+  <td id="last">&nbsp;</td>
+  <td id="last" colspan="5">
+   <input type="submit" name="submit_submit" value="Update Releases">
+  </td>
+ </tr>
+</table>
+</form>''')
+
+        self.success(heading='Files for %s %s'%(name, version),
+            content=content.getvalue())
+
+    # 
+    # classifiers listing
+    #
     def list_classifiers(self):
         ''' Just return the list of classifiers.
         '''

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import sys, pprint, cgi, urllib, os
-import sqlite
 
 def flatten(d):
     l = d[1]
@@ -130,25 +129,4 @@ where r.name=rc.name and r.version=rc.version
             L.append(urllib.quote(fld, safe="") + '=' +
                      urllib.quote(str(value), safe=""))
         return '&'.join(L)
-
-if __name__ == '__main__':
-    db = sqlite.connect(db=sys.argv[1])
-
-    import trove
-    trove = trove.Trove(db.cursor())
-
-#    q = Query(db.cursor(), trove, [('Web Environment', '21')])
-#    v = q.list_choices()
-#    pprint.pprint(v)
-
-#    print "*** Topic :: Software Development"
-#    q = Query(db.cursor(), trove, [('Topic', '405')])
-#    v = q.list_choices()
-#    pprint.pprint(v)
-#    print q.as_href()
-
-    q = Query(db.cursor(), trove, [])
-    v = q.list_choices()
-    pprint.pprint(v)
-#    print q.as_href()
 

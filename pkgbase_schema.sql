@@ -87,13 +87,14 @@ CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
 
 -- Table structure for table: package_files
 -- python version is only first two digits
--- actual filename is constructed <py version>/<a-z>/<name>/<distutils filename>
+-- actual file path is constructed <py version>/<a-z>/<name>/<filename>
+-- we remember filename because it can differ
 CREATE TABLE package_files ( 
    name TEXT,
    version TEXT,
    python_version TEXT,
    packagetype TEXT,
-   UNIQUE (name, version, python_version, packagetype),
+   filename TEXT,
    FOREIGN KEY (name, version) REFERENCES releases (name, version)
 );
 CREATE INDEX release_name_idx ON releases(name);
@@ -123,5 +124,4 @@ CREATE TABLE roles (
 );
 CREATE INDEX roles_pack_name_idx ON roles(package_name);
 CREATE INDEX roles_user_name_idx ON roles(user_name);
-
 
