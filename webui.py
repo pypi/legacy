@@ -343,12 +343,13 @@ Comments to
 <tr><th>Package Name:</th>
     <td><input type="hidden" name="package_name" value="%s">%s</td>
 </tr>
-'''%(urllib.quote(package_name), cgi.escape(package_name))
+'''%(cgi.escape(package_name), cgi.escape(package_name))
         elif not self.store.has_role('Admin', ''):
             raise Unauthorised
         else:
-            s = '\n'.join(['<option value="%s">%s</option>'%(x['name'],
-                x['name']) for x in self.store.get_packages()])
+            s = '\n'.join(['<option value="%s">%s</option>'%(
+                cgi.escape(x['name']),
+                cgi.escape(x['name'])) for x in self.store.get_packages()])
             package = '''
 <tr><th>Package Name:</th>
     <td><select name="package_name">%s</select></td>
