@@ -102,3 +102,4 @@ def check_provision(value):
     m = re.match("[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*(\s*\([^)]+\))?$", value)
     if not m:
         raise ValueError("illegal provides specification: %r" % value)
+    return m.group(2)
