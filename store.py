@@ -779,8 +779,13 @@ class Store:
         os.remove(filepath)
         if os.path.exists(filepath+'.asc'):
             os.remove(filepath+'.asc')
-        if not os.listdir(dirpath):
+        while True:
+            if os.listdir(dirpath):
+                break
+            if dirpath == self.config.database_files_dir:
+                break
             os.rmdir(dirpath)
+            dirpath = os.path.split(dirpath)[0]
 
     def get_file_info(self, digest):
         cursor = self.get_cursor()
