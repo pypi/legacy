@@ -127,25 +127,11 @@ The web interface implements the following commands/interfaces:
 
   Registration will be a three-step process, involving:
 
-  1. User submission of details via the Distutils *register* command,
+  1. User submission of details via the Distutils *register* command
+     or through the web,
   2. Index server sending email to the user's email address with a URL
      to visit to confirm registration with a random one-time key, and
   3. User visits URL with the key and confirms registration.
-
-  Several user Roles will exist, generally revolving around a
-  particular package name:
-
-  Owner
-    Owns a package name, may assign Maintainer Role for that name.  The
-    first user to register information about a package is deemed Owner
-    of the package name.  The Admin user may change this if necessary.
-    May submit updates for the package name.
-
-  Maintainer
-    Can submit and update info for a particular package name.
-
-  Admin
-    Can assign Owner Role and edit user details.
 
 **roles**
   An interface for changing user Role assignments.
@@ -169,6 +155,24 @@ Code  Meaning        Register command implications
 403   Forbidden      User does not have permission to update the
                      package information (not Owner or Maintainer)
 ===== ============== ================================================
+
+User Roles
+----------
+
+Three user Roles will be assignable to users:
+
+Owner
+  Owns a package name, may assign Maintainer Role for that name.  The
+  first user to register information about a package is deemed Owner
+  of the package name.  The Admin user may change this if necessary.
+  May submit updates for the package name.
+
+Maintainer
+  Can submit and update info for a particular package name.
+
+Admin
+  Can assign Owner Role and edit user details. Not specific to a
+  package name.
 
 
 Index Storage (Schema)
@@ -226,7 +230,7 @@ with three options:
 
 On systems where the ``$HOME`` environment variable is set, the user
 will be prompted at exit to save their username/password to a file
-in their ``$HOME`` directory in the file ``.pythonpackagerc``.
+in their ``$HOME`` directory in the file ``.pypirc``.
 
 Notification of changes to a package entry will be sent to all users
 who have submitted information about the package.  That is, the original
