@@ -8,25 +8,56 @@
 <input type="hidden" name=":action" value="files" />
 <input type="hidden" name="name" tal:attributes="value options/name" />
 <input type="hidden" name="version" tal:attributes="value options/version" />
-File:      <input type="file" name="content" /><br />
-File Type: <select name="filetype">
-<option value="">-- Select Distribution Type --</option>
- <option tal:repeat="type app/dist_file_types"
-    tal:attributes="value python:type[0]" tal:content="python:type[1]" />
-</select><br />
-Python Version: <select name="pyversion">
-<option value="">-- Select Python Version --</option>
-<option value="2.1">2.1</option>
-<option value="2.2">2.2</option>
-<option value="2.3">2.3</option>
-<option value="2.4">2.4</option>
-<option value="2.5">2.5</option>
-</select> (not needed for source distributions)<br />
-Comment: <input type="text" name="comment" size="40" /> (optional - use if
-there's multiple files for one distribution type)<br />
-MD5 Digest: <input type="text" name="md5_digest" size="40" /> (optional -
-will be calculated if not supplied)<br />
-<input type="submit" name="submit_upload" value="Upload new File" />
+<table class="form">
+ <tr>
+  <th class="required">File:</th>
+  <td><input type="file" name="content" /></td>
+ </tr>
+
+ <tr>
+  <th class="required">File Type:</th>
+  <td>
+   <select name="filetype">
+    <option value="">-- Select Distribution Type --</option>
+     <option tal:repeat="type app/dist_file_types"
+        tal:attributes="value python:type[0]" tal:content="python:type[1]" />
+    </select>
+  </td>
+ </tr>
+
+ <tr>
+  <th>Python Version:</th>
+  <td>
+   <select name="pyversion">
+    <option value="">-- Select Python Version --</option>
+    <option value="2.1">2.1</option>
+    <option value="2.2">2.2</option>
+    <option value="2.3">2.3</option>
+    <option value="2.4">2.4</option>
+    <option value="2.5">2.5</option>
+   </select> (not needed for source distributions)
+  </td>
+ </tr>
+
+ <tr>
+  <th>Comment:</th>
+  <td><input type="text" name="comment" size="40" />
+    (optional - use if there's multiple files for one distribution type)
+  </td>
+ </tr>
+
+ <tr>
+  <th>MD5 Digest:</th>
+  <td><input type="text" name="md5_digest" size="40" />
+    (optional - will be calculated if not supplied)
+  </td>
+ </tr>
+
+ <tr>
+  <th></th>
+  <td><input type="submit" name="submit_upload" value="Upload new File" /></td>
+ </tr>
+</table>
 </form>
 
 <form tal:attributes="action app/url_path" method="POST"
