@@ -1,5 +1,5 @@
 
-import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
+import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
@@ -882,8 +882,8 @@ available Roles are defined as:
         # now the package info
         w('<table class="form">\n')
         keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
-        for i, key in enumerate(keypref):
-            value = info[i]
+        for key in keypref:
+            value = info[key]
             if not value: continue
             if key == 'download_url':
                 label = "Download URL"
@@ -1417,19 +1417,26 @@ Are you <strong>sure</strong>?</p>
 
         # if allowed, handle file upload
         maintainer = False
-        if self.store.has_role('Maintainer', name):
+        if (self.store.has_role('Maintainer', name) or
+                self.store.has_role('Owner', name)):
             maintainer = True
             if self.form.has_key('submit_upload'):
-                content = filetype = pyversion = None
+                content = filetype = md5_digest = pyversion = comment = None
                 if self.form.has_key('content'):
-                    content = self.form['content'].value
+                    content = self.form['content']
                 if self.form.has_key('filetype'):
                     filetype = self.form['filetype'].value
-                if (content is not None and filetype is None) or (content
-                        is None and filetype is not None):
+                if content is None or filetype is None:
                     self.fail(heading='Both content and filetype are required',
-                        message='Both content and filetype are required')
+                        message='Both content and filetype are required %r'
+                        %self.form.keys())
                     return
+
+                if self.form.has_key('md5_digest'):
+                    md5_digest = self.form['md5_digest'].value
+
+                if self.form.has_key('comment'):
+                    comment = self.form['comment'].value
                 
                 # python version?
                 if self.form.has_key('pyversion'):
@@ -1440,31 +1447,42 @@ Are you <strong>sure</strong>?</p>
                         distribution uploads''')
                     return
 
-                if content is not None:
-                    self.store.add_file(name, version, content, filetype,
-                        pyversion)
+                # grab content, digest it
+                filename = content.filename
+                content = content.value
+                m = md5.new()
+                m.update(content)
+                calc_digest = m.hexdigest()
 
-                    # XXX user feedback
+                if not md5_digest:
+                    md5_digest = calc_digest
+                elif md5_digest != calc_digest:
+                    self.fail(heading='MD5 digest mismatch',
+                        message='''The MD5 digest supplied does not match a
+                        digest calculated from the uploaded file (m =
+                        md5.new(); m.update(content); digest =
+                        m.hexdigest())''')
+                    return
+
+                self.store.add_file(name, version, content, md5_digest,
+                    filetype, pyversion, comment, filename)
+
+                # XXX user feedback
 
         content = StringIO.StringIO()
         w = content.write
-        w('<h1>Files for %s %s</h1>'%(name, version))
-
         if maintainer:
             w('''
-<form action="%s" method="POST">
+<form action="%s" method="POST" enctype="multipart/form-data">
 <input type="hidden" name=":action" value="files">
 <input type="hidden" name="name" value="%s">
 <input type="hidden" name="version" value="%s">
 File:      <input type="file" name="content"><br>
 File Type: <select name="filetype">
 <option value="">-- Select Distribution Type --</option>
-<option value="sdist">Source</option>
-<option value="bdist_dumb">"dumb" binary</option>
-<option value="bdist_rpm">RPM</option>
-<option value="bdist_wininst">MS Windows installer</option>
+%s
 </select><br>
-Python Version: <select name="filetype">
+Python Version: <select name="pyversion">
 <option value="">-- Select Python Version --</option>
 <option value="2.1">2.1</option>
 <option value="2.2">2.2</option>
@@ -1472,9 +1490,15 @@ Python Version: <select name="filetype">
 <option value="2.4">2.4</option>
 <option value="2.5">2.5</option>
 </select> (not needed for source distributions)<br>
+Comment: <input type="text" name="comment" size="40"> (optional - use if
+there's multiple files for one distribution type)<br>
+MD5 Digest: <input type="text" name="md5_digest" size="40"> (optional -
+will be calculated if not supplied)<br>
 <input type="submit" name="submit_upload" value="Upload new File">
 </form>
-''')
+'''%(self.url_path, name, version,
+    '\n'.join(['<option value="%s">%s</option>'%x
+        for x in store.dist_file_types])))
 
         # listing table
         if maintainer:
@@ -1483,19 +1507,21 @@ Python Version: <select name="filetype">
             remth = ''
 
         w('''<table class="list" style="width: auto">
-   <tr>%s<th>Type</th><th>Py Version</th>
-    <th>Download</th></tr>'''%remth)
+   <tr>%s<th>Type</th><th>Py Version</th><th>Comment</th>
+    <th>Download</th><th>MD5 digest</th></tr>'''%remth)
 
         un = urllib.quote(name)
         cn = cgi.escape(name)
         uv = urllib.quote(version)
         cv = cgi.escape(version)
 
-        for entry in []: # XXX self.store.list_files(name, version):
+        for entry in self.store.list_files(name, version):
             ftype = entry['packagetype']
             pyver = entry['python_version']
+            md5_digest = entry['md5_digest']
+            comment = cgi.escape(entry['comment_text'])
             filename = cgi.escape(entry['filename'])
-            url = urllib.quote(self.store.gen_file_url(entry['filename']))
+            url = self.store.gen_file_url(pyver, un, urllib.quote(filename))
             if maintainer:
                 cb = '<td><input type="checkbox" name="version" '\
                     'value="%s-%s"></td>'%(ftype, pyver)
@@ -1505,16 +1531,14 @@ Python Version: <select name="filetype">
   %(cb)s
   <td>%(ftype)s</td>
   <td>%(pyver)s</td>
+  <td>%(comment)s</td>
   <td><a href="%(url)s">%(filename)s</td>
+  <td style="font-size: 75%%">%(md5_digest)s</td>
  </tr>
 '''%locals())
         w('''<tr>
-  <td id="last">
+  <td colspan="6" id="last">
    <input type="submit" name="submit_remove" value="Remove">
-  </td>
-  <td id="last">&nbsp;</td>
-  <td id="last" colspan="5">
-   <input type="submit" name="submit_submit" value="Update Releases">
   </td>
  </tr>
 </table>

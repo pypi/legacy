@@ -1,8 +1,14 @@
+2004-03-19
+- migrated from sqlite to postgres
+
+
 2004-07-14
 - fixed editing of package information in package summary page (bug 989597)
 
+
 2004-06-23
 - fixed the display of latest release (bug 977432)
+
 
 2004-06-21
 - when displaying a package and no version is given, try to determine
@@ -14,11 +20,13 @@
 2003-04-01
 - PKG-INFO download now has "obfuscated" email addresses
 
+
 2003-03-02
 - fixed deletion of packages where there were no versions (bugs #907317 and
   #908118)
 - list only new releases in RSS and front page, not any old edit (bug
   #907315)
+
 
 2004-03-01
 - add meaningful titles to pages (uses page heading)
@@ -27,6 +35,7 @@
 - make "delete whole package" a form button
 - made wording of role admin link more helpful
 - hide all current releases when a new release is added
+
 
 2004-06-20
 - when displaying a package and no version is given, try to determine

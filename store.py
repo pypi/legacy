@@ -5,6 +5,13 @@ from distutils.version import LooseVersion
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
+dist_file_types = [
+    ('sdist',            'Source'),
+    ('bdist_dumb',       '"dumb" binary'),
+    ('bdist_rpm',        'RPM'),
+    ('bdist_wininst',    'MS Windows installer'),
+]
+
 class ResultRow:
     def __init__(self, cols, info=None):
         self.cols = cols
@@ -586,6 +593,34 @@ class Store:
         return os.path.join(self.config.database_files_dir, pyversion,
             name[0], name, filename)
 
+    def add_file(self, name, version, content, md5_digest, filetype,
+            pyversion, comment, filename):
+        '''Add to the database and store the content to disk.'''
+        cursor = self.get_cursor()
+        sql = '''insert into release_files (name, version, python_version,
+            packagetype, comment_text, filename, md5_digest) values
+            (%s, %s, %s, %s, %s, %s, %s)'''
+        cursor.execute(sql, (name, version, pyversion, filetype,
+            comment, filename, md5_digest))
+
+        filepath = self.gen_file_path(pyversion, name, filename)
+        dirpath = os.path.split(filepath)[0]
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
+        f = open(filepath, 'wb')
+        try:
+            f.write(content)
+        finally:
+            f.close()
+
+    def list_files(self, name, version):
+        cursor = self.get_cursor()
+        sql = '''select packagetype, python_version, comment_text,
+            filename, md5_digest from release_files where name=%s
+            and version=%s'''
+        cursor.execute(sql, (name, version))
+        return Result(('packagetype', 'python_version', 'comment_text',
+            'filename', 'md5_digest'), cursor.fetchall())
 
     #
     # Handle the underlying database
