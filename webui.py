@@ -201,7 +201,7 @@ class WebUI:
              '#0066cc',  '#6699cc',  '#3399ff',  '#6699cc',  '#3399ff',
              '#d6ebff',  '#6699cc',  '#3399ff',  '#0066cc',
              ][banner_num]
-        w('''
+        w('''\
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
 <html><head><title>%s</title>
@@ -210,6 +210,8 @@ class WebUI:
 <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif">
 <link rel="STYLESHEET" href="http://www.python.org/style.css" type="text/css">
 <link rel="STYLESHEET" href="http://www.python.org/css/pypi.css" type="text/css">
+<link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates"
+      href="http://www.python.org/pypi?:action=rss">
 </head>
 <body bgcolor="#ffffff" text="#000000"
       marginwidth="0" marginheight="0"
