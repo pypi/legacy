@@ -778,13 +778,13 @@ class Store:
     def list_files(self, name, version):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest from release_files where name=%s
-            and version=%s'''
+            filename, md5_digest, downloads from release_files
+            where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
         cols = ('packagetype', 'python_version', 'comment_text',
-            'filename', 'md5_digest', 'size', 'has_sig')
-        for pt, pv, ct, fn, m5 in cursor.fetchall():
+            'filename', 'md5_digest', 'size', 'has_sig', 'downloads')
+        for pt, pv, ct, fn, m5, dn in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
             try:
                 size = os.stat(path)[stat.ST_SIZE]
@@ -793,7 +793,7 @@ class Store:
                 # file not on disk any more - don't list it
                 continue
             has_sig = os.path.exists(path+'.asc')
-            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size, has_sig)))
+            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size, has_sig, dn)))
         return l
 
     def remove_file(self, digest):

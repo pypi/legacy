@@ -131,6 +131,7 @@ CREATE TABLE release_files (
    comment_text TEXT,
    filename TEXT UNIQUE,
    md5_digest TEXT UNIQUE,
+   downloads INTEGER DEFAULT 0,
    FOREIGN KEY (name, version) REFERENCES releases (name, version)
 );
 CREATE INDEX release_files_name_idx ON release_files(name);
@@ -161,3 +162,11 @@ CREATE TABLE roles (
 CREATE INDEX roles_pack_name_idx ON roles(package_name);
 CREATE INDEX roles_user_name_idx ON roles(user_name);
 
+-- Table structure for table: timestamps
+-- Note: stamp_name is ftp, http
+CREATE TABLE timestamps {
+   name TEXT PRIMARY KEY,
+   value TIMESTAMP
+}
+INSERT INTO timestamps(name, value) VALUES('http','1970-01-01');
+INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01');

@@ -88,7 +88,8 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
  <tr>
   <th tal:condition="data/maintainer">Remove?</th>
   <th>Type</th><th>Py Version</th><th>Comment</th>
-  <th>Download</th><th>Size</th><th>MD5 digest</th>
+  <th>Download</th><th>Size</th><th># downloads</th>
+  <th>MD5 digest</th>
  </tr>
 
  <tr tal:repeat="file python:app.store.list_files(data['name'],
@@ -111,6 +112,7 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
        tal:content="string:sig" />
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
+  <td tal:content="file/downloads"/>
   <td style="font-size: 75%">
    <a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}"
        tal:content="file/md5_digest" />
