@@ -95,10 +95,10 @@ class Store:
 
             # perform the insert
             cols = 'name version author author_email maintainer maintainer_email home_page license summary description long_description keywords platform download_url hidden'.split()
-            args = tuple([info[k] for k in cols])
-            cols = ','.join(cols)
-            params = ','.join(['%s']*len(info))
-            sql = 'insert into packages (%s) values (%s)'%(cols, params)
+            args = tuple([info.get(k, None) for k in cols])
+            params = ','.join(['%s']*len(cols))
+            scols = ','.join(cols)
+            sql = 'insert into releases (%s) values (%s)'%(scols, params)
             self.cursor.execute(sql, args)
 
             # journal entry

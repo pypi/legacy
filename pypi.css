@@ -51,6 +51,12 @@ p.error {
  border-left: 1px solid #444;
 }
 
+#submitheader {
+  font-weight: bold;
+  color: #707040;
+  font-size: 120%;
+}
+
 /* style for forms */
 table.form {
   padding: 2;
