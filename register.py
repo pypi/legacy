@@ -131,7 +131,7 @@ class register(Command):
         # see if we can short-cut and get the username/password from the
         # config
         if os.environ.has_key('HOME'):
-            rc = os.path.join(os.environ['HOME'], '.pythonpackagerc')
+            rc = os.path.join(os.environ['HOME'], '.pypirc')
             if os.path.exists(rc):
                 config = ConfigParser.ConfigParser()
                 config.read(rc)
