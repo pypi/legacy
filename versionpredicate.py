@@ -96,3 +96,9 @@ class VersionPredicate:
            if not compmap[cond](version, ver):
                return False
        return True
+
+
+def check_provision(value):
+    m = re.match("[a-zA-Z_]\w*(\.[a-zA-Z_]\w*)*(\s*\([^)]+\))?$", v)
+    if not m:
+        raise ValueError("illegal provides specification: %r" % v)
