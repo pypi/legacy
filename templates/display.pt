@@ -4,13 +4,7 @@
       metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
 
-<span tal:define="un python: app.quote_plus(options['name']);uv python: app.quote_plus(options['version'])">
-<br/>Package: 
-  <a  tal:attributes="href string: ${app/config/url}?:action=role_form&amp;package_name=${un}">admin</a>
-  <a tal:attributes="href string: ${app/config/url}?:action=submit_form&amp;name=${un}&amp;version=${uv}">edit</a>
-  <a tal:attributes="href string: ${app/config/url}?:action=files&amp;name=${un}&amp;version=${uv}">files</a>
-  <a tal:attributes="href string: ${app/config/url}?:action=submit_form&amp;name=${un}&amp;version=${uv}">PKG-INFO</a>
-<br/>
+<p tal:replace="structure app/release_nav" />
 
 <table class="form">
  <tr tal:repeat="row options/rows">
@@ -19,7 +13,6 @@
  </tr>
  <tal:block tal:content="structure options/dependencies"/>
 </table>
-</span>
 
 <table tal:replace="structure python:app.package_role_list(options['name'])" />
 

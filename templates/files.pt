@@ -4,6 +4,8 @@
       metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
 
+<p tal:replace="structure app/release_nav" />
+
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
 <input type="hidden" name=":action" value="files" />

@@ -628,6 +628,22 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(content.getvalue())
 
+    def release_nav(self):
+        name = self.form.get('name')
+        if not name:
+            return ''
+        version = self.form.get('version')
+        un = urllib.quote_plus(name.encode('utf-8'))
+        uv = urllib.quote_plus(version.encode('utf-8'))
+        url = '%s?name=%s&amp;version=%s'%(self.url_path, un, uv)
+        return '''<p class="release-nav">Package: 
+  <a href="%s?:action=role_form&amp;package_name=%s">admin</a> |
+  <a href="%s&amp;:action=display">view</a> |
+  <a href="%s&amp;:action=submit_form">edit</a> |
+  <a href="%s&amp;:action=files">files</a> |
+  <a href="%s&amp;:action=submit_form">PKG-INFO</a>
+</p>'''%(self.url_path, un, url, url, url, url)
+
     def quote_plus(self, data):
         return urllib.quote_plus(data)
 
@@ -637,12 +653,12 @@ class WebUI:
         '''
         # get the appropriate package info from the database
         if name is None:
-            name = self.form.getfirst('name')
+            name = self.form['name']
             if name is None:
                 self.fail("Which package do you want to display?")
         if version is None:
             if self.form.has_key('version'):
-                version = self.form.getfirst('version')
+                version = self.form['version']
             else:
                 l = self.store.get_package_releases(name, hidden=False)
                 try:
@@ -807,7 +823,7 @@ class WebUI:
 
         self.write_template('submit_form.pt',
             title='Submitting package information',
-            fields = content.getvalue())
+            fields=content.getvalue())
 
     def submit_pkg_info(self):
         ''' Handle the submission of distro metadata as a PKG-INFO file.
