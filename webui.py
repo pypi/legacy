@@ -1628,11 +1628,14 @@ will be calculated if not supplied)<br>
   <td style="font-size: 75%%">%(md5_digest)s</td>
  </tr>
 '''%locals())
-        w('''<tr>
+        if maintainer:
+            w('''<tr>
   <td colspan="6" id="last">
    <input type="submit" name="submit_remove" value="Remove">
   </td>
- </tr>
+ </tr>''')
+
+        w('''
 </table>
 </form>''')
 
