@@ -318,13 +318,14 @@ class WebUI:
         elif os.environ.has_key('PATH_INFO'):
             # Split into path items, drop leading slash
             items = os.environ['PATH_INFO'].split('/')[1:]
-            if len(items) == 2:
-                self.form['name'] = items[0].decode('utf-8')
-                self.form['version'] = items[1].decode('utf-8')
-                action = 'display'
-            if len(items) == 1:
+            if len(items) >= 1:
                 self.form['name'] = items[0].decode('utf-8')
                 action = 'search'
+            if len(items) >= 2 and items[1]:
+                self.form['version'] = items[1].decode('utf-8')
+                action = 'display'
+            if len(items) == 3 and items[2]:
+                action = self.form[':action'] = items[2].decode('utf-8')
         else:
             action = 'home'
 

@@ -137,7 +137,7 @@ PyPI Actions
 <td width="15"></td>
 
 <!-- begin body -->
-<td bgcolor="white" valign="top">
+<td class="content" bgcolor="white" valign="top">
 
 <h1 align="left">PyPI: <span tal:replace="data/title"></span></h1>
 

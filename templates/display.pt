@@ -6,15 +6,17 @@
 
 <p tal:replace="structure app/release_nav" />
 
-<table class="history">
+<table tal:define="files python:app.store.list_files(data['name'],
+          data['version'])" 
+       tal:condition="files" class="history">
  <tr><th colspan="6" class="header">Release Files</th></tr>
  <tr>
   <th>Type</th><th>Py Version</th><th>Comment</th>
   <th>Download</th><th>Size</th>
  </tr>
 
- <tr tal:repeat="file python:app.store.list_files(data['name'],
-          data['version'])">
+ <tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
+     tal:attributes="class python:repeat['file'].end() and 'last'">
   <td tal:content="file/packagetype" />
   <td tal:content="file/python_version" />
   <td tal:content="file/comment_text" />
