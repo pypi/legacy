@@ -1,0 +1,36 @@
+<html metal:use-macro="here/standard_template.pt/macros/page">
+
+<metal:slot fill-slot="body">
+
+<form method="GET" tal:attributes="action options/action">
+<input type="hidden" name=":action" value="search">
+<table class="form">
+<tr><th>Name:</th>
+    <td><input name="name"></td>
+</tr>
+<tr><th>Version:</th>
+    <td><input name="version"></td>
+</tr>
+<tr><th>Summary:</th>
+    <td><input name="summary"></td>
+</tr>
+<tr><th>Description:</th>
+    <td><input name="description"></td>
+</tr>
+<tr><th>Keywords:</th>
+    <td><input name="keywords"></td>
+</tr>
+
+<tr><th>Hidden:</th>
+    <td><select name="_pypi_hidden">
+         <option value="0">No</option>
+         <option value="1">Yes</option>
+         <option value="">Don't Care</option>
+        </select></td>
+</tr>
+<tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
+</table>
+</form>
+
+</metal:slot>
+</html>

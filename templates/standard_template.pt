@@ -1,0 +1,149 @@
+<metal:macro define-macro="page">
+<?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+ <title tal:content="options/title"></title>
+ <meta http-equiv="Content-Type" content="text/xhtml; charset=iso-8859-1" />
+ <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
+ <link rel="STYLESHEET" href="http://www.python.org/style.css"
+       type="text/css" />
+ <link rel="STYLESHEET" href="http://www.python.org/css/pypi.css"
+       type="text/css" />
+ <link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates"
+       href="http://www.python.org/pypi?:action=rss" />
+</head>
+
+<body bgcolor="#ffffff" text="#000000"
+      marginwidth="0" marginheight="0"
+      link="#0000bb"  vlink="#551a8b"
+      alink="#ff0000">
+<!-- start of page table -->
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<!-- start of banner row -->
+<tr>
+<!-- start of corner cells -->
+<td tal:define="banner_info app/random_banner"
+ tal:attributes="bgcolor banner_info/bgcolor"
+ width="150" valign="middle" class="corner">
+
+<center>
+    <a href="/">
+    <img alt="" border="0" tal:attributes="src banner_info/src" /></a>
+</center> </td>
+<td width="15" bgcolor="#99ccff"></td>
+<td width="90%" bgcolor="#99ccff" class="banner">
+<table width="100%" border="0" cellspacing="0" cellpadding="0"
+       bgcolor="#ffffff">
+<tr><td bgcolor="#99ccff"> <a href="/">Home</a> </td>
+    <td bgcolor="#99ccff"> <a href="/search/">Search</a> </td>
+    <td bgcolor="#99ccff"> <a href="/download/">Download</a> </td>
+    <td bgcolor="#99ccff"> <a href="/doc/">Documentation</a> </td>
+</tr><tr> <td bgcolor="#99ccff"> <a href="/Help.html">Help</a> </td>
+    <td bgcolor="#99ccff"> <a href="/dev/">Developers</a> </td>
+    <td bgcolor="#99ccff"> <a href="/psa/">Community</a> </td>
+    <td bgcolor="#99ccff"> <a href="/sigs/">SIGs</a> </td>
+</tr></table>
+
+</td></tr><!-- end of banner row -->
+
+<tr><!-- start of sidebar/body row -->
+<td width="150" valign="top" bgcolor="#99ccff" class="sidebar">
+<table width="100%" border="0" cellspacing="0" cellpadding="3"
+       bgcolor="#ffffff">
+
+<tal:if-user condition="app/username">
+
+<tr><td bgcolor="#99ccff">Welcome 
+<span tal:replace="app/username"/></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a tal:attributes="href python: app.link_action('user_form')">
+Your details</a></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a tal:attributes="href python: app.link_action('logout')">
+Logout</a></td></tr>
+
+<tal:let define="packages python: app.store.user_packages(app.username)">
+<tal:if-packages condition="packages">
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+Your Packages
+</font></b></td></tr>
+<tr tal:repeat="pkg_info packages">
+ <td bgcolor="#99ccff">
+  <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
+   tal:content="python: pkg_info[0]">package</a>
+ </td>
+</tr>
+</tal:if-packages>
+</tal:let>
+</tal:if-user>
+
+<tal:if-not-user condition="not: app/username">
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+Not Logged In
+</font></b></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a tal:attributes="href python: app.link_action('register_form')">Register</a></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a tal:attributes="href python: app.link_action('login')">Login</a></td></tr>
+<tr><td bgcolor="#99ccff">
+ <a tal:attributes="href python: app.link_action('forgotten_password_form')">
+Lost Login?</a></td></tr>
+<tr><td bgcolor="#99ccff"></td></tr>
+</tal:if-not-user>
+
+<tr><td bgcolor="#003366"><b><font color="#ffffff">
+PyPI Actions
+</font></b></td></tr>
+<tr><td bgcolor="#99ccff">
+<tal:for-nav repeat="link app/navlinks_html">
+ <span tal:replace="structure link"/><br />
+</tal:for-nav>
+</td></tr>
+<tr><td bgcolor="#99ccff"></td></tr>
+<tr><td bgcolor="#003366"><b><font color="#ffffff"> Contact Us
+</font></b></td></tr>
+
+<tr><td bgcolor="#99ccff">
+<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>
+</td></tr>
+<tr><td bgcolor="#99ccff">
+<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
+</td></tr>
+
+<tr><td bgcolor="#99ccff">
+<a href="http://www.python.org/sigs/catalog-sig/">Comments</a>
+</td></tr>
+
+<tr><td bgcolor="#99ccff">  </td></tr>
+<tr><td bgcolor="#99ccff"> <a href="/"><img align="center" alt="" border="0"
+         src="http://www.python.org/pics/PythonPoweredSmall.gif" /></a></td></tr>
+<tr><td bgcolor="#99ccff">  </td></tr>
+<tr><td bgcolor="#99ccff"> &#169; 2003 </td></tr>
+<tr><td bgcolor="#99ccff">
+<a href="http://www.python.org/psf/">Python Software Foundation</a>
+</td></tr>
+</table><!-- end of sidebar table -->
+
+</td>
+<td width="15"></td>
+
+<!-- begin body -->
+<td bgcolor="white" valign="top">
+
+<h1 align="left">PyPI: <span tal:replace="options/title"/></h1>
+
+<p tal:condition="options/message | nothing" class="ok"
+ tal:content="structure options/message">a status message</p>
+
+<metal:slot define-slot="body">
+
+This template has not replaced its body slot.
+
+</metal:slot>
+
+</td> </tr> </table>
+</body></html>
+</metal:macro>

@@ -1,9 +1,14 @@
-
+# system imports
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
 import re, zipfile
+from simpletal import simpleTAL, simpleTALES
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
+
+# local imports
+import store, config, flamenco2, trove, versionpredicate
+
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
 
@@ -17,7 +22,6 @@ def xmlescape(s):
     ' make sure we escape a string '
     return saxutils.escape(str(s))
 
-import store, config, flamenco2, trove, versionpredicate
 
 class NotFound(Exception):
     pass
@@ -97,9 +101,14 @@ class WebUI:
         self.config = handler.config
         self.wfile = handler.wfile
         self.env = env
-        self.form = cgi.FieldStorage(fp=handler.rfile, environ=env)
         random.seed(int(time.time())%256)
         self.nav_current = None
+
+        # XMLRPC request or not?
+        if self.env.get('CONTENT_TYPE') != 'text/xml':
+            self.form = cgi.FieldStorage(fp=handler.rfile, environ=env)
+        else:
+            self.form = None
 
         (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
         self.url_machine = '%s://%s'%(protocol, machine)
@@ -141,6 +150,30 @@ class WebUI:
         finally:
             self.store.close()
 
+    def write_template(self, filename, **options):
+        context = simpleTALES.Context()
+        context.addGlobal('app', self)
+
+        # standard template has macros innit
+        fn = os.path.join(os.path.dirname(__file__), 'templates',
+            'standard_template.pt')
+        templateFile = open(fn, 'r')
+        standard_template = simpleTAL.compileXMLTemplate(templateFile)
+        context.addGlobal("standard_template", standard_template)
+
+        filename = os.path.join(os.path.dirname(__file__), 'templates',
+            filename)
+        templateFile = open(filename, 'r')
+        try:
+            template = simpleTAL.compileXMLTemplate(templateFile)
+        finally:
+            templateFile.close()
+
+        self.handler.send_response(200, 'OK')
+        self.handler.send_header('Content-Type', 'text/html')
+        self.handler.end_headers()
+        template.expand(context, self.wfile)
+
     def fail(self, message, title="Python Packages Index", code=400,
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
@@ -150,50 +183,15 @@ class WebUI:
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
+        if heading:
+            self.wfile.write(heading + '\n\n')
         self.wfile.write(message)
         self.wfile.write('\n\n')
         self.wfile.write(content)
 
-    def success(self, message=None, title="Python Packages Index",
-            code=200, heading=None, headers={}, content=''):
-        ''' Indicate to the user that the operation has succeeded.
-        '''
-        self.page_head(title, message, heading, code, headers)
-        if heading:
-            title = title + ': ' + heading
-        if message:
-            self.wfile.write('<p class="ok">%s</p>'%message)
-        self.wfile.write(content)
-        self.page_foot()
-
-
-    navlinks = (
-        ('home', 'PyPI home'),
-        ('browse', 'Browse packages'),
-        ('search_form', 'Search'),
-        ('index', 'List all packages'),
-        ('submit_form', 'Package submission'),
-        ('list_classifiers', 'List trove classifiers'),
-        ('rss', 'RSS (last 20 updates)'),
-        ('role_form', 'Admin'),
-    )
-    def page_head(self, title, message=None, heading=None, code=200,
-            headers={}):
-        ''' Spit out HTTP and HTML headers.
-
-            "title" is the HTML page title
-            "message" is a succint error or success message
-            "code" is the HTTP response code
-            "heading" is usually a slight variation on "title" and is
-                      used in a HTML header
-            "headers" is a dictionary of additional HTTP headers to send
-        '''
-        if not message:
-            message = 'OK'
-
-        if heading is None: heading = title
-        banner_num = random.randrange(0,64)
-        banner_color = [
+    def random_banner(self):
+        banner_num = random.randint(0, 64)
+        colors = [
              '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
              '#0066cc',  '#0066cc',  '#3399ff',  '#3399ff',  '#3399ff',
              '#3399ff',  '#6699cc',  '#3399ff',  '#3399ff',  '#ffffff',
@@ -207,166 +205,41 @@ class WebUI:
              '#3399ff',  '#6699cc',  '#0066cc',  '#0066cc',  '#6699cc',
              '#0066cc',  '#6699cc',  '#3399ff',  '#6699cc',  '#3399ff',
              '#d6ebff',  '#6699cc',  '#3399ff',  '#0066cc',
-             ][banner_num]
+             ]
+        return {
+            'bgcolor': colors[banner_num],
+            'src': 'http://www.python.org/pics/PyBanner%03d.gif'%banner_num,
+            }
 
-        content = StringIO.StringIO()
-        w = content.write
+    def link_action(self, action_name=None, **vars):
+        if action_name:
+            vars[':action'] = action_name
+        return self.url_path + '?' + urllib.urlencode(vars)
 
-        w('''\
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
-<html><head><title>%s</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<meta name="generator" content="HT2HTML/2.0">
-<link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif">
-<link rel="STYLESHEET" href="http://www.python.org/style.css" type="text/css">
-<link rel="STYLESHEET" href="http://www.python.org/css/pypi.css" type="text/css">
-<link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates"
-      href="http://www.python.org/pypi?:action=rss">
-</head>
-<body bgcolor="#ffffff" text="#000000"
-      marginwidth="0" marginheight="0"
-      link="#0000bb"  vlink="#551a8b"
-      alink="#ff0000">
-<!-- start of page table -->
-<table width="100%%" border="0" cellspacing="0" cellpadding="0">
-<!-- start of banner row -->
-<tr>
-<!-- start of corner cells -->
-<td width="150" valign="middle" bgcolor="%s" class="corner">
-
-<center>
-    <a href="/">
-    <img alt="" border="0"
-         src="http://www.python.org/pics/PyBanner%03d.gif"></a></center> </td>
-<td width="15" bgcolor="#99ccff">&nbsp;&nbsp;</td>
-<td width="90%%" bgcolor="#99ccff" class="banner">
-<table width="100%%" border="0" cellspacing="0" cellpadding="0"
-       bgcolor="#ffffff">
-<tr><td bgcolor="#99ccff"> <a href="/">Home</a> </td>
-    <td bgcolor="#99ccff"> <a href="/search/">Search</a> </td>
-    <td bgcolor="#99ccff"> <a href="/download/">Download</a> </td>
-    <td bgcolor="#99ccff"> <a href="/doc/">Documentation</a> </td>
-</tr><tr> <td bgcolor="#99ccff"> <a href="/Help.html">Help</a> </td>
-    <td bgcolor="#99ccff"> <a href="/dev/">Developers</a> </td>
-    <td bgcolor="#99ccff"> <a href="/psa/">Community</a> </td>
-    <td bgcolor="#99ccff"> <a href="/sigs/">SIGs</a> </td>
-</tr></table>
-
-</td></tr><!-- end of banner row -->
-
-<tr><!-- start of sidebar/body row -->
-<td width="150" valign="top" bgcolor="#99ccff" class="sidebar">
-<table width="100%%" border="0" cellspacing="0" cellpadding="3"
-       bgcolor="#ffffff">
-'''%(title, banner_color, banner_num))
-
-        # add in the navbar
-        l = []
-        la = l.append
-        if self.username:
-            u = cgi.escape(self.username).replace(' ', '&nbsp;')
-            w('''
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-Logged In
-</font></b></td></tr>
-<tr><td bgcolor="#99ccff">Welcome %s</td></tr>
-<tr><td bgcolor="#99ccff">
- <a href="%s?:action=user_form">Your details</a></td></tr>
-<tr><td bgcolor="#99ccff">
- <a href="%s?:action=logout">Logout</a></td></tr>
-'''%(u, self.url_path, self.url_path))
-            packages = self.store.user_packages(self.username)
-            if packages:
-                w('''
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-Your Packages
-</font></b></td></tr>
-''')
-                for name,lc_name in packages:
-                    un = urllib.quote(name)
-                    w('''<tr><td bgcolor="#99ccff">
- <a href="%s?:action=pkg_edit&name=%s">%s</a></td></tr>\n'''%(self.url_path, un,
-                        name))
-
-        else:
-            w('''
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-Not Logged In
-</font></b></td></tr>
-<tr><td bgcolor="#99ccff">
- <a href="%s?:action=register_form">Register</a></td></tr>
-<tr><td bgcolor="#99ccff">
- <a href="%s?:action=login">Login</a></td></tr>
-<tr><td bgcolor="#99ccff">
- <a href="%s?:action=forgotten_password_form">Lost Login?</a></td></tr>
-'''%(self.url_path, self.url_path, self.url_path))
-        w('''
-<tr><td bgcolor="#99ccff">&nbsp;</td></tr>
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-PyPI Actions
-</font></b></td></tr>
-<tr><td bgcolor="#99ccff">
-''')
-        for k, v in self.navlinks:
-            v = v.replace(' ', '&nbsp;')
-            if k == self.nav_current:
-                la('<strong>%s</strong>'%v)
-            elif k == 'role_form':
-                if self.username and self.store.has_role('Admin', ''):
-                    la('<a href="%s?:action=%s">%s</a>'%(self.url_path, k, v))
+    navlinks = (
+        ('home', 'PyPI home'),
+        ('browse', 'Browse packages'),
+        ('search_form', 'Search'),
+        ('index', 'List all packages'),
+        ('submit_form', 'Package submission'),
+        ('list_classifiers', 'List trove classifiers'),
+        ('rss', 'RSS (last 20 updates)'),
+        ('role_form', 'Admin'),
+    )
+    def navlinks_html(self):
+        links = []
+        for action_name, desc in self.navlinks:
+            desc = desc.replace(' ', '&nbsp;')
+            if action_name == 'role_form' and (
+                not self.username or not self.store.has_role('Admin', '')):
+                continue
+            if action_name == self.nav_current:
+                links.append('<strong>%s</strong>' % desc)
             else:
-                la('<a href="%s?:action=%s">%s</a>'%(self.url_path, k, v))
-        w('</td></tr>\n<tr><td bgcolor="#99ccff">'.join(l))
+                links.append('<a href="%s">%s</a>' % (self.link_action(action_name), desc))
+        return links
 
-        w('''
-</td></tr>
-<tr><td bgcolor="#99ccff">&nbsp;</td></tr>
-<tr><td bgcolor="#003366"><b><font color="#ffffff"> Contact Us
-</font></b></td></tr>
 
-<tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513504">Get help</a>
-</td></tr>
-<tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513503">Bug reports</a>
-</td></tr>
-
-<tr><td bgcolor="#99ccff">
-<a href="http://www.python.org/sigs/catalog-sig/">Comments</a>
-</td></tr>
-
-<tr><td bgcolor="#99ccff"> &nbsp; </td></tr>
-<tr><td bgcolor="#99ccff"> <a href="/"><img align="center" alt="" border="0"
-         src="http://www.python.org/pics/PythonPoweredSmall.gif"></a></td></tr>
-<tr><td bgcolor="#99ccff"> &nbsp; </td></tr>
-<tr><td bgcolor="#99ccff"> &copy; 2003 </td></tr>
-<tr><td bgcolor="#99ccff">
-<a href="http://www.python.org/psf/">Python Software Foundation</a>
-</td></tr>
-</table><!-- end of sidebar table -->
-
-</td>
-<td width="15">&nbsp;</td><!--spacer-->
-
-<!-- begin body -->
-<td bgcolor="white" valign="top"><h1 align="left">PyPI: %s</h1>
-'''%heading)
-
-        self.handler.send_response(code, message)
-        self.handler.send_header('Content-Type', 'text/html')
-        for k,v in headers.items():
-            self.handler.send_header(k, v)
-        self.handler.end_headers()
-
-        self.wfile.write(content.getvalue())
-
-    def page_foot(self):
-        self.wfile.write('''
-
-</td> </tr> </table>
-</body></html>
-''')
     def inner_run(self):
         ''' Figure out what the request is, and farm off to the appropriate
             handler.
@@ -420,45 +293,7 @@ PyPI Actions
         rpc.handle_request(self)
 
     def home(self, nav_current='home'):
-        content = StringIO.StringIO()
-        w = content.write
-        w('''
-<p>
-Welcome to the Python Package Index (PyPI).
-</p>
-<p><strong>Tip of the week:</strong> 
-Jeremy Hylton has written a <a
-href="http://www.python.org/~jeremy/weblog/030924.html">Python Package
-Index Tutorial</a>. Thanks Jeremy!
-</p>
-<p>
-You may:
-</p>
-<ul>
-<li><a href="%s?:action=search_form">Search</a>
-<li><a href="%s?:action=browse">Browse the tree of packages</a>
-<li><a href="%s?:action=index">View a flat list of all packages</a>
-<li><a href="%s?:action=submit_form">Submit package information</a> (note that
-you must <a href="%s?:action=register_form">register to submit</a>)
-</ul>
-
-<p>Last 20 updates:</p>
-<table class="list">
-<tr><th>Updated</th><th>Package</th><th>Description</th></tr>
-'''%(self.url_path, self.url_path, self.url_path, self.url_path, self.url_path))
-        i=0
-        for name, version, date, summary in self.store.latest_releases():
-            w('''<tr%s>
-        <td>%s</td>
-        <td>%s</td>
-        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', str(date)[:10],
-                self.packageLink(name, version), cgi.escape(str(summary))))
-            i+=1
-        w('''
-<tr><td id="last" colspan="3">&nbsp;</td></tr>
-</table>
-''')
-        self.success(heading='Home', content=content.getvalue())
+        self.write_template('home.pt', title='Home')
 
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
@@ -527,53 +362,39 @@ you must <a href="%s?:action=register_form">register to submit</a>)
 
         # format the result
         if q.query:
-            w('<p>Current query:<br>')
+            query_info = ['Current query:<br>\n']
             for fld, value in q.query:
                 n = q.trove[int(value)]
-                w(cgi.escape(n.path))
-                w(' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
-                    self.url_path, q.as_href(ignore=value)))
+                query_info.append(cgi.escape(n.path))
+                query_info.append(
+                    ' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
+                        self.url_path, q.as_href(ignore=value)))
         else:
-            w('<p>Currently querying everything')
-
-        w('</p>')
-        if q.query and matches:
-            w('<table class="list">')
-            w('<tr><th>Package</th><th>Description</th></tr>')
-            i=0
-            for name, version, summary in matches:
-                w('''<tr%s>
-        <td>%s</td>
-        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
-                self.packageLink(name, version), cgi.escape(str(summary))))
-                i+=1
-            w('''
-<tr><td id="last" colspan="2">&nbsp;</td></tr>
-</table>
-''')
-        else:
-            w('<p>Number of matches: %i</p>\n'%len(matches))
-        w('<hr>\n')
+            query_info = ['<p>Currently querying everything']
+        query_info = ''.join(query_info) + '</p>'
 
         choices.sort()
         for header, headid, options in choices:
-            if len(options) == 0:
+            if not options:
                 continue
-            w('<div>')
-            w('<strong>%s</strong><br>'%cgi.escape(header))
             options.sort()
-            l = []
+            option_data = []
             for field, count in options:
-                count = len(count)
                 full = header + ' :: ' + field[-1]
                 fid = tree[tree.getid(field)].id
-                l.append('<a href="%s?:action=browse&%s">%s</a> (%i)'%(
-                    self.url_path, q.as_href(add=fid), cgi.escape(field[-1]),
-                    count))
-            w(' / \n'.join(l))
-            w('</div>')
-
-        self.success(heading='Browsing', content=content.getvalue())
+                option_data.append({
+                        'count': len(count),
+                        'full': full,
+                        'href': '%s?:action=browse&%s' % (self.url_path,
+                                                          q.as_href(add=fid)),
+                        'description': field[-1]})
+            choice_data.append({
+                    'option_data': option_data,
+                    'header': header,
+                    'headid': headid})
+        self.write_template('browse.pt', choice_data=choice_data,
+                            query=q, title="Browse", matches=matches,
+                            query_info=query_info)
 
     def index(self, nav_current='index'):
         ''' Print up an index page
@@ -583,28 +404,10 @@ you must <a href="%s?:action=register_form">register to submit</a>)
         w = content.write
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
-            spec['_pypi_hidden'] = '0'
+            spec['_pypi_hidden'] = False
         i=0
         l = self.store.query_packages(spec)
-        if not l:
-            w('''<p>There were no matches.</p>''')
-        else:
-            w('<table class="list">\n')
-            w('<tr><th>Package</th><th>Description</th></tr>\n')
-            for pkg in l:
-                name = pkg['name']
-                version = pkg['version']
-                w('''<tr%s>
-        <td>%s</td>
-        <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '',
-                self.packageLink(name, version),
-                cgi.escape(str(pkg[2]))))
-                i+=1
-            w('''
-<tr><td id="last" colspan="3">&nbsp;</td></tr>
-</table>
-''')
-        self.success(heading='Index of packages', content=content.getvalue())
+        self.write_template('index.pt', title="Index of Packages", matches=l)
 
     def search(self):
         """Same as index, but don't disable the search or index nav links
@@ -621,40 +424,8 @@ you must <a href="%s?:action=register_form">register to submit</a>)
     def search_form(self):
         ''' A form used to generate filtered index displays
         '''
-        self.nav_current = 'search_form'
-        self.page_head('Python Packages Index: Search')
-        self.wfile.write('''
-<form method="GET" action="%s">
-<input type="hidden" name=":action" value="search">
-<table class="form">
-<tr><th>Name:</th>
-    <td><input name="name"></td>
-</tr>
-<tr><th>Version:</th>
-    <td><input name="version"></td>
-</tr>
-<tr><th>Summary:</th>
-    <td><input name="summary"></td>
-</tr>
-<tr><th>Description:</th>
-    <td><input name="description"></td>
-</tr>
-<tr><th>Keywords:</th>
-    <td><input name="keywords"></td>
-</tr>
-
-<tr><th>Hidden:</th>
-    <td><select name="_pypi_hidden">
-         <option value="0">No</option>
-         <option value="1">Yes</option>
-         <option value="">Don\'t Care</option>
-        </select></td>
-</tr>
-<tr><td>&nbsp;</td><td><input type="submit" value="Search"></td></tr>
-</table>
-</form>
-'''%self.url_path)
-        self.page_foot()
+        self.write_template('search_form.pt', title="Search",
+                            action=self.link_action())
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -744,7 +515,7 @@ available Roles are defined as:
             username = assignment[1]
             user = self.store.get_user(username)
             keyid = user['gpg_keyid']
-            if keyid: 
+            if keyid:
                 username = "%s (PGP key %s)" % (username, keyid)
             l.append('<tr><td>%s</td><td>%s</td></tr>'%(
                 cgi.escape(username),

@@ -1,0 +1,39 @@
+<html metal:use-macro="here/standard_template.pt/macros/page">
+<metal:slot fill-slot="body">
+
+<p tal:content="structure options/query_info"/>
+
+<table class="list" tal:condition="
+python: options['query'].query and options['matches']">
+ <tr><th>Package</th><th>Description</th></tr>
+ <tr tal:repeat="package options/matches"
+  tal:attributes="class python: test(repeat['package'].odd(), 'alt')">
+  <tal:let define="name python: package[0]; version python: package[1]; summary python: package[2]">
+  <td tal:content="structure python: app.packageLink(name, version)">link</td>
+  <td tal:content="summary">summary</td>
+  </tal:let>
+ </tr>
+ <tr><td id="last" colspan="2">&nbsp;</td></tr>
+</table>
+
+<p tal:condition="not: options/query/query">
+Number of matches: <span tal:replace="python:
+				      len(options['matches'])"/>
+</p>
+
+<hr>
+
+<div tal:repeat="choice options/choice_data">
+<strong tal:content="choice/header"/><br>
+
+<tal:for-options repeat="option_data choice/option_data">
+<a tal:attributes="href option_data/href">
+ <span tal:replace="option_data/description"/>
+ (<span tal:replace="option_data/count"/>)</a>
+<tal:if condition="not: repeat/option_data/last"> / </tal:if>
+</tal:for-options>
+
+</div>
+
+</metal:slot>
+</html>

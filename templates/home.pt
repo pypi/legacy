@@ -1,0 +1,51 @@
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+<p>
+Welcome to the Python Package Index (PyPI).
+</p>
+<p><strong>Tip of the week:</strong> 
+Jeremy Hylton has written a <a
+href="http://www.python.org/~jeremy/weblog/030924.html">Python Package
+Index Tutorial</a>. Thanks Jeremy!
+</p>
+<p>
+You may:
+</p>
+<ul>
+<li><a tal:attributes="href python:
+app.link_action('search_form')">Search</a></li>
+<li><a tal:attributes="href python: app.link_action('browse')">Browse the
+tree of packages</a></li>
+<li><a tal:attributes="href python: app.link_action('index')">View a flat
+list of all packages</a></li>
+<li><a tal:attributes="href python: app.link_action('submit_form')">Submit package information</a> 
+(note that you must <a tal:attributes="href python: app.link_action('register_form')">
+register to submit</a>)</li>
+</ul>
+
+<p>Last 20 updates:</p>
+<table class="list">
+<tr><th>Updated</th><th>Package</th><th>Description</th></tr>
+
+<tal:for-release repeat="release python: app.store.latest_releases()">
+<tal:let define="name python: release[0]; 
+ version python: release[1]; 
+ date python: release[2]; 
+ summary python: release[3]">
+
+<tr tal:attributes="class python: test(repeat['release'].odd(), 'alt')">
+ <td tal:content="python: date[:10]">date</td>
+ <td tal:content="structure python: app.packageLink(name, version)">link</td>
+ <td tal:content="summary">summary</td>
+</tr>
+
+</tal:let>
+</tal:for-release>
+
+<tr><td id="last" colspan="3"></td></tr>
+</table>
+
+</metal:fill>
+</html>
