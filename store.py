@@ -38,20 +38,24 @@ class ResultRow:
         else:
             n = self.cols_d[item]
             value = self.info[n]
+        return self.decode(value)
+    def __nonzero__(self):
+        return bool(self.info)
+    def items(self):
+        return [(col, self.decode(self.info[i]))
+                for i, col in enumerate(self.cols)]
+    def keys(self):
+        return self.cols
+    def values(self):
+        return map(self.decode, self.info)
+
+    def decode(self, value):
         if value is None:
             return value
         if isinstance(value, str):
             # decode strings stored as utf-8 into unicode
             return value.decode('utf-8')
-        return value
-    def __nonzero__(self):
-        return bool(self.info)
-    def items(self):
-        return [(col, self.info[i]) for i, col in enumerate(self.cols)]
-    def keys(self):
-        return self.cols
-    def values(self):
-        return self.info
+        return value        
 
 def Result(cols, sequence):
     return [ResultRow(cols, item) for item in iter(sequence)]
