@@ -1231,6 +1231,10 @@ index.
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
+        content = StringIO.StringIO()
+        w = content.write
+
+        # look up the current info about the releases
         releases = self.store.get_package_releases(name)
         reldict = {}
         for release in releases:
@@ -1238,9 +1242,6 @@ index.
             for k,v in release.items():
                 info[k] = v
             reldict[info['version']] = info
-
-        content = StringIO.StringIO()
-        w = content.write
 
         # see if we're editing (note that form keys don't get unquoted)
         for key in self.form.keys():
@@ -1316,7 +1317,7 @@ assigned to users for this package.</p>
   </td>
   <td id="last">&nbsp;</td>
   <td id="last" colspan="5">
-   <input type="submit" value="Update Releases">
+   <input type="submit" name="submit_submit" value="Update Releases">
   </td>
  </tr>
 </table>

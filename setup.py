@@ -5,18 +5,14 @@
 from distutils.core import setup
 
 # perform the setup action
-from webunit import __version__
 setup(
-    name = "pypi", 
-    version = '2004-06-23',
-    description = 
+    name = "pypi",
+    version = '2004-07-14',
+    description =
         "PyPI is the Python Package Index at http://www.python.org/pypi",
-    long_description = '''This release includes:
-- fixed the display of latest release (bug 977432)
+    long_description = '''This release fixes a bug:
 
-    http://www.python.org/pypi?:action=display&name=roundup
-
-  (no version spec) gives the latest release info
+- fixed editing of package information in package summary page (bug 989597)
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",
