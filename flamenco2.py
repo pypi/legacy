@@ -101,16 +101,20 @@ where r.name=rc.name and r.version=rc.version
         # query
         sub = {}
         for classifier, count in classifiers.items():
-            for field in self.trove.FIELDS:
-                if classifier[0] != field or len(classifier) > 2:
-                    continue
-                d = sub.setdefault(field, {})
-                matches = self.get_matches(addl_fields=[classifier])
-                d[classifier[:2]] = matches
+            field = classifier[0]
+            classifier = classifier[:2]
+            d = sub.setdefault(field, {})
+            matches = self.get_matches(addl_fields=[classifier])
+            d[classifier] = d.get(classifier, []) + matches
 
-        # now add those boxes
+        # now add those boxes - filter out duplicates
         for field, d in sub.items():
             # top-level fields don't have meaningful ids
+            for k,v in d.items():
+                n = {}
+                for p in v:
+                    n[p] = 1
+                d[k] = n.keys()
             boxes.append((field, None, d.items()))
 
         return packages, boxes
@@ -133,18 +137,18 @@ if __name__ == '__main__':
     import trove
     trove = trove.Trove(db.cursor())
 
-    q = Query(db.cursor(), trove, [('Web Environment', '21')])
-    v = q.list_choices()
-    pprint.pprint(v)
-    
+#    q = Query(db.cursor(), trove, [('Web Environment', '21')])
+#    v = q.list_choices()
+#    pprint.pprint(v)
+
 #    print "*** Topic :: Software Development"
 #    q = Query(db.cursor(), trove, [('Topic', '405')])
 #    v = q.list_choices()
 #    pprint.pprint(v)
 #    print q.as_href()
 
-#    q = Query(db.cursor(), trove, [])
-#    v = q.list_choices()
-#    pprint.pprint(v)
+    q = Query(db.cursor(), trove, [])
+    v = q.list_choices()
+    pprint.pprint(v)
 #    print q.as_href()
 

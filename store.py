@@ -274,7 +274,7 @@ class Store:
         cursor = self.get_cursor()
         cursor.execute('select classifier from trove_classifiers'
             ' order by classifier')
-        return [x[0] for x in cursor.fetchall()]
+        return [x[0].strip() for x in cursor.fetchall()]
 
     def get_release_classifiers(self, name, version):
         ''' Fetch the list of classifiers for the release.
