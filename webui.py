@@ -1122,8 +1122,8 @@ class WebUI:
 
         # if allowed, handle file upload
         maintainer = False
-        if not ((self.store.has_role('Maintainer', name) or
-                self.store.has_role('Owner', name))):
+        if self.store.has_role('Maintainer', name) or \
+                self.store.has_role('Owner', name):
             maintainer = True
             if self.form.has_key('submit_upload'):
                 self.file_upload()
