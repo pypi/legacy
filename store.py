@@ -72,8 +72,6 @@ class Store:
             old_cifiers.sort()
             if old_cifiers != classifiers:
                 old.append('classifiers')
-            else:
-                classifiers = []
 
             # no update when nothing changes
             if not old:

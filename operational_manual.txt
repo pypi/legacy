@@ -11,3 +11,11 @@ simple case of changing the "if 0:" to "if 1:" above the "503" response
 line.
 
 
+Administrative tasks
+--------------------
+
+The "admin.py" script will perform several admin tasks (constantly growing
+as the need arises):
+
+   password <username> <password>
+   rmpackage <package name>
