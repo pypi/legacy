@@ -1,6 +1,7 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import time, whrandom, smtplib, base64, sha, email, types
+from distutils.util import rfc822_escape
 from xml.sax.saxutils import escape as xmlescape
 
 import store, config, flamenco, trove
@@ -379,7 +380,7 @@ PyPI Actions
                 raise Unauthorised
 
         # handle the action
-        if action in 'home browse rss submit submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
+        if action in 'home browse rss submit submit_pkg_info remove_pkg pkg_edit verify submit_form display display_pkginfo search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -724,6 +725,53 @@ available Roles are defined as:
 
         # XXX make this call display
         self.success(message=message, heading='Role maintenance')
+
+    def display_pkginfo(self, name=None, version=None):
+        '''Reconstruct and send a PKG-INFO metadata file.
+        '''
+        # get the appropriate package info from the database
+        if name is None:
+            name = self.form['name'].value
+        if version is None:
+            if self.form.has_key('version'):
+                version = self.form['version'].value
+            else:
+                raise NotImplementedError, 'get the latest version'
+        info = self.store.get_package(name, version)
+        if not info:
+            return self.fail('No such package / version',
+                heading='%s %s'%(name, version),
+                content="I can't find the package / version you're requesting")
+
+        w = self.wfile.write
+
+        # Some things (download-url, classifier) aren't in metadata v1.0 as
+        # defined in PEP 241, but they'd be nice to publish anyway.  PEP 241
+        # doesn't take an explicit stance on the handling of undefined fields.
+        w("Metadata-Version: 1.0\n")
+
+        # now the package info
+        keys = info.keys()
+        keys.sort()
+        keypref = 'name version author author_email maintainer maintainer_email home_page download_url summary license description keywords platform'.split()
+        for key in keypref:
+            value = info.get(key)
+            if not value:
+                continue
+
+            label = key.capitalize().replace('_', '-')
+
+            if key == 'description':
+                value = rfc822_escape(value)
+
+            w('%s: %s\n' % (label, value))
+
+        # Classifiers aren't PEP 241, but PEP 301 suggests they be in
+        # metadata files.
+        classifiers = self.store.get_release_classifiers(name, version)
+        for c in classifiers:
+            w('Classifier: %s\n' % (c,))
+
 
     def display(self, name=None, version=None, ok_message=None,
             error_message=None):
