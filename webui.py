@@ -682,8 +682,8 @@ class WebUI:
             value = info[r]
             if not info[r]: continue
             if value == 'UNKNOWN': continue
-            rows.append(r)
             if r in ('name', 'version'): continue
+            rows.append(r)
             if r == 'download_url':
                 row_names[r] = "Download URL"
             else:
