@@ -414,19 +414,19 @@ class Store:
             self.cursor.execute('select count(*) from ids')
             self.cursor.fetchone()
         except sqlite.DatabaseError, error:
-            if str(error) != 'no such table: packages':
+            if str(error) != 'no such table: ids':
                 raise
-            cursor.execute('''
+            self.cursor.execute('''
                create table ids (
                   name varchar,
                   num varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table packages (
                   name varchar,
                   stable_version varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table releases (
                   name varchar,
                   version varchar,
@@ -444,18 +444,18 @@ class Store:
                   _pypi_ordering varchar,
                   _pypi_hidden varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table trove_classifiers (
                   id varchar,
                   classifier varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table release_classifiers (
                   name varchar,
                   version varchar,
                   trove_id varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table journals (
                   name varchar,
                   version varchar,
@@ -464,19 +464,19 @@ class Store:
                   submitted_by varchar,
                   submitted_from varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table users (
                   name varchar,
                   password varchar,
                   email varchar,
                   public_key varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table rego_otk (
                   name varchar,
                   otk varchar
                )''')
-            cursor.execute('''
+            self.cursor.execute('''
                create table roles (
                   role_name varchar,
                   user_name varchar,
@@ -544,5 +544,11 @@ if __name__ == '__main__':
     if sys.argv[2] == 'changepw':
         store.setpasswd(sys.argv[3], sys.argv[4])
         store.commit()
+    elif sys.argv[2] == 'adduser':
+        otk = store.store_user(sys.argv[3], sys.argv[4], sys.argv[5])
+        store.delete_otk(otk)
+        store.commit()
+    else:
+        print "UNKNOWN COMMAND", sys.argv[2]
     store.close()
 
