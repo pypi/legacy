@@ -49,10 +49,10 @@ Your password is now: %(password)s
 '''
 
 unauth_message = '''
-<p>If you are a new user, <a href="/cgi-bin/pypi.cgi?:action=register_form">please
+<p>If you are a new user, <a href="pypi?:action=register_form">please
 register</a>.</p>
 <p>If you have forgotten your password, you can have it
-<a href="/cgi-bin/pypi.cgi?:action=forgotten_password_form">reset for you</a>.</p>
+<a href="pypi?:action=forgotten_password_form">reset for you</a>.</p>
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -60,7 +60,7 @@ chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
-        functions (see /cgi-bin/pypi.cgi).
+        functions (see pypi).
 
         The handling of a request goes as follows:
         1. open the database
@@ -238,9 +238,9 @@ Logged In
 </font></b></td></tr>
 <tr><td bgcolor="#99ccff">Welcome %s</td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/cgi-bin/pypi.cgi?:action=user_form">Your details</a></td></tr>
+ <a href="pypi?:action=user_form">Your details</a></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/cgi-bin/pypi.cgi?:action=logout">Logout</a></td></tr>
+ <a href="pypi?:action=logout">Logout</a></td></tr>
 '''%u)
         else:
             w('''
@@ -248,9 +248,9 @@ Logged In
 Not Logged In
 </font></b></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/cgi-bin/pypi.cgi?:action=register_form">Register</a></td></tr>
+ <a href="pypi?:action=register_form">Register</a></td></tr>
 <tr><td bgcolor="#99ccff">
- <a href="/cgi-bin/pypi.cgi?:action=login">Login</a></td></tr>
+ <a href="pypi?:action=login">Login</a></td></tr>
 ''')
         w('''
 <tr><td bgcolor="#99ccff">&nbsp;</td></tr>
@@ -265,9 +265,9 @@ PyPI Actions
                 la('<strong>%s</strong>'%v)
             elif k == 'role_form':
                 if self.username and self.store.has_role('Admin', ''):
-                    la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                    la('<a href="pypi?:action=%s">%s</a>'%(k, v))
             else:
-                la('<a href="/cgi-bin/pypi.cgi?:action=%s">%s</a>'%(k, v))
+                la('<a href="pypi?:action=%s">%s</a>'%(k, v))
         w('</td></tr>\n<tr><td bgcolor="#99ccff">'.join(l))
 
         w('''
@@ -367,7 +367,7 @@ PyPI Actions
             name = pkg['name']
             version = pkg['version']
             w('''<tr%s>
-        <td><a href="/cgi-bin/pypi.cgi?:action=display&name=%s&version=%s">%s</a></td>
+        <td><a href="pypi?:action=display&name=%s&version=%s">%s</a></td>
         <td>%s</td>
         <td>%s</td></tr>'''%((i/3)%2 and ' class="alt"' or '', 
                 urllib.quote(name), urllib.quote(version), name,
@@ -397,7 +397,7 @@ PyPI Actions
         self.nav_current = 'search_form'
         self.page_head('Search')
         self.wfile.write('''
-<form method="GET" action="/cgi-bin/pypi.cgi">
+<form method="GET" action="pypi">
 <input type="hidden" name=":action" value="search">
 <table class="form">
 <tr><th>Name:</th>
@@ -585,8 +585,8 @@ available Roles are defined as:
         un = urllib.quote(name)
         uv = urllib.quote(version)
         w('<br>Package: ')
-        w('<a href="/cgi-bin/pypi.cgi?:action=role_form&package_name=%s">admin</a>\n'%un)
-        w('| <a href="/cgi-bin/pypi.cgi?:action=submit_form&name=%s&version=%s"'
+        w('<a href="pypi?:action=role_form&package_name=%s">admin</a>\n'%un)
+        w('| <a href="pypi?:action=submit_form&name=%s&version=%s"'
             '>edit</a>'%(un, uv))
         w('<br>')
 
