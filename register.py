@@ -17,9 +17,7 @@ class register(Command):
 
     description = "register the distribution with the repository"
 
-    #DEFAULT_REPOSITORY = 'http://mechanicalcat.net/cgi-bin/pypi.cgi'
-    DEFAULT_REPOSITORY = 'http://localhost/cgi-bin/pypi.cgi'
-    #DEFAULT_REPOSITORY = 'http://www.amk.ca/cgi-bin/pypi.cgi'
+    DEFAULT_REPOSITORY = 'http://www.amk.ca/cgi-bin/pypi.cgi'
 
     user_options = [
         ('repository=', 'r',
