@@ -53,6 +53,13 @@ class Store:
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
+
+            # handle the special vars that most likely won't have been
+            # submitted
+            for k in ('_pypi_ordering', '_pypi_hidden'):
+                if not info.has_key(k):
+                    info[k] = existing[k]
+
             old = []
             specials = 'name version'.split()
             for k, v in existing.items():
