@@ -8,14 +8,15 @@ from distutils.core import setup
 from webunit import __version__
 setup(
     name = "pypi", 
-    version = '2004-03-02',
+    version = '2004-06-21',
     description = 
         "PyPI is the Python Package Index at http://www.python.org/pypi",
-    long_description = '''This release includes:
-- fixed deletion of packages where there were no versions (bugs #907317 and
-  #908118)
-- list only new releases in RSS and front page, not any old edit (bug
-  #907315)
+    long_description = '''This release, courtesy of Christopher Arndt, includes:
+- when displaying a package and no version is given, try to determine
+  the latest release  (bug #958515)
+- better error handling in display action
+- fixed page titles for search_form and forgotten_password_form
+- fixed typo in store.py which prevented indexes being created
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",
