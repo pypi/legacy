@@ -1129,7 +1129,7 @@ index.
         for version, info in reldict.items():
             self.store.store_package(name, version, info)
 
-        self.write_template('pkg_edit.pt', releases=releases,
+        self.write_template('pkg_edit.pt', releases=releases, name=name,
             title="Package '%s' Editing"%name)
 
     def remove_pkg(self):
@@ -1201,6 +1201,8 @@ Are you <strong>sure</strong>?</p>
             self.success(heading='Removed %s'%desc,
                 message='Package removed')
 
+    # alias useful for the files ZPT page
+    dist_file_types = store.dist_file_types
     def files(self):
         '''List files and handle file submissions.
         '''
@@ -1234,93 +1236,6 @@ Are you <strong>sure</strong>?</p>
 
                 for digest in fids:
                     self.store.remove_file(digest)
-
-        content = StringIO.StringIO()
-        w = content.write
-        if maintainer:
-            w('''
-<form action="%s" method="POST" enctype="multipart/form-data">
-<input type="hidden" name=":action" value="files">
-<input type="hidden" name="name" value="%s">
-<input type="hidden" name="version" value="%s">
-File:      <input type="file" name="content"><br>
-File Type: <select name="filetype">
-<option value="">-- Select Distribution Type --</option>
-%s
-</select><br>
-Python Version: <select name="pyversion">
-<option value="">-- Select Python Version --</option>
-<option value="2.1">2.1</option>
-<option value="2.2">2.2</option>
-<option value="2.3">2.3</option>
-<option value="2.4">2.4</option>
-<option value="2.5">2.5</option>
-</select> (not needed for source distributions)<br>
-Comment: <input type="text" name="comment" size="40"> (optional - use if
-there's multiple files for one distribution type)<br>
-MD5 Digest: <input type="text" name="md5_digest" size="40"> (optional -
-will be calculated if not supplied)<br>
-<input type="submit" name="submit_upload" value="Upload new File">
-</form>
-'''%(self.url_path, name, version,
-    '\n'.join(['<option value="%s">%s</option>'%x
-        for x in store.dist_file_types])))
-
-        # listing table
-        if maintainer:
-            remth = '<th>Remove?</th>'
-        else:
-            remth = ''
-
-        w('''
-<form action="%s" method="POST" enctype="multipart/form-data">
-<input type="hidden" name=":action" value="files">
-<input type="hidden" name="name" value="%s">
-<input type="hidden" name="version" value="%s">
- <table class="list" style="width: auto">
-   <tr>%s<th>Type</th><th>Py Version</th><th>Comment</th>
-    <th>Download</th><th>MD5 digest</th></tr>'''%(self.url_path, name,
-    version, remth))
-
-        un = urllib.quote(name)
-        cn = cgi.escape(name)
-        uv = urllib.quote(version)
-        cv = cgi.escape(version)
-
-        for entry in self.store.list_files(name, version):
-            ftype = entry['packagetype']
-            pyver = entry['python_version']
-            md5_digest = entry['md5_digest']
-            comment = cgi.escape(entry['comment_text'])
-            filename = cgi.escape(entry['filename'])
-            url = self.store.gen_file_url(pyver, un, urllib.quote(filename))
-            if maintainer:
-                cb = '<td><input type="checkbox" name="file-ids" '\
-                    'value="%s"></td>'%md5_digest
-            else:
-                cb = ''
-            w('''<tr>
-  %(cb)s
-  <td>%(ftype)s</td>
-  <td>%(pyver)s</td>
-  <td>%(comment)s</td>
-  <td><a href="%(url)s">%(filename)s</td>
-  <td style="font-size: 75%%">%(md5_digest)s</td>
- </tr>
-'''%locals())
-        if maintainer:
-            w('''<tr>
-  <td colspan="6" id="last">
-   <input type="submit" name="submit_remove" value="Remove">
-  </td>
- </tr>''')
-
-        w('''
-</table>
-</form>''')
-
-        self.success(heading='Files for %s %s'%(name, version),
-            content=content.getvalue())
 
     def file_upload(self):
         # make sure the user is identified

@@ -633,6 +633,7 @@ class Store:
     def add_file(self, name, version, content, md5_digest, filetype,
             pyversion, comment, filename):
         '''Add to the database and store the content to disk.'''
+        # add database entry
         cursor = self.get_cursor()
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest) values
@@ -640,6 +641,7 @@ class Store:
         cursor.execute(sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
 
+        # store file to disk
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
         if not os.path.exists(dirpath):
@@ -649,6 +651,14 @@ class Store:
             f.write(content)
         finally:
             f.close()
+
+        # add journal entry
+        date = time.strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
+            (package_name, 'add %s file %s'%(pyversion, filename), date,
+            self.username, self.userip))
 
     def list_files(self, name, version):
         cursor = self.get_cursor()
