@@ -673,40 +673,29 @@ class WebUI:
         info = self.store.get_package(name, version)
         if not info:
             raise ValueError, 'no such %r %r'%(name, version)
-        rows0 = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
-        row_names = {}
-        rows = []
-        values = {}
-        for r in rows0:
-            value = info[r]
-            if not info[r]: continue
+        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
+        release = {}
+        for column in columns:
+            value = info[column]
+            if not info[column]: continue
             if value == 'UNKNOWN': continue
-            if r in ('name', 'version'): continue
-            rows.append(r)
-            if r == 'download_url':
-                row_names[r] = "Download URL"
-            else:
-                row_names[r] = r.capitalize().replace('_', ' ')
-            if r in ('download_url', 'url', 'home_page'):
-                values[r] = '<a href="%s">%s</a>' % (value, cgi.escape(value))
-            elif r == 'description' and not info['description_html']:
-                values['description_html'] = '<pre>%s</pre>'%cgi.escape(value)
-            elif r == 'description_html':
-                values[r] = value
-            elif r.endswith('_email'):
-                value = cgi.escape(value)
+            if column in ('name', 'version'): continue
+            if column == 'description':
+                release['description_html'] = '<pre>%s</pre>'%cgi.escape(value)
+            elif column.endswith('_email'):
+                column = column[:column.find('_')]
+                if release.has_key(column):
+                    start = release[column]
+                else:
+                    start = ''
                 value = value.replace('@', ' at ')
                 value = value.replace('.', ' ')
-                values[r] = cgi.escape(value)
-            else:
-                values[r] = cgi.escape(value)
+                value = '%s <%s>'%(start, value)
+            release[column] = value
 
-        # switch the HMTL description
-        if values.has_key('description_html'):
-            values['description'] = values['description_html']
-            del values['description_html']
-        if 'description_html' in rows:
-            rows.remove('description_html')
+        roles = {}
+        for role, user in self.store.get_package_roles(name):
+            roles.setdefault(role, []).append(user)
 
         content=StringIO.StringIO()
         w=content.write
@@ -732,13 +721,11 @@ class WebUI:
         self.write_template('display.pt',
                             name=name,
                             version=version,
-                            values=values,
-                            rows=rows,
-                            row_names=row_names,
+                            release=release,
+                            roles=roles,
                             dependencies=dependencies,
                             title=name + " " +version,
                             action=self.link_action())
-        return
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
@@ -1173,6 +1160,7 @@ class WebUI:
 
     # alias useful for the files ZPT page
     dist_file_types = store.dist_file_types
+    dist_file_types_d = store.dist_file_types_d
     def files(self):
         '''List files and handle file submissions.
         '''

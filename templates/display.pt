@@ -2,7 +2,19 @@
 <html xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       metal:use-macro="standard_template/macros/page">
+
+<metal:fill fill-slot="head">
+ <meta tal:condition="data/release/keywords | nothing"
+       name="keywords"
+       tal:attributes="content data/release/keywords" />
+ <meta tal:condition="data/release/summary | nothing"
+       name="description"
+       tal:attributes="content data/release/summary" />
+</metal:fill>
+
 <metal:fill fill-slot="body">
+
+<p tal:content="data/release/summary | nothing" />
 
 <p tal:replace="structure app/release_nav" />
 
@@ -17,7 +29,7 @@
 
  <tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
      tal:attributes="class python:repeat['file'].end() and 'last'">
-  <td tal:content="file/packagetype" />
+  <td tal:content="python:app.dist_file_types_d[file['packagetype']]" />
   <td tal:content="file/python_version" />
   <td tal:content="file/comment_text" />
   <td>
@@ -34,15 +46,67 @@
  </tr>
 </table>
 
-<table class="form">
- <tr tal:repeat="row data/rows">
-   <th nowrap="nowrap" tal:content="python:data['row_names'][row]"/>
-   <td tal:content="structure python:data['values'][row]"/>
- </tr>
- <tal:block tal:content="structure data/dependencies"/>
-</table>
 
-<table tal:replace="structure python:app.package_role_list(data['name'])" />
+<table class="form">
+ <tr tal:condition="data/release/author | nothing">
+  <th>Author</th>
+  <td tal:content="data/release/author" />
+ </tr>
+
+ <tr tal:condition="data/release/maintainer | nothing">
+  <th>Maintainer</th>
+  <td tal:content="data/release/maintainer" />
+ </tr>
+
+ <tr tal:condition="data/roles/Owner | nothing">
+  <th>PyPI Owner</th>
+  <td tal:content="python:', '.join(data['roles']['Owner'])" />
+ </tr>
+
+ <tr tal:condition="data/roles/Maintainer | nothing">
+  <th>PyPI Maintainer</th>
+  <td tal:content="python:', '.join(data['roles']['Maintainer'])" />
+ </tr>
+
+ <tr tal:condition="data/release/home_page | nothing">
+  <th>Home Page</th>
+  <td><a tal:attributes="href data/release/home_page"
+         tal:content="data/release/home_page" />
+  </td>
+ </tr>
+
+ <tr tal:condition="data/release/download_url | nothing">
+  <th>Download URL</th>
+  <td><a tal:attributes="href data/release/download_url"
+         tal:content="data/release/download_url" />
+  </td>
+ </tr>
+
+ <tr tal:condition="data/release/description_html | nothing">
+  <th>Description</th>
+  <td tal:content="structure data/release/description_html" />
+ </tr>
+
+ <tr tal:condition="data/release/keywords | nothing">
+  <th>Keywords</th>
+  <td tal:content="data/release/keywords" />
+ </tr>
+
+ <tr tal:condition="data/release/license | nothing">
+  <th>License</th>
+  <td><pre tal:content="structure data/release/license" />
+  </td>
+ </tr>
+
+ <tr tal:condition="data/release/platform | nothing">
+  <th>Platform</th>
+  <td><pre tal:content="structure data/release/platform" />
+  </td>
+ </tr>
+
+ <tal:block tal:content="structure data/dependencies"/>
+
+</table>
 
 <table class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>

@@ -18,6 +18,7 @@ dist_file_types = [
     ('bdist_rpm',        'RPM'),
     ('bdist_wininst',    'MS Windows installer'),
 ]
+dist_file_types_d = dict(dist_file_types)
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by

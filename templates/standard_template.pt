@@ -18,6 +18,7 @@
        type="text/css" />
  <link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates"
        href="http://www.python.org/pypi?:action=rss" />
+ <metal:slot define-slot="head" />
 </head>
 
 <body bgcolor="#ffffff" text="#000000"

@@ -95,7 +95,7 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
    <input type="checkbox" name="file-ids"
           tal:attributes="value file/md5_digest" />
   </td>
-  <td tal:content="file/packagetype" />
+  <td tal:content="python:app.dist_file_types_d[file['packagetype']]" />
   <td tal:content="file/python_version" />
   <td tal:content="file/comment_text" />
   <td>

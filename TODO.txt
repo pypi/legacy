@@ -1,6 +1,16 @@
+Sooner:
+
+- new name for PyPI
+- command-line tool to query pypi and fetch entries
+- table structure and query support for checking dependencies
+  - table structure has columns for identification of the release
+    - add a specification ID to release_*?
+    - or just use release, name
+  - table also has a column for each of <, <=, ==, >=, > so queries are
+    easier to form
+
 Later:
 
-- package submission
 - change notification emails
 - "latest changes"
 - admin inteface for user details editing (and fix theller@python.net)
