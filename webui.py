@@ -1287,7 +1287,13 @@ class WebUI:
         content = content.value
 
         if self.form.has_key('gpg_signature'):
-            signature = self.form['gpg_signature'].value
+            signature = self.form['gpg_signature']
+            try:
+                # If the signature is present, it may come
+                # as an empty string, or as a file upload
+                signature = signature.value
+            except AttributeError:
+                pass
         else:
             signature = None
 
