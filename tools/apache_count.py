@@ -69,9 +69,10 @@ def main(argv):
             if not record:
                 # No file entry. Could be a .sig file
                 continue
-            downloads[filename] = record[0]
+            # make sure we're working with a number
+            downloads[filename] = record[0] or 0
         # add a download
-        downloads[filename]+=1
+        downloads[filename] += 1
 
     if not downloads:
         return
