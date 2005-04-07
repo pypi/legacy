@@ -31,7 +31,7 @@ def main(argv):
     if filename.endswith(".gz"):
         f = gzip.open(filename)
     elif filename.endswith(".bz2"):
-        f = bz2.open(filename)
+        f = bz2.BZ2File(filename)
     else:
         f = open(filename)
 
