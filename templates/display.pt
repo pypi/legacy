@@ -27,7 +27,7 @@
  <tr><th colspan="6" class="header">Release Files</th></tr>
  <tr>
   <th>Type</th><th>Py Version</th><th>Comment</th>
-  <th>Download</th><th>Size</th>
+  <th>Download</th><th>Size</th><th># downloads</th>
  </tr>
 
  <tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
@@ -46,6 +46,7 @@
        tal:content="string:sig" /></tal:block>)
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
+  <td tal:content="file/downloads"/>
  </tr>
 </table>
 
