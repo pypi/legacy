@@ -1495,7 +1495,7 @@ class WebUI:
                 'email':user['email']}
             info['admin'] = self.config.adminemail
             self.send_email(email, password_message%info)
-            self.write_template('message.pt',
+            self.write_template('message.pt', title="Request password reset",
                 message='Email sent with new password')
         elif self.form.has_key('name') and self.form['name'].strip():
             name = self.form['name'].strip()
