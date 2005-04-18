@@ -1507,7 +1507,7 @@ class WebUI:
                 'url': self.config.url}
             info['admin'] = self.config.adminemail
             self.send_email(user['email'], password_change_message%info)
-            self.write_template('message.pt',
+            self.write_template('message.pt', title="Request password reset",
                 message='Email sent to confirm password change')
         else:
             raise ValueError, 'You must supply a username or email address'
