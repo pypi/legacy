@@ -56,7 +56,7 @@ class ResultRow:
         if isinstance(value, str):
             # decode strings stored as utf-8 into unicode
             return value.decode('utf-8')
-        return value        
+        return value
 
 def Result(cols, sequence):
     return [ResultRow(cols, item) for item in iter(sequence)]

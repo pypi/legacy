@@ -1486,7 +1486,7 @@ class WebUI:
         if self.form.has_key('email') and self.form['email'].strip():
             email = self.form['email'].strip()
             user = self.store.get_user_by_email(email)
-            if user is None:
+            if not user:
                 self.fail('email address unknown to me')
                 return
             pw = ''.join([random.choice(chars) for x in range(10)])
@@ -1500,7 +1500,7 @@ class WebUI:
         elif self.form.has_key('name') and self.form['name'].strip():
             name = self.form['name'].strip()
             user = self.store.get_user(name)
-            if user is None:
+            if not user:
                 self.fail('user name unknown to me')
                 return
             info = {'name': user['name'], 'email':user['email'],
