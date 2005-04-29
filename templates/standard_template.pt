@@ -9,7 +9,7 @@
       xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <head>
-  <title tal:content="data/title"></title>
+  <title tal:content="string:Python Cheese Shop : ${data/title}" />
  <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
  <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
  <link rel="STYLESHEET" href="http://www.python.org/style.css"

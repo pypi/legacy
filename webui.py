@@ -219,7 +219,7 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
         
-    def fail(self, message, title="Python Packages Index", code=400,
+    def fail(self, message, title="Python Cheese Shop", code=400,
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
         '''
