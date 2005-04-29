@@ -102,7 +102,7 @@ Lost Login?</a></td></tr>
 </tal:if-not-user>
 
 <tr><td bgcolor="#003366"><b><font color="#ffffff">
-PyPI Actions
+CheeseShop Actions
 </font></b></td></tr>
 <tr><td bgcolor="#99ccff">
 <tal:for-nav repeat="link app/navlinks_html">
@@ -140,7 +140,7 @@ PyPI Actions
 <!-- begin body -->
 <td class="content" bgcolor="white" valign="top">
 
-<h1 align="left">PyPI: <span tal:replace="data/title"></span></h1>
+<h1 align="left">Cheese Shop: <span tal:replace="data/title"></span></h1>
 
 <p tal:condition="app/ok_message" class="ok"
  tal:content="structure app/ok_message">a status message</p>

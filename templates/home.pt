@@ -4,19 +4,19 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
-<p>
-Welcome to the Python Package Index (PyPI).
+<p>Welcome to the Python Cheese Shop!</p>
+<p style="padding-left: 2em">
+<strong>Customer</strong>: Now then, some cheese please, my good man.
+<br />
+<strong>Owner</strong>: (lustily) Certainly, sir. What would you like?
+<br />
+<strong>Customer</strong>: Well, eh, how about a little red Leicester.
+<br />
+<strong>Owner</strong>: I'm, a-fraid we're fresh out of red Leicester, sir.
 </p>
-<p><strong>Tip of the week:</strong> 
-You may now upload files to the index. You may use the new "<a
-href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" setup.py command
-in python 2.5 or the "files" link in your release's page (be sure to log in
-first). Your upload may have an
-accompanying OpenPGP signature, and an MD5 signature will be generated
-automatically.
-</p>
 <p>
-You may:
+There are currently <strong tal:content="app/store/count_packages" />
+packages in the Cheese Shop. You may:
 </p>
 <ul>
 <li><a tal:attributes="href python:

@@ -9,7 +9,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, DEFAULT_ERROR_MESSAGE
 if 0:
     sys.stdout.write('Status: 503 Server down for maintenance\r\n')
     sys.stdout.write('Content-Type: text/plain\r\n\r\n')
-    print 'The PyPI server is down for a short time for maintenance.'
+    print 'The Cheese Shop server is down for a short time for maintenance.'
     print 'Please try to connect later.'
 
 #

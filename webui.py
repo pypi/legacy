@@ -40,7 +40,7 @@ class FormError(Exception):
 __version__ = '1.1'
 
 # email sent to user indicating how they should complete their registration
-rego_message = '''Subject: Complete your PyPI registration
+rego_message = '''Subject: Complete your Cheese Shop registration
 From: %(admin)s
 To: %(email)s
 
@@ -52,7 +52,7 @@ index, please visit the following URL:
 '''
 
 # password change request email
-password_change_message = '''Subject: PyPI password change request
+password_change_message = '''Subject: Cheese Shop password change request
 From: %(admin)s
 To: %(email)s
 
@@ -67,7 +67,7 @@ You should then receive another email with the new password.
 '''
 
 # password reset email - indicates what the password is now
-password_message = '''Subject: PyPI password has been reset
+password_message = '''Subject: Cheese Shop password has been reset
 From: %(admin)s
 To: %(email)s
 
@@ -266,7 +266,7 @@ class WebUI:
         return self.url_path + '?' + '&'.join(l)
 
     navlinks = (
-        ('home', 'PyPI home'),
+        ('home', 'Cheese Shop home'),
         ('browse', 'Browse packages'),
         ('search_form', 'Search'),
         ('index', 'List all packages'),

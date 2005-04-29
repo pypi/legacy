@@ -1,6 +1,11 @@
+Now:
+
+- patch python 2.5 to use the name "Cheese Shop" and the new URL
+- PEP for metadata 1.2
+
+
 Sooner:
 
-- new name for PyPI
 - command-line tool to query pypi and fetch entries
 - table structure and query support for checking dependencies
   - table structure has columns for identification of the release

@@ -347,7 +347,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name,stable_version from packages')
-        return Results(('name', 'stable_version'), cursor.fetchall())
+        return Result(('name', 'stable_version'), cursor.fetchall())
 
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
@@ -364,6 +364,13 @@ class Store:
         safe_execute(cursor, sql, (name, version))
         return Result(('action', 'submitted_date', 'submitted_by',
             'submitted_from'), cursor.fetchall())
+
+    def count_packages(self):
+        ''' Determine the number of packages registered with the index.
+        '''
+        cursor = self.get_cursor()
+        cursor.execute('select count(*) from packages')
+        return cursor.fetchone()[0]
 
     def query_packages(self, spec, andor='and'):
         ''' Find packages that match the spec.

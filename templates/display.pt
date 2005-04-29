@@ -62,12 +62,12 @@
  </tr>
 
  <tr tal:condition="data/roles/Owner | nothing">
-  <th>PyPI Owner</th>
+  <th>Chese Shop Owner</th>
   <td tal:content="python:', '.join(data['roles']['Owner'])" />
  </tr>
 
  <tr tal:condition="data/roles/Maintainer | nothing">
-  <th>PyPI Maintainer</th>
+  <th>Chese Shop Maintainer</th>
   <td tal:content="python:', '.join(data['roles']['Maintainer'])" />
  </tr>
 
