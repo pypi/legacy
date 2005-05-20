@@ -20,4 +20,3 @@ Later:
 - "latest changes"
 - admin inteface for user details editing (and fix theller@python.net)
 - "does this release supercede the existing release?"
-
