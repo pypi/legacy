@@ -848,7 +848,7 @@ class Store:
         '''
         # ensure files are group readable and writable
         self._conn = psycopg.connect(database=self.config.database_name,
-            user=self.config.database_user)
+            user=self.config.database_user, password=self.config.database_pw)
 
         cursor = self._cursor = self._conn.cursor()
 
