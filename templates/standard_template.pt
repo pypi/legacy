@@ -42,14 +42,14 @@
 <td width="90%" bgcolor="#99ccff" class="banner">
 <table width="100%" border="0" cellspacing="0" cellpadding="0"
        bgcolor="#ffffff">
-<tr><td bgcolor="#99ccff"> <a href="/">Home</a> </td>
-    <td bgcolor="#99ccff"> <a href="/search/">Search</a> </td>
-    <td bgcolor="#99ccff"> <a href="/download/">Download</a> </td>
-    <td bgcolor="#99ccff"> <a href="/doc/">Documentation</a> </td>
-</tr><tr> <td bgcolor="#99ccff"> <a href="/Help.html">Help</a> </td>
-    <td bgcolor="#99ccff"> <a href="/dev/">Developers</a> </td>
-    <td bgcolor="#99ccff"> <a href="/psa/">Community</a> </td>
-    <td bgcolor="#99ccff"> <a href="/sigs/">SIGs</a> </td>
+<tr><td bgcolor="#99ccff"> <a href="http://www.python.org/">Python Home</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/search/">Search</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/download/">Download</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/doc/">Documentation</a> </td>
+</tr><tr> <td bgcolor="#99ccff"> <a href="http://www.python.org/Help.html">Help</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/dev/">Developers</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/psa/">Community</a> </td>
+    <td bgcolor="#99ccff"> <a href="http://www.python.org/sigs/">SIGs</a> </td>
 </tr></table>
 
 </td></tr><!-- end of banner row -->
@@ -125,10 +125,10 @@ CheeseShop Actions
 </td></tr>
 
 <tr><td bgcolor="#99ccff">  </td></tr>
-<tr><td bgcolor="#99ccff"> <a href="/"><img align="center" alt="" border="0"
+<tr><td bgcolor="#99ccff"> <a href="http://www.python.org/"><img align="center" alt="" border="0"
          src="http://www.python.org/pics/PythonPoweredSmall.gif" /></a></td></tr>
 <tr><td bgcolor="#99ccff">  </td></tr>
-<tr><td bgcolor="#99ccff"> &#169; 2003 </td></tr>
+<tr><td bgcolor="#99ccff"> &#169; 2005 </td></tr>
 <tr><td bgcolor="#99ccff">
 <a href="http://www.python.org/psf/">Python Software Foundation</a>
 </td></tr>
