@@ -11,7 +11,8 @@ if 0:
     sys.stdout.write('Content-Type: text/plain\r\n\r\n')
     print 'The Cheese Shop server is down for a short time for maintenance.'
     print 'Please try to connect later.'
-
+    sys.exit(0)
+    
 #
 # Provide interface to CGI HTTP response handling
 #
