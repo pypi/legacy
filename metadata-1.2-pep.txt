@@ -1,4 +1,11 @@
-PEP: NNN
+THIS PEP HAS BEEN SUBMITTED.
+
+THE MASTER COPY OF THIS PEP IS NOW IN PYDOTORG CVS.
+
+DO NOT EDIT THIS VERSION OF THE PEP.
+
+
+PEP: 345
 Title: Medatadata for Python Software Packages 1.2
 Version: $Revision$
 Last-Modified: $Date$
@@ -37,6 +44,9 @@ times in a single PKG-INFO file.  Other fields may only occur
 once in a PKG-INFO file.  Fields marked with "(optional)" are
 not required to appear in a valid PKG-INFO file; all other
 fields must be present.
+
+XXX add in some note about charsets (Cheese Shop assumes UTF-8
+incoming data)
 
 Metadata-Version
 

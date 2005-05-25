@@ -8,7 +8,7 @@ from xml.sax import saxutils
 
 
 # local imports
-import store, config, flamenco2, trove, versionpredicate
+import store, config, flamenco2, trove, versionpredicate, verify_filetype
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
@@ -1305,31 +1305,9 @@ class WebUI:
         if signature and len(signature) > 100*1024:
             raise ValueError, 'invalid signature'
 
-        # check for valid exe
-        if filename.endswith('.exe'):
-            if filetype != 'bdist_wininst':
-                raise ValueError, 'invalid distribution file'
-            try:
-                t = StringIO.StringIO(content)
-                t.filename = filename
-                z = zipfile.ZipFile(t)
-                l = z.namelist()
-            except zipfile.error:
-                raise ValueError, 'invalid distribution file'
-            for zipname in l:
-                if not safe_zipnames.match(zipname):
-                    raise ValueError, 'invalid distribution file'
-        elif filename.endswith('.zip'):
-            # check for valid zip
-            try:
-                t = StringIO.StringIO(content)
-                t.filename = filename
-                z = zipfile.ZipFile(t)
-                l = z.namelist()
-            except zipfile.error:
-                raise ValueError, 'invalid distribution file'
-            if 'PKG-INFO' not in l:
-                raise ValueError, 'invalid distribution file'
+        # check the file for valid contents based on the type
+        if not verify_filetype.is_distutils_file(content, filename, filetype):
+            raise ValueError, 'invalid distribution file'
 
         # Check whether signature is ASCII-armored
         if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
@@ -1437,7 +1415,7 @@ class WebUI:
             # new user, create entry and email otk
             name = info['name']
             if not safe_username.match(name):
-                raise FormError, 'Username is invalid (ASCII only)'
+                raise FormError, 'Username is invalid (ASCII alphanum only)'
             if not safe_email.match(info['email']):
                 raise FormError, 'Email is invalid (ASCII only)'
 
