@@ -2,6 +2,12 @@ Now:
 
 - patch python 2.5 to use the name "Cheese Shop" and the new URL
 - PEP for metadata 1.2
+  http://www.python.org/peps/pep-0345.html
+- support .egg format uploads
+  https://sourceforge.net/tracker/?func=detail&atid=513503&aid=1229137&group_id=66150
+- incorporate Ian Bicking's XML-RPC API
+  http://mail.python.org/pipermail/catalog-sig/2005-May/000634.html
+- auto-generate download_urls for package uploads
 
 
 Sooner:
