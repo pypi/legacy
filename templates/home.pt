@@ -4,7 +4,8 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
-<p>Welcome to the Python Cheese Shop!</p>
+<p>The Python Cheese Shop is a repository of software for the Python
+programming language.</p>
 <p style="padding-left: 2em">
 <strong>Customer</strong>: Now then, some cheese please, my good man.
 <br />
