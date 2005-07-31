@@ -312,11 +312,12 @@ class WebUI:
             return
 
         # now handle the request
+        path = os.environ.get('PATH_INFO', '/')
         if self.form.has_key(':action'):
             action = self.form[':action']
-        elif os.environ.has_key('PATH_INFO'):
+        elif path != '/':
             # Split into path items, drop leading slash
-            items = os.environ['PATH_INFO'].split('/')[1:]
+            items = path.split('/')[1:]
             if len(items) >= 1:
                 self.form['name'] = items[0].decode('utf-8')
                 action = 'search'
