@@ -7,16 +7,16 @@ from distutils.core import setup
 # perform the setup action
 setup(
     name = "pypi",
-    version = '2004-07-14',
+    version = '2005-08-01',
     description =
-        "PyPI is the Python Package Index at http://www.python.org/pypi",
-    long_description = '''This release fixes a bug:
-
-- fixed editing of package information in package summary page (bug 989597)
+        "PyPI is the Python Package Index at http://cheeseshop.python.org/",
+    long_description = '''PyPI has a new home at
+<http://cheeseshop.python.org/>. Users should need not need to change
+anything, as the old "www" address should still work.
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",
-    url = 'http://www.python.org/pypi',
+    url = 'http://cheeseshop.python.org/',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
