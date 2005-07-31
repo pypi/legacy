@@ -337,7 +337,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             raise ValueError, 'Unknown action'
@@ -347,6 +347,9 @@ class WebUI:
 
         # commit any database changes
         self.store.commit()
+
+    def debug(self):
+        self.fail('Debug info', code=200, content=str(os.environ))
 
     def xmlrpc(self):
         import rpc
