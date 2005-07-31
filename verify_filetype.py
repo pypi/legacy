@@ -1,4 +1,6 @@
-import os, StringIO, zipfile
+import os, re, StringIO, zipfile
+
+safe_zipnames = re.compile(r'(purelib|platlib|headers|scripts|data).+', re.I)
 
 def is_distutils_file(content, filename, filetype):
     '''Perform some basic checks to see whether the indicated file could be

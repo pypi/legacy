@@ -17,7 +17,6 @@ def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz)$', re.I)
-safe_zipnames = re.compile(r'(purelib|platlib|headers|scripts|data).+', re.I)
 safe_username = re.compile(r'^[A-Za-z0-9]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 
