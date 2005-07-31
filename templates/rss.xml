@@ -11,7 +11,7 @@
 
   <item tal:repeat="release app/store/latest_releases">
     <title tal:content="string:${release/name} ${release/version}" />
-    <link tal:content="python:'http://www.python.org%s'%app.packageURL(
+    <link tal:content="python:'http://cheeseshop.python.org%s'%app.packageURL(
         release['name'], release['version'])" />
     <description tal:content="release/summary" />
     <pubDate tal:content="string:${release/submitted_date}Z" />
