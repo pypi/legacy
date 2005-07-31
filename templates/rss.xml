@@ -4,9 +4,9 @@
      xmlns:tal="http://xml.zope.org/namespaces/tal"
      xmlns:metal="http://xml.zope.org/namespaces/metal">
  <channel>
-  <title>Chese Shop recent updates</title>
+  <title>Cheese Shop recent updates</title>
   <link tal:content="string:${app/url_machine}${app/url_path}" />
-  <description>Updates to the Python Chese Shop</description>
+  <description>Updates to the Python Cheese Shop</description>
   <language>en</language>
 
   <item tal:repeat="release app/store/latest_releases">
