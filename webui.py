@@ -312,10 +312,10 @@ class WebUI:
             return
 
         # now handle the request
-        path = os.environ.get('PATH_INFO', '')
+        path = os.environ.get('PATH_INFO', '/')
         if self.form.has_key(':action'):
             action = self.form[':action']
-        elif path:
+        elif path != '/':
             # Split into path items, drop leading slash
             items = path.split('/')[1:]
             if len(items) >= 1:
