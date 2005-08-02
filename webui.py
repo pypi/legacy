@@ -861,7 +861,7 @@ class WebUI:
                 "You must supply the PKG-INFO file"
 
         # get the data
-        mess = email.message_from_file(self.form['pkginfo'].value)
+        mess = email.message_from_file(StringIO.StringIO(self.form['pkginfo'].value))
         data = {}
         for k, v in mess.items():
             # clean up the keys and values, normalise "-" to "_"
