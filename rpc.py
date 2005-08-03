@@ -31,12 +31,12 @@ def echo(store,*args):
     return args
 
 def index(store,*args):
-    spec = { '_pypi_hidden' : 'FALSE' } 
+    spec = { '_pypi_hidden': 'FALSE' } 
     return [row.as_dict() for row in store.query_packages(spec)]
 
 def search(store,*args):
     term = args[0]
-    spec = { 'name' : term, '_pypi_hidden' : 'FALSE' } 
+    spec = { 'name': term, '_pypi_hidden': 'FALSE' } 
     return [row.as_dict() for row in store.query_packages(spec)]
 
 def info(store, *args):
