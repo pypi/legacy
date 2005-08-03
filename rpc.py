@@ -31,13 +31,13 @@ def echo(store,*args):
     return args
 
 def index(store,*args):
-    spec = { }
+    spec = { '_pypi_hidden' : 'FALSE' } 
     return store.query_packages( spec )
 
 def search(store,*args):
     term = args[0]
-    spec = { 'name' : term, 'summary' : term } 
-    return store.query_packages( spec, andor='or' )
+    spec = { 'name' : term, '_pypi_hidden' : 'FALSE' } 
+    return store.query_packages( spec )
 
 def wrapper(payload):
     xmlrpclib.dumps((payload,))
