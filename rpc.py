@@ -32,16 +32,16 @@ def echo(store,*args):
 
 def index(store,*args):
     spec = { '_pypi_hidden' : 'FALSE' } 
-    return [row.info for row in store.query_packages(spec)]
+    return [row.as_dict() for row in store.query_packages(spec)]
 
 def search(store,*args):
     term = args[0]
     spec = { 'name' : term, '_pypi_hidden' : 'FALSE' } 
-    return [row.info for row in store.query_packages(spec)]
+    return [row.as_dict() for row in store.query_packages(spec)]
 
 def info(store, *args):
     name, version = args
-    return store.get_package(name, version).info
+    return store.get_package(name, version).as_dict()
 
 def wrapper(payload):
     xmlrpclib.dumps((payload,))

@@ -46,6 +46,11 @@ class ResultRow:
     def items(self):
         return [(col, self.decode(self.info[i]))
                 for i, col in enumerate(self.cols)]
+    def as_dict(self):
+        d = {}
+        for i, col in enumerate(self.cols):
+            d[col] = self.decode(self.info[i])
+        return d
     def keys(self):
         return self.cols
     def values(self):
