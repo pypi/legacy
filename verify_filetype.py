@@ -24,7 +24,7 @@ def is_distutils_file(content, filename, filetype):
             if not safe_zipnames.match(zipname):
                 return False
 
-    elif filename.endswith('.zip'):
+    elif filename.endswith('.zip') or filename.endswith('.egg'):
         # check for valid zip
         try:
             t = StringIO.StringIO(content)
@@ -36,7 +36,7 @@ def is_distutils_file(content, filename, filetype):
         for entry in l:
             parts = os.path.split(entry)
             if len(parts) == 2 and parts[1] == 'PKG-INFO':
-                # eg. "roundup-0.8.2/PKG-INFO"
+                # eg. "roundup-0.8.2/PKG-INFO" or "EGG-INFO/PKG-INFO"
                 break
         else:
             return False
