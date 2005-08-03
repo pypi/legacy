@@ -320,7 +320,7 @@ class WebUI:
             items = path.split('/')[1:]
             if len(items) >= 1:
                 self.form['name'] = items[0].decode('utf-8')
-                action = 'search'
+                action = 'display'
             if len(items) >= 2 and items[1]:
                 self.form['version'] = items[1].decode('utf-8')
                 action = 'display'
@@ -459,7 +459,7 @@ class WebUI:
             return self.display()
         self.write_template('index.pt', title="Index of Packages", matches=l)
 
-    def search(self, name = None):
+    def search(self, name=None):
         """Same as index, but don't disable the search or index nav links
         """
         self.index(nav_current=None, name=name)
@@ -470,6 +470,7 @@ class WebUI:
         if not self.username:
             raise Unauthorised
         self.home()
+
 
     def search_form(self):
         ''' A form used to generate filtered index displays
@@ -639,7 +640,15 @@ class WebUI:
                 self.store.has_role('Maintainer', name)):
             return ''
 
+        # determine the version
         version = self.form.get('version')
+        if not version:
+            l = self.store.get_latest_release(name, hidden=False)
+            try:
+                version = l[-1][1]
+            except IndexError:
+                version = "(latest release)"
+
         un = urllib.quote_plus(name.encode('utf-8'))
         uv = urllib.quote_plus(version.encode('utf-8'))
         url = '%s?name=%s&amp;version=%s'%(self.url_path, un, uv)
