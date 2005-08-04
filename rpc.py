@@ -2,7 +2,8 @@ import xmlrpclib
 import traceback
 from cStringIO import StringIO
 
-allowed = ('echo','index','search')
+allowed = ('package_releases', 'package_stable_version', 'package_urls',
+    'package_data', 'search')
 
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
@@ -12,36 +13,52 @@ def handle_request(webui_obj):
     try:
         methodArgs, methodName = xmlrpclib.loads(webui_obj.handler.rfile.read())
         if methodName in allowed:
-            response = globals()[methodName](webui_obj.store,*methodArgs)
+            response = globals()[methodName](webui_obj.store, *methodArgs)
         else:
             raise KeyError, "Method %r does not exist" % (methodName,)
         if response is None:
             response = ''
-        webui_obj.handler.wfile.write( \
-            unicode( \
-                xmlrpclib.dumps( tuple(response), allow_none=True ),
-                errors="ignore" ) )
+        # xmlrpclib.dumps encodes Unicode as UTF-8
+        xml = xmlrpclib.dumps((response,), allow_none=True)
+        webui_obj.handler.wfile.write(xml)
     except:
         out = StringIO()
         traceback.print_exc(file=out)
         result = xmlrpclib.dumps(xmlrpclib.Fault(1, out.getvalue()))
         webui_obj.handler.wfile.write(result)
 
-def echo(store,*args):
-    return args
+def package_releases(store, package_name):
+    result = store.get_latest_releases(package_name, hidden=False)
+    return [row['version'] for row in result]
 
-def index(store,*args):
-    spec = { '_pypi_hidden': 'FALSE' } 
-    return [row.as_dict() for row in store.query_packages(spec)]
+def package_stable_version(store, package_name):
+    return store.get_stable_version(package_name)
 
-def search(store,*args):
-    term = args[0]
-    spec = { 'name': term, '_pypi_hidden': 'FALSE' } 
-    return [row.as_dict() for row in store.query_packages(spec)]
+def package_urls(store, package_name, version):
+    result = []
+    for file in store.list_files(package_name, version):
+        url = store.gen_file_url(file['python_version'],
+            package_name, file['filename'])
+        result.append({'url': url, 'packagetype': file['packagetype']})
+    # TODO do something with release_urls when there is something to do
+    #info = store.get_package(package_name, version)
+    #if info['download_url']:
+    #    result.append({'url': info['download_url']})
+    return result
 
-def info(store, *args):
-    name, version = args
-    return store.get_package(name, version).as_dict()
+def package_data(package_name, version)
+    info = store.get_package(package_name, version).as_dict()
+    info['classifiers' ] = classifiers
+    classifiers = [r[0] for r in store.get_classifiers(package_name, version)]
+    return info
 
-def wrapper(payload):
-    xmlrpclib.dumps((payload,))
+def search(store, *args):
+    spec = args[0]
+    if len(args) > 1:
+        operator = args[1]
+    else:
+        operator = 'and'
+    spec['_pypi_hidden'] = 'FALSE'
+    return [row.as_dict() for row in store.query_packages(spec, operator)]
+
+

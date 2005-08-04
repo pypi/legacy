@@ -8,7 +8,7 @@ from xml.sax import saxutils
 
 
 # local imports
-import store, config, flamenco2, trove, versionpredicate, verify_filetype
+import store, config, flamenco2, trove, versionpredicate, verify_filetype, rpc
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
@@ -355,7 +355,6 @@ class WebUI:
         self.fail('Debug info', code=200, content=str(os.environ))
 
     def xmlrpc(self):
-        import rpc
         rpc.handle_request(self)
 
     def home(self, nav_current='home'):

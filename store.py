@@ -348,6 +348,13 @@ class Store:
         cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
         return ResultRow(cols, cursor.fetchone())
 
+    def get_stable_version(self, name):
+        ''' Retrieve the version marked as a package's stable version.
+        '''
+        sql = 'select stable_version from packages where name=%s'
+        safe_execute(cursor, sql, (name, ))
+        return cursor.fetchone()[0]
+
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.
         '''
@@ -378,7 +385,7 @@ class Store:
         cursor.execute('select count(*) from packages')
         return cursor.fetchone()[0]
 
-    def query_packages(self, spec, andor='and'):
+    def query_packages(self, spec, operator='and'):
         ''' Find packages that match the spec.
 
             Return a list of (name, version) tuples.
@@ -403,7 +410,7 @@ class Store:
 
         # construct the SQL
         if where:
-            where = ' where ' + ((' %s '%andor).join(where))
+            where = ' where ' + ((' %s '%operator).join(where))
         else:
             where = ''
 
