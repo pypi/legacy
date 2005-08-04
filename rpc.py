@@ -28,7 +28,7 @@ def handle_request(webui_obj):
         webui_obj.handler.wfile.write(result)
 
 def package_releases(store, package_name):
-    result = store.get_latest_releases(package_name, hidden=False)
+    result = store.get_package_releases(package_name, hidden=False)
     return [row['version'] for row in result]
 
 def package_stable_version(store, package_name):
@@ -46,10 +46,12 @@ def package_urls(store, package_name, version):
     #    result.append({'url': info['download_url']})
     return result
 
-def package_data(package_name, version)
+def package_data(store, package_name, version):
     info = store.get_package(package_name, version).as_dict()
+    del info['description_html']
+    classifiers = [r[0] for r in store.get_release_classifiers(package_name,
+        version)]
     info['classifiers' ] = classifiers
-    classifiers = [r[0] for r in store.get_classifiers(package_name, version)]
     return info
 
 def search(store, *args):

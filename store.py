@@ -351,6 +351,7 @@ class Store:
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package's stable version.
         '''
+        cursor = self.get_cursor()
         sql = 'select stable_version from packages where name=%s'
         safe_execute(cursor, sql, (name, ))
         return cursor.fetchone()[0]
