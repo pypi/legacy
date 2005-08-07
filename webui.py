@@ -699,7 +699,10 @@ class WebUI:
 
         info = self.store.get_package(name, version)
         if not info:
-            raise ValueError, 'no such %r %r'%(name, version)
+            raise NotFound
+#            return self.fail('No such package / version',
+#                heading='%s %s'%(name, version),
+#                content="I can't find the package / version you're requesting")
         columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
         release = {}
         for column in columns:
