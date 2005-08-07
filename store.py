@@ -403,11 +403,11 @@ class Store:
             # Quote the bits in the string that need it and then embed
             # in a "substring" search. Note - need to quote the '%' so
             # they make it through the python layer happily
-            v = ['%%'+s.replace("'", "''")+'%%' for s in v]
+            v = ['%%'+s.lower().replace("'", "''")+'%%' for s in v]
 
             # now add to the where clause
-            where.append(' or '.join(["%s LIKE '%s'"%(k, s.encode('utf-8'))
-                for s in v]))
+            where.append(' or '.join(["lower(%s) LIKE '%s'"%(k,
+                s.encode('utf-8')) for s in v]))
 
         # construct the SQL
         if where:
