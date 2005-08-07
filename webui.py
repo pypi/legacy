@@ -356,7 +356,8 @@ class WebUI:
         if action in 'debug home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
-            raise ValueError, 'Unknown action'
+            #raise NotFound, 'Unknown action'
+            raise NotFound
 
         if action in 'submit submit_pkg_info pkg_edit remove_pkg'.split():
             self.rss_regen()
