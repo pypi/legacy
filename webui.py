@@ -1007,7 +1007,6 @@ class WebUI:
         for k in self.form.keys():
             if k.startswith(':'): continue
             v = self.form[k]
-            logging.error(repr( (k,v)))
             if k == '_pypi_hidden':
                 v = v == '1'
             elif k in ('requires', 'provides', 'obsoletes'):
