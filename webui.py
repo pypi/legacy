@@ -1,7 +1,7 @@
 # system imports
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging
+import re, zipfile, logging, pprint
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from xml.sax import saxutils
@@ -9,6 +9,7 @@ from xml.sax import saxutils
 
 # local imports
 import store, config, flamenco2, trove, versionpredicate, verify_filetype, rpc
+import MailingLogger
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
@@ -149,12 +150,21 @@ class WebUI:
         self.url_path = path
 
         # configure logging
-        if self.config.logging:
+        if self.config.logfile or self.config.mailhost:
             root = logging.getLogger()
-            hdlr = logging.FileHandler(self.config.logging)
-            formatter = logging.Formatter('%(asctime)s %(name)s:%(levelname)s %(message)s')
-            hdlr.setFormatter(formatter)
-            root.handlers = [hdlr]
+            hdlrs = []
+            if self.config.logfile:
+                hdlr = logging.FileHandler(self.config.logging)
+                formatter = logging.Formatter(
+                    '%(asctime)s %(name)s:%(levelname)s %(message)s')
+                hdlr.setFormatter(formatter)
+                hdlrs.append(hdlr)
+            if self.config.mailhost:
+                hdlr = MailingLogger.MailingLogger(self.config.mailhost,
+                    self.config.fromaddr, self.config.toaddrs,
+                    '[PyPI] %(line)s', False, flood_level=10)
+                hdlrs.append(hdlr)
+            root.handlers = hdlrs
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
@@ -184,6 +194,8 @@ class WebUI:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
             except:
+                logging.exception('Internal Error\n----\n%s\n----\n'%(
+                    '\n'.join(['%s: %s'%x for x in self.env.items()])))
                 if self.config.debug_mode == 'yes':
                     s = StringIO.StringIO()
                     traceback.print_exc(None, s)
