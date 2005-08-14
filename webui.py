@@ -685,8 +685,9 @@ class WebUI:
         '''
         # get the appropriate package info from the database
         if name is None:
-            name = self.form['name']
-            if name is None:
+            # check that we get one - and only one - name argument
+            name = self.form.get('name', None)
+            if name is None or isinstance(name, list):
                 self.fail("Which package do you want to display?")
         if version is None:
             if self.form.has_key('version'):
