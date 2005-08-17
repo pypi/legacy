@@ -393,6 +393,13 @@ class Store:
         '''
         where = []
         for k, v in spec.items():
+	    if k not in ['_pypi_hidden', 'name', 'version',
+	                 'author', 'author_email', 
+			 'maintainer', 'maintainer_email',
+			 'home_page', 'license', 'summary',
+			 'description', 'keywords', 'platform',
+			 'download_url']:
+		continue	     
             if k == '_pypi_hidden':
                 if v == '1': v = 'TRUE'
                 else: v = 'FALSE'
