@@ -970,19 +970,6 @@ class WebUI:
         # pull the package information out of the form submission
         data = self.form_metadata()
 
-        # make sure relationships are lists
-        for name in ('requires', 'provides', 'obsoletes'):
-            if data.has_key(name) and not isinstance(data[name],
-                    types.ListType):
-                data[name] = [data[name]]
-
-        # make sure classifiers is a list
-        if data.has_key('classifiers'):
-            classifiers = data['classifiers']
-            if not isinstance(classifiers, types.ListType):
-                classifiers = [classifiers]
-            data['classifiers'] = classifiers
-
         # validate the data
         try:
             self.validate_metadata(data)
@@ -1033,6 +1020,20 @@ class WebUI:
             else:
                 v = v.strip()
             data[k.lower()] = v
+
+        # make sure relationships are lists
+        for name in ('requires', 'provides', 'obsoletes'):
+            if data.has_key(name) and not isinstance(data[name],
+                    types.ListType):
+                data[name] = [data[name]]
+
+        # make sure classifiers is a list
+        if data.has_key('classifiers'):
+            classifiers = data['classifiers']
+            if not isinstance(classifiers, types.ListType):
+                classifiers = [classifiers]
+            data['classifiers'] = classifiers
+
         return data
 
     def verify(self):
@@ -1293,7 +1294,7 @@ class WebUI:
         # verify the release exists
         if not self.store.has_release(name, version):
             # auto-register the release...
-            data = {'name': name, 'version': version}
+            data = self.form_metadata()
             self.store.store_package(name, version, data)
 
         # verify we have enough information
