@@ -1017,6 +1017,8 @@ class WebUI:
                     v = [x.strip() for x in v]
                 else:
                     v = ','.join([x.strip() for x in v])
+            elif isinstance(v, FileUpload):
+                continue
             else:
                 v = v.strip()
             data[k.lower()] = v
