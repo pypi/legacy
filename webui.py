@@ -596,7 +596,11 @@ class WebUI:
             if self.form.has_key('version'):
                 version = self.form['version']
             else:
-                raise NotImplementedError, 'get the latest version'
+                l = self.store.get_latest_release(name, hidden=False)
+                try:
+                    version = l[-1][1]
+                except IndexError:
+                    raise NotFound, 'no releases'
         info = self.store.get_package(name, version)
         if not info:
             return self.fail('No such package / version',
