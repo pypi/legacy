@@ -636,7 +636,7 @@ class WebUI:
 
         classifiers = self.store.get_release_classifiers(name, version)
         for c in classifiers:
-            w('Classifier: %s\n' % (c,))
+            w('Classifier: %s\n' % (c['classifier'],))
         w('\n')
 
         # Not using self.success or page_head because we want
@@ -644,7 +644,8 @@ class WebUI:
         self.handler.send_response(200, "OK")
         self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(content.getvalue())
+        s = content.getvalue().encode('utf8')
+        self.wfile.write(s)
 
     def release_nav(self):
         name = self.form.get('name')
@@ -1242,7 +1243,8 @@ class WebUI:
         try:
             self.store.get_file_info(digest)
         except KeyError:
-            raise ValueError, 'invalid MD5 digest'
+            # invalid MD5 digest - it's not in the database
+            raise NotFound
         self.handler.send_response(200, 'OK')
         self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.handler.end_headers()
@@ -1281,6 +1283,7 @@ class WebUI:
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
+        # verify we have enough information
         pyversion = 'source'
         content = filetype = md5_digest = comment = None
         if self.form.has_key('content'):

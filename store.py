@@ -846,6 +846,11 @@ class Store:
             dirpath = os.path.split(dirpath)[0]
 
     def get_file_info(self, digest):
+        '''Get the file info based on the md5 hash.
+
+        Raise KeyError if the digest doesn't match any file in the
+        database.
+        '''
         cursor = self.get_cursor()
         sql = '''select python_version, packagetype, name, comment_text,
             filename from release_files where md5_digest=%s'''

@@ -36,8 +36,16 @@ assigned to users for this package.</p>
    <td tal:content="release/version" />
    <td>
     <select tal:attributes="name string:hid_${release/version}">
-     <option value="0" tal:attributes="selected release/_pypi_hidden">No</option>
-     <option value="1" tal:attributes="selected not:release/_pypi_hidden">Yes</option>
+      <div tal:omit-tag=""
+           tal:condition="release/_pypi_hidden">
+        <option value="0">No</option>
+        <option value="1" selected="selected">Yes</option>
+      </div>
+      <div tal:omit-tag=""
+           tal:condition="not:release/_pypi_hidden">
+        <option value="0" selected="selected">No</option>
+        <option value="1">Yes</option>
+      </div>
     </select>
    </td>
    <td><input size="40" tal:attributes="name string:sum_${release/version};
