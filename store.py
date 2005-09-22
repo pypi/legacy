@@ -829,7 +829,10 @@ class Store:
         sql = '''select python_version, name, filename from release_files
             where md5_digest=%s'''
         safe_execute(cursor, sql, (digest, ))
-        pyversion, name, filename = cursor.fetchone()
+        info = cursor.fetchone()
+        if not info:
+            raise KeyError, 'no such file'
+        pyversion, name, filename = info
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)

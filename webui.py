@@ -1228,7 +1228,10 @@ class WebUI:
                     fids = [fids]
 
                 for digest in fids:
-                    self.store.remove_file(digest)
+                    try:
+                        self.store.remove_file(digest)
+                    except KeyError:
+                        return self.fail('No such files to remove', code=200)
 
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
