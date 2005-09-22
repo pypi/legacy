@@ -1297,6 +1297,7 @@ class WebUI:
         if not self.store.has_release(name, version):
             # auto-register the release...
             data = self.form_metadata()
+            data['_pypi_hidden'] = False
             self.store.store_package(name, version, data)
 
         # verify we have enough information
