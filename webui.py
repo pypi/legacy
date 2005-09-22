@@ -1290,6 +1290,12 @@ class WebUI:
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
+        # verify the release exists
+        if not self.store.has_release(name, version):
+            # auto-register the release...
+            data = {'name': name, 'version': version}
+            self.store.store_package(name, version, data)
+
         # verify we have enough information
         pyversion = 'source'
         content = filetype = md5_digest = comment = None
