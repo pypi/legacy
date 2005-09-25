@@ -636,7 +636,7 @@ class WebUI:
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
             for entry in l:
-                w('%s: %s\n' %(col.capitalize(), entry))
+                w('%s: %s\n' %(col.capitalize(), entry['specifier']))
 
         classifiers = self.store.get_release_classifiers(name, version)
         for c in classifiers:
