@@ -658,6 +658,7 @@ class WebUI:
 
         # permission to do this?
         if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             return ''
 
@@ -781,6 +782,7 @@ class WebUI:
 
             # permission to do this?
             if not (self.store.has_role('Owner', name) or
+                    self.store.has_role('Admin', name) or
                     self.store.has_role('Maintainer', name)):
                 raise Forbidden, 'Not Owner or Maintainer'
 
@@ -946,6 +948,7 @@ class WebUI:
         # make sure the user has permission to do stuff
         if self.store.has_package(name) and not (
                 self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
@@ -982,6 +985,7 @@ class WebUI:
         # make sure the user has permission to do stuff
         if self.store.has_package(name) and not (
                 self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
@@ -1103,6 +1107,7 @@ class WebUI:
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
@@ -1162,6 +1167,7 @@ class WebUI:
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 (version and self.store.has_role('Maintainer', name))):
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
@@ -1216,6 +1222,7 @@ class WebUI:
         # if allowed, handle file upload
         maintainer = False
         if self.store.has_role('Maintainer', name) or \
+                self.store.has_role('Admin', name) or \
                 self.store.has_role('Owner', name):
             maintainer = True
             if self.form.has_key('submit_upload'):
@@ -1289,6 +1296,7 @@ class WebUI:
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
