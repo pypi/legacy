@@ -1550,8 +1550,8 @@ class WebUI:
     def packageURL(self, name, version):
         ''' return a URL for the link to display a particular package
         '''
-        if not isinstance(name, unicode): name = name.decode('utf-8')
-        if not isinstance(version, unicode): version = version.decode('utf-8')
+        if not isinstance(name, unicode): name = name.encode('utf-8')
+        if not isinstance(version, unicode): version = version.encode('utf-8')
         return u'%s/%s/%s'%(self.url_path, urllib.quote(name),
             urllib.quote(version))
 
