@@ -221,7 +221,10 @@ class Store:
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
             # ReST-format the description
-            info['description_html'] = processDescription(info['description'])
+            if info.has_key('description'):
+                info['description_html'] = processDescription(info['description'])
+            else:
+                info['description_html'] = ''
 
             # perform the insert
             cols = 'name version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
