@@ -236,14 +236,23 @@ class WebUI:
         ''' Indicate to the user that something has failed.
         '''
         self.handler.send_response(code, message)
-        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+        if '<' in content and '>' in content:
+            html = True
+            self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
+        else:
+            html = False
+            self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
         if heading:
-            self.wfile.write(heading + '\n\n')
+            if html:
+                self.wfile.write('<strong>' + heading + '</strong><br><br>\n\n')
+            else:
+                self.wfile.write(heading + '\n\n')
         self.wfile.write(message)
-        self.wfile.write('\n\n')
+        if html: self.wfile.write('<br><br>\n')
+        else: self.wfile.write('\n\n')
         self.wfile.write(content)
 
     def random_banner(self):
@@ -1548,7 +1557,8 @@ class WebUI:
             self.write_template('message.pt', title="Request password reset",
                 message='Email sent to confirm password change')
         else:
-            raise ValueError, 'You must supply a username or email address'
+            self.write_template("password_reset.pt", title="Request password reset",
+                retry=True)
 
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
