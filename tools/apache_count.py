@@ -24,7 +24,8 @@ def main(argv):
     # Setup database connection
     dbname = p.get('database', 'name')
     dbuser = p.get('database', 'user')
-    dbconn = psycopg.connect(database=dbname, user=dbuser)
+    dbpass = p.get('database', 'password')
+    dbconn = psycopg.connect(database=dbname, user=dbuser, password=dbpass)
     cursor = dbconn.cursor()
 
     filename = argv[2]
