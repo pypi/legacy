@@ -111,7 +111,8 @@
 
 </table>
 
-<table tal:condition="python:app.store.has_role('Admin')" class="history">
+<table tal:condition="python:app.store.has_role('Admin') or
+  app.store.has_role('Maintainer') or app.store.has_role('Owner')" class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
  <tr><th>Action</th><th>Date</th><th>User</th><th>Address</th></tr>
  <tr tal:repeat="
