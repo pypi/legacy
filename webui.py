@@ -738,7 +738,7 @@ class WebUI:
         content=StringIO.StringIO()
         w=content.write
         def format_list(title, l):
-            w('<tr><th>%s</th><td>'%title.capitalize())
+            w('<tr><th>%s:</th><td>'%title.capitalize())
             w('\n<br>'.join([cgi.escape(x['specifier']) for x in l]))
             w('\n</td></tr>\n')
 
@@ -747,7 +747,7 @@ class WebUI:
             if l: format_list(col, l)
 
         classifiers = self.store.get_release_classifiers(name, version)
-        w('<tr><th>Classifiers</th><td>')
+        w('<tr><th>Classifiers:</th><td>')
         w('\n<br>'.join([cgi.escape(x['classifier']) for x in classifiers]))
         w('\n</td></tr>\n')
 

@@ -52,47 +52,47 @@
 
 <table class="form">
  <tr tal:condition="data/release/author | nothing">
-  <th>Author</th>
+  <th>Author:</th>
   <td tal:content="data/release/author" />
  </tr>
 
  <tr tal:condition="data/release/maintainer | nothing">
-  <th>Maintainer</th>
+  <th>Maintainer:</th>
   <td tal:content="data/release/maintainer" />
  </tr>
 
  <tr tal:condition="data/release/home_page | nothing">
-  <th>Home Page</th>
+  <th>Home Page:</th>
   <td><a tal:attributes="href data/release/home_page"
          tal:content="data/release/home_page" />
   </td>
  </tr>
 
  <tr tal:condition="data/release/download_url | nothing">
-  <th>Download URL</th>
+  <th>Download URL:</th>
   <td><a tal:attributes="href data/release/download_url"
          tal:content="data/release/download_url" />
   </td>
  </tr>
 
  <tr tal:condition="data/release/description_html | nothing">
-  <th>Description</th>
+  <th>Description:</th>
   <td tal:content="structure data/release/description_html" />
  </tr>
 
  <tr tal:condition="data/release/keywords | nothing">
-  <th>Keywords</th>
+  <th>Keywords:</th>
   <td tal:content="data/release/keywords" />
  </tr>
 
  <tr tal:condition="data/release/license | nothing">
-  <th>License</th>
+  <th>License:</th>
   <td><pre tal:content="structure data/release/license" />
   </td>
  </tr>
 
  <tr tal:condition="data/release/platform | nothing">
-  <th>Platform</th>
+  <th>Platform:</th>
   <td><pre tal:content="structure data/release/platform" />
   </td>
  </tr>
@@ -100,18 +100,18 @@
  <tal:block tal:content="structure data/dependencies"/>
 
  <tr tal:condition="data/roles/Owner | nothing">
-  <th>Cheese Shop Owner</th>
+  <th>Cheese Shop Owner:</th>
   <td tal:content="python:', '.join(data['roles']['Owner'])" />
  </tr>
 
  <tr tal:condition="data/roles/Maintainer | nothing">
-  <th>Cheese Shop Maintainer</th>
+  <th>Cheese Shop Maintainer:</th>
   <td tal:content="python:', '.join(data['roles']['Maintainer'])" />
  </tr>
 
 </table>
 
-<table class="history">
+<table tal:condition="python:app.store.has_role('Admin')" class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
  <tr><th>Action</th><th>Date</th><th>User</th><th>Address</th></tr>
  <tr tal:repeat="
