@@ -1067,9 +1067,9 @@ class WebUI:
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
         '''
-        if not data.has_key('name'):
+        if data.get('name', ''):
             raise ValueError, 'Missing required field "name"'
-        if not data.has_key('version'):
+        if data.get('version', ''):
             raise ValueError, 'Missing required field "version"'
         if data.has_key('metadata_version'):
             del data['metadata_version']
