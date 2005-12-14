@@ -1,3 +1,10 @@
+2005-12-14
+- added more sanity checks on input (empty description, name, version)
+- check supplied user email addresses for '@' and '.'
+- more robustness around various places
+- don't show package Journal to non-admin/owner/maintainer
+
+
 2005-05-21
 - added database password option
 
