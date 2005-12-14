@@ -1487,12 +1487,14 @@ class WebUI:
                 raise FormError, 'Username is invalid (ASCII alphanum only)'
             if not safe_email.match(info['email']):
                 raise FormError, 'Email is invalid (ASCII only)'
+            if '@' not in info['email'] or '.' not in info['email']:
+                raise FormError, 'Email is invalid'
 
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
                 return
-            if not info.has_key('confirm') or info['password']<>info['confirm']:
+            if not info.has_key('confirm') or info['password'] <> info['confirm']:
                 self.fail("password and confirm don't match", heading='Users')
                 return
             info['otk'] = self.store.store_user(name, info['password'],
