@@ -906,7 +906,10 @@ class WebUI:
                 "You must supply the PKG-INFO file"
 
         # get the data
-        mess = email.message_from_file(StringIO.StringIO(self.form['pkginfo'].value))
+        pkginfo = self.form['pkginfo']
+        if isinstance(pkginfo, FileUpload):
+            pkginfo = pkginfo.value
+        mess = email.message_from_file(StringIO.StringIO(pkginfo))
         data = {}
         for k, v in mess.items():
             # clean up the keys and values, normalise "-" to "_"
