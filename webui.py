@@ -435,7 +435,10 @@ class WebUI:
         if q.query:
             query_info = ['Current query:<br>\n']
             for fld, value in q.query:
-                n = q.trove[int(value)]
+                try:
+                    n = q.trove[int(value)]
+                except ValueError:
+                    continue
                 query_info.append(cgi.escape(n.path))
                 query_info.append(
                     ' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
