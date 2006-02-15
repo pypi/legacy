@@ -193,6 +193,9 @@ class WebUI:
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
+            except IOError, error:
+                # ignore broken pipe errors (client vanished on us)
+                if error.errno != 32: raise
             except:
                 logging.exception('Internal Error\n----\n%s\n----\n'%(
                     '\n'.join(['%s: %s'%x for x in self.env.items()])))

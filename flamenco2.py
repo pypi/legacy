@@ -25,16 +25,8 @@ class Query:
             try:
                 int(tid)
             except ValueError:
-                if tid == '32"]section+"End+User/Desktop':
-                    # we're getting some strange errors from "Yahoo! Slurp"
-                    # and where the tid is being passed as
-                    # '32"]section+"End+User/Desktop' ... and I can't find
-                    # any occurrence of that in the interface, and we're
-                    # not getting the same erroneous access from any other
-                    # client / bot, so I'm assuming that Slurp just has bad
-                    # cached data.
-                    continue
-                raise
+                # skip invalid input
+                continue
             self.field_list.append(self.trove[int(tid)].path_split)
 
         # get the packages that match classifiers
