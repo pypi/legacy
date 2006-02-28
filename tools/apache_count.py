@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sys, os, re, psycopg, ConfigParser, urlparse, gzip, bz2
 from mx.DateTime import DateTime
 from mx.DateTime.Timezone import utc_offset
