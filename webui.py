@@ -1350,6 +1350,10 @@ class WebUI:
             raise FormError, 'Python version is required for binary distribution uploads'
 
         # check for valid filenames
+        if not hasattr(content, 'filename'):
+            # I would say the only way this can happen is someone messing
+            # with the form...
+            raise FormError, 'invalid upload'
         filename = content.filename
         if not safe_filenames.match(filename):
             raise FormError, 'invalid distribution file'
