@@ -29,12 +29,10 @@ def add_classifier(store, classifier):
     ''' Add a classifier to the trove_classifiers list
     '''
     cursor = store.get_cursor()
-    cursor.execute("select num from ids where name='trove_classifiers'")
-    id = int(cursor.fetchone()[0])
+    cursor.execute("select max(id) from trove_classifiers")
+    id = int(cursor.fetchone()[0]) + 1
     cursor.execute('insert into trove_classifiers (id, classifier) '
         'values (%s,%s)', (id, classifier))
-    cursor.execute("update ids set num=%s where name='trove_classifiers'",
-        (id+1))
     print 'done'
 
 if __name__ == '__main__':
