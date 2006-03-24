@@ -827,6 +827,13 @@ class Store:
             l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size, has_sig, dn)))
         return l
 
+    def has_file(self, name, version, filename):
+        cursor = self.get_cursor()
+        sql = '''select count(*) from release_files
+            where name=%s and version=%s and filename=%s'''
+        safe_execute(cursor, sql, (name, version, filename))
+        return cursor.fetchone()[0]
+
     def remove_file(self, digest):
         cursor = self.get_cursor()
         sql = '''select python_version, name, filename from release_files

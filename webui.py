@@ -1354,6 +1354,10 @@ class WebUI:
         if not safe_filenames.match(filename):
             raise FormError, 'invalid distribution file'
 
+        # check existing filename
+        if self.store.has_file(name, version, filename):
+            raise FormError, '"%s" already exists'%filename
+
         # check for dodgy filenames
         if '/' in filename or '\\' in filename:
             raise FormError, 'invalid distribution file'
