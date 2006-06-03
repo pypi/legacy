@@ -42,6 +42,12 @@ where r.name=rc.name and r.version=rc.version
         self.by_package = {}
         self.pkg_summary = {}
         for tid, name, version, summary in self.cursor.fetchall():
+            if not isinstance(name, unicode):
+                name = name.decode('utf-8')
+            if not isinstance(version, unicode):
+                version = version.decode('utf-8')
+            if summary and not isinstance(summary, unicode):
+                summary = summary.decode('utf-8')
             self.pkg_summary[(name, version)] = summary
             l = self.trove[int(tid)].path_split
             self.by_package.setdefault((name, version), []).append(l)
