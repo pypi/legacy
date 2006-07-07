@@ -603,12 +603,16 @@ class WebUI:
          
          # Not handled here: version, keywords
         for attr, element in [('name', 'name'),
-                              ('home_page', 'homepage'),
                               ('summary', 'shortdesc'),
                               ('description', 'description'),
                               ('download_url', 'download-page')
                               ]:
               write_element(attr, element)
+
+        url = info['home_page']
+        if url:
+            w('<homepage rdf:resource="%s" />\n' % 
+	      cgi.escape(urlue.encode('utf8')))
 
         person = 'maintainer'
         if not info[person]:
