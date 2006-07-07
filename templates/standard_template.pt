@@ -41,9 +41,9 @@
           <form action="http://google.com/search" id="searchform" method="get" name="searchform">
             <div id="search">
               <span class="reference">
-                <input type="radio" id="domains" value="cheeseshop.python.org" name="domains" checked="checked"/>
+                <input type="radio" value="cheeseshop.python.org" name="domains" checked="checked"/>
                 cheeseshop.python.org
-                <input type="radio" id="domains" value="python.org" name="domains" />
+                <input type="radio" value="python.org" name="domains" />
                 python.org
               </span>
               <input type="hidden" id="sitesearch" value="python.org" name="sitesearch" />
@@ -63,25 +63,22 @@
           <ul class="level-one">            
             <li class="selected">
               <a class="selected" tal:attributes="href app/url_path">Cheese Shop</a>
+            
+              <ul class="level-two">
+                
+                <tal:for-nav repeat="link app/navlinks_html">
+                  <span tal:replace="structure link"/>
+                </tal:for-nav>
+
+                <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get
+                help</a></li>
+                <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug
+                reports</a></li>
+                <li><a href="http://www.python.org/sigs/catalog-sig/">Comments</a></li>
+                <li><a href="http://wiki.python.org/moin/CheeseShopDev">Developers</a></li>
+              </ul>
+
             </li>
-
-            <ul class="level-two">
-
-              <tal:for-nav repeat="link app/navlinks_html">
-                <span tal:replace="structure link"/>
-              </tal:for-nav>
-
-            <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get
-              help</a></li>
-              <li><a
-              href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug
-              reports</a></li>
-              <li><a
-              href="http://www.python.org/sigs/catalog-sig/">Comments</a></li>
-              <li><a
-              href="http://wiki.python.org/moin/CheeseShopDev">Developers</a></li>
-
-            </ul>              
 
 
             
