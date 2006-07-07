@@ -1478,6 +1478,14 @@ class WebUI:
                 raise FormError, 'Email is invalid (ASCII only)'
             if '@' not in info['email'] or '.' not in info['email']:
                 raise FormError, 'Email is invalid'
+            gpgid = info.get('gpg_keyid')
+            if gpgid:
+                if len(gpgid) != 8:
+                    raise FormError, 'GPG key ID is invalid'
+                try:
+                    int(gpgid)
+                except ValueError:
+                    raise FormError, 'GPG key ID is invalid'
 
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,

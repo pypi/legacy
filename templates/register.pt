@@ -37,7 +37,11 @@ obfuscated).</li>
 	</tr>
 	<tr>
 	  <th>PGP Key ID:</th>
-	  <td><input name="gpg_keyid" tal:attributes="value data/gpg_keyid" /></td>
+	  <td><input name="gpg_keyid" tal:attributes="value data/gpg_keyid" />
+          (This identifies a <a
+          href="http://www.gnupg.org/documentation/howtos.html">PGP or GPG
+          key</a>)
+          </td>
 	</tr>
 	<tr>
 	  <th></th>
