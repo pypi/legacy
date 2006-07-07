@@ -109,6 +109,13 @@
   <td tal:content="python:', '.join(data['roles']['Maintainer'])" />
  </tr>
 
+ <tr>
+  <th><a href="http://usefulinc.com/doap">DOAP</a> record:</th>
+  <td><a tal:content="string:${data/name}-${data/version}.xml"
+  tal:attributes="href string:${app/url_path}?:action=doap&amp;name=${data/name}&amp;version=${data/version}" />
+  </td>
+ </tr>
+
 </table>
 
 <table tal:condition="python:app.store.has_role('Admin') or
