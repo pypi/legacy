@@ -646,7 +646,8 @@ class WebUI:
         self.handler.send_response(200, "OK")
         self.handler.send_header('Content-Type', 'application/rdf+xml')
         self.handler.send_header('Content-Disposition',
-            'attachment; filename=%s-%s.xml'%(name, version))
+            'attachment; filename=%s-%s.xml'%(name.encode('ascii', 'replace'),
+            version.encode('ascii', 'replace')))
         self.handler.end_headers()
         self.wfile.write(content.getvalue())
 
