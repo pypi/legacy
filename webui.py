@@ -324,7 +324,7 @@ class WebUI:
             items = path.split('/')[1:]
             if path == '/':
                 self.form['name'] = ''
-                action = 'home'
+                action = 'index'
             elif len(items) >= 1:
                 self.form['name'] = items[0].decode('utf-8')
                 action = 'display'
