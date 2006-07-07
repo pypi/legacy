@@ -939,7 +939,6 @@ def processDescription(source, output_encoding='unicode'):
     - `output_encoding`: The desired encoding of the output.  If a Unicode
       string is desired, use the default value of "unicode" .
     """
-def d(source):
     # Dedent all lines of `source`.
     source = trim_docstring(source)
 
