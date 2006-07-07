@@ -615,8 +615,7 @@ class WebUI:
 
         url = info['home_page']
         if url:
-            w('<homepage rdf:resource="%s" />\n' % 
-	      cgi.escape(urlue.encode('utf8')))
+            w('<homepage rdf:resource="%s" />\n'%cgi.escape(url.encode('utf8')))
 
         person = 'maintainer'
         if not info[person]:
