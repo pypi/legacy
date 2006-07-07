@@ -53,75 +53,89 @@
  </tr>
 </table>
 
-<table class="form">
- <tr tal:condition="data/release/author | nothing">
-  <th>Author:</th>
-  <td tal:content="data/release/author" />
- </tr>
+<ul class="nodot">
+ <li tal:condition="data/release/author | nothing">
+  <strong>Author:</strong>
+  <span tal:content="data/release/author" />
+ </li>
 
- <tr tal:condition="data/release/maintainer | nothing">
-  <th>Maintainer:</th>
-  <td tal:content="data/release/maintainer" />
- </tr>
+ <li tal:condition="data/release/maintainer | nothing">
+  <strong>Maintainer:</strong>
+  <span tal:content="data/release/maintainer" />
+ </li>
 
+ <li tal:condition="data/release/home_page | nothing">
+  <strong>Home Page:</strong>
+  <a tal:attributes="href data/release/home_page"
+         tal:content="data/release/home_page" />
+ </li>
+
+ <li tal:condition="data/release/download_url | nothing">
+  <strong>Download URL:</strong>
+  <a tal:attributes="href data/release/download_url"
+         tal:content="data/release/download_url" />
+ </li>
+
+ <li tal:condition="data/release/description_html | nothing">
+  <strong>Description:</strong>
+  <span tal:content="structure data/release/description_html" />
+ </li>
+
+ <li tal:condition="data/release/keywords | nothing">
+  <strong>Keywords:</strong>
+  <span tal:content="data/release/keywords" />
+ </li>
+
+ <li tal:condition="data/release/license | nothing">
+  <strong>License:</strong>
+  <tal:block define="hasnl python:'\n' in data['release']['license']">
+  <pre tal:condition="hasnl" tal:content="structure data/release/license" />
+  <span tal:condition="not:hasnl" tal:content="data/release/license" />
+  </tal:block>
+ </li>
+
+ <li tal:condition="data/release/platform | nothing">
+  <strong>Platform:</strong>
+  <span tal:content="structure
+  python:data['release']['platform'].replace('\n', ', ')" />
+ </li>
+
+ <tal:block tal:content="structure data/dependencies"/>
+
+ <li tal:condition="data/roles/Owner | nothing">
+  <strong>Cheese Shop Owner:</strong>
+  <span tal:content="python:', '.join(data['roles']['Owner'])" />
+ </li>
+
+ <li tal:condition="data/roles/Maintainer | nothing">
+  <strong>Cheese Shop Maintainer:</strong>
+  <span tal:content="python:', '.join(data['roles']['Maintainer'])" />
+ </li>
+
+ <li>
+  <strong><a href="http://usefulinc.com/doap">DOAP</a> record:</strong>
+  <a tal:content="string:${data/name}-${data/version}.xml"
+  tal:attributes="href string:${app/url_path}?:action=doap&amp;name=${data/name}&amp;version=${data/version}" />
+ </li>
+
+</ul>
+
+<!-- THIS TERRIBLE TERRIBLE HACK IS FOR SETUPTOOLS -->
+<table style="display: none">
  <tr tal:condition="data/release/home_page | nothing">
   <th>Home Page:</th>
   <td><a tal:attributes="href data/release/home_page"
          tal:content="data/release/home_page" />
   </td>
  </tr>
-
  <tr tal:condition="data/release/download_url | nothing">
   <th>Download URL:</th>
   <td><a tal:attributes="href data/release/download_url"
          tal:content="data/release/download_url" />
   </td>
  </tr>
-
- <tr tal:condition="data/release/description_html | nothing">
-  <th>Description:</th>
-  <td tal:content="structure data/release/description_html" />
- </tr>
-
- <tr tal:condition="data/release/keywords | nothing">
-  <th>Keywords:</th>
-  <td tal:content="data/release/keywords" />
- </tr>
-
- <tr tal:condition="data/release/license | nothing">
-  <th>License:</th>
-  <td tal:define="hasnl python:'\n' in data['release']['license']">
-  <pre tal:condition="hasnl" tal:content="structure data/release/license" />
-  <span tal:condition="not:hasnl" tal:content="data/release/license" />
-  </td>
- </tr>
-
- <tr tal:condition="data/release/platform | nothing">
-  <th>Platform:</th>
-  <td tal:content="structure
-  python:data['release']['platform'].replace('\n', '&lt;br&gt;')" />
- </tr>
-
- <tal:block tal:content="structure data/dependencies"/>
-
- <tr tal:condition="data/roles/Owner | nothing">
-  <th>Cheese Shop Owner:</th>
-  <td tal:content="python:', '.join(data['roles']['Owner'])" />
- </tr>
-
- <tr tal:condition="data/roles/Maintainer | nothing">
-  <th>Cheese Shop Maintainer:</th>
-  <td tal:content="python:', '.join(data['roles']['Maintainer'])" />
- </tr>
-
- <tr>
-  <th><a href="http://usefulinc.com/doap">DOAP</a> record:</th>
-  <td><a tal:content="string:${data/name}-${data/version}.xml"
-  tal:attributes="href string:${app/url_path}?:action=doap&amp;name=${data/name}&amp;version=${data/version}" />
-  </td>
- </tr>
-
 </table>
+<!-- END TERRIBLE TERRIBLE HACK -->
 
 <table tal:condition="python:app.store.has_role('Admin') or
   app.store.has_role('Maintainer') or app.store.has_role('Owner')" class="history">

@@ -145,7 +145,6 @@ table.roles td {
 table.history {
   border-spacing: 0px;
   border-collapse: separate;
-  width: 100%;
 }
 
 table.history th.header{
@@ -168,9 +167,13 @@ table.history td {
   font-size: 90%;
   vertical-align: top;
   empty-cells: show;
+  padding-right: 1em;
 }
 
 table.history tr.last td {
   border-bottom: 1px solid gray;
 }
 
+ul.nodot {
+    list-style-type: none;
+}

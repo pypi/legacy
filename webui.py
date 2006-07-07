@@ -805,18 +805,20 @@ class WebUI:
         content=StringIO.StringIO()
         w=content.write
         def format_list(title, l):
-            w('<tr><th>%s:</th><td>'%title.capitalize())
-            w('\n<br />'.join([cgi.escape(x['specifier']) for x in l]))
-            w('\n</td></tr>\n')
+            w('<li><strong>%s:</strong><ul class="nodot">'%title.capitalize())
+            w('\n'.join(['<li>%s</li>'%cgi.escape(x['specifier']) for x in l]))
+            w('\n</ul></li>\n')
 
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
             if l: format_list(col, l)
 
         classifiers = self.store.get_release_classifiers(name, version)
-        w('<tr><th>Classifiers:</th><td>')
-        w('\n<br />'.join([cgi.escape(x['classifier']) for x in classifiers]))
-        w('\n</td></tr>\n')
+        if classifiers:
+            w('<li><strong>Classifiers:</strong><ul class="nodot">')
+            w('\n'.join(['<li>%s</li>'%cgi.escape(x['classifier'])
+                for x in classifiers]))
+            w('\n</ul></li>\n')
 
         dependencies = content.getvalue()
 
