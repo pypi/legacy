@@ -161,6 +161,7 @@ table.history th {
   font-weight: bold;
   text-align: left;
   font-size: 90%;
+  padding-right: 1em;
 }
 
 table.history td {
