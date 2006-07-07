@@ -987,14 +987,14 @@ class WebUI:
 
         # get the data
         pkginfo = self.form['pkginfo']
+        if isinstance(pkginfo, FileUpload):
+            pkginfo = pkginfo.value
         try:
             pkginfo = pkginfo.decode('utf8')
         except UnicodeDecodeError:
             raise FormError, \
                 "Your PKG-INFO file must be either ASCII or UTF-8. " \
                 "If this is inconvenient, use 'python setup.py register'."
-        if isinstance(pkginfo, FileUpload):
-            pkginfo = pkginfo.value
         mess = email.message_from_file(StringIO.StringIO(pkginfo))
         data = {}
         for k, v in mess.items():
