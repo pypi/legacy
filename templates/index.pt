@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="standard_template/macros/page">
+<metal:slot fill-slot="body">
+
+<p tal:condition="not: data/matches">
+  There were no matches.</p>
+
+<table class="list" tal:condition="data/matches">
+<tr>
+ <th>Package</th>
+ <th>Description</th>
+</tr>
+
+<tr tal:repeat="pkg data/matches"
+    tal:attributes="class repeat/pkg/parity">
+ <td tal:content="structure python: 
+  app.packageLink(pkg['name'], pkg['version'])">
+  link</td>
+ <td tal:content="pkg/summary">summary</td>
+</tr>
+
+<tr>
+ <td id="last" colspan="3"></td>
+</tr>
+</table>
+
+</metal:slot>
+</html>
