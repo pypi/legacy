@@ -89,14 +89,16 @@
 
  <tr tal:condition="data/release/license | nothing">
   <th>License:</th>
-  <td><pre tal:content="structure data/release/license" />
+  <td tal:define="hasnl python:'\n' in data['release']['license']">
+  <pre tal:condition="hasnl" tal:content="structure data/release/license" />
+  <span tal:condition="not:hasnl" tal:content="data/release/license" />
   </td>
  </tr>
 
  <tr tal:condition="data/release/platform | nothing">
   <th>Platform:</th>
-  <td><pre tal:content="structure data/release/platform" />
-  </td>
+  <td tal:content="structure
+  python:data['release']['platform'].replace('\n', '&lt;br&gt;')" />
  </tr>
 
  <tal:block tal:content="structure data/dependencies"/>
