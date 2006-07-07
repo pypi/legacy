@@ -424,10 +424,8 @@ class WebUI:
         packages_count = len(packages_)
         packages = []
         for p in packages_:
-            packages.append(dict(
-                name = p[0], version = p[1], summary = p[2],
-                url = self.packageURL(p[0], p[1])
-                ))
+            packages.append(dict(name=p[0], version=p[1], summary=p[2],
+                url=self.packageURL(p[0], p[1])))
   
         # ... build selected categories viewdata
         selected_categories = []
@@ -456,10 +454,8 @@ class WebUI:
                         query.as_href(add=fid)),
                     description = subcategory[-1]))
   
-            available_categories.append(dict(
-                subcategories = sub,
-                name = name,
-                id = id))
+            available_categories.append(dict(subcategories=sub,
+                name=name, id=id))
 
         # only show packages if they're less than 20 and the user has 
         # selected some categories, or if the user has explicitly asked 
