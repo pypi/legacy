@@ -1430,7 +1430,9 @@ class WebUI:
 
         # check existing filename
         if self.store.has_file(name, version, filename):
-            raise FormError, '"%s" already exists'%filename
+            raise FormError, 'A file named "%s" already exists for the' \
+                ' release %s-%s. To fix problems with that file you' \
+                ' should create a new release.'%(filename, name, version)
 
         # check for dodgy filenames
         if '/' in filename or '\\' in filename:
