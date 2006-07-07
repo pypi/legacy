@@ -343,7 +343,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -566,6 +566,81 @@ class WebUI:
 
         self.role_form()
 
+    def doap(self, name=None, version=None):
+        '''Return DOAP rendering of a package.
+        '''
+        ## Start of code copied from display_pkginfo
+        # get the appropriate package info from the database
+        if name is None:
+            name = self.form['name']
+        if version is None:
+            if self.form.has_key('version'):
+                version = self.form['version']
+            else:
+                raise NotImplementedError, 'get the latest version'
+        info = self.store.get_package(name, version)
+        if not info:
+            return self.fail('No such package / version',
+                heading='%s %s'%(name, version),
+                content="I can't find the package / version you're requesting")
+
+        content = StringIO.StringIO()
+        w = content.write
+        ## End of code copied from display_pkginfo
+ 
+        # XXX encoding to use?
+        w('<?xml version="1.0" encoding="UTF-8"?>\n')
+        w("""<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ 	xmlns:foaf="http://xmlns.com/foaf/0.1/"
+ 	xmlns="http://usefulinc.com/ns/doap#">\n""")
+ 
+        def write_element (attr, element):
+            value = info[attr]
+            if not value:
+                return
+            w('<%s>%s</%s>\n'%(element, cgi.escape(value.encode('utf8')),
+               element))
+         
+         # Not handled here: version, keywords
+        for attr, element in [('name', 'name'),
+                              ('home_page', 'homepage'),
+                              ('summary', 'shortdesc'),
+                              ('description', 'description'),
+                              ('download_url', 'download-page')
+                              ]:
+              write_element(attr, element)
+
+        person = 'maintainer'
+        if not info[person]:
+            person = 'author'
+        if info[person]:
+            w('<maintainer><foaf:Person>\n')
+            write_element(person, 'foaf:name')
+            email = info[person+'_email']
+            if email:
+                obj = sha.new(email)
+                email = binascii.b2a_hex(obj.digest())
+                w('<foaf:mbox_sha1sum>%s</foaf:mbox_sha1sum>' % email)
+            w('</foaf:Person></maintainer>\n')
+ 
+        # Write version
+        version = info['version']
+        if version:
+            w('<release><Version>\n')
+            w('<revision>%s</revision>\n' % cgi.escape(version))
+            w('</Version></release>\n')
+ 
+        # XXX Unhandled: license, platform, category
+        w('</Project>\n')
+         
+        # Not using self.success or page_head because we want
+        # plain-text without all the html trappings.
+        self.handler.send_response(200, "OK")
+        self.handler.send_header('Content-Type', 'application/rdf+xml')
+        self.handler.send_header('Content-Disposition',
+            'attachment; filename=%s-%s.xml'%(name, version))
+        self.handler.end_headers()
+        self.wfile.write(content.getvalue())
 
     def display_pkginfo(self, name=None, version=None):
         '''Reconstruct and send a PKG-INFO metadata file.
