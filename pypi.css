@@ -56,7 +56,6 @@ table.form td.optional {
 
 /* style for lists */
 table.list {
-  clear: right;
   border-spacing: 0px;
   border-collapse: separate;
   width: 100%;
