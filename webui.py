@@ -141,8 +141,8 @@ class WebUI:
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
-            self.form = decode_form(cgi.FieldStorage(fp=handler.rfile,
-                environ=env))
+            fs = cgi.FieldStorage(fp=handler.rfile, environ=env)
+            self.form = decode_form(fs)
         else:
             self.form = None
 
@@ -316,7 +316,7 @@ class WebUI:
             return
 
         # now handle the request
-        path = os.environ.get('PATH_INFO', '')
+        path = self.env.get('PATH_INFO', '')
         if self.form.has_key(':action'):
             action = self.form[':action']
         elif path:
@@ -357,7 +357,7 @@ class WebUI:
         self.store.commit()
 
     def debug(self):
-        self.fail('Debug info', code=200, content=str(os.environ))
+        self.fail('Debug info', code=200, content=str(self.env))
 
     def xmlrpc(self):
         rpc.handle_request(self)
@@ -395,7 +395,7 @@ class WebUI:
             f.close()
 
     def browse(self, nav_current='browse'):
-        ua = os.environ.get('HTTP_USER_AGENT', '')
+        ua = self.env.get('HTTP_USER_AGENT', '')
         if botre.search(ua) is not None:
             self.handler.send_response(200, 'OK')
             self.handler.send_header('Content-Type', 'text/plain')
