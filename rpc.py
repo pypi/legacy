@@ -36,10 +36,6 @@ def package_releases(store, package_name):
     result = store.get_package_releases(package_name, hidden=False)
     return [row['version'] for row in result]
 
-def package_stable_release(store, package_name):
-    return store.get_stable_version(package_name)
-package_stable_version = package_stable_release   # "deprecated"
-
 def release_urls(store, package_name, version):
     result = []
     for file in store.list_files(package_name, version):
