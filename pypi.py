@@ -24,7 +24,7 @@ class RequestWrapper:
 
 def handle(req):
     req.content_type = req.headers_out['Content-Type'] = 'text/html'
-    cfg = config.Config('/Users/richard/src/pypi/pypi/config.ini', 'webui')
+    cfg = config.Config('/data/pypi/config.ini', 'webui')
     s = req.read()
     rfile = StringIO.StringIO(s)
     request = RequestWrapper(cfg, rfile, req)
