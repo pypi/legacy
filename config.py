@@ -9,7 +9,10 @@ class Config:
         c.read(configfile)
         self.database_name = c.get('database', 'name')
         self.database_user = c.get('database', 'user')
-        self.database_pw = c.get('database', 'password')
+        if c.has_option('database', 'password'):
+            self.database_pw = c.get('database', 'password')
+        else:
+            self.database_pw = None
         self.database_files_dir = c.get('database', 'files_dir')
 
         self.mailhost = c.get('webui', 'mailhost')

@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
 import sys, pprint, cgi, urllib, os
-import sqlite
+
+def flatten(d):
+    l = d[1]
+    for entry in d[0].values():
+        l += flatten(entry)
+    return l
 
 class Query:
     """ Represents a Flamenco-style query.
@@ -11,164 +16,128 @@ class Query:
          to an integer representing the value to be searched for.  Top-level
          classifiers can be specified multiple times.
     """
-    def __init__(self, cursor, trove, field_list=[]):
+    def __init__(self, cursor, trove, query=[]):
         self.cursor = cursor
         self.trove = trove
-        q = []
-        self.queried_ids = {}
-        for name, value in field_list:
-            q.append((name, int(value)))
-            self.queried_ids[value] = 1
-        self.query = tuple(q)
+        self.query = query
+        self.field_list = []
+        for group, tid in query:
+            try:
+                int(tid)
+            except ValueError:
+                # skip invalid input
+                continue
+            self.field_list.append(self.trove[int(tid)].path_split)
 
-    def get_values(self, field):
-        """get_values(field:string) : [string]
-        Return list of values requested for this field.
-        """
-        results = []
-        for fld, value in self.query:
-            if field == fld:
-                results.append(value)
-        return results
-
-    def list_choices(self):
-        matches = self.get_matches()
-        boxes = []
-
-        # get the per-classifier totals
+        # get the packages that match classifiers
         self.cursor.execute('''
-select count(*),rc.trove_id
+select rc.trove_id, r.name, r.version, r.summary
 from releases r, release_classifiers rc
 where r.name=rc.name and r.version=rc.version
-  and r._pypi_hidden=0
-group by rc.trove_id
+  and r._pypi_hidden=FALSE
 ''')
-        counts = {}
-        for count, tid in self.cursor.fetchall():
-            counts[int(tid)] = int(count)
 
-        # Loop through the available fields and list choices
-        q = self.query
+        # Now sort into useful structures
+        self.by_classifier = {}
+        self.by_package = {}
+        self.pkg_summary = {}
+        for tid, name, version, summary in self.cursor.fetchall():
+            if not isinstance(name, unicode):
+                name = name.decode('utf-8')
+            if not isinstance(version, unicode):
+                version = version.decode('utf-8')
+            if summary and not isinstance(summary, unicode):
+                summary = summary.decode('utf-8')
+            self.pkg_summary[(name, version)] = summary
+            l = self.trove[int(tid)].path_split
+            self.by_package.setdefault((name, version), []).append(l)
+            d = self.by_classifier
+            for arc in l[:-1]:
+                if not d.has_key(arc):
+                    d[arc] = ({}, [])
+                d = d[arc][0]
+            arc = l[-1]
+            if not d.has_key(arc):
+                d[arc] = ({}, [])
+            d[arc][1].append((name, version))
 
-        for fld in self.trove.FIELDS:
-            # If it's not an exclusive field, add a box listing all of the
-            # top-level options.
-            values = self.get_values(fld)
-            if not values or not self.trove.EXCLUSIVE_FIELDS.has_key(fld):
-                L = []
-                for node in self.trove.root.arcs[fld].arcs.values():
-                    if not self.queried_ids.has_key(node.id):
-                        count = counts.get(node.id, 0)
-                        if count:
-                            L.append((node.name, node.id, count))
-                L.sort()
-                boxes.append((fld, fld, L, None))
+    def get_matches(self, addl_fields=[]):
+        matches = {}
+        query_fields = self.field_list + addl_fields
+        for package, classifiers in self.by_package.items():
+            for required in query_fields:
+                # make sure the field appears in this package's classifiers
+                for classifier in classifiers:
+                    if classifier[:len(required)] == required:
+                        # match, yay
+                        break
+                else:
+                    # no classifier matched the required query_field
+                    break
+            else:
+                # passed all the query classifiers
+                matches[package] = self.pkg_summary[package]
+        return [k+(v,) for k,v in matches.items()]
 
-            # If a value is specified for this field, we need to check
-            # for the sub-options for the user's choice, so they can drill
-            # down further.
-            for v1 in values:
-                # Are there any matching subtrees?
-                # (Environment::Console has subtrees ::Curses, ::Newt, &c.)
-                node = self.trove[v1]
-                if len(node.arcs) == 0:
-                    # No, no subtrees
+    def list_choices(self):
+        # match the packages based on the current query
+        packages = self.get_matches()
+
+        # see which classifiers are left over
+        classifiers = {}
+        for name, version, summary in packages:
+            for classifier in self.by_package[(name, version)]:
+                classifiers.setdefault(classifier, {})[(name, version)] = 1
+
+        sub = {}
+        # organise boxes based on possible sub-queries
+        for classifier in classifiers.keys():
+            for field in self.field_list:
+                if len(classifier) <= len(field):
                     continue
+                if classifier[:len(field)] != field:
+                    continue
+                d = sub.setdefault(field, {})
+                matches = self.get_matches(addl_fields=[classifier])
+                d[classifier[:len(field)+1]] = matches
 
-                # Otherwise, list the possible choices
-                L = []
-                for n in node.arcs.values():
-                    # XXX should count up the number of matching packages
-                    # for each key 
-                    newq = self.copy()
-                    newq.set_field(fld, v1, node.id)
-                    count = newq.get_match_count()
-                    if count:
-                        L.append((n.name, n.id, count))
-                L.sort()
-                boxes.append((fld, node.path, L, v1))
+        # first set of boxes
+        boxes = []
+        for field, d in sub.items():
+            fid = self.trove.getid(field)
+            boxes.append((' :: '.join(field), fid, d.items()))
 
-        return matches, boxes
+        # now other fields we may match that aren't already part of the
+        # query
+        sub = {}
+        for classifier, count in classifiers.items():
+            field = classifier[0]
+            classifier = classifier[:2]
+            d = sub.setdefault(field, {})
+            matches = self.get_matches(addl_fields=[classifier])
+            d[classifier] = d.get(classifier, []) + matches
 
-    def get_matches(self):
-        # Return list of matches for current query
-        if len(self.query) == 0:
-            self.cursor.execute('select distinct name, version from releases '
-                'where _pypi_hidden = 0')
-            L = self.cursor.fetchall()
-            L = [tuple(x) for x in L]
-            return L
+        # now add those boxes - filter out duplicates
+        for field, d in sub.items():
+            # top-level fields don't have meaningful ids
+            for k,v in d.items():
+                n = {}
+                for p in v:
+                    n[p] = 1
+                d[k] = n.keys()
+            boxes.append((field, None, d.items()))
 
-        # grab all the matching release classifiers
-        sql = '''
- select r.summary, rc.name, rc.version
- from releases r, release_classifiers rc
- where rc.trove_id = %s
-   and r.name=rc.name and r.version=rc.version
-   and r._pypi_hidden=0
-'''
-        tids = 'intersect'.join([sql%id for field,id in self.query])
-        self.cursor.execute(tids)
-        result = self.cursor.fetchall()
-        if result is None:
-            return []
+        return packages, boxes
 
-        # unpack the row results and ... pack them up again ;)
-        return result
-
-    def get_match_count(self):
-        return len(self.get_matches())
-    
-    def as_href(self):
+    def as_href(self, ignore=None, add=None):
         L = []
+        if add is not None:
+            L.append(urllib.quote('asdf', safe="") + '=' + 
+                urllib.quote(str(add), safe=""))
         for fld, value in self.query:
+            if ignore == value:
+                continue
             L.append(urllib.quote(fld, safe="") + '=' +
                      urllib.quote(str(value), safe=""))
         return '&'.join(L)
-
-    def remove_field(self, field, old_value):
-        L = list(self.query)
-        for i in range(len(L)):
-            if (L[i][0] == field and
-                L[i][1] == old_value ):
-                    del L[i]
-                    break
-        self.query = tuple(L)
-        
-        
-    def set_field(self, field, old_value, new_value):
-        L = list(self.query)
-        for i in range(len(L)):
-            if (L[i][0] == field and
-                L[i][1] == old_value ):
-                v = list(L[i])
-                v[1] = new_value
-                L[i] = tuple(v)
-                break
-        else:
-            # Not found, so just add it
-            L.append((field, new_value))
-        self.query = tuple(L)
-
-    def copy(self):
-        q = Query(self.cursor, self.trove)
-        q.query = self.query[:]
-        return q
-
-if __name__ == '__main__':
-    db = sqlite.connect(db=sys.argv[1])
-
-    import trove
-    trove = trove.Trove(db.cursor())
-
-#    print "*** Development Status=Beta"
-#    q = Query(db.cursor(), trove, [('Development Status', '4')])
-#    v = q.list_choices()
-#    pprint.pprint(v)
-    
-    print "*** Topic :: Software Development"
-    q = Query(db.cursor(), trove, [('Topic', '405')])
-    v = q.list_choices()
-    pprint.pprint(v)
-    print q.as_href()
 

@@ -6,7 +6,25 @@
 >
 <metal:slot fill-slot="body">
 
-<p tal:content="structure data/query_info"/>
+<!--
+TODO:
+- no categories selected
+- too many matches
+- some matches
+- no matches
+-->
+<p>There are <span tal:replace="python: len(data['matches'])"/> package(s) in these categories:</p>
+
+<ul>
+<li tal:repeat="query data/queries">
+  <strong tal:content="query/path">Some :: Package</strong>
+  [<a tal:attributes="href query/ignore_url">ignore</a>]
+</li>
+</ul>
+
+<!--<p>Continue selecting categories from below, or <a href="">show matching packages</a> now.</p>-->
+
+<p>Select a package or more categories from below.</p>
 
 <table class="list" tal:condition="
 python: data['query'].query and data['matches']">
@@ -21,10 +39,6 @@ python: data['query'].query and data['matches']">
  <tr><td id="last" colspan="2"></td></tr>
 </table>
 
-<p tal:condition="not: data/query/query">
-Number of matches: <span tal:replace="python:
-				      len(data['matches'])"/>
-</p>
 
 <hr />
 

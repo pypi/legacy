@@ -1,16 +1,16 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
-import logging, StringIO
+import logging, StringIO, string
 from distutils.version import LooseVersion
 from docutils.core import publish_parts
-from docutils.io import StringInput
+from docutils.readers.python.moduleparser import trim_docstring
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
     
 
-chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+chars = string.ascii_letters + string.digits
 
 dist_file_types = [
     ('sdist',            'Source'),
@@ -394,15 +394,17 @@ class Store:
 
             Return a list of (name, version) tuples.
         '''
+        if operator not in ('and', 'or'):
+            operator = 'and'
         where = []
         for k, v in spec.items():
-	    if k not in ['_pypi_hidden', 'name', 'version',
-	                 'author', 'author_email', 
-			 'maintainer', 'maintainer_email',
-			 'home_page', 'license', 'summary',
-			 'description', 'keywords', 'platform',
-			 'download_url']:
-		continue	     
+            if k not in ['_pypi_hidden', 'name', 'version',
+                         'author', 'author_email',
+                         'maintainer', 'maintainer_email',
+                         'home_page', 'license', 'summary',
+                         'description', 'keywords', 'platform',
+                         'download_url']:
+                continue             
             if k == '_pypi_hidden':
                 if v == '1': v = 'TRUE'
                 else: v = 'FALSE'
@@ -886,8 +888,10 @@ class Store:
         ''' Open the database, initialising if necessary.
         '''
         # ensure files are group readable and writable
-        self._conn = psycopg.connect(database=self.config.database_name,
-            user=self.config.database_user, password=self.config.database_pw)
+        cd = dict(database=self.config.database_name, user=self.config.database_user)
+        if self.config.database_pw:
+            cd['password'] = self.config.database_pw
+        self._conn = psycopg.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
 
@@ -935,15 +939,23 @@ def processDescription(source, output_encoding='unicode'):
     - `output_encoding`: The desired encoding of the output.  If a Unicode
       string is desired, use the default value of "unicode" .
     """
-    
-    settings_overrides={'raw_enabled': '0',
-                        'file_insertion_enabled': '0'}
+def d(source):
+    # Dedent all lines of `source`.
+    source = trim_docstring(source)
+
+    settings_overrides={
+        'raw_enabled': '0',  # no raw HTML code
+        'file_insertion_enabled': '0',  # no file/URL access
+        'halt_level': 2,  # at warnings or errors, raise an exception
+        'report_level': 5,  # never report problems with the reST code
+        }
 
     # capture publishing errors, they go to stderr
     old_stderr = sys.stderr
     sys.stderr = s = StringIO.StringIO()
     parts = None
     try:
+        # Convert reStructuredText to HTML using Docutils.
         parts = publish_parts(source=source, writer_name='html',
                               settings_overrides=settings_overrides)
     except:

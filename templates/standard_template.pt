@@ -1,159 +1,191 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metal:macro define-macro="page"
-	     xmlns="http://www.w3.org/1999/xhtml" 
-	     xmlns:tal="http://xml.zope.org/namespaces/tal"
-	     xmlns:metal="http://xml.zope.org/namespaces/metal">
- <?xml-stylesheet href="http://www.python.org/style.css" type="text/css"?>
-<html xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal"
-      xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+             xmlns="http://www.w3.org/1999/xhtml" 
+             xmlns:tal="http://xml.zope.org/namespaces/tal"
+             xmlns:metal="http://xml.zope.org/namespaces/metal">
+  <html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+      <title tal:content="string:Python Cheese Shop : ${data/title}" />
+      <meta content="python programming language object oriented web free source" name="keywords" />
+      <meta content="Home page for Python, an interpreted, interactive, object-oriented, extensible programming language. It provides an extraordinary combination of clarity and versatility, and is free and comprehensively ported.
+                     " name="description" />
+       <link rel="stylesheet" href="http://www.python.org/css/pypi.css" type="text/css"/>
 
-<head>
-  <title tal:content="string:Python Cheese Shop : ${data/title}" />
- <meta http-equiv="Content-Type" content="text/xhtml; charset=utf-8" />
- <link rel="SHORTCUT ICON" href="http://www.python.org/pics/pyfav.gif" />
- <link rel="STYLESHEET" href="http://www.python.org/style.css"
-       type="text/css" />
- <link rel="STYLESHEET" href="http://www.python.org/css/pypi.css"
-       type="text/css" />
- <link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates"
-       href="http://www.python.org/pypi?:action=rss" />
- <metal:slot define-slot="head" />
-</head>
+       <link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates" href="http://www.python.org/pypi?:action=rss"/>
+      <link media="screen" href="http://www.python.org/styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
+      <link media="screen" href="http://www.python.org/styles/netscape4.css" type="text/css" rel="stylesheet" />
+      <link media="print" href="http://www.python.org/styles/print.css" type="text/css" rel="stylesheet" />
+      <link media="screen" href="http://www.python.org/styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
+      <link media="screen" href="http://www.python.org/styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
+      <script src="http://www.python.org/js/iotbs2-key-directors-load.js" type="text/javascript"></script>
+      <script src="http://www.python.org/js/iotbs2-directors.js" type="text/javascript"></script>
 
-<body bgcolor="#ffffff" text="#000000"
-      marginwidth="0" marginheight="0"
-      link="#0000bb"  vlink="#551a8b"
-      alink="#ff0000">
-<!-- start of page table -->
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
-<!-- start of banner row -->
-<tr>
-<!-- start of corner cells -->
-<td tal:define="banner_info app/random_banner"
- tal:attributes="bgcolor banner_info/bgcolor"
- width="150" valign="middle" class="corner">
+      <script src="http://www.python.org/js/iotbs2-core.js" type="text/javascript"></script>
+      
+      <metal:slot define-slot="head" />
+    </head>
+    <body>
+      <!--  Logo  -->
+      <h1 id="logoheader">
+        <a accesskey="1" href="http://www.python.org" id="logolink"><img src="http://www.python.org/images/python-logo.gif" alt="homepage" border="0" id="logo" /></a>
+      </h1>
+      <!--  Skip to Navigation  -->
+      <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="http://www.python.org/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
+      <div class="skiptonav"><a accesskey="3" href="#content-body"><img src="http://www.python.org/images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
+      <!--  Utility Menu  -->
 
-<center>
-    <a href="/">
-    <img alt="" border="0" tal:attributes="src banner_info/src" /></a>
-</center> </td>
-<td width="15" bgcolor="#99ccff"></td>
-<td width="90%" bgcolor="#99ccff" class="banner">
-<table width="100%" border="0" cellspacing="0" cellpadding="0"
-       bgcolor="#ffffff">
-<tr><td bgcolor="#99ccff"> <a href="http://www.python.org/">Python Home</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/search/">Search</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/download/">Download</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/doc/">Documentation</a> </td>
-</tr><tr> <td bgcolor="#99ccff"> <a href="http://www.python.org/Help.html">Help</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/dev/">Developers</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/psa/">Community</a> </td>
-    <td bgcolor="#99ccff"> <a href="http://www.python.org/sigs/">SIGs</a> </td>
-</tr></table>
+      <div id="utility-menu">
+        <!--  Search Box  -->
+        <div id="searchbox">
+          <form action="http://google.com/search" id="searchform" method="get" name="searchform">
+            <div id="search">
+              <span class="reference">
+                <input type="radio" id="domains" value="cheeseshop.python.org" name="domains" checked="checked"/>
+                cheeseshop.python.org
+                <input type="radio" id="domains" value="python.org" name="domains" />
+                python.org
+              </span>
+              <input type="hidden" id="sitesearch" value="python.org" name="sitesearch" />
+              <input type="hidden" id="sourceid" value="google-search" name="sourceid" />
+              <input class="input-text" type="text" id="q" name="q" />
+              <input class="input-button" type="submit" name="submit" value="search" id="submit" />
+            </div>
+          </form>
 
-</td></tr><!-- end of banner row -->
+        </div>
+<!-- XXX: reinstate this       <div id="screen-switcher"></div> -->
+      </div>
+      <div id="left-hand-navigation">
+        
+        <!--  Main Menu NEED LEVEL TWO HEADER AND FOOTER -->
+        <div id="menu">
+          <ul class="level-one">            
+            <li class="selected">
+              <a class="selected" tal:attributes="href app/url_path">Cheese Shop</a>
+            </li>
 
-<tr><!-- start of sidebar/body row -->
-<td width="150" valign="top" bgcolor="#99ccff" class="sidebar">
-<table width="100%" border="0" cellspacing="0" cellpadding="3"
-       bgcolor="#ffffff">
+            <ul class="level-two">
 
-<tal:if-user condition="app/username">
+              <tal:for-nav repeat="link app/navlinks_html">
+                <span tal:replace="structure link"/>
+              </tal:for-nav>
 
-<tr><td bgcolor="#99ccff">Welcome 
-<span tal:replace="app/username"/></td></tr>
-<tr><td bgcolor="#99ccff">
- <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
-</td></tr>
-<tr><td bgcolor="#99ccff">
- <a tal:attributes="href python:app.link_action('logout')">Logout</a>
-</td></tr>
+            <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get
+              help</a></li>
+              <li><a
+              href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug
+              reports</a></li>
+              <li><a
+              href="http://www.python.org/sigs/catalog-sig/">Comments</a></li>
+              <li><a
+              href="http://wiki.python.org/moin/CheeseShopDev">Developers</a></li>
 
-<tal:let define="packages python:app.store.user_packages(app.username)">
-<tal:if-packages condition="packages">
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-Your Packages
-</font></b></td></tr>
-<tr>
- <td bgcolor="#99ccff">
-  <tal:block repeat="pkg_info packages">
-  <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
-   tal:content="python:pkg_info[0]">package</a><br />
-  </tal:block>
- </td>
-</tr>
-</tal:if-packages>
-</tal:let>
-</tal:if-user>
+            </ul>              
 
-<tal:if-not-user condition="not: app/username">
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-Not Logged In
-</font></b></td></tr>
-<tr><td bgcolor="#99ccff">
- <a tal:attributes="href python: app.link_action('register_form')">Register</a></td></tr>
-<tr><td bgcolor="#99ccff">
- <a tal:attributes="href python: app.link_action('login')">Login</a></td></tr>
-<tr><td bgcolor="#99ccff">
- <a tal:attributes="href python: app.link_action('forgotten_password_form')">
-Lost Login?</a></td></tr>
-<tr><td bgcolor="#99ccff"></td></tr>
-</tal:if-not-user>
 
-<tr><td bgcolor="#003366"><b><font color="#ffffff">
-CheeseShop Actions
-</font></b></td></tr>
-<tr><td bgcolor="#99ccff">
-<tal:for-nav repeat="link app/navlinks_html">
- <span tal:replace="structure link"/><br />
-</tal:for-nav>
-</td></tr>
-<tr><td bgcolor="#99ccff"></td></tr>
-<tr><td bgcolor="#003366"><b><font color="#ffffff"> Contact Us
-</font></b></td></tr>
+            
 
-<tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>
-</td></tr>
-<tr><td bgcolor="#99ccff">
-<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
-</td></tr>
+            <li class=""><a href="http://www.python.org/about" class="" title="About The Python Language">About</a>
+            </li><li class=""><a href="http://www.python.org/news" class="" title="">News</a>
+            </li><li class=""><a href="http://www.python.org/doc" class="" title="">Documentation</a>
+            </li><li class=""><a href="http://www.python.org/download" title="">Download</a>
+            
 
-<tr><td bgcolor="#99ccff">
-<a href="http://www.python.org/sigs/catalog-sig/">Comments</a>
-</td></tr>
+            </li><li class=""><a href="http://www.python.org/community" class="" title="">Community</a>
+            </li><li class=""><a href="http://www.python.org/psf" class="" title="Python Software Foundation">PSF</a>
+            </li><li class=""><a href="http://www.python.org/links" class="" title="">Links</a>
+            </li><li class=""><a href="http://www.python.org/dev" class="" title="Python Core Language Development">Core Development</a>
+          </li>
+          </ul>
+        </div>
+              
+        <h4><a href="http://www.python.org/community/jobs">Python Jobs</a></h4>
+        <h4><a href="http://www.python.org/psf/donations">Donate to the PSF</a></h4>
+        <h4><a href="http://psf.pollenation.net/cgi-bin/trac.cgi/wiki/CreatingTickets">Report website bug</a></h4>
+      </div>
+      <div id="content-body">
+        <div id="body-main">
+          <div id="content">
 
-<tr><td bgcolor="#99ccff">  </td></tr>
-<tr><td bgcolor="#99ccff"> <a href="http://www.python.org/"><img align="center" alt="" border="0"
-         src="http://www.python.org/pics/PythonPoweredSmall.gif" /></a></td></tr>
-<tr><td bgcolor="#99ccff">  </td></tr>
-<tr><td bgcolor="#99ccff"> &#169; 2005 </td></tr>
-<tr><td bgcolor="#99ccff">
-<a href="http://www.python.org/psf/">Python Software Foundation</a>
-</td></tr>
-</table>
+            <div id="breadcrumb">
+              <a tal:attributes="href app/url_path">Cheese Shop</a>
+              <tal:block condition="exists:data/version">
+                <span class="breadcrumb-separator">&gt;</span> 
+                <a tal:content="data/title" tal:attributes="href python:app.packageURL(data['name'], data['version'])"></a>
+              </tal:block>
+              
+            </div>
 
-</td>
-<td width="15"></td>
+            <div id="document-navigation">
+              <tal:if-not-user condition="not: app/username">
+                <h4>Not Logged In</h4>
 
-<!-- begin body -->
-<td class="content" bgcolor="white" valign="top">
+                <ul>
+                  <li><a tal:attributes="href python: app.link_action('login')">Login</a></li>
+                  <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
+                  <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
+                </ul>
 
-<h1 align="left">Cheese Shop: <span tal:replace="data/title"></span></h1>
+              </tal:if-not-user>
 
-<p tal:condition="app/ok_message" class="ok"
- tal:content="structure app/ok_message">a status message</p>
+              <tal:if-user condition="app/username">
 
-<p tal:condition="app/error_message" class="error"
- tal:content="structure app/error_message">a status message</p>
+                <h4>Welcome <span tal:replace="app/username"/></h4>
+                <li>
+                  <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
+                </li>
 
-<metal:slot define-slot="body">
+                <tal:let define="packages python:app.store.user_packages(app.username)">
+                  <tal:if-packages condition="packages">
+                    <li>
+                      Your packages:
+                    </li>
+                    <ul>
+                      
+                      <li>
+                        <tal:block repeat="pkg_info packages">
+                          <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
+                             tal:content="python:pkg_info[0]">package</a><br />
+                        </tal:block>
+                      </li>
+                    </ul>
+                  </tal:if-packages>
+                </tal:let>
 
-This template has not replaced its body slot.
+                <li>
+                  <a tal:attributes="href python:app.link_action('logout')">Logout</a>
+                </li>
+              </tal:if-user>
 
-</metal:slot>
+            
+            </div>
 
-</td> </tr> </table>
-</body></html>
+            <div class="section">
+
+              <h1 tal:content="data/title"></h1>
+
+              <metal:slot define-slot="body">
+                
+                This template has not replaced its body slot.
+                
+              </metal:slot>
+              
+            </div>
+
+
+          </div>
+          <div id="footer"><div id="credits">
+            <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
+            <a href="http://www.xs4all.com/" title="Web and email hosting provided by xs4all, Netherlands">hosting by xs4all</a> / 
+            <a href="http://www.pollenation.net/" title="Design and content management system by Pollenation Internet, Yorkshire">design by pollenation</a>
+          </div>
+          Copyright © 1990-2006, <a href="http://www.python.org/psf">Python Software Foundation</a><br />
+          <a href="http://www.python.org/about/legal">Legal Statements</a>
+
+          </div>
+        </div>
+      </div>
+    </body>
+  </html>
 </metal:macro>

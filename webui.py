@@ -8,7 +8,7 @@ from xml.sax import saxutils
 
 
 # local imports
-import store, config, flamenco2, trove, versionpredicate, verify_filetype, rpc
+import store, config, flamenco, trove, versionpredicate, verify_filetype, rpc
 import MailingLogger
 
 esc = cgi.escape
@@ -21,6 +21,7 @@ safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg)$',
     re.I)
 safe_username = re.compile(r'^[A-Za-z0-9]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
+botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
 def xmlescape(s):
     ' make sure we escape a string '
@@ -123,7 +124,7 @@ class WebUI:
         The handling of a request goes as follows:
         1. open the database
         2. see if the request is supplied with authentication information
-        3. perform the action defined by :action ("index" if none is supplied)
+        3. perform the action defined by :action ("home" if none is supplied)
         4a. handle exceptions sanely, including special ones like NotFound,
             Unauthorised, Redirect and FormError, or
         4b. commit changes to the database
@@ -258,28 +259,6 @@ class WebUI:
         else: self.wfile.write('\n\n')
         self.wfile.write(content)
 
-    def random_banner(self):
-        banner_num = random.randint(0, 63)
-        colors = [
-             '#3399ff',  '#6699cc',  '#3399ff',  '#0066cc',  '#3399ff',
-             '#0066cc',  '#0066cc',  '#3399ff',  '#3399ff',  '#3399ff',
-             '#3399ff',  '#6699cc',  '#3399ff',  '#3399ff',  '#ffffff',
-             '#6699cc',  '#0066cc',  '#3399ff',  '#0066cc',  '#3399ff',
-             '#6699cc',  '#0066cc',  '#6699cc',  '#3399ff',  '#3399ff',
-             '#6699cc',  '#3399ff',  '#3399ff',  '#6699cc',  '#6699cc',
-             '#0066cc',  '#6699cc',  '#0066cc',  '#6699cc',  '#0066cc',
-             '#0066cc',  '#6699cc',  '#3399ff',  '#0066cc',  '#bbd6f1',
-             '#0066cc',  '#6699cc',  '#3399ff',  '#3399ff',  '#0066cc',
-             '#0066cc',  '#0066cc',  '#6699cc',  '#6699cc',  '#3399ff',
-             '#3399ff',  '#6699cc',  '#0066cc',  '#0066cc',  '#6699cc',
-             '#0066cc',  '#6699cc',  '#3399ff',  '#6699cc',  '#3399ff',
-             '#d6ebff',  '#6699cc',  '#3399ff',  '#0066cc',
-             ]
-        return {
-            'bgcolor': colors[banner_num],
-            'src': 'http://www.python.org/pics/PyBanner%03d.gif'%banner_num,
-            }
-
     def link_action(self, action_name=None, **vars):
         if action_name:
             vars[':action'] = action_name
@@ -290,10 +269,7 @@ class WebUI:
         return self.url_path + '?' + '&'.join(l)
 
     navlinks = (
-        ('home', 'Cheese Shop home'),
         ('browse', 'Browse packages'),
-        ('search_form', 'Search'),
-        ('index', 'List all packages'),
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
         ('rss', 'RSS (last 20 updates)'),
@@ -306,10 +282,12 @@ class WebUI:
             if action_name == 'role_form' and (
                 not self.username or not self.store.has_role('Admin', '')):
                 continue
+            
+            cssclass = ''
             if action_name == self.nav_current:
-                links.append('<strong>%s</strong>' % desc)
-            else:
-                links.append('<a href="%s">%s</a>'%(self.link_action(action_name), desc))
+                cssclass = 'selected'
+            links.append('<li class="%s"><a class="%s" href="%s">%s</a></li>' %
+                         (cssclass, cssclass, self.link_action(action_name), desc))
         return links
 
 
@@ -345,7 +323,7 @@ class WebUI:
             items = path.split('/')[1:]
             if path == '/':
                 self.form['name'] = ''
-                action = 'search'
+                action = 'home'
             elif len(items) >= 1:
                 self.form['name'] = items[0].decode('utf-8')
                 action = 'display'
@@ -365,7 +343,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display search_form register_form user_form forgotten_password_form user password_reset index search role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss submit display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -416,6 +394,15 @@ class WebUI:
             f.close()
 
     def browse(self, nav_current='browse'):
+        ua = os.environ.get('HTTP_USER_AGENT', '')
+        if botre.search(ua) is not None:
+            self.handler.send_response(200, 'OK')
+            self.handler.send_header('Content-Type', 'text/plain')
+            self.handler.end_headers()
+            self.wfile.write('This page intentionally blank.')
+            return
+
+        self.nav_current = nav_current
         content = StringIO.StringIO()
         w = content.write
 
@@ -423,7 +410,7 @@ class WebUI:
         tree = trove.Trove(cursor)
         qs = os.environ.get('QUERY_STRING', '')
         l = [x for x in cgi.parse_qsl(qs) if not x[0].startswith(':')]
-        q = flamenco2.Query(cursor, tree, l)
+        q = flamenco.Query(cursor, tree, l)
         # we don't need the database any more, so release it
         self.store.close()
 
@@ -447,6 +434,16 @@ class WebUI:
             query_info = ['<p>Currently querying everything']
         query_info = ''.join(query_info) + '</p>'
 
+        queries = []
+        if q.query:
+            for fld, value in q.query:
+                try: n = q.trove[int(value)]
+                except ValueError: continue
+                queries.append(dict(
+                    path = cgi.escape(n.path),
+                    ignore_url = "%s?:action=browse&%s" % (self.url_path, q.as_href(ignore=value))
+                    ))
+
         choices.sort()
         choice_data=[]
         for header, headid, options in choices:
@@ -468,32 +465,8 @@ class WebUI:
                     'header': header,
                     'headid': headid})
         self.write_template('browse.pt', choice_data=choice_data,
-                            query=q, title="Browse", matches=matches,
+                            queries=queries, query=q, title="Browse", matches=matches,
                             query_info=query_info)
-
-    def index(self, nav_current='index', name=None):
-        ''' Print up an index page
-        '''
-        self.nav_current = nav_current
-        content = StringIO.StringIO()
-        w = content.write
-        spec = self.form_metadata()
-        if not spec.has_key('_pypi_hidden'):
-            spec['_pypi_hidden'] = False
-        if name:
-            spec['name'] = name
-        i=0
-        l = self.store.query_packages(spec)
-        if len(l) == 1:
-            self.form['name'] = l[0]['name']
-            self.form['version'] = l[0]['version']
-            return self.display()
-        self.write_template('index.pt', title="Index of Packages", matches=l)
-
-    def search(self, name=None):
-        """Same as index, but don't disable the search or index nav links
-        """
-        self.index(nav_current=None, name=name)
 
     def logout(self):
         raise Unauthorised
@@ -501,13 +474,6 @@ class WebUI:
         if not self.username:
             raise Unauthorised
         self.home()
-
-
-    def search_form(self):
-        ''' A form used to generate filtered index displays
-        '''
-        self.write_template('search_form.pt', title="Search",
-                            action=self.link_action())
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -913,6 +879,12 @@ class WebUI:
 
         # get the data
         pkginfo = self.form['pkginfo']
+        try:
+            pkginfo = pkginfo.decode('utf8')
+        except UnicodeDecodeError:
+            raise FormError, \
+                "Your PKG-INFO file must be either ASCII or UTF-8. " \
+                "If this is inconvenient, use 'python setup.py register'."
         if isinstance(pkginfo, FileUpload):
             pkginfo = pkginfo.value
         mess = email.message_from_file(StringIO.StringIO(pkginfo))
