@@ -22,11 +22,13 @@
 <p tal:replace="structure app/release_nav" />
 
 <table tal:define="files python:app.store.list_files(data['name'],
-          data['version'])" 
+          data['version']);
+          any_comment python:filter(None, [file['comment_text'] for file in
+          files])" 
        tal:condition="files" class="history">
  <tr><th colspan="6" class="header">Release Files</th></tr>
  <tr>
-  <th>Type</th><th>Py Version</th><th>Comment</th>
+  <th>Type</th><th>Py Version</th><th tal:condition="any_comment">Comment</th>
   <th>Download</th><th>Size</th><th># downloads</th>
  </tr>
 
@@ -34,7 +36,7 @@
      tal:attributes="class python:repeat['file'].end() and 'last'">
   <td tal:content="python:app.dist_file_types_d[file['packagetype']]" />
   <td tal:content="file/python_version" />
-  <td tal:content="file/comment_text" />
+  <td tal:condition="any_comment" tal:content="file/comment_text" />
   <td>
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])"
