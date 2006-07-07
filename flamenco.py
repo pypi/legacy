@@ -129,11 +129,14 @@ where r.name=rc.name and r.version=rc.version
 
         return packages, boxes
 
-    def as_href(self, ignore=None, add=None):
+    def as_href(self, ignore=None, add=None, show=None):
         L = []
         if add is not None:
-            L.append(urllib.quote('asdf', safe="") + '=' + 
+            L.append(urllib.quote('c', safe="") + '=' + 
                 urllib.quote(str(add), safe=""))
+        if show is not None:
+            L.append(urllib.quote('show', safe="") + '=' + 
+                urllib.quote(str(show), safe=""))
         for fld, value in self.query:
             if ignore == value:
                 continue

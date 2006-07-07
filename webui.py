@@ -408,65 +408,73 @@ class WebUI:
 
         cursor = self.store.get_cursor()
         tree = trove.Trove(cursor)
-        qs = os.environ.get('QUERY_STRING', '')
-        l = [x for x in cgi.parse_qsl(qs) if not x[0].startswith(':')]
-        q = flamenco.Query(cursor, tree, l)
+        qs = cgi.parse_qsl(self.env.get('QUERY_STRING', ''))
+        cat_ids = [ x for x in qs if x[0]=='c' ]
+        query = flamenco.Query(cursor, tree, cat_ids)
+
         # we don't need the database any more, so release it
         self.store.close()
-
-        # do the query
-        matches, choices = q.list_choices()
-        matches.sort()
-
-        # format the result
-        if q.query:
-            query_info = ['Current query:<br>\n']
-            for fld, value in q.query:
+  
+        # query for the packages
+        packages_, available_categories_ = query.list_choices()
+        available_categories_.sort()
+        packages_.sort()
+  
+        # ... build packages viewdata
+        packages_count = len(packages_)
+        packages = []
+        for p in packages_:
+            packages.append(dict(
+                name = p[0], version = p[1], summary = p[2],
+                url = self.packageURL(p[0], p[1])
+                ))
+  
+        # ... build selected categories viewdata
+        selected_categories = []
+        if query.query:
+            for fld, value in query.query:
                 try:
-                    n = q.trove[int(value)]
+                    n = query.trove[int(value)]
                 except ValueError:
                     continue
-                query_info.append(cgi.escape(n.path))
-                query_info.append(
-                    ' <a href="%s?:action=browse&%s">[ignore]</a><br>\n'%(
-                        self.url_path, q.as_href(ignore=value)))
-        else:
-            query_info = ['<p>Currently querying everything']
-        query_info = ''.join(query_info) + '</p>'
+                selected_categories.append(dict(path=cgi.escape(n.path),
+                    ignore_url="%s?:action=browse&%s"%(self.url_path,
+                    query.as_href(ignore=value))))
+  
+        # ... build available categories viewdata
+        available_categories = []
+        for name, id, subcategories in available_categories_:
+            if not subcategories: continue
+            subcategories.sort()
+            sub = []
+            for subcategory, count in subcategories:
+                fid = tree[tree.getid(subcategory)].id
+                sub.append(dict(
+                    name = name + ' :: ' + subcategory[-1],
+                    packages_count = len(count),
+                    url = '%s?:action=browse&%s'%(self.url_path,
+                        query.as_href(add=fid)),
+                    description = subcategory[-1]))
+  
+            available_categories.append(dict(
+                subcategories = sub,
+                name = name,
+                id = id))
 
-        queries = []
-        if q.query:
-            for fld, value in q.query:
-                try: n = q.trove[int(value)]
-                except ValueError: continue
-                queries.append(dict(
-                    path = cgi.escape(n.path),
-                    ignore_url = "%s?:action=browse&%s" % (self.url_path, q.as_href(ignore=value))
-                    ))
+        # only show packages if they're less than 20 and the user has 
+        # selected some categories, or if the user has explicitly asked 
+        # for them all to be shown by passing show=all on the URL
+        show_packages = (packages_count < 30 and selected_categories) \
+            or 'show=all' in [ key+'='+val for key,val in qs ]
 
-        choices.sort()
-        choice_data=[]
-        for header, headid, options in choices:
-            if not options:
-                continue
-            options.sort()
-            option_data = []
-            for field, count in options:
-                full = header + ' :: ' + field[-1]
-                fid = tree[tree.getid(field)].id
-                option_data.append({
-                        'count': len(count),
-                        'full': full,
-                        'href': '%s?:action=browse&%s' % (self.url_path,
-                                                          q.as_href(add=fid)),
-                        'description': field[-1]})
-            choice_data.append({
-                    'option_data': option_data,
-                    'header': header,
-                    'headid': headid})
-        self.write_template('browse.pt', choice_data=choice_data,
-                            queries=queries, query=q, title="Browse", matches=matches,
-                            query_info=query_info)
+        # render template
+        self.write_template('browse.pt', query=query, title="Browse",
+            show_packages_url='%s?:action=browse&%s'%(self.url_path,
+                query.as_href(show='all')),
+            show_packages=show_packages, packages=packages,
+            packages_count=packages_count,
+            selected_categories=selected_categories,
+            available_categories=available_categories)
 
     def logout(self):
         raise Unauthorised

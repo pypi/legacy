@@ -6,50 +6,49 @@
 >
 <metal:slot fill-slot="body">
 
-<!--
-TODO:
-- no categories selected
-- too many matches
-- some matches
-- no matches
--->
-<p>There are <span tal:replace="python: len(data['matches'])"/> package(s) in these categories:</p>
+<!-- selected categories -->
+<span tal:condition="not: data/selected_categories">
+  <p>There are <span tal:replace="data/packages_count"/> packages in the cheese shop.</p>
+</span>
+<span tal:condition="data/selected_categories">
+  <p>There are <span tal:replace="data/packages_count"/> packages in the categories you have selected:</p>
+  <ul>
+  <li tal:repeat="category data/selected_categories">
+    <strong tal:content="category/path">Category :: Subcategory</strong>
+    [<a tal:attributes="href category/ignore_url">ignore</a>]
+  </li>
+  </ul>
+</span>
 
-<ul>
-<li tal:repeat="query data/queries">
-  <strong tal:content="query/path">Some :: Package</strong>
-  [<a tal:attributes="href query/ignore_url">ignore</a>]
-</li>
-</ul>
-
-<!--<p>Continue selecting categories from below, or <a href="">show matching packages</a> now.</p>-->
-
-<p>Select a package or more categories from below.</p>
-
-<table class="list" tal:condition="
-python: data['query'].query and data['matches']">
- <tr><th>Package</th><th>Description</th></tr>
- <tr tal:repeat="package data/matches"
-  tal:attributes="class repeat/package/parity">
-  <tal:let define="name python: package[0]; version python: package[1]; summary python: package[2]">
-  <td tal:content="structure python: app.packageLink(name, version)">link</td>
-  <td tal:content="summary">summary</td>
-  </tal:let>
- </tr>
- <tr><td id="last" colspan="2"></td></tr>
-</table>
-
+<!-- packages -->
+<span tal:condition="not: data/show_packages">
+  <p>Continue selecting categories from below, or
+     <a tal:attributes="href data/show_packages_url">show all of the matching packages</a> now.</p>
+</span>
+<span tal:condition="data/show_packages">
+  <p>Select a package or more categories from below.</p>
+  <table class="list">
+  <tr><th>Package</th><th>Description</th></tr>
+  <tr tal:repeat="package data/packages"
+      tal:attributes="class repeat/package/parity">
+    <td><a tal:attributes="href package/url" tal:content="package/name">package name</a></td>
+    <td tal:content="package/summary">package summary</td>
+  </tr>
+  <tr><td id="last" colspan="2"></td></tr>
+  </table>
+</span>
 
 <hr />
 
-<div tal:repeat="choice data/choice_data">
-<strong tal:content="choice/header"/><br/>
+<!-- available categories -->
+<div tal:repeat="category data/available_categories">
+<strong tal:content="category/name"/><br/>
 
-<tal:for-options repeat="option_data choice/option_data">
-<a tal:attributes="href option_data/href">
- <span tal:replace="option_data/description"/>
- (<span tal:replace="option_data/count"/>)</a>
-<tal:if condition="not:repeat/option_data/end"> / </tal:if>
+<tal:for-options repeat="subcategory category/subcategories">
+<a tal:attributes="href subcategory/url">
+ <span tal:replace="subcategory/name"/>
+ (<span tal:replace="subcategory/packages_count"/>)</a>
+<tal:if condition="not:repeat/subcategory/end"> / </tal:if>
 </tal:for-options>
 
 </div>
