@@ -813,11 +813,14 @@ class WebUI:
             l = self.store.get_release_relationships(name, version, col)
             if l: format_list(col, l)
 
+        def trove_link(classifier):
+            return '<a href="%s?:action=browse&c=%s">%s</a>'%(self.url_path,
+                classifier['trove_id'], cgi.escape(classifier['classifier']))
+
         classifiers = self.store.get_release_classifiers(name, version)
         if classifiers:
             w('<li><strong>Classifiers:</strong><ul class="nodot">')
-            w('\n'.join(['<li>%s</li>'%cgi.escape(x['classifier'])
-                for x in classifiers]))
+            w('\n'.join(['<li>%s</li>'%trove_link(x) for x in classifiers]))
             w('\n</ul></li>\n')
 
         dependencies = content.getvalue()

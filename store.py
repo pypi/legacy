@@ -444,10 +444,10 @@ class Store:
         ''' Fetch the list of classifiers for the release.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select classifier
+        safe_execute(cursor, '''select classifier, trove_id
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
-        return Result(('classifier', ), cursor.fetchall())
+        return Result(('classifier', 'trove_id'), cursor.fetchall())
 
     def get_release_relationships(self, name, version, relationship):
         ''' Fetch the list of relationships of a particular type, either
