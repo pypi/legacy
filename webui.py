@@ -251,11 +251,12 @@ class WebUI:
         self.handler.end_headers()
         if heading:
             if html:
-                self.wfile.write('<strong>' + heading + '</strong><br><br>\n\n')
+                self.wfile.write('<strong>' + heading +
+                    '</strong><br /><br />\n\n')
             else:
                 self.wfile.write(heading + '\n\n')
         self.wfile.write(message)
-        if html: self.wfile.write('<br><br>\n')
+        if html: self.wfile.write('<br /><br />\n')
         else: self.wfile.write('\n\n')
         self.wfile.write(content)
 
@@ -805,7 +806,7 @@ class WebUI:
         w=content.write
         def format_list(title, l):
             w('<tr><th>%s:</th><td>'%title.capitalize())
-            w('\n<br>'.join([cgi.escape(x['specifier']) for x in l]))
+            w('\n<br />'.join([cgi.escape(x['specifier']) for x in l]))
             w('\n</td></tr>\n')
 
         for col in ('requires', 'provides', 'obsoletes'):
@@ -814,7 +815,7 @@ class WebUI:
 
         classifiers = self.store.get_release_classifiers(name, version)
         w('<tr><th>Classifiers:</th><td>')
-        w('\n<br>'.join([cgi.escape(x['classifier']) for x in classifiers]))
+        w('\n<br />'.join([cgi.escape(x['classifier']) for x in classifiers]))
         w('\n</td></tr>\n')
 
         dependencies = content.getvalue()
