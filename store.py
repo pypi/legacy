@@ -3,8 +3,6 @@
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
 import logging, StringIO, string
 from distutils.version import LooseVersion
-from docutils.core import publish_parts
-from docutils.readers.python.moduleparser import trim_docstring
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -939,6 +937,8 @@ def processDescription(source, output_encoding='unicode'):
     - `output_encoding`: The desired encoding of the output.  If a Unicode
       string is desired, use the default value of "unicode" .
     """
+    from docutils.core import publish_parts
+    from docutils.readers.python.moduleparser import trim_docstring
     # Dedent all lines of `source`.
     source = trim_docstring(source)
 
