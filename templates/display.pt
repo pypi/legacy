@@ -78,7 +78,7 @@
 
  <li tal:condition="data/release/description_html | nothing">
   <strong>Description:</strong>
-  <span tal:content="structure data/release/description_html" />
+  <span tal:replace="structure data/release/description_html" />
  </li>
 
  <li tal:condition="data/release/keywords | nothing">
