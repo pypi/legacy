@@ -1,11 +1,9 @@
 # system imports
-import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, md5
+import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint
+import re, zipfile, logging, pprint, cElementTree
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
-from xml.sax import saxutils
-
 
 # local imports
 import store, config, flamenco, trove, versionpredicate, verify_filetype, rpc
@@ -22,11 +20,6 @@ safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg)$',
 safe_username = re.compile(r'^[A-Za-z0-9]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
-
-def xmlescape(s):
-    ' make sure we escape a string '
-    return saxutils.escape(str(s))
-
 
 class NotFound(Exception):
     pass
@@ -201,7 +194,7 @@ class WebUI:
                 logging.exception('Internal Error\n----\n%s\n----\n'%(
                     '\n'.join(['%s: %s'%x for x in self.env.items()])))
                 if self.config.debug_mode == 'yes':
-                    s = StringIO.StringIO()
+                    s = cStringIO.StringIO()
                     traceback.print_exc(None, s)
                     s = cgi.escape(s.getvalue())
                     self.fail('Internal Server Error', code=500,
@@ -404,7 +397,7 @@ class WebUI:
             return
 
         self.nav_current = nav_current
-        content = StringIO.StringIO()
+        content = cStringIO.StringIO()
         w = content.write
 
         cursor = self.store.get_cursor()
@@ -571,92 +564,13 @@ class WebUI:
 
         self.role_form()
 
-    def doap(self, name=None, version=None):
-        '''Return DOAP rendering of a package.
-        '''
-        ## Start of code copied from display_pkginfo
+    def _get_pkg_info(self, name, version):
         # get the appropriate package info from the database
         if name is None:
-            name = self.form['name']
-        if version is None:
-            if self.form.has_key('version'):
-                version = self.form['version']
-            else:
-                raise NotImplementedError, 'get the latest version'
-        info = self.store.get_package(name, version)
-        if not info:
-            return self.fail('No such package / version',
-                heading='%s %s'%(name, version),
-                content="I can't find the package / version you're requesting")
-
-        content = StringIO.StringIO()
-        w = content.write
-        ## End of code copied from display_pkginfo
- 
-        # XXX encoding to use?
-        w('<?xml version="1.0" encoding="UTF-8"?>\n')
-        w("""<Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
- 	xmlns:foaf="http://xmlns.com/foaf/0.1/"
- 	xmlns="http://usefulinc.com/ns/doap#">\n""")
- 
-        def write_element (attr, element):
-            value = info[attr]
-            if not value:
-                return
-            w('<%s>%s</%s>\n'%(element, cgi.escape(value.encode('utf8')),
-               element))
-         
-         # Not handled here: version, keywords
-        for attr, element in [('name', 'name'),
-                              ('summary', 'shortdesc'),
-                              ('description', 'description'),
-                              ('download_url', 'download-page')
-                              ]:
-              write_element(attr, element)
-
-        url = info['home_page']
-        if url:
-            w('<homepage rdf:resource="%s" />\n'%cgi.escape(url.encode('utf8')))
-
-        person = 'maintainer'
-        if not info[person]:
-            person = 'author'
-        if info[person]:
-            w('<maintainer><foaf:Person>\n')
-            write_element(person, 'foaf:name')
-            email = info[person+'_email']
-            if email:
-                obj = sha.new(email)
-                email = binascii.b2a_hex(obj.digest())
-                w('<foaf:mbox_sha1sum>%s</foaf:mbox_sha1sum>' % email)
-            w('</foaf:Person></maintainer>\n')
- 
-        # Write version
-        version = info['version']
-        if version:
-            w('<release><Version>\n')
-            w('<revision>%s</revision>\n' % cgi.escape(version))
-            w('</Version></release>\n')
- 
-        # XXX Unhandled: license, platform, category
-        w('</Project>\n')
-         
-        # Not using self.success or page_head because we want
-        # plain-text without all the html trappings.
-        self.handler.send_response(200, "OK")
-        self.handler.send_header('Content-Type', 'application/rdf+xml')
-        self.handler.send_header('Content-Disposition',
-            'attachment; filename=%s-%s.xml'%(name.encode('ascii', 'replace'),
-            version.encode('ascii', 'replace')))
-        self.handler.end_headers()
-        self.wfile.write(content.getvalue())
-
-    def display_pkginfo(self, name=None, version=None):
-        '''Reconstruct and send a PKG-INFO metadata file.
-        '''
-        # get the appropriate package info from the database
-        if name is None:
-            name = self.form['name']
+            try:
+                name = self.form['name']
+            except KeyError:
+                raise NotFound, 'no package name supplied'
         if version is None:
             if self.form.has_key('version'):
                 version = self.form['version']
@@ -666,13 +580,94 @@ class WebUI:
                     version = l[-1][1]
                 except IndexError:
                     raise NotFound, 'no releases'
-        info = self.store.get_package(name, version)
+        return self.store.get_package(name, version), name, version
+
+    def doap(self, name=None, version=None):
+        '''Return DOAP rendering of a package.
+        '''
+        info, name, version = self._get_pkg_info(name, version)
         if not info:
             return self.fail('No such package / version',
                 heading='%s %s'%(name, version),
                 content="I can't find the package / version you're requesting")
 
-        content = StringIO.StringIO()
+        root = cElementTree.Element('Project', {
+            'xmlns:rdf': "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            'xmlns:foaf': "http://xmlns.com/foaf/0.1/",
+            'xmlns': "http://usefulinc.com/ns/doap#"})
+        SE = cElementTree.SubElement
+ 
+        def write_element(parent, attr, element):
+            value = info[attr]
+            if not value:
+                return
+            element = SE(parent, element)
+            element.text = value
+            element.tail = '\n'
+         
+         # Not handled here: version, keywords
+        for attr, element in [('name', 'name'),
+                              ('summary', 'shortdesc'),
+                              ('description', 'description'),
+                              ('download_url', 'download-page')
+                              ]:
+              write_element(root, attr, element)
+
+        url = info['home_page']
+        if url:
+            url = SE(root, 'homepage', {'rdf:resource': url})
+            url.tail = '\n'
+
+        person = 'maintainer'
+        if not info[person]:
+            person = 'author'
+        if info[person]:
+            maint = SE(root, 'maintainer')
+            pelem = SE(maint, 'foaf:Person')
+            write_element(pelem, person, 'foaf:name')
+            email = info[person+'_email']
+            if email:
+                obj = sha.new(email)
+                email = binascii.b2a_hex(obj.digest())
+                elem = SE(pelem, 'foaf:mbox_sha1sum')
+                elem.text = email
+            maint.tail = '\n'
+ 
+        # Write version
+        version = info['version']
+        if version:
+            release = SE(root, 'release')
+            release.tail = '\n'
+            velem = SE(release, 'Version')
+            revision = SE(velem, 'revision')
+            revision.text = version
+ 
+        # write XML
+        s = cStringIO.StringIO()
+        s.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
+        cElementTree.ElementTree(root).write(s, 'utf-8')
+        filename = '%s-%s.xml'%(name.encode('ascii', 'replace'),
+            version.encode('ascii', 'replace'))
+
+        self.handler.send_response(200, "OK")
+        self.handler.send_header('Content-Type',
+            'application/rdf+xml; charset="UTF-8"')
+        self.handler.send_header('Content-Disposition',
+            'attachment; filename=%s'%filename)
+        self.handler.end_headers()
+        self.wfile.write(s.getvalue())
+
+    def display_pkginfo(self, name=None, version=None):
+        '''Reconstruct and send a PKG-INFO metadata file.
+        '''
+
+        info, name, version = self._get_pkg_info(name, version)
+        if not info:
+            return self.fail('No such package / version',
+                heading='%s %s'%(name, version),
+                content="I can't find the package / version you're requesting")
+
+        content = cStringIO.StringIO()
         w = content.write
 
         # We're up to PEP 314
@@ -803,7 +798,7 @@ class WebUI:
         for role, user in self.store.get_package_roles(name):
             roles.setdefault(role, []).append(user)
 
-        content=StringIO.StringIO()
+        content=cStringIO.StringIO()
         w=content.write
         def format_list(title, l):
             w('<li><strong>%s:</strong><ul class="nodot">'%title.capitalize())
@@ -826,7 +821,7 @@ class WebUI:
 
         dependencies = content.getvalue()
 
-        content=StringIO.StringIO()
+        content=cStringIO.StringIO()
         w=content.write
 
         self.write_template('display.pt',
@@ -842,7 +837,7 @@ class WebUI:
         ''' Print up an index page
         '''
         self.nav_current = nav_current
-        content = StringIO.StringIO()
+        content = cStringIO.StringIO()
         w = content.write
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
@@ -885,7 +880,7 @@ class WebUI:
 
         self.nav_current = 'submit_form'
 
-        content= StringIO.StringIO()
+        content= cStringIO.StringIO()
         w = content.write
 
         # display all the properties
@@ -999,7 +994,7 @@ class WebUI:
             raise FormError, \
                 "Your PKG-INFO file must be either ASCII or UTF-8. " \
                 "If this is inconvenient, use 'python setup.py register'."
-        mess = email.message_from_file(StringIO.StringIO(pkginfo))
+        mess = email.message_from_file(cStringIO.StringIO(pkginfo))
         data = {}
         for k, v in mess.items():
             # clean up the keys and values, normalise "-" to "_"
