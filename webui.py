@@ -809,7 +809,7 @@ class WebUI:
             if l: format_list(col, l)
 
         def trove_link(classifier):
-            return '<a href="%s?:action=browse&c=%s">%s</a>'%(self.url_path,
+            return '<a href="%s?:action=browse&amp;c=%s">%s</a>'%(self.url_path,
                 classifier['trove_id'], cgi.escape(classifier['classifier']))
 
         classifiers = self.store.get_release_classifiers(name, version)
