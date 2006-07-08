@@ -63,9 +63,10 @@ table.list {
 
 table.list th {
   text-align: left;
-  padding: 0 4 0 4;
-  color: #404070;
-  border-bottom: 1px solid #404070;
+  padding: 2 4 2 4;
+  color: #333;
+  background-color: #ccc;
+  border-bottom: 1px solid #ccc;
   vertical-align: top;
   empty-cells: show;
 }
@@ -78,10 +79,10 @@ table.list th.group {
 }
 
 table.list td {
-  padding: 0 4 0 4;
+  padding: 2 4 2 4;
   border: 0 2 0 2;
-  border-right: 1px solid #404070;
-  color: #404070;
+  border-right: 1px solid #ccc;
+  color: #333;
   background-color: white;
   vertical-align: top;
   empty-cells: show;
@@ -96,14 +97,14 @@ table.list tr.odd td {
 }
 
 table.list td#last {
-  border-top: 1px solid #404070;
+  border-top: 1px solid #ccc;
   border-left: none;
   border-right: none;
 }
 
 table.list td:first-child {
-  border-left: 1px solid #404070;
-  border-right: 1px solid #404070;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
 }
 
 table.list tr.navigation th {

@@ -8,23 +8,24 @@
 <metal:slot fill-slot="body">
 
 <!-- selected categories -->
-<span tal:condition="not: data/selected_categories">
-  <p>There are <span tal:replace="data/packages_count"/> packages in the cheese shop.</p>
-</span>
 <span tal:condition="data/selected_categories">
   <p>There are <span tal:replace="data/packages_count"/> packages in the categories you have selected:</p>
-  <ul>
-  <li tal:repeat="category data/selected_categories">
-    <strong tal:content="category/path">Category :: Subcategory</strong>
-    [<a tal:attributes="href category/ignore_url">ignore</a>]
+  <ul style="list-style-type: none; margin-left: 0;">
+  <li tal:repeat="selected data/selected_categories">
+    <strong tal:content="selected/category">Category</strong>
+    <small style="color: #666;">::</small>
+    <strong tal:content="selected/subcategory">Subcategory</strong>
+    [<a tal:attributes="href selected/unselect_url">unselect</a>]
   </li>
   </ul>
 </span>
 
 <!-- packages -->
 <span tal:condition="not: data/show_packages">
-  <p>Continue selecting categories from below, or
-     <a tal:attributes="href data/show_packages_url">show all of the matching packages</a> now.</p>
+  <p tal:condition="data/selected_categories">
+    Continue selecting categories from below, or
+    <a tal:attributes="href data/show_packages_url">show all matching packages</a> now.
+  </p>
 </span>
 <span tal:condition="data/show_packages">
   <p>Select a package or more categories from below.</p>
@@ -39,18 +40,16 @@
   </table>
 </span>
 
-<hr />
-
 <!-- available categories -->
 <div tal:repeat="category data/available_categories">
-<strong tal:content="category/name"/><br/>
+<h2 tal:content="category/name" style="margin-bottom: 5px;">Category</h2>
 
-<tal:for-options repeat="subcategory category/subcategories">
-<a tal:attributes="href subcategory/url">
- <span tal:replace="subcategory/name"/>
- (<span tal:replace="subcategory/packages_count"/>)</a>
-<tal:if condition="not:repeat/subcategory/end"> / </tal:if>
-</tal:for-options>
+<ul style="list-style: none; padding: 0; margin: 0; margin-left: 10px;">
+<li tal:repeat="subcategory category/subcategories" style="display: inline; margin: 0 0.15em; margin-right: 10px; white-space: nowrap;">
+  <a tal:attributes="href subcategory/url" tal:content="subcategory/name">Subcategory</a>
+  <small style="color: #666">(<span tal:replace="subcategory/packages_count"/>)</small>
+</li>
+</ul>
 
 </div>
 

@@ -411,9 +411,18 @@ class WebUI:
   
         # query for the packages
         packages_, available_categories_ = query.list_choices()
-        available_categories_.sort()
         packages_.sort()
-  
+
+        # order the categories; some are hardcoded to be first: topic,
+        # environment, framework
+        available_categories_.sort()
+        for special_cat in ("Framework", "Environment", "Topic"):
+            for (i, c) in enumerate(available_categories_):
+                if c[0] == special_cat:
+                    available_categories_.insert(0, c)
+                    del available_categories_[i+1]
+                    break
+
         # ... build packages viewdata
         packages_count = len(packages_)
         packages = []
@@ -430,8 +439,10 @@ class WebUI:
                 except ValueError:
                     continue
                 selected_categories.append(dict(path=cgi.escape(n.path),
-                    ignore_url="%s?:action=browse&%s"%(self.url_path,
-                    query.as_href(ignore=value))))
+                    category = n.path_split[0],
+                    subcategory = n.path_split[1],
+                    unselect_url = "%s?:action=browse&%s"%(self.url_path,
+                        query.as_href(ignore=value))))
   
         # ... build available categories viewdata
         available_categories = []
@@ -442,7 +453,7 @@ class WebUI:
             for subcategory, count in subcategories:
                 fid = tree[tree.getid(subcategory)].id
                 sub.append(dict(
-                    name = name + ' :: ' + subcategory[-1],
+                    name = subcategory[-1],
                     packages_count = len(count),
                     url = '%s?:action=browse&%s'%(self.url_path,
                         query.as_href(add=fid)),
