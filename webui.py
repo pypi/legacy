@@ -943,7 +943,8 @@ class WebUI:
                 label = "Hidden"
             else:
                 req = ''
-            w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label, field))
+            w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label,
+                field.encode('utf8')))
 
         # format relationships
         def relationship_input(relationship, value):
@@ -980,7 +981,7 @@ class WebUI:
 
         self.write_template('submit_form.pt',
             title='Submitting package information',
-            fields=content.getvalue())
+            fields=content.getvalue().decode('utf8'))
 
     def submit_pkg_info(self):
         ''' Handle the submission of distro metadata as a PKG-INFO file.
