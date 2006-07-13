@@ -37,12 +37,12 @@
           <form action="http://google.com/search" id="searchform" method="get" name="searchform">
             <div id="search">
               <span class="reference">
-                <input type="radio" value="cheeseshop.python.org" name="domains" checked="checked"/>
+                <input type="radio" value="cheeseshop.python.org" name="sitesearch" checked="checked"/>
                 cheeseshop.python.org
-                <input type="radio" value="python.org" name="domains" />
+                <input type="radio" value="python.org" name="sitesearch" />
                 python.org
               </span>
-              <input type="hidden" id="sitesearch" value="python.org" name="sitesearch" />
+              <input type="hidden" id="domains" value="cheeseshop.python.org" name="sitesearch" />
               <input type="hidden" id="sourceid" value="google-search" name="sourceid" />
               <input class="input-text" type="text" id="q" name="q" />
               <input class="input-button" type="submit" name="submit" value="search" id="submit" />
