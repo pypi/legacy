@@ -66,6 +66,8 @@
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
 
+                <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">Tutorial</a></li>
+
                 <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get
                 help</a></li>
                 <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug
