@@ -64,14 +64,17 @@
   <span tal:content="data/release/maintainer" />
  </li>
 
+<!-- The <th> elements below are a terrible terrible hack for setuptools -->
  <li tal:condition="data/release/home_page | nothing">
   <strong>Home Page:</strong>
+  <!-- <th>Home Page -->
   <a tal:attributes="href data/release/home_page"
          tal:content="data/release/home_page" />
  </li>
 
  <li tal:condition="data/release/download_url | nothing">
   <strong>Download URL:</strong>
+  <!-- <th>Download URL -->
   <a tal:attributes="href data/release/download_url"
          tal:content="data/release/download_url" />
  </li>
@@ -120,22 +123,6 @@
 
 </ul>
 
-<!-- THIS TERRIBLE TERRIBLE HACK IS FOR SETUPTOOLS -->
-<table style="display: none">
- <tr tal:condition="data/release/home_page | nothing">
-  <th>Home Page:</th>
-  <td><a tal:attributes="href data/release/home_page"
-         tal:content="data/release/home_page" />
-  </td>
- </tr>
- <tr tal:condition="data/release/download_url | nothing">
-  <th>Download URL:</th>
-  <td><a tal:attributes="href data/release/download_url"
-         tal:content="data/release/download_url" />
-  </td>
- </tr>
-</table>
-<!-- END TERRIBLE TERRIBLE HACK -->
 
 <table tal:condition="python:app.store.has_role('Admin') or
   app.store.has_role('Maintainer') or app.store.has_role('Owner')" class="history">
