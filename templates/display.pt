@@ -18,40 +18,60 @@
 
 <metal:fill fill-slot="body">
 
-<p tal:content="data/release/summary | nothing" />
+<p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
 <p tal:replace="structure app/release_nav" />
 
-<table tal:define="files python:app.store.list_files(data['name'],
-          data['version']);
-          any_comment python:filter(None, [file['comment_text'] for file in
-          files])" 
-       tal:condition="files" class="history">
- <tr><th colspan="6" class="header">Release Files</th></tr>
- <tr>
-  <th>Type</th><th>Py Version</th><th tal:condition="any_comment">Comment</th>
-  <th>Download</th><th>Size</th><th># downloads</th>
- </tr>
+<tal:element replace="structure data/release/description_html" />
 
- <tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
-     tal:attributes="class python:repeat['file'].end() and 'last'">
-  <td tal:content="python:app.dist_file_types_d[file['packagetype']]" />
-  <td tal:content="file/python_version" />
-  <td tal:condition="any_comment" tal:content="file/comment_text" />
-  <td>
-   <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
-        data['name'], file['filename'])"
-    tal:content="file/filename" />
-    (<a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}">md5</a><tal:block tal:condition="file/has_sig">,
-    <a title="PGP signature"
-       tal:attributes="href python:app.store.gen_file_url(file['python_version'],
-        data['name'], file['filename'])+'.asc'"
-       tal:content="string:sig" /></tal:block>)
+<table tal:define="files python:app.store.list_files(data['name'], data['version'])"
+       tal:condition="files" class="list" style="margin-bottom: 10px;">
+<tr>
+  <th>File</th>
+  <th>Type</th>
+  <th>Py Version</th>
+  <th style="text-align: right;">Size</th>
+  <th style="text-align: right;"># downloads</th>
+</tr>
+
+<tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
+    tal:attributes="class repeat/file/parity">
+<tal:block tal:define="
+      name       file/filename;
+      url        python:app.store.gen_file_url(file['python_version'], data['name'], file['filename']);
+      comments   file/comment_text;
+      pkg_type   python:app.dist_file_types_d[file['packagetype']];
+      py_version file/python_version;
+      size       python:app.pretty_size(file['size']);
+      downloads  file/downloads;
+      md5_url    string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest};
+      pgp_url    python:file['has_sig'] and app.store.gen_file_url(
+                   file['python_version'], data['name'], file['filename'])+'.asc';
+      ">
+    <td>
+    <span style="white-space: nowrap;">
+      <a tal:attributes="href url" tal:content="name" />
+      [<a tal:attributes="href md5_url" title="MD5 hash">md5</a><tal:block tal:condition="pgp_url">,
+       <a tal:attributes="href pgp_url" title="PGP signature">pgp</a></tal:block>]
+    </span>
+    <tal:block tal:condition="comments">
+      <br />
+      <span tal:replace="comments" />
+    </tal:block>
+        </td>
+  <td style="white-space: nowrap;">
+    <span tal:replace="pkg_type" />
   </td>
-  <td tal:content="python:app.pretty_size(file['size'])" />
-  <td tal:content="file/downloads"/>
- </tr>
-</table>
+  <td>
+    <span tal:replace="py_version" tal:condition="python:py_version != 'source'" />
+  </td>
+  <td tal:content="size" style="text-align: right;" />
+  <td tal:content="downloads" style="text-align: right;" />
+</tal:block>
+</tr>
+
+<tr><td id="last" colspan="5"></td></tr>
+  </table>
 
 <ul class="nodot">
  <li tal:condition="data/release/author | nothing">
@@ -79,10 +99,6 @@
          tal:content="data/release/download_url" />
  </li>
 
- <li tal:condition="data/release/description_html | nothing">
-  <strong>Description:</strong>
-  <span tal:replace="structure data/release/description_html" />
- </li>
 
  <li tal:condition="data/release/keywords | nothing">
   <strong>Keywords:</strong>
@@ -103,7 +119,29 @@
   python:data['release']['platform'].replace('\n', ', ')" />
  </li>
 
- <tal:block tal:content="structure data/dependencies"/>
+<!-- TODO: add link to products in follow dependencies... -->
+ <li tal:condition="data/requires | nothing">
+  <strong>Requires</strong>
+  <tal:element replace="structure python:', '.join(data['requires'])" />
+ </li>
+ <li tal:condition="data/provides | nothing">
+  <strong>Provides</strong>
+  <tal:element replace="structure python:', '.join(data['provides'])" />
+ </li>
+ <li tal:condition="data/obsoletes | nothing">
+  <strong>Obsoletes</strong>
+  <tal:element replace="structure python:', '.join(data['obsoletes'])" />
+ </li>
+
+ <li tal:condition="data/categories | nothing">
+  <strong>Categories</strong>
+  <ul class="nodot">
+   <li tal:repeat="category data/categories">
+    <a tal:attributes="href category/url"
+       tal:content="structure category/pathstr"/>
+   </li>
+  </ul>
+ </li>
 
  <li tal:condition="data/roles/Owner | nothing">
   <strong>Cheese Shop Owner:</strong>

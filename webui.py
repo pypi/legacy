@@ -15,8 +15,7 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
-safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg)$',
-    re.I)
+safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg)$', re.I)
 safe_username = re.compile(r'^[A-Za-z0-9]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
@@ -88,6 +87,21 @@ class PyPiPageTemplate(PageTemplateFile):
 
 class FileUpload:
     pass
+
+# poor man's markup heuristics so we don't have to use <PRE>,
+# for when rst didn't work on the text...
+br_patt = re.compile(" *\r?\n\r?(?= +)")
+p_patt = re.compile(" *\r?\n(\r?\n)+")
+def newline_to_br(text):
+    text = re.sub(br_patt, "<BR/>", text)
+    return re.sub(p_patt, "\n<P>\n", text)
+
+def path2str(path):
+    return " :: ".join(path)
+
+def str2path(s):
+    return [ node.strip() for node in s.split("::") ]
+
 
 def transmute(field):
     if hasattr(field, 'filename') and field.filename:
@@ -418,10 +432,9 @@ class WebUI:
         available_categories_.sort()
         for special_cat in ("Framework", "Environment", "Topic"):
             for (i, c) in enumerate(available_categories_):
-                if c[0] == special_cat:
+                if c[0].startswith(special_cat):
                     available_categories_.insert(0, c)
                     del available_categories_[i+1]
-                    break
 
         # ... build packages viewdata
         packages_count = len(packages_)
@@ -429,7 +442,7 @@ class WebUI:
         for p in packages_:
             packages.append(dict(name=p[0], version=p[1], summary=p[2],
                 url=self.packageURL(p[0], p[1])))
-  
+ 
         # ... build selected categories viewdata
         selected_categories = []
         if query.query:
@@ -438,11 +451,11 @@ class WebUI:
                     n = query.trove[int(value)]
                 except ValueError:
                     continue
-                selected_categories.append(dict(path=cgi.escape(n.path),
-                    category = n.path_split[0],
-                    subcategory = n.path_split[1],
-                    unselect_url = "%s?:action=browse&%s"%(self.url_path,
-                        query.as_href(ignore=value))))
+                unselect_url = "%s?:action=browse&%s" % (self.url_path, query.as_href(ignore=value))
+                selected_categories.append(dict(path_string=cgi.escape(n.path),
+                    path = n.path_split,
+                    pathstr = path2str(n.path_split),
+                    unselect_url = unselect_url))
   
         # ... build available categories viewdata
         available_categories = []
@@ -459,14 +472,14 @@ class WebUI:
                         query.as_href(add=fid)),
                     description = subcategory[-1]))
   
-            available_categories.append(dict(subcategories=sub,
-                name=name, id=id))
+            available_categories.append(dict(
+                subcategories=sub, name=name, id=id))
 
         # only show packages if they're less than 20 and the user has 
         # selected some categories, or if the user has explicitly asked 
         # for them all to be shown by passing show=all on the URL
-        show_packages = (packages_count < 30 and selected_categories) \
-            or 'show=all' in [ key+'='+val for key,val in qs ]
+        show_packages = selected_categories and \
+            (packages_count < 30 or 'show=all' in [ key+'='+val for key,val in qs ])
 
         # render template
         self.write_template('browse.pt', query=query, title="Browse",
@@ -785,14 +798,16 @@ class WebUI:
 #                heading='%s %s'%(name, version),
 #                content="I can't find the package / version you're requesting")
         columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
-        release = {}
+        release = {'description_html': ''}
         for column in columns:
             value = info[column]
             if not info[column]: continue
-            if value == 'UNKNOWN': continue
+            if value.strip() in ('UNKNOWN', '<p>UNKNOWN</p>'): continue
             if column in ('name', 'version'): continue
             if column == 'description':
-                release['description_html'] = '<pre>%s</pre>'%cgi.escape(value)
+                # fallback if no description_html
+                release['description_html'] = '<p>%s</p>'%newline_to_br(
+                    cgi.escape(value))
             elif column.endswith('_email'):
                 column = column[:column.find('_')]
                 if release.has_key(column):
@@ -808,39 +823,30 @@ class WebUI:
         for role, user in self.store.get_package_roles(name):
             roles.setdefault(role, []).append(user)
 
-        content=cStringIO.StringIO()
-        w=content.write
-        def format_list(title, l):
-            w('<li><strong>%s:</strong><ul class="nodot">'%title.capitalize())
-            w('\n'.join(['<li>%s</li>'%cgi.escape(x['specifier']) for x in l]))
-            w('\n</ul></li>\n')
-
-        for col in ('requires', 'provides', 'obsoletes'):
+        def values(col):
             l = self.store.get_release_relationships(name, version, col)
-            if l: format_list(col, l)
+            return [ cgi.escape(x['specifier']) for x in l]
 
-        def trove_link(classifier):
-            return '<a href="%s?:action=browse&amp;c=%s">%s</a>'%(self.url_path,
-                classifier['trove_id'], cgi.escape(classifier['classifier']))
-
-        classifiers = self.store.get_release_classifiers(name, version)
-        if classifiers:
-            w('<li><strong>Classifiers:</strong><ul class="nodot">')
-            w('\n'.join(['<li>%s</li>'%trove_link(x) for x in classifiers]))
-            w('\n</ul></li>\n')
-
-        dependencies = content.getvalue()
-
-        content=cStringIO.StringIO()
-        w=content.write
+        categories = []
+        for c in self.store.get_release_classifiers(name, version):
+            path = str2path(c['classifier'])
+            url = "%s?:action=browse&amp;c=%s" % (self.url_path, c['trove_id'])
+            categories.append(dict(
+                name = c['classifier'],
+                path = path,
+                pathstr = path2str(path),
+                url = url,
+                id = c['trove_id']))
 
         self.write_template('display.pt',
-                            name=name,
-                            version=version,
-                            release=release,
-                            roles=roles,
-                            dependencies=dependencies,
+                            name=name, version=version, release=release,
                             title=name + " " +version,
+                            requires=values('requires'),
+                            provides=values('provides'),
+                            obsoletes=values('obsoletes'),
+                            categories=categories,
+                            roles=roles,
+                            newline_to_br=newline_to_br,
                             action=self.link_action())
 
     def index(self, nav_current='index', name=None):
