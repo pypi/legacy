@@ -51,8 +51,8 @@
     <td>
     <span style="white-space: nowrap;">
       <a tal:attributes="href url" tal:content="name" />
-      (<a tal:attributes="href md5_url" title="MD5 hash">md5</a><tal:block tal:condition="pgp_url">,
-       <a tal:attributes="href pgp_url" title="PGP signature">pgp</a></tal:block>)
+      (<a tal:attributes="href md5_url">md5</a><tal:block tal:condition="pgp_url">,
+       <a tal:attributes="href pgp_url">pgp</a></tal:block>)
     </span>
     <tal:block tal:condition="comments">
       <br />
