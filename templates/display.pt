@@ -50,7 +50,7 @@
       ">
     <td>
     <span style="white-space: nowrap;">
-      <a tal:attributes="href string:$url#${file/md5_digest}"
+      <a tal:attributes="href string:$url#md5=${file/md5_digest}"
          tal:content="name" />
       (<a tal:attributes="href md5_url" title="MD5 Digest">md5</a><tal:block tal:condition="pgp_url">,
        <a tal:attributes="href pgp_url" title="PGP Signature">pgp</a></tal:block>)
