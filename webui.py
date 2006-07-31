@@ -198,6 +198,7 @@ class WebUI:
             except Redirect, path:
                 self.handler.send_response(301)
                 self.handler.send_header('Location', path)
+                self.handler.end_headers()
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
@@ -238,7 +239,7 @@ class WebUI:
         content = template(**context)
 
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.handler.set_content_type('text/html; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
         
@@ -249,13 +250,15 @@ class WebUI:
         self.handler.send_response(code, message)
         if '<' in content and '>' in content:
             html = True
-            self.handler.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.handler.set_content_type('text/html; charset=utf-8')
         else:
             html = False
-            self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+            self.handler.set_content_type('text/plain; charset=utf-8')
+
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
+
         if heading:
             if html:
                 self.wfile.write('<strong>' + heading +
@@ -381,7 +384,7 @@ class WebUI:
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/xml; charset=utf-8')
+        self.handler.set_content_type('text/xml; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(open(self.config.rss_file).read())
 
@@ -405,7 +408,7 @@ class WebUI:
         ua = self.env.get('HTTP_USER_AGENT', '')
         if botre.search(ua) is not None:
             self.handler.send_response(200, 'OK')
-            self.handler.send_header('Content-Type', 'text/plain')
+            self.handler.set_content_type('text/plain')
             self.handler.end_headers()
             self.wfile.write('This page intentionally blank.')
             return
@@ -674,7 +677,7 @@ class WebUI:
             version.encode('ascii', 'replace'))
 
         self.handler.send_response(200, "OK")
-        self.handler.send_header('Content-Type', 'text/xml; charset="UTF-8"')
+        self.handler.set_content_type('text/xml; charset="UTF-8"')
         self.handler.send_header('Content-Disposition',
             'attachment; filename=%s'%filename)
         self.handler.end_headers()
@@ -729,7 +732,7 @@ class WebUI:
         # Not using self.success or page_head because we want
         # plain-text without all the html trappings.
         self.handler.send_response(200, "OK")
-        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.handler.set_content_type('text/plain; charset=utf-8')
         self.handler.end_headers()
         s = content.getvalue().encode('utf8')
         self.wfile.write(s)
@@ -1378,7 +1381,7 @@ class WebUI:
             # invalid MD5 digest - it's not in the database
             raise NotFound
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.handler.set_content_type('text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(digest)
 
@@ -1517,7 +1520,7 @@ class WebUI:
 
         if response:
             self.handler.send_response(200, 'OK')
-            self.handler.send_header('Content-Type', 'text/plain')
+            self.handler.set_content_type('text/plain')
             self.handler.end_headers()
             self.wfile.write('OK\n')
 
@@ -1529,7 +1532,7 @@ class WebUI:
         '''
         c = '\n'.join([c['classifier'] for c in self.store.get_classifiers()])
         self.handler.send_response(200, 'OK')
-        self.handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+        self.handler.set_content_type('text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(c + '\n')
 

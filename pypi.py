@@ -11,23 +11,23 @@ import config
 class RequestWrapper:
     '''Used to make the CGI server look like a BaseHTTPRequestHandler
     '''
-    def __init__(self, config, rfile, wfile):
-        self.wfile = wfile
-        self.rfile = rfile
+    def __init__(self, config, req):
+        self.wfile = self.req = req
+        self.rfile = StringIO.StringIO(req.read())
         self.config = config
-    def send_response(self, code, message=''):
-        self.wfile.status = code
+    def send_response(self, code):
+        self.req.status = code
     def send_header(self, keyword, value):
-        self.wfile.headers_out[keyword] = value
+        self.req.headers_out[keyword] = value
+    def set_content_type(self, content_type):
+        self.req.content_type = content_type
     def end_headers(self):
         pass
 
 def handle(req):
     req.content_type = req.headers_out['Content-Type'] = 'text/html'
     cfg = config.Config('/data/pypi/config.ini', 'webui')
-    s = req.read()
-    rfile = StringIO.StringIO(s)
-    request = RequestWrapper(cfg, rfile, req)
+    request = RequestWrapper(cfg, req)
     pseudoenv = {}
     pseudoenv['CONTENT_TYPE'] = req.headers_in.get('content-type', '')
     pseudoenv['REMOTE_ADDR'] = req.get_remote_host(apache.REMOTE_NOLOOKUP)

@@ -27,6 +27,8 @@ class RequestWrapper:
         self.wfile.write('Status: %s %s\r\n'%(code, message))
     def send_header(self, keyword, value):
         self.wfile.write("%s: %s\r\n" % (keyword, value))
+    def set_content_type(self, content_type):
+        self.send_header('Content-Type', content_type)
     def end_headers(self):
         self.wfile.write("\r\n")
 
