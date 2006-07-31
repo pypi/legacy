@@ -15,7 +15,7 @@ class RequestWrapper:
         self.wfile = self.req = req
         self.rfile = StringIO.StringIO(req.read())
         self.config = config
-    def send_response(self, code):
+    def send_response(self, code, message=''):
         self.req.status = code
     def send_header(self, keyword, value):
         self.req.headers_out[keyword] = value
