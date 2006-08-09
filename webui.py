@@ -206,16 +206,18 @@ class WebUI:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
             except:
-                logging.exception('Internal Error\n----\n%s\n----\n'%(
-                    '\n'.join(['%s: %s'%x for x in self.env.items()])))
+                exc, value, tb = sys.exc_info()
+                if ('connection limit exceeded for non-superusers'
+                        not in str(value)):
+                    logging.exception('Internal Error\n----\n%s\n----\n'%(
+                        '\n'.join(['%s: %s'%x for x in self.env.items()])))
                 if self.config.debug_mode == 'yes':
                     s = cStringIO.StringIO()
                     traceback.print_exc(None, s)
                     s = cgi.escape(s.getvalue())
-                    self.fail('Internal Server Error', code=500,
+                    elf.fail('Internal Server Error', code=500,
                         heading='Error...', content='%s'%s)
                 else:
-                    exc, value, tb = sys.exc_info()
                     s = '%s: %s'%(exc, value)
                     self.fail("There's been a problem with your request",
                         code=500, heading='Error...', content='%s'%s)
