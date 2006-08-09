@@ -466,6 +466,42 @@ class Store:
             from roles where package_name=%s''', (name, ))
         return Result(('role_name', 'user_name'), cursor.fetchall())
 
+    def get_unique(self, iterable):
+        ''' Iterate over list of (name,version,date,summary) tuples
+            and return list of unique (taking name and version into
+            account) elements.
+        '''
+        d = {}
+        L = []
+
+        for name,version,date,summary in iterable:
+            k = (name, version)
+            if not d.has_key(k):
+                L.append((name,version,date,summary))
+                d[k] = 1
+
+        return L
+
+    def updated_releases(self, since):
+        '''Fetch all releases younger than "since" argument.
+        '''
+        assert isinstance(since, int)
+
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''
+            select j.name,j.version,j.submitted_date,r.summary
+            from journals j, releases r
+            where j.version is not NULL
+                  and j.action = 'new release'
+                  and j.name = r.name and j.version = r.version
+                  and r._pypi_hidden = FALSE
+                  and j.submitted_date > to_timestamp(%d)
+            order by submitted_date desc
+        ''', (since,))
+
+        return Result(('name', 'version', 'submitted_date', 'summary'),
+            self.get_unique(cursor.fetchall()))
+
     def latest_releases(self, num=20):
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
@@ -479,16 +515,9 @@ class Store:
                   and r._pypi_hidden = FALSE
             order by submitted_date desc
         ''')
-        d = {}
-        l = []
-        for name,version,date,summary in cursor.fetchall():
-            k = (name,version)
-            if d.has_key(k):
-                continue
-            l.append((name,version,date,summary))
-            d[k] = 1   
+
         return Result(('name', 'version', 'submitted_date', 'summary'),
-            l[:num])
+            self.get_unique(cursor.fetchall())[:num])
 
     def latest_updates(self, num=20):
         ''' Fetch "number" latest updates, youngest to oldest.
@@ -502,16 +531,9 @@ class Store:
                   and r._pypi_hidden = FALSE
             order by submitted_date desc
         ''')
-        d = {}
-        l = []
-        for name,version,date,summary in cursor.fetchall():
-            k = (name,version)
-            if d.has_key(k):
-                continue
-            l.append((name, version, date, summary))
-            d[k] = 1   
+
         return Result(('name', 'version', 'submitted_date', 'summary'),
-            l[:num])
+            self.get_unique(cursor.fetchall())[:num])
 
     def get_latest_release(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.

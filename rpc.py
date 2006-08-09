@@ -3,7 +3,8 @@ import traceback
 from cStringIO import StringIO
 
 allowed = ('package_releases', 'package_urls', 'package_data',
-    'search', 'list_packages', 'release_urls', 'release_data')
+    'search', 'list_packages', 'release_urls', 'release_data',
+    'updated_releases')
 
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
@@ -61,3 +62,6 @@ def search(store, spec, operator='and'):
     spec['_pypi_hidden'] = 'FALSE'
     return [row.as_dict() for row in store.query_packages(spec, operator)]
 
+def updated_releases(store, since):
+    result = store.updated_releases(since)
+    return [(row['name'], row['version']) for row in result]
