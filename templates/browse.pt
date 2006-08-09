@@ -59,10 +59,7 @@
 <h2 tal:content="category/name" style="margin-bottom: 5px;">Category</h2>
 
 <ul style="list-style: none; padding: 0; margin: 0; margin-left: 10px;">
-<li tal:repeat="subcategory category/subcategories" style="display: inline; margin: 0 0.15em; margin-right: 10px; white-space: nowrap;">
-  <a tal:attributes="href subcategory/url" tal:content="subcategory/name">Subcategory</a>
-  <small style="color: #666">(<span tal:replace="subcategory/packages_count"/>)</small>
-</li>
+<li tal:repeat="subcategory category/subcategories" style="display: inline; margin: 0 0.15em; margin-right: 10px; white-space: nowrap;"><a tal:attributes="href subcategory/url" tal:content="subcategory/name">Subcategory</a> <small style="color: #666">(<span tal:replace="subcategory/packages_count"/>)</small></li>
 </ul>
 
 </div>
