@@ -2,9 +2,8 @@ import xmlrpclib
 import traceback
 from cStringIO import StringIO
 
-allowed = ('package_releases', 'package_stable_version', 'package_urls',
-    'package_data', 'search', 'list_packages', 'release_urls', 'release_data',
-    'package_stable_release')
+allowed = ('package_releases', 'package_urls', 'package_data',
+    'search', 'list_packages', 'release_urls', 'release_data')
 
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
