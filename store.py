@@ -495,9 +495,9 @@ class Store:
                   and j.action = 'new release'
                   and j.name = r.name and j.version = r.version
                   and r._pypi_hidden = FALSE
-                  and j.submitted_date > to_timestamp(%d)
+                  and j.submitted_date > %s
             order by submitted_date desc
-        ''', (since,))
+        ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
 
         return Result(('name', 'version', 'submitted_date', 'summary'),
             self.get_unique(cursor.fetchall()))
