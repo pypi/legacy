@@ -113,7 +113,7 @@ class Store:
         If the name and version do exist, we just edit (in place) and add a
         journal entry.
         '''
-        date = time.strftime('%Y-%m-%d %H:%M:%S')
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
 
         cursor = self.get_cursor()
         # see if we're inserting or updating a package
@@ -727,7 +727,7 @@ class Store:
         safe_execute(cursor, '''
             insert into roles (user_name, role_name, package_name)
             values (%s, %s, %s)''', (user_name, role_name, package_name))
-        date = time.strftime('%Y-%m-%d %H:%M:%S')
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         sql = '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)'''
@@ -741,7 +741,7 @@ class Store:
         safe_execute(cursor, '''
             delete from roles where user_name=%s and role_name=%s
             and package_name=%s''', (user_name, role_name, package_name))
-        date = time.strftime('%Y-%m-%d %H:%M:%S')
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
@@ -821,7 +821,7 @@ class Store:
                 f.close()
 
         # add journal entry
-        date = time.strftime('%Y-%m-%d %H:%M:%S')
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''insert into journals (
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
