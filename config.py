@@ -21,6 +21,7 @@ class Config:
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')
         self.debug_mode = c.get('webui', 'debug_mode')
+        self.cheesecake_password = c.get('webui', 'cheesecake_password')
 
         self.logfile = c.get('logging', 'file')
         self.mailhost = c.get('logging', 'mailhost')

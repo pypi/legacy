@@ -34,6 +34,39 @@ CREATE TABLE packages (
    stable_version TEXT
 );
 
+CREATE TABLE cheesecake_main_indices (
+    id SERIAL,
+    absolute INTEGER NOT NULL,
+    relative INTEGER NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE cheesecake_subindices (
+    main_index_id INTEGER REFERENCES cheesecake_main_indices,
+    name TEXT,
+    value INTEGER NOT NULL,
+    details TEXT NOT NULL,
+    PRIMARY KEY (main_index_id, name)
+);
+
+-- Table structure for table: cheesecake_main_indices
+CREATE TABLE cheesecake_main_indices (
+    id SERIAL,
+    absolute INTEGER NOT NULL,
+    relative INTEGER NOT NULL,
+    PRIMARY KEY (id)
+);
+
+
+-- Table structure for table: cheesecake_subindices
+CREATE TABLE cheesecake_subindices (
+    main_index_id INTEGER REFERENCES cheesecake_main_indices,
+    name TEXT,
+    value INTEGER NOT NULL,
+    details TEXT NOT NULL,
+    PRIMARY KEY (main_index_id, name)
+);
+
 
 -- Table structure for table: releases
 CREATE TABLE releases ( 
@@ -51,8 +84,14 @@ CREATE TABLE releases (
    keywords TEXT,
    platform TEXT,
    download_url TEXT,
+   cheesecake_installability_id INTEGER REFERENCES cheesecake_main_indices,
+   cheesecake_documentation_id INTEGER REFERENCES cheesecake_main_indices,
+   cheesecake_code_kwalitee_id INTEGER REFERENCES cheesecake_main_indices,
    _pypi_ordering INTEGER,
    _pypi_hidden BOOLEAN,
+   cheesecake_installability_id INTEGER REFERENCES cheesecake_main_indices,
+   cheesecake_documentation_id INTEGER REFERENCES cheesecake_main_indices,
+   cheesecake_code_kwalitee_id INTEGER REFERENCES cheesecake_main_indices,
    PRIMARY KEY (name, version)
 );
 CREATE INDEX release_pypi_hidden_idx ON releases(_pypi_hidden);
@@ -170,3 +209,4 @@ CREATE TABLE timestamps {
 }
 INSERT INTO timestamps(name, value) VALUES('http','1970-01-01');
 INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01');
+

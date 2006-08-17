@@ -4,7 +4,7 @@ from cStringIO import StringIO
 
 allowed = ('package_releases', 'package_urls', 'package_data',
     'search', 'list_packages', 'release_urls', 'release_data',
-    'updated_releases')
+    'updated_releases', 'post_cheesecake_for_release')
 
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
@@ -65,3 +65,10 @@ def search(store, spec, operator='and'):
 def updated_releases(store, since):
     result = store.updated_releases(since)
     return [(row['name'], row['version']) for row in result]
+
+def post_cheesecake_for_release(store, name, version, score_data, password):
+    if password != store.config.cheesecake_password:
+        raise ValuError("Bad password.")
+
+    store.save_cheesecaek_score(name, version, score_data)
+    store.commit()

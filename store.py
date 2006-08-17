@@ -625,6 +625,93 @@ class Store:
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
+    def save_cheesecaek_score(self, name, version, score_data):
+        '''Save Cheesecake score for a release.
+        '''
+        cursor = self.get_cursor()
+
+        execute = lambda query, *args: safe_execute(cursor, query, args)
+        fetchone = cursor.fetchone
+
+        def save_main_index(main_index):
+            # Insert main_index into main_indices table.
+            execute('''INSERT INTO cheesecake_main_indices
+                       (absolute, relative)
+                       VALUES (%d, %d)''',
+                    main_index[0],
+                    main_index[1])
+            execute('SELECT last_value FROM cheesecake_main_indices_id_seq')
+            main_index_id = fetchone()[0]
+
+            # Insert each of its subindices.
+            for sub_name, sub_value, sub_details in main_index[2]:
+                execute('''INSERT INTO cheesecake_subindices
+                           VALUES (%d, %s, %d, %s)''',
+                        main_index_id,
+                        sub_name,
+                        sub_value,
+                        sub_details)
+
+            return main_index_id
+
+        def release_exists(name, version):
+            execute('''SELECT *
+                       FROM releases
+                       WHERE name = %s AND version = %s''',
+                    name,
+                    version)
+
+            if fetchone():
+                return True
+            return False
+
+        def remove_indices_for_release(name, version):
+            execute('''SELECT cheesecake_installability_id,
+                              cheesecake_documentation_id,
+                              cheesecake_code_kwalitee_id
+                       FROM releases
+                       WHERE name = %s AND version = %s''',
+                    name,
+                    version)
+
+            main_index_ids = fetchone()
+            for index in main_index_ids:
+                execute('''DELETE FROM cheesecake_subindices
+                           WHERE main_index_id = %d''',
+                        index)
+                execute('''UPDATE releases
+                           SET cheesecake_installability_id=NULL,
+                               cheesecake_documentation_id=NULL,
+                               cheesecake_code_kwalitee_id=NULL
+                           WHERE name = %s AND version = %s''',
+                        name,
+                        version)
+                execute('''DELETE FROM cheesecake_main_indices
+                           WHERE id = %d''',
+                        index)
+
+        def insert_score_for_release(name, version, installability_id, documentation_id, code_kwalitee_id):
+            execute('''UPDATE releases
+                       SET cheesecake_installability_id=%d,
+                           cheesecake_documentation_id=%d,
+                           cheesecake_code_kwalitee_id=%d
+                       WHERE name = %s AND version = %s''',
+                    installability_id,
+                    documentation_id,
+                    code_kwalitee_id,
+                    name,
+                    version)
+
+        installability_id = save_main_index(score_data['INSTALLABILITY'])
+        documentation_id = save_main_index(score_data['DOCUMENTATION'])
+        code_kwalitee_id = save_main_index(score_data['CODE_KWALITEE'])
+
+        # If score for a release already exist, remove it first.
+        if release_exists(name, version):
+            remove_indices_for_release(name, version)
+
+        insert_score_for_release(name, version, installability_id, documentation_id, code_kwalitee_id)
+
 
     #
     # Users interface
