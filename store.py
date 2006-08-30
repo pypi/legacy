@@ -332,6 +332,28 @@ class Store:
         safe_execute(cursor, sql, (name, version))
         return int(cursor.fetchone()[0])
 
+    def get_cheesecake_index(self, index_id):
+        index = {'absolute': -1,
+                 'relative': -1,
+                 'subindices': []}
+
+        cursor = self.get_cursor()
+
+        sql = 'select absolute, relative from cheesecake_main_indices where id = %d'
+        safe_execute(cursor, sql, (index_id,))
+
+        index['absolute'], index['relative'] = cursor.fetchone()
+
+        sql = 'select name, value, details from cheesecake_subindices where main_index_id = %d'
+        safe_execute(cursor, sql, (index_id,))
+
+        for name, value, details in cursor.fetchall():
+            index['subindices'].append(dict(name=name, value=value, details=details))
+
+        index['subindices'].sort(lambda x,y: cmp(x['name'], y['name']))
+
+        return index
+
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -341,12 +363,15 @@ class Store:
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, description_html, keywords,
-                  platform, download_url, _pypi_ordering, _pypi_hidden
+                  platform, download_url, _pypi_ordering, _pypi_hidden,
+                  cheesecake_installability_id,
+                  cheesecake_documentation_id,
+                  cheesecake_code_kwalitee_id
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
         safe_execute(cursor, sql, (name, version))
-        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
+        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
         return ResultRow(cols, cursor.fetchone())
 
     def get_stable_version(self, name):

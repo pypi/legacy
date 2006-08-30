@@ -801,12 +801,12 @@ class WebUI:
 #            return self.fail('No such package / version',
 #                heading='%s %s'%(name, version),
 #                content="I can't find the package / version you're requesting")
-        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
+        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
         release = {'description_html': ''}
         for column in columns:
             value = info[column]
             if not info[column]: continue
-            if value.strip() in ('UNKNOWN', '<p>UNKNOWN</p>'): continue
+            if isinstance(value, str) and value.strip() in ('UNKNOWN', '<p>UNKNOWN</p>'): continue
             if column in ('name', 'version'): continue
             if column == 'description':
                 # fallback if no description_html
@@ -821,6 +821,9 @@ class WebUI:
                 value = value.replace('@', ' at ')
                 value = value.replace('.', ' ')
                 value = '%s <%s>'%(start, value)
+            elif column.startswith('cheesecake_'):
+                column = column[:-3]
+                value = self.store.get_cheesecake_index(value)
             release[column] = value
 
         roles = {}
