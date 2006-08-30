@@ -718,8 +718,7 @@ class WebUI:
                 value = cgi.escape(value)
                 value = value.replace('@', ' at ')
                 value = value.replace('.', ' ')
-
-            w('%s: %s\n' % (label, value))
+            w('%s: %s\n' % (label, value.encode('utf8')))
 
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
