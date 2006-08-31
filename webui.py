@@ -696,7 +696,9 @@ class WebUI:
                 content="I can't find the package / version you're requesting")
 
         content = cStringIO.StringIO()
-        w = content.write
+        def w(s):
+            if isinstance(s, unicode): s = s.encode('utf8')
+            content.write(s)
 
         # We're up to PEP 314
         w("Metadata-Version: 1.1\n")
@@ -718,7 +720,7 @@ class WebUI:
                 value = cgi.escape(value)
                 value = value.replace('@', ' at ')
                 value = value.replace('.', ' ')
-            w('%s: %s\n' % (label, value.encode('utf8')))
+            w('%s: %s\n'%(label, value))
 
         for col in ('requires', 'provides', 'obsoletes'):
             l = self.store.get_release_relationships(name, version, col)
