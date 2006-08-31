@@ -737,7 +737,7 @@ class WebUI:
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('text/plain; charset=utf-8')
         self.handler.end_headers()
-        s = content.getvalue().encode('utf8')
+        s = content.getvalue()
         self.wfile.write(s)
 
     def release_nav(self):
