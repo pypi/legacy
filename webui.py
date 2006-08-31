@@ -806,7 +806,8 @@ class WebUI:
         for column in columns:
             value = info[column]
             if not info[column]: continue
-            if isinstance(value, str) and value.strip() in ('UNKNOWN', '<p>UNKNOWN</p>'): continue
+            if isinstance(value, basestring) and value.strip() in (
+                    'UNKNOWN', '<p>UNKNOWN</p>'): continue
             if column in ('name', 'version'): continue
             if column == 'description':
                 # fallback if no description_html
