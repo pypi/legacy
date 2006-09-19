@@ -70,5 +70,5 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
     if password != store.config.cheesecake_password:
         raise ValuError("Bad password.")
 
-    store.save_cheesecaek_score(name, version, score_data)
+    store.save_cheesecake_score(name, version, score_data)
     store.commit()
