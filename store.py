@@ -650,7 +650,7 @@ class Store:
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
-    def save_cheesecaek_score(self, name, version, score_data):
+    def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
         '''
         cursor = self.get_cursor()
