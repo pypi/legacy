@@ -1620,7 +1620,7 @@ class WebUI:
                 if len(gpgid) != 8:
                     raise FormError, 'GPG key ID is invalid'
                 try:
-                    int(gpgid)
+                    int(gpgid, 16)
                 except ValueError:
                     raise FormError, 'GPG key ID is invalid'
 
