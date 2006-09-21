@@ -1615,7 +1615,8 @@ class WebUI:
                 raise FormError, 'Email is invalid (ASCII only)'
             if '@' not in info['email'] or '.' not in info['email']:
                 raise FormError, 'Email is invalid'
-            gpgid = info.get('gpg_keyid').strip()
+            gpgid = info.get('gpg_keyid', '') or ''
+            gpgid = gpgid.strip()
             if gpgid:
                 if not re.match("[A-Fa-f0-9]{8,8}", gpgid):
                     raise FormError, 'GPG key ID is invalid'
