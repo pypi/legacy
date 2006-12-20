@@ -54,6 +54,9 @@ package_urls = release_urls     # "deprecated"
 def release_data(store, package_name, version):
     info = store.get_package(package_name, version).as_dict()
     del info['description_html']
+    for col in ('requires', 'provides', 'obsoletes'):
+        rows = store.get_release_relationships(package_name, version, col)
+        info[col] = [row['specifier'] for row in rows]
     classifiers = [r[0] for r in store.get_release_classifiers(package_name,
         version)]
     info['classifiers' ] = classifiers
