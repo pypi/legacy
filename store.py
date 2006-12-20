@@ -410,7 +410,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         cursor.execute('select count(*) from packages')
-        return cursor.fetchone()[0]
+        return int(cursor.fetchone()[0])
 
     def query_packages(self, spec, operator='and'):
         ''' Find packages that match the spec.
@@ -747,7 +747,8 @@ class Store:
             Returns true/false.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select count(*) from users where name=%s", (name, ))
+        safe_execute(cursor, "select count(*) from users where name=%s",
+            (name, ))
         return int(cursor.fetchone()[0])
 
     def store_user(self, name, password, email, gpg_keyid):
@@ -966,7 +967,7 @@ class Store:
         sql = '''select count(*) from release_files
             where name=%s and version=%s and filename=%s'''
         safe_execute(cursor, sql, (name, version, filename))
-        return cursor.fetchone()[0]
+        return int(cursor.fetchone()[0])
 
     def remove_file(self, digest):
         cursor = self.get_cursor()

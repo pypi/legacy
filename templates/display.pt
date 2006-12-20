@@ -164,8 +164,7 @@
 
 
 <div tal:define="has_cheesecake data/release/cheesecake_installability | nothing"
-     tal:condition="python:has_cheesecake and app.store.has_role('Admin') or
-		    app.store.has_role('Maintainer') or app.store.has_role('Owner')">
+     tal:condition="python:has_cheesecake and (app.store.has_role('Admin') or app.store.has_role('Maintainer') or app.store.has_role('Owner'))">
   <strong>Cheesecake score</strong>
   <ul class="nodot">
     <li>
