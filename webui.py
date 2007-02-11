@@ -1,7 +1,7 @@
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, cElementTree
+import re, zipfile, logging, pprint, cElementTree, sets
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 
@@ -215,7 +215,7 @@ class WebUI:
                     s = cStringIO.StringIO()
                     traceback.print_exc(None, s)
                     s = cgi.escape(s.getvalue())
-                    elf.fail('Internal Server Error', code=500,
+                    self.fail('Internal Server Error', code=500,
                         heading='Error...', content='%s'%s)
                 else:
                     s = '%s: %s'%(exc, value)
@@ -356,7 +356,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -863,8 +863,6 @@ class WebUI:
         ''' Print up an index page
         '''
         self.nav_current = nav_current
-        content = cStringIO.StringIO()
-        w = content.write
         spec = self.form_metadata()
         if not spec.has_key('_pypi_hidden'):
             spec['_pypi_hidden'] = False
@@ -878,6 +876,57 @@ class WebUI:
             return self.display()
         self.write_template('index.pt', title="Index of Packages",
             matches=l)
+
+    STOPWORDS = sets.Set([
+        "a", "and", "are", "as", "at", "be", "but", "by",
+        "for", "if", "in", "into", "is", "it",
+        "no", "not", "of", "on", "or", "such",
+        "that", "the", "their", "then", "there", "these",
+        "they", "this", "to", "was", "will", "with" 
+    ])
+    def search(self, nav_current='index'):
+        ''' Search for the indicated term.
+
+        Try name first, then summary then description. Collate a
+        score for each package that matches.
+        '''
+        term = self.form.get('term').strip()
+        terms = [t for t in term.split() if t not in self.STOPWORDS]
+        if not terms:
+            raise FormError, 'You need to supply a search term'
+
+        d = {}
+        columns = [
+            ('name', 3),
+            ('summary', 2),
+            ('description', 1),
+        ]
+        for t in terms:
+            for col, score in columns:
+                spec = {'_pypi_hidden': False, col: t}
+                for r in self.store.query_packages(spec):
+                    e = d.get(r['name'], [0, r])
+                    e[0] += score
+                    d[r['name']] = e
+
+        # now sort by score, name and version ordering
+        l = []
+        scores = {}
+        for k,v in d.items():
+            l.append((-v[0], k.lower(), v[1]['_pypi_ordering'], v[1]))
+            scores[k] = v[0]
+
+        if len(l) == 1:
+            self.form['name'] = l[0][-1]['name']
+            self.form['version'] = l[0][-1]['version']
+            return self.display()
+
+        # sort and pull out just the 
+        l.sort()
+        l = [e[-1] for e in l]
+
+        self.write_template('index.pt', matches=l, scores=scores,
+            title="Index of Packages Matching '%s'"%term)
 
     def submit_form(self):
         ''' A form used to submit or edit package metadata.

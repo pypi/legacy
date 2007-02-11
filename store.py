@@ -441,8 +441,8 @@ class Store:
             v = ['%%'+s.lower().replace("'", "''")+'%%' for s in v]
 
             # now add to the where clause
-            where.append(' or '.join(["lower(%s) LIKE '%s'"%(k,
-                s.encode('utf-8')) for s in v]))
+            where.append('(' + ' or '.join(["lower(%s) LIKE '%s'"%(k,
+                s.encode('utf-8')) for s in v]) + ')')
 
         # construct the SQL
         if where:
@@ -452,10 +452,12 @@ class Store:
 
         # do the fetch
         cursor = self.get_cursor()
-        sql = '''select name, version, summary from releases %s
+        sql = '''select name, version, summary, _pypi_ordering
+            from releases %s
             order by lower(name), _pypi_ordering'''%where
         safe_execute(cursor, sql)
-        return Result(('name', 'version', 'summary'), cursor.fetchall())
+        return Result(('name', 'version', 'summary', '_pypi_ordering'),
+            cursor.fetchall())
 
     def get_classifiers(self):
         ''' Fetch the list of valid classifiers from the database.

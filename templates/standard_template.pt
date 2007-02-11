@@ -34,21 +34,15 @@
       <div id="utility-menu">
         <!--  Search Box  -->
         <div id="searchbox">
-          <form action="http://google.com/search" id="searchform" method="get" name="searchform">
+          <form tal:attributes="action app/url_path" id="searchform"
+                method="get" name="searchform">
+            <input type="hidden" name=":action" value="search" />
             <div id="search">
-              <span class="reference">
-                <input type="radio" value="cheeseshop.python.org" name="sitesearch" checked="checked"/>
-                cheeseshop.python.org
-                <input type="radio" value="python.org" name="sitesearch" />
-                python.org
-              </span>
-              <input type="hidden" id="domains" value="cheeseshop.python.org" name="sitesearch" />
-              <input type="hidden" id="sourceid" value="google-search" name="sourceid" />
-              <input class="input-text" type="text" id="q" name="q" />
-              <input class="input-button" type="submit" name="submit" value="search" id="submit" />
+              <input class="input-text" id="term" name="term" />
+              <input class="input-button" type="submit" name="submit"
+                     value="search" id="submit" />
             </div>
           </form>
-
         </div>
 <!-- XXX: reinstate this       <div id="screen-switcher"></div> -->
       </div>

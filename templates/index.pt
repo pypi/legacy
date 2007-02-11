@@ -12,6 +12,7 @@
 <table class="list" tal:condition="data/matches">
 <tr>
  <th>Package</th>
+ <th tal:condition="exists:data/scores">Score</th>
  <th>Description</th>
 </tr>
 
@@ -20,6 +21,8 @@
  <td tal:content="structure python: 
   app.packageLink(pkg['name'], pkg['version'])">
   link</td>
+ <td tal:condition="exists:data/scores"
+     tal:content="python:data['scores'][pkg['name']]" />
  <td tal:content="pkg/summary">summary</td>
 </tr>
 
