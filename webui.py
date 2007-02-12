@@ -620,11 +620,13 @@ class WebUI:
                 heading='%s %s'%(name, version),
                 content="I can't find the package / version you're requesting")
 
-        root = cElementTree.Element('Project', {
+        root = cElementTree.Element('rdf:RDF', {
             'xmlns:rdf': "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
             'xmlns:foaf': "http://xmlns.com/foaf/0.1/",
             'xmlns': "http://usefulinc.com/ns/doap#"})
         SE = cElementTree.SubElement
+
+        project = SE(root, 'Project')
  
         def write_element(parent, attr, element):
             value = info[attr]
@@ -640,18 +642,18 @@ class WebUI:
                               ('description', 'description'),
                               ('download_url', 'download-page')
                               ]:
-              write_element(root, attr, element)
+              write_element(project, attr, element)
 
         url = info['home_page']
         if url:
-            url = SE(root, 'homepage', {'rdf:resource': url})
+            url = SE(project, 'homepage', {'rdf:resource': url})
             url.tail = '\n'
 
         person = 'maintainer'
         if not info[person]:
             person = 'author'
         if info[person]:
-            maint = SE(root, 'maintainer')
+            maint = SE(project, 'maintainer')
             pelem = SE(maint, 'foaf:Person')
             write_element(pelem, person, 'foaf:name')
             email = info[person+'_email']
@@ -665,7 +667,7 @@ class WebUI:
         # Write version
         version = info['version']
         if version:
-            release = SE(root, 'release')
+            release = SE(project, 'release')
             release.tail = '\n'
             velem = SE(release, 'Version')
             revision = SE(velem, 'revision')
