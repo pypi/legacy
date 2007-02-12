@@ -892,7 +892,7 @@ class WebUI:
         Try name first, then summary then description. Collate a
         score for each package that matches.
         '''
-        term = self.form.get('term').strip()
+        term = self.form.get('term', '').strip()
         terms = [t for t in term.split() if t not in self.STOPWORDS]
         if not terms:
             raise FormError, 'You need to supply a search term'
