@@ -11,6 +11,8 @@
  <meta tal:condition="data/release/summary | nothing"
        name="description"
        tal:attributes="content data/release/summary" />
+ <link rel="meta" title="DOAP" type="application/rdf+xml"
+       tal:attributes="href string:${app/url_path}?:action=doap&amp;name=${data/name}&amp;version=${data/version}" />
  <style type="text/css">
   table.form th {white-space: pre;}
  </style>
