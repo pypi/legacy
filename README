@@ -1,0 +1,13 @@
+
+Required packages
+----------------------
+
+To run the PyPI software, you need:
+	cElementTree
+	zope.interface (in PyPI)
+	zope.pagetemplates (in PyPI)
+	zope.tal
+	zope.tales
+	zope.i18nmessageid
+	psycopg and PostgreSQL
+
