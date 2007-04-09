@@ -286,7 +286,7 @@ class WebUI:
         ('browse', 'Browse packages'),
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
-        ('packagelist', 'List packages'),
+        ('index', 'List packages'),
         ('rss', 'RSS (last 20 updates)'),
         ('role_form', 'Admin'),
     )
@@ -358,7 +358,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user packagelist password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -1598,14 +1598,6 @@ class WebUI:
         self.handler.set_content_type('text/plain; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(c + '\n')
-
-    #
-    # Package listing
-    #
-    def packagelist(self):
-        packages = self.store.get_packages()
-        self.write_template('packagelist.pt', title="List of Packages",
-                            packages = packages)
 
     #
     # User handling code (registration, password changing
