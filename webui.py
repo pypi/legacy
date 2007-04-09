@@ -230,6 +230,7 @@ class WebUI:
 
     def write_template(self, filename, **options):
         context = {}
+        options.setdefault('norobots', False)
         context['data'] = options
         context['app'] = self
 
@@ -494,7 +495,8 @@ class WebUI:
             show_packages=show_packages, packages=packages,
             packages_count=packages_count,
             selected_categories=selected_categories,
-            available_categories=available_categories)
+            available_categories=available_categories,
+            norobots=True)
 
     def logout(self):
         raise Unauthorised
