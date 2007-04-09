@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, pprint, cgi, urllib, os, time
+import sys, pprint, cgi, urllib, os, time, cStringIO
 
 def flatten(d):
     l = d[1]
@@ -106,10 +106,13 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
 
     def save_tally_cache(self):
         self.cursor.execute("delete from browse_tally")
+        # Using PostgreSQL COPY here, instead of a series of INSERT statements
+        s = cStringIO.StringIO()
         for _, _, items in self.list_choices()[1]:
             for path, packages in items:
-                self.cursor.execute("insert into browse_tally values(%d, %d)",
-                                    (self.trove.getid(path), len(packages)))
+                s.write('%d\t%d\n' % (self.trove.getid(path), len(packages)))
+        s.seek(0)
+        self.cursor.copy_from(s, 'browse_tally')
         self.cursor.execute("update timestamps set value=now() where name='browse_tally'")
         self.store.commit()
 
