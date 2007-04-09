@@ -792,7 +792,7 @@ class WebUI:
             else:
                 l = self.store.get_package_releases(name, hidden=False)
                 if len(l) > 1:
-                    return self.index(name=name)
+                    return self.index(releases=l)
                 l = self.store.get_latest_release(name, hidden=False)
                 try:
                     version = l[-1][1]
@@ -861,21 +861,22 @@ class WebUI:
                             newline_to_br=newline_to_br,
                             action=self.link_action())
 
-    def index(self, nav_current='index', name=None):
+    def index(self, nav_current='index', releases=None):
         ''' Print up an index page
         '''
         self.nav_current = nav_current
-        spec = self.form_metadata()
-        if not spec.has_key('_pypi_hidden'):
-            spec['_pypi_hidden'] = False
-        if name:
-            spec['name'] = name
-        i=0
-        l = self.store.query_packages(spec)
-        if len(l) == 1:
-            self.form['name'] = l[0]['name']
-            self.form['version'] = l[0]['version']
-            return self.display()
+        if releases is None:
+            spec = self.form_metadata()
+            if not spec.has_key('_pypi_hidden'):
+                spec['_pypi_hidden'] = False
+            i=0
+            l = self.store.query_packages(spec)
+            if len(l) == 1:
+                self.form['name'] = l[0]['name']
+                self.form['version'] = l[0]['version']
+                return self.display()
+        else:
+            l = releases
         self.write_template('index.pt', title="Index of Packages",
             matches=l)
 
