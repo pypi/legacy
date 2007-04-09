@@ -38,13 +38,18 @@ class Query:
             else:
                 intersect = sql
 
-        # Create a temporary table for all selected packages
-        self.cursor.execute('create temporary table flamenco as '+intersect)
+        if intersect:
+            # Create a temporary table for all selected packages
+            cursor.execute('create temporary table flamenco as '+intersect)
 
-        # get the packages that match the query
-        self.cursor.execute('''
+            # get the packages that match the query
+            cursor.execute('''
 select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flamenco f inner join releases r on f.name=r.name and f.version=r.version and r._pypi_hidden=FALSE where rc.version=f.version and rc.name=f.name
 ''')
+
+        else:
+            cursor.execute('''
+            select rc.trove_id, r.name, r.version, r.summary from release_classifiers rc, releases r where rc.version=r.version and rc.name=r.name and r._pypi_hidden=FALSE''')
 
         # Now sort into useful structures
         self.by_classifier = {}
@@ -70,7 +75,8 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
                 d[arc] = ({}, [])
             d[arc][1].append((name, version))
 
-        cursor.execute('drop table flamenco')
+        if intersect:
+            cursor.execute('drop table flamenco')
 
     def get_matches(self, addl_fields=[]):
         matches = {}
