@@ -202,11 +202,18 @@ CREATE INDEX roles_pack_name_idx ON roles(package_name);
 CREATE INDEX roles_user_name_idx ON roles(user_name);
 
 -- Table structure for table: timestamps
--- Note: stamp_name is ftp, http
-CREATE TABLE timestamps {
+-- Note: stamp_name is ftp, http, browse_tally
+CREATE TABLE timestamps (
    name TEXT PRIMARY KEY,
    value TIMESTAMP
-}
+);
 INSERT INTO timestamps(name, value) VALUES('http','1970-01-01');
 INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01');
+INSERT INTO timestamps(name, value) VALUES('browse_tally','1970-01-01');
 
+-- Table structure for table: timestamps
+-- Note: stamp_name is ftp, http
+CREATE TABLE browse_tally (
+   trove_id INTEGER PRIMARY KEY,	
+   tally INTEGER
+);

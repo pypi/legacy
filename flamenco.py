@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, pprint, cgi, urllib, os
+import sys, pprint, cgi, urllib, os, time
 
 def flatten(d):
     l = d[1]
@@ -16,11 +16,13 @@ class Query:
          to an integer representing the value to be searched for.  Top-level
          classifiers can be specified multiple times.
     """
-    def __init__(self, cursor, trove, query=[]):
+    def __init__(self, store, cursor, trove, query=[]):
+        self.store = store
         self.cursor = cursor
         self.trove = trove
         self.query = query
         self.field_list = []
+        self.boxes = None # may be cached boxes
         intersect = '' # SQL intersect statement of all query fields
         for group, tid in query:
             try:
@@ -38,6 +40,9 @@ class Query:
             else:
                 intersect = sql
 
+        if not intersect and self.cached_tally():
+            return
+        
         if intersect:
             # Create a temporary table for all selected packages
             cursor.execute('create temporary table flamenco as '+intersect)
@@ -77,6 +82,36 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
 
         if intersect:
             cursor.execute('drop table flamenco')
+        else:
+            self.save_tally_cache()
+
+    def cached_tally(self):
+        self.cursor.execute("select value from timestamps where name='browse_tally'")
+        dates = self.cursor.fetchall()
+        if time.time()-dates[0][0].ticks() < 5*60:
+            # Load tally from cache
+            self.cursor.execute("select trove_id, tally from browse_tally")
+            self.boxes = []
+            sub = {}
+            for tid, tally in self.cursor.fetchall():
+                path = self.trove[tid].path_split
+                assert len(path)==2, repr(path)
+                d = sub.setdefault(path[0], {})
+                d[path] = [None]*tally
+            for field, d in sub.items():
+                self.boxes.append((field, None, d.items()))
+            return True
+        # Need to generate cache
+        return False
+
+    def save_tally_cache(self):
+        self.cursor.execute("delete from browse_tally")
+        for _, _, items in self.list_choices()[1]:
+            for path, packages in items:
+                self.cursor.execute("insert into browse_tally values(%d, %d)",
+                                    (self.trove.getid(path), len(packages)))
+        self.cursor.execute("update timestamps set value=now() where name='browse_tally'")
+        self.store.commit()
 
     def get_matches(self, addl_fields=[]):
         matches = {}
@@ -98,6 +133,10 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
         return [k+(v,) for k,v in matches.items()]
 
     def list_choices(self):
+        if self.boxes:
+            # Cached tally
+            return [], self.boxes
+        
         # match the packages based on the current query
         packages = self.get_matches()
 

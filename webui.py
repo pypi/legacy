@@ -423,7 +423,7 @@ class WebUI:
         tree = trove.Trove(cursor)
         qs = cgi.parse_qsl(self.env.get('QUERY_STRING', ''))
         cat_ids = [ x for x in qs if x[0]=='c' ]
-        query = flamenco.Query(cursor, tree, cat_ids)
+        query = flamenco.Query(self.store, cursor, tree, cat_ids)
 
         # we don't need the database any more, so release it
         self.store.close()
