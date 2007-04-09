@@ -202,5 +202,8 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
                 continue
             L.append(urllib.quote(fld, safe="") + '=' +
                      urllib.quote(str(value), safe=""))
+        # Canonicalize query parameters, to prevent spiders
+        # from downloading all permutations
+        L.sort()
         return '&'.join(L)
 
