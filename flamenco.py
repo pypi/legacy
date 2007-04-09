@@ -200,6 +200,9 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
         for fld, value in self.query:
             if ignore == value:
                 continue
+            if add is not None and int(add) == int(value):
+                # Don't add it twice
+                continue
             L.append(urllib.quote(fld, safe="") + '=' +
                      urllib.quote(str(value), safe=""))
         # Canonicalize query parameters, to prevent spiders
