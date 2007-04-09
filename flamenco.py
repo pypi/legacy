@@ -21,20 +21,29 @@ class Query:
         self.trove = trove
         self.query = query
         self.field_list = []
+        intersect = '' # SQL intersect statement of all query fields
         for group, tid in query:
             try:
-                int(tid)
+                tid = int(tid)
             except ValueError:
                 # skip invalid input
                 continue
-            self.field_list.append(self.trove[int(tid)].path_split)
+            self.field_list.append(self.trove[tid].path_split)
+            sql = '(select name,version from release_classifiers where trove_id=%d' % tid
+            for stid in trove[tid].subtree_ids()[1:]:
+                sql += ' or trove_id=%d' % stid
+            sql += ')'
+            if intersect:
+                intersect += 'intersect'+sql
+            else:
+                intersect = sql
 
-        # get the packages that match classifiers
+        # Create a temporary table for all selected packages
+        self.cursor.execute('create temporary table flamenco as '+intersect)
+
+        # get the packages that match the query
         self.cursor.execute('''
-select rc.trove_id, r.name, r.version, r.summary
-from releases r, release_classifiers rc
-where r.name=rc.name and r.version=rc.version
-  and r._pypi_hidden=FALSE
+select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flamenco f inner join releases r on f.name=r.name and f.version=r.version and r._pypi_hidden=FALSE where rc.version=f.version and rc.name=f.name
 ''')
 
         # Now sort into useful structures
@@ -61,11 +70,14 @@ where r.name=rc.name and r.version=rc.version
                 d[arc] = ({}, [])
             d[arc][1].append((name, version))
 
+        cursor.execute('drop table flamenco')
+
     def get_matches(self, addl_fields=[]):
         matches = {}
-        query_fields = self.field_list + addl_fields
+        # no need to check self.field_list anymore: all packages will
+        # match field_list.
         for package, classifiers in self.by_package.items():
-            for required in query_fields:
+            for required in addl_fields:
                 # make sure the field appears in this package's classifiers
                 for classifier in classifiers:
                     if classifier[:len(required)] == required:

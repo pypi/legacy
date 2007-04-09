@@ -13,6 +13,12 @@ class Node:
     def __repr__(self):
         return '<Node %d %s>'%(self.id, self.name)
 
+    def subtree_ids(self):
+        result = [self.id]
+        for node in self.arcs.values():
+            result.extend(node.subtree_ids())
+        return result
+        
 class Trove:
     def __init__(self, cursor):
         self.root = Node()
