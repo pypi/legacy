@@ -386,7 +386,7 @@ class Store:
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name,stable_version from packages')
+        safe_execute(cursor, 'select name,stable_version from packages order by name')
         return Result(('name', 'stable_version'), cursor.fetchall())
 
     def get_journal(self, name, version):
