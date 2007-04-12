@@ -85,10 +85,13 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
         else:
             self.save_tally_cache()
 
-    def cached_tally(self):
+    def is_cache_current(self):
         self.cursor.execute("select value from timestamps where name='browse_tally'")
         dates = self.cursor.fetchall()
-        if time.time()-dates[0][0].ticks() < 5*60:
+        return time.time()-dates[0][0].ticks() < 10*60
+
+    def cached_tally(self):
+        if self.is_cache_current():
             # Load tally from cache
             self.cursor.execute("select trove_id, tally from browse_tally")
             self.boxes = []
@@ -105,6 +108,12 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
         return False
 
     def save_tally_cache(self):
+        # Lock the table, to prevent simultaneous updates
+        self.cursor.execute("lock table browse_tally")
+        if self.is_cache_current():
+            # overlapping update, just release the lock
+            self.store.commit()
+            return
         self.cursor.execute("delete from browse_tally")
         # Using PostgreSQL COPY here, instead of a series of INSERT statements
         s = cStringIO.StringIO()
