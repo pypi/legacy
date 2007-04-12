@@ -1229,7 +1229,7 @@ class WebUI:
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            self.fail(message, code=400, heading='Package verification')
+            self.fail(str(message), code=400, heading='Package verification')
             return
 
         self.write_template('message.pt', title='Package verification',
