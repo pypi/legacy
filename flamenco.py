@@ -108,8 +108,15 @@ select rc.trove_id, f.name,f.version,r.summary from release_classifiers rc, flam
         return False
 
     def save_tally_cache(self):
+        # Reset the transaction, to acquire locks from scratch
+        # and forget any data we had read
+        self.store.commit()
         # Lock the table, to prevent simultaneous updates
         self.cursor.execute("lock table browse_tally")
+        # Important: before locking the table, we did not
+        # read the time-stamp within this transition. If
+        # we had, the rdbms would give us the same value,
+        # to guarantee repeatable reads
         if self.is_cache_current():
             # overlapping update, just release the lock
             self.store.commit()
