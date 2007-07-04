@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import thfcgi, os, sys, syslog
+import thfcgi, os, sys
 
 #
 # Provide interface to CGI HTTP response handling
@@ -21,17 +21,14 @@ class RequestWrapper:
         self.wfile.write("\r\n")
 
 def handle_request(req, env):
-    syslog.syslog("handling request")
     try:
         from webui import WebUI
         request = RequestWrapper(cfg, req)
-        syslog.syslog("WebUI")
         handler = WebUI(request, env)
         handler.run()
     except SystemExit:
         pass
     except:
-        syslog.syslog("Excetpion")
         req.out.write('Status: 500 Internal Server Error\r\n')
         req.out.write('Content-Type: text/html\r\n\r\n')
         req.out.write("<pre>")
@@ -40,7 +37,6 @@ def handle_request(req, env):
         req.out.write(cgi.escape(s.getvalue()))
         req.out.write("</pre>\n")
     req.finish()
-    syslog.syslog("Done")
 
 #
 # Now do the actual CGI handling
@@ -49,7 +45,6 @@ prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
 import config
 cfg = config.Config(prefix+'/config.ini', 'webui')
-syslog.syslog("starting pypi.fcgi")
 fcg = thfcgi.FCGI(handle_request, 
                   max_requests=-1,
                   backlog=50,
