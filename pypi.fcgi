@@ -22,6 +22,8 @@ class RequestWrapper:
 
 def handle_request(req, env):
     try:
+        import store
+        store.keep_conn = True
         from webui import WebUI
         request = RequestWrapper(cfg, req)
         handler = WebUI(request, env)

@@ -19,6 +19,9 @@ dist_file_types = [
 ]
 dist_file_types_d = dict(dist_file_types)
 
+keep_conn = False
+connection = None
+
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
     both column index and name.
@@ -1026,7 +1029,11 @@ class Store:
         cd = dict(database=self.config.database_name, user=self.config.database_user)
         if self.config.database_pw:
             cd['password'] = self.config.database_pw
-        self._conn = psycopg.connect(**cd)
+        if keep_conn and connection:
+            self._conn = connection
+        else:
+            global connection
+            self._conn = connection = psycopg.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
 
@@ -1048,7 +1055,8 @@ class Store:
     def close(self):
         if self._conn is None:
             return
-        self._conn.close()
+        if not keep_conn:
+            self._conn.close()
         self._conn = None
         self._cursor = None
 
