@@ -1031,6 +1031,8 @@ class Store:
             cd['password'] = self.config.database_pw
         if keep_conn and connection:
             self._conn = connection
+            # Rollback any uncommitted earlier change
+            self._conn.rollback()
         else:
             global connection
             self._conn = connection = psycopg.connect(**cd)
@@ -1055,7 +1057,10 @@ class Store:
     def close(self):
         if self._conn is None:
             return
-        if not keep_conn:
+        if keep_conn:
+            # rollback any aborted transaction
+            self._conn.rollback()
+        else:
             self._conn.close()
         self._conn = None
         self._cursor = None
