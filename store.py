@@ -1025,6 +1025,7 @@ class Store:
     def open(self):
         ''' Open the database, initialising if necessary.
         '''
+        global connection
         # ensure files are group readable and writable
         cd = dict(database=self.config.database_name, user=self.config.database_user)
         if self.config.database_pw:
@@ -1034,7 +1035,6 @@ class Store:
             # Rollback any uncommitted earlier change
             self._conn.rollback()
         else:
-            global connection
             self._conn = connection = psycopg.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
