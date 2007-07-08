@@ -975,6 +975,9 @@ class Store:
         # then tally for all level n+1 classifiers of selected_classifiers
         for c in selected_classifiers:
             level = t.trove[c].level
+            if level==5:
+                # There are no level 6 classifiers
+                continue
             tally += " or (t.id=t2.l%d and t2.l%d=%s)" % (level+1, level, c)
         tally += ")) tl group by tl.id"
         cursor.execute(tally)
