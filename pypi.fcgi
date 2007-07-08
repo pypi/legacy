@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import thfcgi, os, sys
+import thfcgi, os, sys, StringIO, traceback, cgi
 
 #
 # Provide interface to CGI HTTP response handling
