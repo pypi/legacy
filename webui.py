@@ -6,7 +6,7 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 
 # local imports
-import store, config, flamenco, trove, versionpredicate, verify_filetype, rpc
+import store, config, trove, versionpredicate, verify_filetype, rpc
 import MailingLogger
 
 esc = cgi.escape
@@ -421,27 +421,57 @@ class WebUI:
         content = cStringIO.StringIO()
         w = content.write
 
-        cursor = self.store.get_cursor()
-        tree = trove.Trove(cursor)
+        trove = self.store.trove()
         qs = cgi.parse_qsl(self.env.get('QUERY_STRING', ''))
-        cat_ids = [ x for x in qs if x[0]=='c' ]
-        query = flamenco.Query(self.store, cursor, tree, cat_ids)
+
+        # Analyze query parameters c= and show=
+        cat_ids = []
+        show_all = False
+        for x in qs:
+            if x[0] == 'c':
+                try:
+                    c = int(x[1])
+                except:
+                    pass
+                if trove.trove.has_key(c):
+                    cat_ids.append(c)
+            elif x[0] == 'show' and x[1] == 'all':
+                show_all = True
+        cat_ids.sort()
+
+        # Fetch data from the database
+        if cat_ids:
+            packages_, tally = self.store.browse(cat_ids)
+        else:
+            # use cached version of top-level browse page
+            packages_, tally = self.store.browse_tally()
 
         # we don't need the database any more, so release it
         self.store.close()
   
-        # query for the packages
-        packages_, available_categories_ = query.list_choices()
-        packages_.sort()
+        # group tally into parent nodes
+        boxes = {}
+        for id, count in tally:
+            if id in cat_ids:
+                # Don't provide link to a selected category
+                continue
+            node = trove.trove[id]
+            parent = ' :: '.join(node.path_split[:-1])
+            boxes.setdefault(parent, []).append((node.name, id, count))
+        # Sort per box alphabetically by name
+        for box in boxes.values():
+            box.sort()
 
         # order the categories; some are hardcoded to be first: topic,
         # environment, framework
-        available_categories_.sort()
-        for special_cat in ("Framework", "Environment", "Topic"):
-            for (i, c) in enumerate(available_categories_):
-                if c[0].startswith(special_cat):
-                    available_categories_.insert(0, c)
-                    del available_categories_[i+1]
+        available_categories_ = []
+        for cat in ("Topic", "Environment", "Framework"):
+            if boxes.has_key(cat):
+                available_categories_.append((cat, boxes.pop(cat)))
+        # Sort the rest alphabetically
+        boxes = boxes.items()
+        boxes.sort()
+        available_categories_.extend(boxes)
 
         # ... build packages viewdata
         packages_count = len(packages_)
@@ -452,31 +482,34 @@ class WebUI:
  
         # ... build selected categories viewdata
         selected_categories = []
-        if query.query:
-            for fld, value in query.query:
-                try:
-                    n = query.trove[int(value)]
-                except ValueError:
-                    continue
-                unselect_url = "%s?:action=browse&%s" % (self.url_path, query.as_href(ignore=value))
-                selected_categories.append(dict(path_string=cgi.escape(n.path),
+        for c in cat_ids:
+            n = trove.trove[c]
+            unselect_url = "%s?:action=browse" % self.url_path
+            for c2 in cat_ids:
+                if c==c2: continue
+                unselect_url += "&c=%d" % c2
+            selected_categories.append(dict(path_string=cgi.escape(n.path),
                     path = n.path_split,
                     pathstr = path2str(n.path_split),
                     unselect_url = unselect_url))
   
         # ... build available categories viewdata
         available_categories = []
-        for name, id, subcategories in available_categories_:
-            if not subcategories: continue
-            subcategories.sort()
+        for name, subcategories in available_categories_:
             sub = []
-            for subcategory, count in subcategories:
-                fid = tree[tree.getid(subcategory)].id
+            for subcategory, fid, count in subcategories:
+                if fid in cat_ids:
+                    add = cat_ids
+                else:
+                    add = cat_ids + [fid]
+                add.sort()
+                url = self.url_path + '?:action=browse'
+                for c in add:
+                    url += "&c=%d" % c
                 sub.append(dict(
-                    name = subcategory[-1],
-                    packages_count = len(count),
-                    url = '%s?:action=browse&%s'%(self.url_path,
-                        query.as_href(add=fid)),
+                    name = subcategory,
+                    packages_count = count,
+                    url = url,
                     description = subcategory[-1]))
   
             available_categories.append(dict(
@@ -486,12 +519,14 @@ class WebUI:
         # selected some categories, or if the user has explicitly asked 
         # for them all to be shown by passing show=all on the URL
         show_packages = selected_categories and \
-            (packages_count < 30 or 'show=all' in [ key+'='+val for key,val in qs ])
+            (packages_count < 30 or show_all)
 
         # render template
-        self.write_template('browse.pt', query=query, title="Browse",
-            show_packages_url='%s?:action=browse&%s'%(self.url_path,
-                query.as_href(show='all')),
+        url = self.url_path + '?:action=browse&show=all'
+        for c in cat_ids:
+            url += '&c=%d' % c
+        self.write_template('browse.pt', title="Browse",
+            show_packages_url=url,
             show_packages=show_packages, packages=packages,
             packages_count=packages_count,
             selected_categories=selected_categories,
@@ -573,7 +608,7 @@ class WebUI:
         user_name = self.form['user_name']
         role_name = self.form['role_name']
 
-        # further validation
+        # further vali:dation
         if role_name not in ('Owner', 'Maintainer'):
             raise FormError, 'role_name not Owner or Maintainer'
         if not self.store.has_user(user_name):

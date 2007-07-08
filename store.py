@@ -109,7 +109,7 @@ class Store:
 
     def trove(self):
         if not self._trove:
-            self._trove = trove.Trove(self._cursor)
+            self._trove = trove.Trove(self.get_cursor())
         return self._trove
 
     def store_package(self, name, version, info):
@@ -908,30 +908,53 @@ class Store:
     #
 
     def check_trove(self):
+        cursor = self.get_cursor()
         trove = self.trove()
         # Verify that all l2, l3, l4 fields are set properly
         for field, depth in (('l2', 2), ('l3', 3), ('l4', 4), ('l5', 5)):
-            self._cursor.execute('select id from trove_classifiers where %s is null' % field)
-            for id, in self._cursor.fetchall():
+            cursor.execute('select id from trove_classifiers where %s is null' % field)
+            for id, in cursor.fetchall():
                 t = trove.trove[id]
                 if len(t.path_split) < depth:
                     value = 0
                 else:
                     value = trove.getid(t.path_split[:depth])
-                self._cursor.execute('update trove_classifiers set %s=%d where id=%d' % (field, value, id))
+                cursor.execute('update trove_classifiers set %s=%d where id=%d' % (field, value, id))
+
+    def browse_tally(self):
+        import time
+        cursor = self.get_cursor()
+        t = self.trove()
+        cursor.execute("select value from timestamps where name='browse_tally'")
+        date = cursor.fetchone()[0]
+        if time.time() - date.ticks() > 10*60:
+            # Regenerate tally. First, release locks we hold on the timestamps
+            self._conn.commit()
+            # Clear old tally
+            cursor.execute("lock table browse_tally")
+            cursor.execute("delete from browse_tally")
+            # Regenerate tally; see browse() below
+            cursor.execute("""insert into browse_tally
+            select res.l2, count(*) from (select t.l2, rc.name, rc.version 
+            from trove_classifiers t, release_classifiers rc, releases r
+            where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
+            group by t.l2, rc.name, rc.version) res group by res.l2""")
+            cursor.execute("update timestamps set value=now() where name='browse_tally'")
+            self._conn.commit()
+        cursor.execute("select trove_id, tally from browse_tally")
+        return [], cursor.fetchall()
 
     def browse(self, selected_classifiers):
         t = self.trove()
+        cursor = self.get_cursor()
         if not selected_classifiers:
+            # This is not used; see browse_tally above
             tally = """select res.l2, count(*) from (select t.l2, rc.name, rc.version 
             from trove_classifiers t, release_classifiers rc, releases r
             where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
             group by t.l2, rc.name, rc.version) res group by res.l2"""
-            self._cursor.execute(tally)
-            tally = self._cursor.fetchall()
-            tally = [(t.trove[c].path, count) for c, count in tally]
-            tally.sort()
-            return None, tally
+            cursor.execute(tally)
+            return [], cursor.fetchall()
 
         # First compute statement to produce all packages still selected
         pkgs = "select name, version, summary from releases where _pypi_hidden=FALSE"
@@ -941,10 +964,10 @@ class Store:
              where a.name=rc.name and a.version=rc.version and rc.trove_id=t.id and
              t.l%d=%d""" % (pkgs, level, c)
         # Next download all selected releases
-        self._cursor.execute(pkgs)
-        releases = self._cursor.fetchall()
+        cursor.execute(pkgs)
+        releases = cursor.fetchall()
         # Finally, compute the tally
-        tally = """select tl.classifier,count(*) from (select distinct t.classifier, a.name,
+        tally = """select tl.id,count(*) from (select distinct t.id, a.name,
         a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2 
         where a.name=rc.name and a.version=rc.version and rc.trove_id=t2.id""" % pkgs
         # tally all level-2 classifiers
@@ -953,9 +976,9 @@ class Store:
         for c in selected_classifiers:
             level = t.trove[c].level
             tally += " or (t.id=t2.l%d and t2.l%d=%s)" % (level+1, level, c)
-        tally += ")) tl group by tl.classifier"
-        self._cursor.execute(tally)
-        tally = self._cursor.fetchall()
+        tally += ")) tl group by tl.id"
+        cursor.execute(tally)
+        tally = cursor.fetchall()
         return releases, tally
 
     #
