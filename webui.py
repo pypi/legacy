@@ -78,12 +78,25 @@ register</a>.</p>
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-class PyPiPageTemplate(PageTemplateFile):
+class _PyPiPageTemplate(PageTemplateFile):
     def pt_getContext(self, args=(), options={}, **kw):
         """Add our data into ZPT's defaults"""
         rval = PageTemplateFile.pt_getContext(self, args=args)
         options.update(rval)
         return options
+
+cache_templates = True
+if cache_templates:
+    template_cache = {}
+    def PyPiPageTemplate(file, dir):
+        try:
+            return template_cache[(file, dir)]
+        except KeyError:
+            t = _PyPiPageTemplate(file, dir)
+            template_cache[(file, dir)] = t
+            return t
+else:
+    PyPiPageTemplate = _PyPiPageTemplate
 
 class FileUpload:
     pass
