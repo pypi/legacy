@@ -965,7 +965,9 @@ class Store:
              t.l%d=%d""" % (pkgs, level, c)
         # Next download all selected releases
         cursor.execute(pkgs)
-        releases = cursor.fetchall()
+        releases = []
+        for name, version, summary in cursor.fetchall():
+            releases.append((name.decode('utf-8'), version, summary.decode('utf-8')))
         # Finally, compute the tally
         tally = """select tl.id,count(*) from (select distinct t.id, a.name,
         a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2 
