@@ -98,9 +98,16 @@ CREATE INDEX release_pypi_hidden_idx ON releases(_pypi_hidden);
 
 
 -- Table structure for table: trove_classifiers
+-- l2, l3, l4, l5 is the corresponding parent;
+-- 0 if there is no parent on that level (each node is its
+-- own parent)
 CREATE TABLE trove_classifiers ( 
    id INTEGER PRIMARY KEY, 
-   classifier TEXT UNIQUE
+   classifier TEXT UNIQUE,
+   l2 INTEGER,
+   l3 INTEGER,
+   l4 INTEGER,
+   l5 INTEGER
 );
 CREATE INDEX trove_class_class_idx ON trove_classifiers(classifier);
 CREATE INDEX trove_class_id_idx ON trove_classifiers(id);
@@ -123,7 +130,6 @@ CREATE TABLE release_classifiers (
 CREATE INDEX rel_class_name_idx ON release_classifiers(name);
 CREATE INDEX rel_class_version_id_idx ON release_classifiers(version);
 CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
-
 
 -- Table structure for table: release_provides
 CREATE TABLE release_provides (

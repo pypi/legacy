@@ -3,6 +3,7 @@
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
 import logging, StringIO, string
 from distutils.version import LooseVersion
+import trove
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -21,6 +22,7 @@ dist_file_types_d = dict(dist_file_types)
 
 keep_conn = False
 connection = None
+keep_trove = True
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
@@ -103,6 +105,12 @@ class Store:
         self.userip = None
         self._conn = None
         self._cursor = None
+        self._trove = None
+
+    def trove(self):
+        if not self._trove:
+            self._trove = trove.Trove(self._cursor)
+        return self._trove
 
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
@@ -896,6 +904,61 @@ class Store:
         return Result(('package_name',), res)
 
     #
+    # Trove
+    #
+
+    def check_trove(self):
+        trove = self.trove()
+        # Verify that all l2, l3, l4 fields are set properly
+        for field, depth in (('l2', 2), ('l3', 3), ('l4', 4), ('l5', 5)):
+            self._cursor.execute('select id from trove_classifiers where %s is null' % field)
+            for id, in self._cursor.fetchall():
+                t = trove.trove[id]
+                if len(t.path_split) < depth:
+                    value = 0
+                else:
+                    value = trove.getid(t.path_split[:depth])
+                self._cursor.execute('update trove_classifiers set %s=%d where id=%d' % (field, value, id))
+
+    def browse(self, selected_classifiers):
+        t = self.trove()
+        if not selected_classifiers:
+            tally = """select res.l2, count(*) from (select t.l2, rc.name, rc.version 
+            from trove_classifiers t, release_classifiers rc, releases r
+            where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
+            group by t.l2, rc.name, rc.version) res group by res.l2"""
+            self._cursor.execute(tally)
+            tally = self._cursor.fetchall()
+            tally = [(t.trove[c].path, count) for c, count in tally]
+            tally.sort()
+            return None, tally
+
+        # First compute statement to produce all packages still selected
+        pkgs = "select name, version, summary from releases where _pypi_hidden=FALSE"
+        for c in selected_classifiers:
+            level = t.trove[c].level
+            pkgs = """select distinct a.name, a.version, summary from (%s) a, release_classifiers rc, trove_classifiers t
+             where a.name=rc.name and a.version=rc.version and rc.trove_id=t.id and
+             t.l%d=%d""" % (pkgs, level, c)
+        # Next download all selected releases
+        self._cursor.execute(pkgs)
+        releases = self._cursor.fetchall()
+        # Finally, compute the tally
+        tally = """select tl.classifier,count(*) from (select distinct t.classifier, a.name,
+        a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2 
+        where a.name=rc.name and a.version=rc.version and rc.trove_id=t2.id""" % pkgs
+        # tally all level-2 classifiers
+        tally += " and (t.id=t2.l2"
+        # then tally for all level n+1 classifiers of selected_classifiers
+        for c in selected_classifiers:
+            level = t.trove[c].level
+            tally += " or (t.id=t2.l%d and t2.l%d=%s)" % (level+1, level, c)
+        tally += ")) tl group by tl.classifier"
+        self._cursor.execute(tally)
+        tally = self._cursor.fetchall()
+        return releases, tally
+
+    #
     # File handling
     #
     def gen_file_url(self, pyversion, name, filename):
@@ -1062,6 +1125,8 @@ class Store:
             self._conn.rollback()
         else:
             self._conn.close()
+        if not keep_trove:
+            self._trove = None
         self._conn = None
         self._cursor = None
 
@@ -1135,6 +1200,12 @@ if __name__ == '__main__':
     elif sys.argv[2] == 'adduser':
         otk = store.store_user(sys.argv[3], sys.argv[4], sys.argv[5])
         store.delete_otk(otk)
+        store.commit()
+    elif sys.argv[2] == 'checktrove':
+        store.check_trove()
+        store.commit()
+    elif sys.argv[2] == 'addclassifier':
+        store.add_classifier(sys.argv[3])
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]

@@ -9,6 +9,10 @@ class Node:
         self.name = name
         self.path = path
         self.path_split = path_split
+        if path_split:
+            self.level = len(path_split)
+        else:
+            self.level = 1
 
     def __repr__(self):
         return '<Node %d %s>'%(self.id, self.name)
@@ -18,12 +22,12 @@ class Node:
         for node in self.arcs.values():
             result.extend(node.subtree_ids())
         return result
-        
+
 class Trove:
     def __init__(self, cursor):
         self.root = Node()
         self.trove = {}
-        cursor.execute('select * from trove_classifiers order by classifier')
+        cursor.execute('select id,classifier from trove_classifiers order by classifier')
 
         # now generate the tree
         for id, line in cursor.fetchall():
