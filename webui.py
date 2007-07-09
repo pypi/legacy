@@ -329,7 +329,11 @@ class WebUI:
         if auth:
             authtype, auth = auth.split()
             if authtype.lower() == 'basic':
-                un, pw = base64.decodestring(auth).split(':')
+                try:
+                    un, pw = base64.decodestring(auth).split(':')
+                except (binascii.Error, ValueError):
+                    # Invalid base64, or not exactly one colon
+                    un = pw = ''
                 if self.store.has_user(un):
                     pw = sha.sha(pw).hexdigest()
                     user = self.store.get_user(un)
