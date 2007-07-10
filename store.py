@@ -544,16 +544,31 @@ class Store:
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''
-            select j.name,j.version,j.submitted_date,r.summary
-            from journals j, releases r
-            where j.version is not NULL
-                  and j.action = 'new release'
-                  and j.name = r.name and j.version = r.version
-                  and r._pypi_hidden = FALSE
-            order by submitted_date desc
-        ''')
-
+        # After the limited query below, we still have to do
+        # filtering. Assume that doubling the number of records
+        # we look for will still allow for sufficient room for
+        # filtering out unneeded records. If this was wrong,
+        # try again without limit.
+        limit = ' limit %s' % (2*num)
+        # This query is designed to run from the journals_latest_releases
+        # index, doing a reverse index scan, then lookups in the releases
+        # table to find the description and whether the package is hidden.
+        # Postgres will only do that if the number of expected results
+        # is "small".
+        statement = '''
+             select j.name, j.version, j.submitted_date, r.summary
+             from (select name,version,submitted_date from journals 
+             where version is not null and action='new release' 
+             order by submitted_date desc %s) j, releases r
+             where  j.name=r.name and j.version=r.version 
+             and not r._pypi_hidden'''
+        safe_execute(cursor, statement % limit)
+        result = Result(('name', 'version', 'submitted_date', 'summary'),
+            self.get_unique(cursor.fetchall())[:num])
+        if len(result) == num:
+            return result
+        # try again without limit
+        safe_execute(cursor, statement % '')
         return Result(('name', 'version', 'submitted_date', 'summary'),
             self.get_unique(cursor.fetchall())[:num])
 
