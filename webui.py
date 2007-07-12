@@ -1790,8 +1790,8 @@ class WebUI:
             if not user:
                 self.fail('user name unknown to me')
                 return
-            info = {'name': user['name'], 'email':user['email'],
-                'url': self.config.url}
+            info = {'name': user['name'], 'url': self.config.url,
+                 'email': urllib.quote(user['email'])}
             info['admin'] = self.config.adminemail
             self.send_email(user['email'], password_change_message%info)
             self.write_template('message.pt', title="Request password reset",
