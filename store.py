@@ -554,8 +554,7 @@ class Store:
                   and j.submitted_date > %s
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
 
-        return Result(('name', 'version', 'submitted_date', 'action'),
-            self.get_unique(cursor.fetchall()))
+        return Result(('name', 'version', 'submitted_date', 'action'), cursor.fetchall())
 
     def latest_releases(self, num=20):
         ''' Fetch "number" latest releases, youngest to oldest.
