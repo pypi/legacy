@@ -74,7 +74,7 @@ def updated_releases(store, since):
 def changelog(store, since):
     result = store.changelog(since)
     return [(row['name'],row['version'],
-             int(row['submitted_date'].ticks()),
+             int(row['submitted_date'].gmticks()),
              row['action'])
              for row in result]
 
