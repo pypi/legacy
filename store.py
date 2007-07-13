@@ -550,8 +550,7 @@ class Store:
         safe_execute(cursor, '''
             select name,version,submitted_date,action
             from journals j
-            where j.version is not NULL
-                  and j.submitted_date > %s
+            where j.submitted_date > %s
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
 
         return Result(('name', 'version', 'submitted_date', 'action'), cursor.fetchall())
@@ -1064,8 +1063,8 @@ class Store:
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''insert into journals (
               name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
-            (name, 'add %s file %s'%(pyversion, filename), date,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+            (name, version, 'add %s file %s'%(pyversion, filename), date,
             self.username, self.userip))
 
     def list_files(self, name, version):
