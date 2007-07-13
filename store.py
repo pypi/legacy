@@ -540,6 +540,23 @@ class Store:
         return Result(('name', 'version', 'submitted_date', 'summary'),
             self.get_unique(cursor.fetchall()))
 
+    def changelog(self, since):
+        '''Fetch (name, version, submitted_date, action) since 'since' argument.
+        '''
+        
+        assert isinstance(since, int)
+
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''
+            select name,version,submitted_date,action
+            from journals j
+            where j.version is not NULL
+                  and j.submitted_date > %s
+        ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
+
+        return Result(('name', 'version', 'submitted_date', 'action'),
+            self.get_unique(cursor.fetchall()))
+
     def latest_releases(self, num=20):
         ''' Fetch "number" latest releases, youngest to oldest.
         '''

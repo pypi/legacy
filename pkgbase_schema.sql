@@ -29,6 +29,9 @@ CREATE INDEX journals_version_idx ON journals(version);
 CREATE INDEX journals_latest_releases ON 
   journals(submitted_date, name, version) 
   WHERE version IS NOT NULL AND action='new release';
+CREATE INDEX journals_changelog ON 
+  journals(submitted_date, name, version, action) 
+  WHERE version IS NOT NULL;
 
 -- Table structure for table: packages
 CREATE TABLE packages ( 
