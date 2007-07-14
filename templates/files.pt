@@ -45,6 +45,8 @@ href="http://www.python.org/dev/doc/devel/dist/package-upload.html">upload</a>" 
     <option value="2.3">2.3</option>
     <option value="2.4">2.4</option>
     <option value="2.5">2.5</option>
+    <option value="2.5">2.6</option>
+    <option value="2.5">3.0</option>
    </select> (not needed for source distributions)
   </td>
  </tr>
