@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
-import logging, cStringIO, string, operator
+import logging, cStringIO, string
 from distutils.version import LooseVersion
 import trove
 
@@ -73,6 +73,9 @@ def utf8getter(n):
         return fields[n].decode('utf-8')
     return utf8get
 
+def itemgetter(n):
+    return lambda fields:fields[n]
+
 def FastResultRow(cols):
     """Create a ResultRow-like class that has all fields already preparsed.
     Non-UTF-8-String columns must be suffixed with !."""
@@ -81,7 +84,7 @@ def FastResultRow(cols):
     for i, col in enumerate(cols.split()):
         if col[-1] == '!':
             col = col[:-1]
-            getter = operator.itemgetter(i)
+            getter = itemgetter(i)
         else:
             getter = utf8getter(i)
         _keys.append(col)
