@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
-import logging, StringIO, string
+import logging, cStringIO, string, operator
 from distutils.version import LooseVersion
 import trove
 
@@ -67,8 +67,68 @@ class ResultRow:
             return value.decode('utf-8')
         return value
 
-def Result(cols, sequence):
-    return [ResultRow(cols, item) for item in iter(sequence)]
+def utf8getter(n):
+    def utf8get(fields):
+        if fields[n] is None: return fields[n]
+        return fields[n].decode('utf-8')
+    return utf8get
+
+def FastResultRow(cols):
+    """Create a ResultRow-like class that has all fields already preparsed.
+    Non-UTF-8-String columns must be suffixed with !."""
+    getters = {}
+    _keys = []
+    for i, col in enumerate(cols.split()):
+        if col[-1] == '!':
+            col = col[:-1]
+            getter = operator.itemgetter(i)
+        else:
+            getter = utf8getter(i)
+        _keys.append(col)
+        getters[i] = getters[col] = getter
+    class _FastResultRow:
+        _getters = getters
+        cols = _keys
+
+        def __init__(self, cols, info):
+            self.info = info
+
+        def __getitem__(self, index):
+            try:
+                return self._getters[index](self.info)
+            except KeyError:
+                if isinstance(index, int):
+                    raise IndexError, 'row index out of range'
+                raise
+
+        def __len__(self):
+            return len(self.info)
+
+        def as_dict(self):
+            res = {}
+            for key in self.cols:
+                res[key] = self[key]
+            return res
+
+        def keys(self):
+            return self.cols
+
+        def values(self):
+            res = [None] * len(self.info)
+            for i in xrange(len(self.info)):
+                res[i] = self[i]
+            return res
+
+        def items(self):
+            res = [None] * len(self.info)
+            for i, col in enumerate(self.cols):
+                res[i] = (col, self[col])
+            return res
+
+    return _FastResultRow
+
+def Result(cols, sequence, type=ResultRow):
+    return [type(cols, item) for item in iter(sequence)]
 
 def safe_execute(cursor, sql, params=None):
     """Tries to safely execute the given sql
@@ -365,6 +425,11 @@ class Store:
 
         return index
 
+    _Package = FastResultRow('''name stable_version version author author_email
+            maintainer maintainer_email home_page license summary description
+            description_html keywords platform download_url _pypi_ordering!
+            _pypi_hidden! cheesecake_installability_id!
+            cheesecake_documentation_id! cheesecake_code_kwalitee_id!''')
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -382,8 +447,7 @@ class Store:
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''
         safe_execute(cursor, sql, (name, version))
-        cols = 'name stable_version version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
-        return ResultRow(cols, cursor.fetchone())
+        return self._Package(None, cursor.fetchone())
 
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package's stable version.
@@ -393,13 +457,15 @@ class Store:
         safe_execute(cursor, sql, (name, ))
         return cursor.fetchone()[0]
 
+    _Packages = FastResultRow('name stable_version')
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name,stable_version from packages')
-        return Result(('name', 'stable_version'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Packages)
 
+    _Journal = FastResultRow('action submitted_date! submitted_by submitted_from')
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -413,8 +479,7 @@ class Store:
             from journals where name=%s and (version=%s or
            version is NULL) order by submitted_date'''
         safe_execute(cursor, sql, (name, version))
-        return Result(('action', 'submitted_date', 'submitted_by',
-            'submitted_from'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Journal)
 
     def count_packages(self):
         ''' Determine the number of packages registered with the index.
@@ -423,6 +488,7 @@ class Store:
         cursor.execute('select count(*) from packages')
         return int(cursor.fetchone()[0])
 
+    _Query_Packages = FastResultRow('name version summary _pypi_ordering!')
     def query_packages(self, spec, operator='and'):
         ''' Find packages that match the spec.
 
@@ -467,17 +533,18 @@ class Store:
             from releases %s
             order by lower(name), _pypi_ordering'''%where
         safe_execute(cursor, sql)
-        return Result(('name', 'version', 'summary', '_pypi_ordering'),
-            cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Query_Packages)
 
+    _Classifiers = FastResultRow('classifier')
     def get_classifiers(self):
         ''' Fetch the list of valid classifiers from the database.
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, 'select classifier from trove_classifiers'
             ' order by classifier')
-        return Result(('classifier', ), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Classifiers)
 
+    _Release_Classifiers = FastResultRow('classifier trove_id!')
     def get_release_classifiers(self, name, version):
         ''' Fetch the list of classifiers for the release.
         '''
@@ -485,8 +552,9 @@ class Store:
         safe_execute(cursor, '''select classifier, trove_id
             from trove_classifiers, release_classifiers where id=trove_id
             and name=%s and version=%s order by classifier''', (name, version))
-        return Result(('classifier', 'trove_id'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Release_Classifiers)
 
+    _Release_Relationships = FastResultRow('specifier')
     def get_release_relationships(self, name, version, relationship):
         ''' Fetch the list of relationships of a particular type, either
             "requires", "provides" or "obsoletes".
@@ -494,15 +562,16 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select specifier from release_%s where
             name=%%s and version=%%s'''%relationship, (name, version))
-        return Result(('specifier', ), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Release_Relationships)
 
+    _Package_Roles = FastResultRow('role_name user_name')
     def get_package_roles(self, name):
         ''' Fetch the list of Roles for the package.
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, '''select role_name, user_name
             from roles where package_name=%s''', (name, ))
-        return Result(('role_name', 'user_name'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Package_Roles)
 
     def get_unique(self, iterable):
         ''' Iterate over list of (name,version,date,summary) tuples
@@ -520,6 +589,7 @@ class Store:
 
         return L
 
+    _Updated_Releases = FastResultRow('name version submitted_date! summary')
     def updated_releases(self, since):
         '''Fetch all releases younger than "since" argument.
         '''
@@ -537,9 +607,10 @@ class Store:
             order by submitted_date desc
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
 
-        return Result(('name', 'version', 'submitted_date', 'summary'),
-            self.get_unique(cursor.fetchall()))
+        return Result(None, self.get_unique(cursor.fetchall()),
+                self._Updated_Releases)
 
+    _Changelog = FastResultRow('name version submitted_date! action') 
     def changelog(self, since):
         '''Fetch (name, version, submitted_date, action) since 'since' argument.
         '''
@@ -553,8 +624,9 @@ class Store:
             where j.submitted_date > %s
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
 
-        return Result(('name', 'version', 'submitted_date', 'action'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Changelog)
 
+    _Latest_Releases = FastResultRow('name version submitted_date! summary')
     def latest_releases(self, num=20):
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
@@ -577,16 +649,18 @@ class Store:
              order by submitted_date desc %s) j, releases r
              where  j.name=r.name and j.version=r.version 
              and not r._pypi_hidden'''
+        print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
-        result = Result(('name', 'version', 'submitted_date', 'summary'),
-            self.get_unique(cursor.fetchall())[:num])
+        result = Result(None, self.get_unique(cursor.fetchall())[:num],
+                self._Latest_Releases)
         if len(result) == num:
             return result
         # try again without limit
         safe_execute(cursor, statement % '')
-        return Result(('name', 'version', 'submitted_date', 'summary'),
-            self.get_unique(cursor.fetchall())[:num])
+        return Result(None, self.get_unique(cursor.fetchall())[:num],
+                self._Latest_Releases)
 
+    _Latest_Updates = FastResultRow('name version submitted_date! summary')
     def latest_updates(self, num=20):
         ''' Fetch "number" latest updates, youngest to oldest.
         '''
@@ -600,9 +674,11 @@ class Store:
             order by submitted_date desc
         ''')
 
-        return Result(('name', 'version', 'submitted_date', 'summary'),
-            self.get_unique(cursor.fetchall())[:num])
+        return Result(None, self.get_unique(cursor.fetchall())[:num],
+                self._Latest_Updates)
 
+    _Latest_Release = FastResultRow('''name version submitted_date! summary
+            _pypi_hidden!''')
     def get_latest_release(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
         '''
@@ -628,9 +704,9 @@ class Store:
         res = cursor.fetchall()
         if res is None:
             return []
-        cols = 'name version submitted_date summary _pypi_hidden'.split()
-        return Result(cols, res)
+        return Result(None, res, _self._Latest_Release)
 
+    _Package_Releases = FastResultRow('name version summary _pypi_hidden!')
     def get_package_releases(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
         '''
@@ -650,8 +726,7 @@ class Store:
         res = cursor.fetchall()
         if res is None:
             return []
-        cols = 'name version summary _pypi_hidden'.split()
-        return Result(cols, res)
+        return Result(None, res, self._Package_Releases)
 
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
@@ -830,6 +905,7 @@ class Store:
             (name, otk))
         return otk
 
+    _User = FastResultRow('name password email gpg_keyid')
     def get_user(self, name):
         ''' Retrieve info about the user from the database.
 
@@ -839,8 +915,7 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select name, password, email, gpg_keyid
             from users where name=%s''', (name,))
-        return ResultRow(('name', 'password', 'email', 'gpg_keyid'),
-            cursor.fetchone())
+        return self._User(None, cursor.fetchone())
 
     def get_user_by_email(self, email):
         ''' Retrieve info about the user from the database, looked up by
@@ -852,15 +927,15 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''select name, password, email, gpg_keyid
             from users where email=%s''', (email,))
-        return ResultRow(('name', 'password', 'email', 'gpg_keyid'),
-            cursor.fetchone())
+        return self._User(None, cursor.fetchone())
 
+    _Users = FastResultRow('name email')
     def get_users(self):
         ''' Fetch the complete list of users from the database.
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name,email from users order by lower(name)')
-        return Result(('name', 'email'), cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Users)
 
     def has_role(self, role_name, package_name=None, user_name=None):
         ''' Determine whether the current user has the named Role for the
@@ -920,6 +995,7 @@ class Store:
             return ''
         return res[0]
 
+    _User_Packages = FastResultRow('package_name')
     def user_packages(self, user):
         ''' Retrieve package info for all packages of a user
         '''
@@ -931,7 +1007,7 @@ class Store:
         res = cursor.fetchall()
         if res is None:
             res = []
-        return Result(('package_name',), res)
+        return Result(None, res, self._User_Packages)
 
     #
     # Trove
@@ -1067,6 +1143,8 @@ class Store:
             (name, version, 'add %s file %s'%(pyversion, filename), date,
             self.username, self.userip))
 
+    _List_Files = FastResultRow('''packagetype python_version comment_text
+    filename md5_digest size! has_sig! downloads!''')
     def list_files(self, name, version):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
@@ -1074,8 +1152,6 @@ class Store:
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        cols = ('packagetype', 'python_version', 'comment_text',
-            'filename', 'md5_digest', 'size', 'has_sig', 'downloads')
         for pt, pv, ct, fn, m5, dn in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
             try:
@@ -1085,7 +1161,7 @@ class Store:
                 # file not on disk any more - don't list it
                 continue
             has_sig = os.path.exists(path+'.asc')
-            l.append(ResultRow(cols, (pt, pv, ct, fn, m5, size, has_sig, dn)))
+            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn)))
         return l
 
     def has_file(self, name, version, filename):
@@ -1119,6 +1195,8 @@ class Store:
             os.rmdir(dirpath)
             dirpath = os.path.split(dirpath)[0]
 
+    _File_Info = FastResultRow('''python_version packagetype name comment_text
+                                filename''')
     def get_file_info(self, digest):
         '''Get the file info based on the md5 hash.
 
@@ -1132,8 +1210,7 @@ class Store:
         row = cursor.fetchone()
         if not row:
             raise KeyError, 'invalid digest %r'%digest
-        return ResultRow(('python_version', 'packagetype', 'name',
-            'comment_text', 'filename'), row)
+        return self._File_Info(None, row)
 
     #
     # Handle the underlying database
@@ -1224,7 +1301,7 @@ def processDescription(source, output_encoding='unicode'):
 
     # capture publishing errors, they go to stderr
     old_stderr = sys.stderr
-    sys.stderr = s = StringIO.StringIO()
+    sys.stderr = s = cStringIO.StringIO()
     parts = None
     try:
         # Convert reStructuredText to HTML using Docutils.
