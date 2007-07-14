@@ -1601,9 +1601,9 @@ class WebUI:
         else:
             signature = None
 
-        # nothing over 5M please
-        if len(content) > 5*1024*1024:
-            raise FormError, 'invalid distribution file'
+        # nothing over 10M please
+        if len(content) > 10*1024*1024:
+            raise FormError, 'distribution file too large'
         if signature and len(signature) > 100*1024:
             raise FormError, 'invalid signature'
 
