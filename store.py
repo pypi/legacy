@@ -707,7 +707,7 @@ class Store:
         res = cursor.fetchall()
         if res is None:
             return []
-        return Result(None, res, _self._Latest_Release)
+        return Result(None, res, self._Latest_Release)
 
     _Package_Releases = FastResultRow('name version summary _pypi_hidden!')
     def get_package_releases(self, name, hidden=None):
