@@ -897,7 +897,7 @@ class WebUI:
         categories = []
         for c in self.store.get_release_classifiers(name, version):
             path = str2path(c['classifier'])
-            url = "%s?:action=browse&amp;c=%s" % (self.url_path, c['trove_id'])
+            url = "%s?:action=browse&c=%s" % (self.url_path, c['trove_id'])
             categories.append(dict(
                 name = c['classifier'],
                 path = path,
