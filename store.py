@@ -107,6 +107,9 @@ def FastResultRow(cols):
         def __len__(self):
             return len(self.info)
 
+        def __nonzero__(self):
+            return bool(self.info)
+
         def as_dict(self):
             res = {}
             for key in self.cols:
