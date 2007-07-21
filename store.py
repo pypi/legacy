@@ -1394,9 +1394,12 @@ def get_description_urls(html):
     from htmllib import HTMLParser
     from formatter import NullFormatter
     import urlparse
-    parser = HTMLParser(NullFormatter())
-    parser.feed(html)
-    parser.close()
+    try:
+        parser = HTMLParser(NullFormatter())
+        parser.feed(html)
+        parser.close()
+    except sgmllib.SGMLParseError:
+        return []
     result = []
     for url in parser.anchorlist:
         if urlparse.urlparse(url)[0]:
