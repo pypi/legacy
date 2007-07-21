@@ -1298,7 +1298,12 @@ class Store:
         if keep_conn and connection:
             self._conn = connection
             # Rollback any uncommitted earlier change
-            self._conn.rollback()
+            try:
+                self._conn.rollback()
+            except psycopg.InterfaceError, e:
+                # already closed
+                connection = None
+                return self.open()
         else:
             self._conn = connection = psycopg.connect(**cd)
 
