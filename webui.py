@@ -426,8 +426,12 @@ class WebUI:
             html.append("""<html><head><title>Links for %s</title></head>"""
                         % path)
             html.append("<body><h1>Links for %s</h1>" % path)
-            for href,text in urls:
-                html.append("<a href='%s'>%s</a><br/>\n" % (href, text))
+            for href, rel, text in urls:
+                if rel:
+                    rel = ' rel="%s"' % rel
+                else:
+                    rel = ''
+                html.append("<a href='%s'%s>%s</a><br/>\n" % (href, rel, text))
             html.append("</body></html>")
             html = ''.join(html)
             self.handler.send_response(200, 'OK')

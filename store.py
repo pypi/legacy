@@ -458,23 +458,24 @@ class Store:
     def get_package_urls(self, name):
         ''' Return all URLS (home, download, files) for a package,
             
-            Return pairs of (link, label).
+            Return pairs of (link, rel, label).
         '''
         cursor = self.get_cursor()
         result = []
         safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
         where name=%s''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
-            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5, fname))
+            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
+                           None, fname))
         safe_execute(cursor, '''select version, home_page, download_url from
         releases where name=%s''', (name,))
         any_releases = False
         for version, home_page, download_url in cursor.fetchall():
             any_releases = True
             if home_page and home_page != 'UNKNOWN':
-                result.append((home_page, version + ' home_page'))
+                result.append((home_page, 'homepage', version + ' home_page'))
             if download_url and download_url != 'UNKNOWN':
-                result.append((download_url, version + ' download_url'))
+                result.append((download_url, 'download', version + ' download_url'))
         if not any_releases:
             return None
         return result
