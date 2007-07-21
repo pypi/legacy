@@ -224,6 +224,7 @@ class Store:
         message = None
         relationships = {}
         old_cifiers = []
+        html = None
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
@@ -297,7 +298,7 @@ class Store:
 
             # ReST-format the description
             if info.has_key('description'):
-                info['description_html'] = processDescription(info['description'])
+                info['description_html'] = html = processDescription(info['description'])
             else:
                 info['description_html'] = ''
 
@@ -325,6 +326,10 @@ class Store:
             # hide all other releases of this package
             safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
                 'name=%s and version <> %s', ('TRUE', name, version))
+
+        # add description urls
+        if html:
+            self.update_description_urls(name, version, get_description_urls(html))
 
         # handle trove information
         if info.has_key('classifiers') and old_cifiers != classifiers:
@@ -462,11 +467,8 @@ class Store:
         '''
         cursor = self.get_cursor()
         result = []
-        safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
-        where name=%s''', (name,))
-        for fname, pyversion, md5 in cursor.fetchall():
-            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
-                           None, fname))
+
+        # homepage, download url
         safe_execute(cursor, '''select version, home_page, download_url from
         releases where name=%s''', (name,))
         any_releases = False
@@ -478,6 +480,20 @@ class Store:
                 result.append((download_url, 'download', version + ' download_url'))
         if not any_releases:
             return None
+
+        # uploaded files
+        safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
+        where name=%s''', (name,))
+        for fname, pyversion, md5 in cursor.fetchall():
+            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
+                           None, fname))
+
+        # urls from description
+        safe_execute(cursor, '''select distinct url from description_urls
+        where name=%s''', (name,))
+        for url, in cursor.fetchall():
+            result.append((url, None, url))
+        
         return result
 
     def get_stable_version(self, name):
@@ -759,6 +775,23 @@ class Store:
             return []
         return Result(None, res, self._Package_Releases)
 
+    def update_description_urls(self, name, version, urls):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''delete from description_urls
+        where name=%s and version=%s''', (name, version))
+        for url in urls:
+            url = url.encode('utf-8')
+            safe_execute(cursor, '''insert into description_urls(name, version, url) 
+            values(%s, %s, %s)''', (name, version, url))
+
+    def updateurls(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select name, version, description_html from
+                releases where description_html is not null''')
+        for name, version, desc in cursor.fetchall():
+            urls = get_description_urls(desc)
+            self.update_description_urls(name, version, urls)
+
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
         '''
@@ -774,6 +807,8 @@ class Store:
                 'classifiers'):
             safe_execute(cursor, '''delete from release_%s where
                 name=%%s and version=%%s'''%tab, (name, version))
+        safe_execute(cursor, 'delete from description_urls where name=%s and version=%s',
+               (name, version))
 
         # delete releases table entry
         safe_execute(cursor, 'delete from releases where name=%s and version=%s',
@@ -794,6 +829,7 @@ class Store:
             safe_execute(cursor, 'delete from release_%s where name=%%s'%tab,
                 (name, ))
 
+        safe_execute(cursor, 'delete from description_urls where name=%s', (name,))
         safe_execute(cursor, 'delete from releases where name=%s', (name,))
         safe_execute(cursor, 'delete from journals where name=%s', (name,))
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
@@ -1354,6 +1390,18 @@ def processDescription(source, output_encoding='unicode'):
     
     return output
 
+def get_description_urls(html):
+    from htmllib import HTMLParser
+    from formatter import NullFormatter
+    import urlparse
+    parser = HTMLParser(NullFormatter())
+    parser.feed(html)
+    parser.close()
+    result = []
+    for url in parser.anchorlist:
+        if urlparse.urlparse(url)[0]:
+            result.append(url)
+    return result
 
 if __name__ == '__main__':
     import config
@@ -1372,6 +1420,9 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'addclassifier':
         store.add_classifier(sys.argv[3])
+        store.commit()
+    elif sys.argv[2] == 'updateurls':
+        store.updateurls()
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]

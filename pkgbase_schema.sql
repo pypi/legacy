@@ -200,6 +200,15 @@ CREATE INDEX release_urls_name_idx ON release_urls(name);
 CREATE INDEX release_urls_version_idx ON release_urls(version);
 CREATE INDEX release_urls_packagetype_idx ON release_urls(packagetype);
 
+-- Table structure for table: description_urls
+CREATE TABLE description_urls (
+   name TEXT,
+   version TEXT,
+   url TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+);
+CREATE INDEX description_urls_name_idx ON description_urls(name);
+CREATE INDEX description_urls_name_version_idx ON description_urls(name, version);
 
 -- Table structure for table: roles
 -- Note: roles are Maintainer, Admin, Owner
