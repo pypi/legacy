@@ -455,6 +455,30 @@ class Store:
         safe_execute(cursor, sql, (name, version))
         return self._Package(None, cursor.fetchone())
 
+    def get_package_urls(self, name):
+        ''' Return all URLS (home, download, files) for a package,
+            
+            Return pairs of (link, label).
+        '''
+        cursor = self.get_cursor()
+        result = []
+        safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
+        where name=%s''', (name,))
+        for fname, pyversion, md5 in cursor.fetchall():
+            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5, fname))
+        safe_execute(cursor, '''select version, home_page, download_url from
+        releases where name=%s''', (name,))
+        any_releases = False
+        for version, home_page, download_url in cursor.fetchall():
+            any_releases = True
+            if home_page and home_page != 'UNKNOWN':
+                result.append((home_page, version + ' home_page'))
+            if download_url and download_url != 'UNKNOWN':
+                result.append((download_url, version + ' download_url'))
+        if not any_releases:
+            return None
+        return result
+
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package's stable version.
         '''
@@ -468,7 +492,7 @@ class Store:
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name,stable_version from packages')
+        safe_execute(cursor, 'select name,stable_version from packages order by name')
         return Result(None, cursor.fetchall(), self._Packages)
 
     _Journal = FastResultRow('action submitted_date! submitted_by submitted_from')

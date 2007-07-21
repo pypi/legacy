@@ -323,6 +323,10 @@ class WebUI:
         ''' Figure out what the request is, and farm off to the appropriate
             handler.
         '''
+        # See if this is the "simple" pages
+        script_name = self.env.get('SCRIPT_NAME')
+        if script_name and script_name == self.config.simple_script:
+            return self.run_simple()
         # see if the user has provided a username/password
         self.username = None
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
@@ -392,6 +396,46 @@ class WebUI:
 
     def xmlrpc(self):
         rpc.handle_request(self)
+
+    def run_simple(self):
+        path = self.env.get('PATH_INFO')
+        if not path:
+            raise Redirect, self.config.simple_script+'/'
+        if path=='/':
+            html = []
+            html.append("<html><head><title>Simple Index</title></head>")
+            html.append("<body>\n")
+            for name,stable_version in self.store.get_packages():
+                html.append("<a href='%s'>%s</a><br/>\n" % (name,name))
+            html.append("</body></html>")
+            html = ''.join(html).encode('utf-8')
+            self.handler.send_response(200, 'OK')
+            self.handler.set_content_type('text/html; charset=utf-8')
+            self.handler.end_headers()
+            self.wfile.write(html)
+            return
+
+        path = path[1:]
+        if path.endswith('/'):
+            path = path[:-1]
+        if '/' not in path:
+            urls = self.store.get_package_urls(path)
+            if urls is None:
+                raise NotFound, path + " does not have any releases"
+            html = []
+            html.append("""<html><head><title>Links for %s</title></head>"""
+                        % path)
+            html.append("<body><h1>Links for %s</h1>" % path)
+            for href,text in urls:
+                html.append("<a href='%s'>%s</a><br/>\n" % (href, text))
+            html.append("</body></html>")
+            html = ''.join(html)
+            self.handler.send_response(200, 'OK')
+            self.handler.set_content_type('text/html; charset=utf-8')
+            self.handler.end_headers()
+            self.wfile.write(html)
+            return
+        raise NotFound, path
 
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='Home')
