@@ -3,7 +3,7 @@ CREATE TABLE users (
    name TEXT PRIMARY KEY, 
    password TEXT, 
    email TEXT, 
-   public_key TEXT
+   gpg_keyid TEXT
 );
 CREATE INDEX users_email_idx ON users(email);
 
