@@ -406,7 +406,7 @@ class WebUI:
             html.append("<html><head><title>Simple Index</title></head>")
             html.append("<body>\n")
             for name,stable_version in self.store.get_packages():
-                html.append("<a href='%s'>%s</a><br/>\n" % (name,name))
+                html.append("<a href='%s/'>%s</a><br/>\n" % (name,name))
             html.append("</body></html>")
             html = ''.join(html).encode('utf-8')
             self.handler.send_response(200, 'OK')
