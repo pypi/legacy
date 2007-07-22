@@ -13,7 +13,7 @@
                      " name="description" />
        <link rel="stylesheet" href="http://www.python.org/css/pypi.css" type="text/css"/>
 
-       <link rel="alternate" type="application/rss+xml" title="RSS: 20 latest updates" href="http://www.python.org/pypi?:action=rss"/>
+       <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
       <link media="screen" href="http://www.python.org/styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
       <link media="screen" href="http://www.python.org/styles/netscape4.css" type="text/css" rel="stylesheet" />
       <link media="print" href="http://www.python.org/styles/print.css" type="text/css" rel="stylesheet" />

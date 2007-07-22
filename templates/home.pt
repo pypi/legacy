@@ -22,7 +22,7 @@ register to submit</a>)</li>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
 
-<tal:for-release repeat="release python: app.store.latest_releases()">
+<tal:for-release repeat="release app/store/latest_releases">
 <tal:let define="name python: release[0]; 
  version python: release[1]; 
  date python: release[2]; 

@@ -674,7 +674,7 @@ class Store:
         return Result(None, cursor.fetchall(), self._Changelog)
 
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
-    def latest_releases(self, num=20):
+    def latest_releases(self, num=30):
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
         cursor = self.get_cursor()
@@ -696,7 +696,7 @@ class Store:
              order by submitted_date desc %s) j, releases r
              where  j.name=r.name and j.version=r.version 
              and not r._pypi_hidden'''
-        print ' '.join((statement % limit).split())
+        #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
         result = Result(None, self.get_unique(cursor.fetchall())[:num],
                 self._Latest_Releases)
