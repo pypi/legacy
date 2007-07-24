@@ -5,7 +5,7 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
-<p>The Python Cheese Shop is a repository of software for the Python
+<p>The Python Package Index is a repository of software for the Python
 programming language. There are currently
 <strong tal:content="app/store/count_packages" />
 packages here. You may:

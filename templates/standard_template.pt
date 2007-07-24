@@ -7,7 +7,7 @@
     <head>
       <META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" tal:condition="data/norobots"/>
       <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-      <title tal:content="string:Python Cheese Shop : ${data/title}" />
+      <title tal:content="string:Python Package Index : ${data/title}" />
       <meta content="python programming language object oriented web free source" name="keywords" />
       <meta content="Home page for Python, an interpreted, interactive, object-oriented, extensible programming language. It provides an extraordinary combination of clarity and versatility, and is free and comprehensively ported.
                      " name="description" />
@@ -53,7 +53,7 @@
         <div id="menu">
           <ul class="level-one">            
             <li class="selected">
-              <a class="selected" tal:attributes="href app/url_path">Cheese Shop</a>
+              <a class="selected" tal:attributes="href app/url_path">Package Index</a>
             
               <ul class="level-two">
                 
@@ -99,7 +99,7 @@
           <div id="content">
 
             <div id="breadcrumb">
-              <a tal:attributes="href app/url_path">Cheese Shop</a>
+              <a tal:attributes="href app/url_path">Package Index</a>
               <tal:block condition="exists:data/version">
                 <span class="breadcrumb-separator">&gt;</span> 
                 <a tal:content="data/title" tal:attributes="href python:app.packageURL(data['name'], data['version'])"></a>

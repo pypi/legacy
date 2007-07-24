@@ -147,12 +147,12 @@
  </li>
 
  <li tal:condition="data/roles/Owner | nothing">
-  <strong>Cheese Shop Owner:</strong>
+  <strong>Package Index Owner:</strong>
   <span tal:content="python:', '.join(data['roles']['Owner'])" />
  </li>
 
  <li tal:condition="data/roles/Maintainer | nothing">
-  <strong>Cheese Shop Maintainer:</strong>
+  <strong>Package Index Maintainer:</strong>
   <span tal:content="python:', '.join(data['roles']['Maintainer'])" />
  </li>
 
