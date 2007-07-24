@@ -500,7 +500,7 @@ class WebUI:
                 try:
                     c = int(x[1])
                 except:
-                    pass
+                    continue
                 if trove.trove.has_key(c):
                     cat_ids.append(c)
             elif x[0] == 'show' and x[1] == 'all':
