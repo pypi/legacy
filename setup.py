@@ -9,15 +9,15 @@ setup(
     name = "pypi",
     version = '2005-08-01',
     description =
-        "PyPI is the Python Package Index at http://cheeseshop.python.org/",
+        "PyPI is the Python Package Index at http://pypi.python.org/",
     long_description = '''PyPI has a new home at
-<http://cheeseshop.python.org/>. Users should need not need to change
+<http://pypi.python.org/>. Users should need not need to change
 anything, as the old "www" address should still work. Use of the new
 address in preference is encouraged.
 ''',
     author = "Richard Jones",
     author_email = "richard@mechanicalcat.net",
-    url = 'http://cheeseshop.python.org/',
+    url = 'http://pypi.python.org/',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',

@@ -427,7 +427,8 @@ class WebUI:
                         % path)
             html.append("<body><h1>Links for %s</h1>" % path)
             for href, rel, text in urls:
-                if href.startswith('http://cheeseshop.python.org/pypi'):
+                if href.startswith('http://cheeseshop.python.org/pypi') or \
+                   href.startswith('http://pypi.python.org/pypi'):
                     # Suppress URLs that point to us
                     continue
                 if rel:
