@@ -1109,7 +1109,7 @@ class Store:
             levels.append(l[0])
         cursor.execute("select nextval('trove_ids')")
         nextid = cursor.fetchone()[0]
-        levels += [nextid] + [None]*(3-len(levels))
+        levels += [nextid] + [0]*(3-len(levels))
         cursor.execute('''insert into trove_classifiers(id, classifier, l2, l3, l4, l5) 
             values(%s, %s, %s, %s, %s, %s)''',[nextid, ' :: '.join(fields)]+levels)
 
