@@ -31,8 +31,20 @@ def add_classifier(store, classifier):
     cursor = store.get_cursor()
     cursor.execute("select max(id) from trove_classifiers")
     id = int(cursor.fetchone()[0]) + 1
-    cursor.execute('insert into trove_classifiers (id, classifier) '
-        'values (%s,%s)', (id, classifier))
+    fields = [f.strip() for f in classifier.split('::')]
+    for f in fields:
+        assert ':' not in f
+    levels = []
+    for l in range(2, len(fields)):
+        c2 = ' :: '.join(fields[:l])
+        cursor.execute('select id from trove_classifiers where classifier=%s', (c2,))
+        l = cursor.fetchone()
+        if not l:
+            raise ValueError, c2 + " is not a known classifier"
+        levels.append(l[0])
+    levels += [id] + [0]*(3-len(levels))
+    cursor.execute('insert into trove_classifiers (id, classifier, l2, l3, l4, l5) '
+        'values (%s,%s,%s,%s,%s,%s)', [id, classifier]+levels)
     print 'done'
 
 if __name__ == '__main__':

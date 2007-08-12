@@ -1094,26 +1094,6 @@ class Store:
                     value = trove.getid(t.path_split[:depth])
                 cursor.execute('update trove_classifiers set %s=%d where id=%d' % (field, value, id))
 
-    def add_classifier(self, c):
-        cursor = self.get_cursor()
-        fields = [f.strip() for f in c.split('::')]
-        for f in fields:
-            assert ':' not in f
-        levels = []
-        for l in range(2, len(fields)):
-            c2 = ' :: '.join(fields[:l])
-            cursor.execute('select id from trove_classifiers where classifier=%s', (c2,))
-            l = cursor.fetchone()
-            if not l:
-                raise ValueError, c2 + " is not a known classifier"
-            levels.append(l[0])
-        cursor.execute("select nextval('trove_ids')")
-        nextid = cursor.fetchone()[0]
-        levels += [nextid] + [0]*(3-len(levels))
-        cursor.execute('''insert into trove_classifiers(id, classifier, l2, l3, l4, l5) 
-            values(%s, %s, %s, %s, %s, %s)''',[nextid, ' :: '.join(fields)]+levels)
-
-
     def browse_tally(self):
         import time
         cursor = self.get_cursor()
@@ -1445,9 +1425,6 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'checktrove':
         store.check_trove()
-        store.commit()
-    elif sys.argv[2] == 'addclassifier':
-        store.add_classifier(sys.argv[3])
         store.commit()
     elif sys.argv[2] == 'updateurls':
         store.updateurls()
