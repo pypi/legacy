@@ -1398,7 +1398,7 @@ def processDescription(source, output_encoding='unicode'):
 def get_description_urls(html):
     from htmllib import HTMLParser
     from formatter import NullFormatter
-    import urlparse
+    import urlparse, sgmllib
     try:
         parser = HTMLParser(NullFormatter())
         parser.feed(html)
