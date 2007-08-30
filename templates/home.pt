@@ -18,6 +18,11 @@ tree of packages</a></li>
 register to submit</a>)</li>
 </ul>
 
+<p>Users of setuptools are encouraged to try out a 
+<a href="http://pypi.python.org/simple/">lighter-weight
+version of the index</a>. To use it, pass 
+"-i http://pypi.python.org/simple/" to easy_install.</p>
+
 <p>Last 30 updates:</p>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
