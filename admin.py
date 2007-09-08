@@ -24,6 +24,15 @@ def remove_package(store, name):
     cursor.execute('delete from roles where package_name=%s', name)
     print 'done'
 
+def add_owner(store, package, owner):
+    user = store.get_user(owner)
+    if user is None:
+        raise ValueError, 'user name unknown to me'
+    if not store.has_package(package):
+        raise ValueError, 'no such package'
+    store.add_role(owner, 'Owner', package)
+    
+
 
 def add_classifier(store, classifier):
     ''' Add a classifier to the trove_classifiers list
@@ -60,6 +69,8 @@ if __name__ == '__main__':
             remove_package(*args)
         elif command == 'addclass':
             add_classifier(*args)
+        elif command == 'addowner':
+            add_owner(*args)
         else:
             print "unknown command '%s'!"%command
         store.commit()
