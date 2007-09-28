@@ -258,7 +258,7 @@ class WebUI:
         self.handler.set_content_type('text/html; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
-        
+
     def fail(self, message, title="Python Cheese Shop", code=400,
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
@@ -310,7 +310,7 @@ class WebUI:
             if action_name == 'role_form' and (
                 not self.username or not self.store.has_role('Admin', '')):
                 continue
-            
+
             cssclass = ''
             if action_name == self.nav_current:
                 cssclass = 'selected'
@@ -518,7 +518,7 @@ class WebUI:
 
         # we don't need the database any more, so release it
         self.store.close()
-  
+
         # group tally into parent nodes
         boxes = {}
         for id, count in tally:
@@ -549,7 +549,7 @@ class WebUI:
         for p in packages_:
             packages.append(dict(name=p[0], version=p[1], summary=p[2],
                 url=self.packageURL(p[0], p[1])))
- 
+
         # ... build selected categories viewdata
         selected_categories = []
         for c in cat_ids:
@@ -562,7 +562,7 @@ class WebUI:
                     path = n.path_split,
                     pathstr = path2str(n.path_split),
                     unselect_url = unselect_url))
-  
+
         # ... build available categories viewdata
         available_categories = []
         for name, subcategories in available_categories_:
@@ -581,12 +581,12 @@ class WebUI:
                     packages_count = count,
                     url = url,
                     description = subcategory[-1]))
-  
+
             available_categories.append(dict(
                 subcategories=sub, name=name, id=id))
 
-        # only show packages if they're less than 20 and the user has 
-        # selected some categories, or if the user has explicitly asked 
+        # only show packages if they're less than 20 and the user has
+        # selected some categories, or if the user has explicitly asked
         # for them all to be shown by passing show=all on the URL
         show_packages = selected_categories and \
             (packages_count < 30 or show_all)
@@ -735,15 +735,15 @@ class WebUI:
         SE = cElementTree.SubElement
 
         project = SE(root, 'Project')
- 
+
         def write_element(parent, attr, element):
             value = info[attr]
-            if not value:
+            if not value or value == 'UNKNOWN':
                 return
             element = SE(parent, element)
             element.text = value
             element.tail = '\n'
-         
+
          # Not handled here: version, keywords
         for attr, element in [('name', 'name'),
                               ('summary', 'shortdesc'),
@@ -753,7 +753,7 @@ class WebUI:
               write_element(project, attr, element)
 
         url = info['home_page']
-        if url:
+        if url and url != 'UNKNOWN':
             url = SE(project, 'homepage', {'rdf:resource': url})
             url.tail = '\n'
 
@@ -765,13 +765,13 @@ class WebUI:
             pelem = SE(maint, 'foaf:Person')
             write_element(pelem, person, 'foaf:name')
             email = info[person+'_email']
-            if email:
+            if email and email != 'UNKNOWN':
                 obj = sha.new(email)
                 email = binascii.b2a_hex(obj.digest())
                 elem = SE(pelem, 'foaf:mbox_sha1sum')
                 elem.text = email
             maint.tail = '\n'
- 
+
         # Write version
         version = info['version']
         if version:
@@ -780,7 +780,7 @@ class WebUI:
             velem = SE(release, 'Version')
             revision = SE(velem, 'revision')
             revision.text = version
- 
+
         # write XML
         s = cStringIO.StringIO()
         s.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
@@ -873,7 +873,7 @@ class WebUI:
         un = urllib.quote_plus(name.encode('utf-8'))
         uv = urllib.quote_plus(version.encode('utf-8'))
         url = '%s?name=%s&amp;version=%s'%(self.url_path, un, uv)
-        return '''<p class="release-nav">Package: 
+        return '''<p class="release-nav">Package:
   <a href="%s?:action=role_form&amp;package_name=%s">admin</a> |
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
@@ -993,7 +993,7 @@ class WebUI:
         "for", "if", "in", "into", "is", "it",
         "no", "not", "of", "on", "or", "such",
         "that", "the", "their", "then", "there", "these",
-        "they", "this", "to", "was", "will", "with" 
+        "they", "this", "to", "was", "will", "with"
     ])
     def search(self, nav_current='index'):
         ''' Search for the indicated term.
@@ -1032,7 +1032,7 @@ class WebUI:
             self.form['version'] = l[0][-1]['version']
             return self.display()
 
-        # sort and pull out just the 
+        # sort and pull out just the
         l.sort()
         l = [e[-1] for e in l]
 
@@ -1095,12 +1095,12 @@ class WebUI:
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
             elif property in ('license', 'platform'):
-                field = '''<textarea wrap="hard" name="%s" rows="5" 
+                field = '''<textarea wrap="hard" name="%s" rows="5"
                     cols="80">%s</textarea><br />You should enter a full
                     description here only if appropriate classifiers aren\'t
                     available (see below).'''%(property, cgi.escape(value))
             elif property.endswith('description'):
-                field = '''<textarea wrap="hard" name="%s" rows="5" 
+                field = '''<textarea wrap="hard" name="%s" rows="5"
                     cols="80">%s</textarea><br />You may use
                     <a target="_new" href="http://docutils.sf.net/rst.html">ReStructuredText</a>
                     formatting for this field.'''%(property,
@@ -1559,13 +1559,13 @@ class WebUI:
         if not self.username:
             raise Unauthorised, \
                 "You must be identified to edit package information"
-        
+
         # Verify protocol version
         if self.form.has_key('protocol_version'):
             protocol_version = self.form['protocol_version']
         else:
             protocol_version = self.CURRENT_UPLOAD_PROTOCOL
-            
+
         if protocol_version!=self.CURRENT_UPLOAD_PROTOCOL:
             # If a new protocol version is added, backward compatibility
             # with old distutils upload commands needs to be preserved
@@ -1609,7 +1609,7 @@ class WebUI:
         md5_digest = self.form['md5_digest']
 
         comment = self.form['comment']
-        
+
         # python version?
         if self.form['pyversion']:
             pyversion = self.form['pyversion']
@@ -1692,7 +1692,7 @@ class WebUI:
             self.handler.end_headers()
             self.wfile.write('OK\n')
 
-    # 
+    #
     # classifiers listing
     #
     def list_classifiers(self):
@@ -1733,7 +1733,7 @@ class WebUI:
             info['action'] = 'Register'
             info['title'] = 'Manual user registration'
             self.nav_current = 'register_form'
-        
+
         self.write_template('register.pt', **info)
 
     def user(self):
@@ -1812,7 +1812,7 @@ class WebUI:
             gpg_keyid = info.get('gpg_keyid', user['gpg_keyid'])
             self.store.store_user(self.username, password, email, gpg_keyid)
             response = 'Details updated OK'
-        
+
         self.write_template('message.pt', title=response, message="")
 
     def forgotten_password_form(self):
