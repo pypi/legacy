@@ -7,7 +7,7 @@ import trove
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
-    
+
 
 chars = string.ascii_letters + string.digits
 
@@ -462,7 +462,7 @@ class Store:
 
     def get_package_urls(self, name):
         ''' Return all URLS (home, download, files) for a package,
-            
+
             Return pairs of (link, rel, label).
         '''
         cursor = self.get_cursor()
@@ -493,7 +493,7 @@ class Store:
         where name=%s''', (name,))
         for url, in cursor.fetchall():
             result.append((url, None, url))
-        
+
         return result
 
     def get_stable_version(self, name):
@@ -551,11 +551,6 @@ class Store:
                          'home_page', 'license', 'summary',
                          'description', 'keywords', 'platform',
                          'download_url']:
-                continue             
-            if k == '_pypi_hidden':
-                if v == '1': v = 'TRUE'
-                else: v = 'FALSE'
-                where.append("_pypi_hidden = %s"%v)
                 continue
 
             if type(v) != type([]): v = [v]
@@ -567,12 +562,19 @@ class Store:
             # now add to the where clause
             where.append('(' + ' or '.join(["lower(%s) LIKE '%s'"%(k,
                 s.encode('utf-8')) for s in v]) + ')')
+        where = ' %s '%operator.join(where)
+
+        if '_pypi_hidden' in spec:
+            if spec['_pypi_hidden'] == '1': v = 'TRUE'
+            else: v = 'FALSE'
+            if where:
+                where += ' AND _pypi_hidden = %s'%v
+            else:
+                where = '_pypi_hidden = %s'%v
 
         # construct the SQL
         if where:
-            where = ' where ' + ((' %s '%operator).join(where))
-        else:
-            where = ''
+            where = ' where ' + where
 
         # do the fetch
         cursor = self.get_cursor()
@@ -657,11 +659,11 @@ class Store:
         return Result(None, self.get_unique(cursor.fetchall()),
                 self._Updated_Releases)
 
-    _Changelog = FastResultRow('name version submitted_date! action') 
+    _Changelog = FastResultRow('name version submitted_date! action')
     def changelog(self, since):
         '''Fetch (name, version, submitted_date, action) since 'since' argument.
         '''
-        
+
         assert isinstance(since, int)
 
         cursor = self.get_cursor()
@@ -691,10 +693,10 @@ class Store:
         # is "small".
         statement = '''
              select j.name, j.version, j.submitted_date, r.summary
-             from (select name,version,submitted_date from journals 
-             where version is not null and action='new release' 
+             from (select name,version,submitted_date from journals
+             where version is not null and action='new release'
              order by submitted_date desc %s) j, releases r
-             where  j.name=r.name and j.version=r.version 
+             where  j.name=r.name and j.version=r.version
              and not r._pypi_hidden'''
         #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
@@ -781,7 +783,7 @@ class Store:
         where name=%s and version=%s''', (name, version))
         for url in urls:
             url = url.encode('utf-8')
-            safe_execute(cursor, '''insert into description_urls(name, version, url) 
+            safe_execute(cursor, '''insert into description_urls(name, version, url)
             values(%s, %s, %s)''', (name, version, url))
 
     def updateurls(self):
@@ -925,7 +927,7 @@ class Store:
 
     #
     # Users interface
-    # 
+    #
     def has_user(self, name):
         ''' Determine whether the user exists in the database.
 
@@ -1108,7 +1110,7 @@ class Store:
             cursor.execute("delete from browse_tally")
             # Regenerate tally; see browse() below
             cursor.execute("""insert into browse_tally
-            select res.l2, count(*) from (select t.l2, rc.name, rc.version 
+            select res.l2, count(*) from (select t.l2, rc.name, rc.version
             from trove_classifiers t, release_classifiers rc, releases r
             where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
             group by t.l2, rc.name, rc.version) res group by res.l2""")
@@ -1122,7 +1124,7 @@ class Store:
         cursor = self.get_cursor()
         if not selected_classifiers:
             # This is not used; see browse_tally above
-            tally = """select res.l2, count(*) from (select t.l2, rc.name, rc.version 
+            tally = """select res.l2, count(*) from (select t.l2, rc.name, rc.version
             from trove_classifiers t, release_classifiers rc, releases r
             where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
             group by t.l2, rc.name, rc.version) res group by res.l2"""
@@ -1143,7 +1145,7 @@ class Store:
             releases.append((name.decode('utf-8'), version, summary.decode('utf-8')))
         # Finally, compute the tally
         tally = """select tl.id,count(*) from (select distinct t.id, a.name,
-        a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2 
+        a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2
         where a.name=rc.name and a.version=rc.version and rc.trove_id=t2.id""" % pkgs
         # tally all level-2 classifiers
         tally += " and (t.id=t2.l2"
@@ -1392,7 +1394,7 @@ def processDescription(source, output_encoding='unicode'):
 
     if output_encoding != 'unicode':
         output = output.encode(output_encoding)
-    
+
     return output
 
 def get_description_urls(html):
