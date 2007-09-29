@@ -561,7 +561,8 @@ class Store:
             # now add to the where clause
             where.append('(' + ' or '.join(["lower(%s) LIKE '%s'"%(k,
                 s.encode('utf-8')) for s in v]) + ')')
-        where = ' %s '%operator.join(where)
+        if where:
+            where = ' %s '%operator.join(where)
 
         if '_pypi_hidden' in spec:
             if spec['_pypi_hidden'] in ('1', 1): v = 'TRUE'
