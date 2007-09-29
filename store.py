@@ -575,6 +575,8 @@ class Store:
         # construct the SQL
         if where:
             where = ' where ' + where
+        else:
+            where = ''
 
         # do the fetch
         cursor = self.get_cursor()
