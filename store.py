@@ -545,8 +545,7 @@ class Store:
             operator = 'and'
         where = []
         for k, v in spec.items():
-            if k not in ['_pypi_hidden', 'name', 'version',
-                         'author', 'author_email',
+            if k not in ['name', 'version', 'author', 'author_email',
                          'maintainer', 'maintainer_email',
                          'home_page', 'license', 'summary',
                          'description', 'keywords', 'platform',
@@ -565,7 +564,7 @@ class Store:
         where = ' %s '%operator.join(where)
 
         if '_pypi_hidden' in spec:
-            if spec['_pypi_hidden'] == '1': v = 'TRUE'
+            if spec['_pypi_hidden'] in ('1', 1): v = 'TRUE'
             else: v = 'FALSE'
             if where:
                 where += ' AND _pypi_hidden = %s'%v
