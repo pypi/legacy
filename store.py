@@ -699,7 +699,7 @@ class Store:
              where version is not null and action='new release'
              order by submitted_date desc %s) j, releases r
              where  j.name=r.name and j.version=r.version
-             and not r._pypi_hidden'''
+             and not r._pypi_hidden order by j.submitted_date desc'''
         #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
         result = Result(None, self.get_unique(cursor.fetchall())[:num],
