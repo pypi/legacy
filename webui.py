@@ -1001,14 +1001,14 @@ class WebUI:
         Try name first, then summary then description. Collate a
         score for each package that matches.
         '''
-        term = self.form.get('term', '').strip()
+        term = self.form.get('term', '').strip().lower()
         terms = [t for t in term.split() if t not in self.STOPWORDS]
         if not terms:
             raise FormError, 'You need to supply a search term'
 
         d = {}
         columns = [
-            ('name', 3),
+            ('name', 4),      # doubled for exact (case-insensitive) match
             ('summary', 2),
             ('description', 1),
         ]
@@ -1017,7 +1017,10 @@ class WebUI:
                 spec = {'_pypi_hidden': False, col: t}
                 for r in self.store.query_packages(spec):
                     e = d.get(r['name'], [0, r])
-                    e[0] += score
+                    if col == 'name' and t == r['name'].lower():
+                        e[0] += score*2
+                    else:
+                        e[0] += score
                     d[r['name']] = e
 
         # now sort by score, name and version ordering
