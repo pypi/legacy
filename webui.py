@@ -1012,6 +1012,9 @@ class WebUI:
             ('summary', 2),
             ('description', 1),
         ]
+        # XXX currently this code doesn't use name,version for uniqueness
+        #     so a package with multiple visible releases will get a much
+        #     higher score
         for t in terms:
             for col, score in columns:
                 spec = {'_pypi_hidden': False, col: t}
