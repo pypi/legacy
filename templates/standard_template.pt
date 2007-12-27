@@ -7,6 +7,7 @@
     <head>
       <META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" tal:condition="data/norobots"/>
       <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+      <base tal:attributes="href data/FULL_PATH_INFO"/>
       <title tal:content="string:Python Package Index : ${data/title}" />
       <meta content="python programming language object oriented web free source" name="keywords" />
       <meta content="Home page for Python, an interpreted, interactive, object-oriented, extensible programming language. It provides an extraordinary combination of clarity and versatility, and is free and comprehensively ported.
