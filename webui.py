@@ -246,7 +246,9 @@ class WebUI:
         options.setdefault('norobots', False)
         context['data'] = options
         context['app'] = self
-        options['FULL_PATH_INFO'] = self.config.url+self.env.get('PATH_INFO',"")
+        fpi = self.config.url+self.env.get('PATH_INFO',"")
+        fpi = unicode(fpi, "utf-8")
+        options['FULL_PATH_INFO'] = fpi
 
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         context['standard_template'] = PyPiPageTemplate(
