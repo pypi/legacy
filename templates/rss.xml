@@ -6,7 +6,7 @@
  <channel>
   <title>PyPI recent updates</title>
   <link tal:content="string:${app/url_machine}${app/url_path}" />
-  <description>Updates to the Python Cheese Shop</description>
+  <description>Updates to the Python Package Index</description>
   <language>en</language>
 
   <item tal:repeat="release app/store/latest_releases">
