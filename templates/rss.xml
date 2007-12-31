@@ -14,7 +14,7 @@
     <link tal:content="python:'http://pypi.python.org%s'%app.packageURL(
         release['name'], release['version'])" />
     <description tal:content="release/summary" />
-    <pubDate tal:content="string:${release/submitted_date}Z" />
+    <pubDate tal:content="python:release['submitted_date'].strftime('%d %b %Y %H:%M:%S %z')" />
    </item>
   </channel>
 </rss>
