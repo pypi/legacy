@@ -22,6 +22,13 @@
 
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
+<p tal:condition="not:data/usinglatest">
+<strong>Latest Version: </strong><a tal:attributes="href data/latestversionurl" title="Latest Version URL">
+<span tal:content="data/latestversion" />
+</a>
+</p>
+
+
 <p tal:replace="structure app/release_nav" />
 
 <tal:element replace="structure data/release/description_html" />

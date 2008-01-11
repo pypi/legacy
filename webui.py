@@ -897,6 +897,8 @@ class WebUI:
             name = self.form.get('name', None)
             if name is None or isinstance(name, list):
                 self.fail("Which package do you want to display?")
+
+        using_latest=False
         if version is None:
             if self.form.has_key('version'):
                 version = self.form['version']
@@ -908,7 +910,24 @@ class WebUI:
                 try:
                     version = l[-1][1]
                 except IndexError:
+                    using_latest=True
                     version = "(latest release)"
+
+        if not using_latest:
+             l = self.store.get_package_releases(name, hidden=False)
+             latest_version = self.store.get_latest_release(name, hidden=False)
+             try:
+                 latest_version = l[0][1]
+             except:
+                 latest_version = 'Unknown'
+                 # for now silently fail, this simply means we were not able
+                 # to determine what the latest release is for one reason or
+                 # another
+        else:
+             latest_version = None
+
+        if latest_version==version:
+            using_latest=True
 
         info = self.store.get_package(name, version)
         if not info:
@@ -961,6 +980,7 @@ class WebUI:
                 url = url,
                 id = c['trove_id']))
 
+        latest_version_url = self.config.url+'/'+name+'/'+latest_version
         self.write_template('display.pt',
                             name=name, version=version, release=release,
                             title=name + " " +version,
@@ -970,6 +990,9 @@ class WebUI:
                             categories=categories,
                             roles=roles,
                             newline_to_br=newline_to_br,
+                            usinglatest=using_latest,
+                            latestversion=latest_version,
+                            latestversionurl=latest_version_url,
                             action=self.link_action())
 
     def index(self, nav_current='index', releases=None):
