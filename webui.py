@@ -175,7 +175,7 @@ class WebUI:
             root = logging.getLogger()
             hdlrs = []
             if self.config.logfile:
-                hdlr = logging.FileHandler(self.config.logging)
+                hdlr = logging.FileHandler(self.config.logfile)
                 formatter = logging.Formatter(
                     '%(asctime)s %(name)s:%(levelname)s %(message)s')
                 hdlr.setFormatter(formatter)
