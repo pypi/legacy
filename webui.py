@@ -512,6 +512,11 @@ class WebUI:
                 show_all = True
         cat_ids.sort()
 
+        # XXX with 18 classifiers, postgres runs out of memory
+        # So limit the number of simultaneous classifiers
+        if len(cat_ids) > 8:
+            self.fail("Too many classifiers", code=500)
+
         # Fetch data from the database
         if cat_ids:
             packages_, tally = self.store.browse(cat_ids)
