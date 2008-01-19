@@ -516,6 +516,7 @@ class WebUI:
         # So limit the number of simultaneous classifiers
         if len(cat_ids) > 8:
             self.fail("Too many classifiers", code=500)
+            return
 
         # Fetch data from the database
         if cat_ids:
