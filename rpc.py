@@ -32,8 +32,12 @@ def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
 
-def package_releases(store, package_name):
-    result = store.get_package_releases(package_name, hidden=False)
+def package_releases(store, show_hidden=False):
+    if show_hidden:
+        hidden = None
+    else:
+        hidden = False
+    result = store.get_package_releases(package_name, hidden=hidden)
     return [row['version'] for row in result]
 
 def release_urls(store, package_name, version):
