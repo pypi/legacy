@@ -32,7 +32,7 @@ def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
 
-def package_releases(store, show_hidden=False):
+def package_releases(store, package_name, show_hidden=False):
     if show_hidden:
         hidden = None
     else:
