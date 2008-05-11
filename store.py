@@ -17,7 +17,7 @@ dist_file_types = [
     ('bdist_rpm',        'RPM'),
     ('bdist_wininst',    'MS Windows installer'),
     ('bdist_egg',        'Python Egg'),
-    {'bdist_dmg',        'OS X Disk Image'),
+    ('bdist_dmg',        'OS X Disk Image'),
 ]
 dist_file_types_d = dict(dist_file_types)
 
