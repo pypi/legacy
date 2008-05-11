@@ -1,9 +1,14 @@
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, cElementTree, sets
+import re, zipfile, logging, pprint, sets
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
+
+try:
+    import cElementTree
+except ImportError:
+    from xml.etree import cElementTree
 
 # local imports
 import store, config, trove, versionpredicate, verify_filetype, rpc
@@ -1784,9 +1789,26 @@ class WebUI:
         '''
         info = {}
         for param in 'name password email otk confirm gpg_keyid'.split():
-            if self.form.has_key(param):
-                v = self.form[param].strip()
-                if v: info[param] = v
+            v = self.form.get(param, '').strip()
+            if v:
+                info[param] = v
+            else:
+                if param == "email":
+                    raise FormError, "Clearing the email address is not allowed"
+                if param == "gpg_keyid":
+                    info[param] = ""
+
+        # validate email and gpg key syntax
+        if info.has_key('email'):
+            if not safe_email.match(info['email']):
+                raise FormError, 'Email is invalid (ASCII only)'
+            if '@' not in info['email'] or '.' not in info['email']:
+                raise FormError, 'Email is invalid'
+        gpgid = info.get('gpg_keyid', '')
+        gpgid = gpgid.strip()
+        if gpgid:
+            if not re.match("^[A-Fa-f0-9]{8,8}$", gpgid):
+                raise FormError, 'GPG key ID is invalid'
 
         if info.has_key('otk'):
             if self.username is None:
@@ -1809,16 +1831,6 @@ class WebUI:
             name = info['name']
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII alphanum only)'
-            if not safe_email.match(info['email']):
-                raise FormError, 'Email is invalid (ASCII only)'
-            if '@' not in info['email'] or '.' not in info['email']:
-                raise FormError, 'Email is invalid'
-            gpgid = info.get('gpg_keyid', '') or ''
-            gpgid = gpgid.strip()
-            if gpgid:
-                if not re.match("[A-Fa-f0-9]{8,8}", gpgid):
-                    raise FormError, 'GPG key ID is invalid'
-
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
