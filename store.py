@@ -405,6 +405,13 @@ class Store:
         safe_execute(cursor, sql, (name, ))
         return int(cursor.fetchone()[0])
 
+    def find_package(self, name):
+        '''Return names of packages that differ from name only in case.'''
+        cursor = self.get_cursor()
+        sql = 'select name from packages where lower(name)=lower(%s)'
+        safe_execute(cursor, sql, (name, ))
+        return [r[0] for r in cursor.fetchall()]
+
     def has_release(self, name, version):
         ''' Determine whether the release exists in the database.
 

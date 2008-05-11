@@ -1274,12 +1274,18 @@ class WebUI:
             data['_pypi_hidden'] = '0'
 
         # make sure the user has permission to do stuff
-        if self.store.has_package(name) and not (
+        has_package = self.store.has_package(name)
+        if has_package and not (
                 self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
+
+        if not has_package:
+            names = store.find_package(name)
+            if names:
+                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
 
         # save off the data
         message = self.store.store_package(name, version, data)
@@ -1311,12 +1317,18 @@ class WebUI:
         version = data['version']
 
         # make sure the user has permission to do stuff
-        if self.store.has_package(name) and not (
+        has_package = self.store.has_package(name)
+        if has_package and not (
                 self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
             raise Forbidden, \
                 "You are not allowed to store '%s' package information"%name
+
+        if not has_package:
+            names = self.store.find_package(name)
+            if names:
+                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
 
         # make sure the _pypi_hidden flag is set
         if not data.has_key('_pypi_hidden'):
