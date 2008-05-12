@@ -13,6 +13,7 @@ except ImportError:
 # local imports
 import store, config, trove, versionpredicate, verify_filetype, rpc
 import MailingLogger
+from mini_pkg_resources import to_filename
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
@@ -1689,6 +1690,11 @@ class WebUI:
         # check for dodgy filenames
         if '/' in filename or '\\' in filename:
             raise FormError, 'invalid distribution file'
+
+        # check whether file name matches package name
+        prefix = to_filename(store.normalize_package_name(name))
+        if not filename.lower().startswith(prefix):
+            raise FormError, 'The filename for %s must start with "%s" (any case)' % (name, prefix)
 
         # check for valid content-type
         mt = content.type or 'image/invalid'

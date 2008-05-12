@@ -4,6 +4,7 @@ import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
 import logging, cStringIO, string
 from distutils.version import LooseVersion
 import trove
+from mini_pkg_resources import safe_name
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -24,6 +25,10 @@ dist_file_types_d = dict(dist_file_types)
 keep_conn = False
 connection = None
 keep_trove = True
+
+def normalize_package_name(n):
+    "Return lower-cased version of safe_name of n."
+    return safe_name(n).lower()
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
@@ -197,8 +202,8 @@ class Store:
         # see if we're inserting or updating a package
         if not self.has_package(name):
             # insert the new package entry
-            sql = 'insert into packages (name) values (%s)'
-            safe_execute(cursor, sql, (name, ))
+            sql = 'insert into packages (name, normalized_name) values (%s)'
+            safe_execute(cursor, sql, (name, normalize_package_name(name)))
 
             # journal entry
             safe_execute(cursor, '''insert into journals (name, version, action,
@@ -408,7 +413,8 @@ class Store:
     def find_package(self, name):
         '''Return names of packages that differ from name only in case.'''
         cursor = self.get_cursor()
-        sql = 'select name from packages where lower(name)=lower(%s)'
+        name = normalize_package_name(name)
+        sql = 'select name from packages where normalized_name=%s'
         safe_execute(cursor, sql, (name, ))
         return [r[0] for r in cursor.fetchall()]
 
@@ -803,6 +809,13 @@ class Store:
         for name, version, desc in cursor.fetchall():
             urls = get_description_urls(desc)
             self.update_description_urls(name, version, urls)
+
+    def update_normalized_text(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select name from packages')
+        for name, in cursor.fetchall():
+            safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
+                         [normalize_package_name(name), name])
 
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
@@ -1440,6 +1453,9 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'updateurls':
         store.updateurls()
+        store.commit()
+    elif sys.argv[2] == 'update_normalized_text':
+        store.update_normalized_text()
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]

@@ -35,7 +35,8 @@ CREATE INDEX journals_changelog ON
 -- Table structure for table: packages
 CREATE TABLE packages ( 
    name TEXT PRIMARY KEY, 
-   stable_version TEXT
+   stable_version TEXT,
+   normalized_name TEXT
 );
 
 CREATE TABLE cheesecake_main_indices (
