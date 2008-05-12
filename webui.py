@@ -1847,6 +1847,9 @@ class WebUI:
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
                 return
+            olduser = self.store.get_user_by_email(info['email'])
+            if olduser:
+                raise FormError, 'You have already registered as user '+olduser['name']
             if not info.has_key('confirm') or info['password'] <> info['confirm']:
                 self.fail("password and confirm don't match", heading='Users')
                 return
