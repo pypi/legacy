@@ -711,8 +711,19 @@ class WebUI:
             # make sure the user has the role
             if not self.store.has_role(role_name, package_name, user_name):
                 raise FormError, "user doesn't have that role"
+            if user_name == self.username:
+                # Check that we are not removing the last maintainer
+                for role in self.store.get_package_roles(package_name):
+                    if role['role_name']=='Owner' and role['user_name'] != user_name:
+                        break
+                else:
+                    # No other owner found
+                    raise FormError, "You can't remove yourself as the last owner; remove the package instead"
             self.store.delete_role(user_name, role_name, package_name)
             self.ok_message = 'Role Removed OK'
+            if user_name == self.username:
+                # Might not have access to the package anymore
+                return self.home()
 
         self.role_form()
 
