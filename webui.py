@@ -1705,7 +1705,7 @@ class WebUI:
         # check whether file name matches package name
         prefix = safe_name(name)
         if not safe_name(filename).startswith(prefix):
-            raise FormError, 'The filename for %s must start with "%s" (any case)' % (name, prefix)
+            raise FormError, 'The filename for %s must start with "%s"' % (name, prefix)
 
         # check for valid content-type
         mt = content.type or 'image/invalid'
