@@ -202,7 +202,7 @@ class Store:
         # see if we're inserting or updating a package
         if not self.has_package(name):
             # insert the new package entry
-            sql = 'insert into packages (name, normalized_name) values (%s)'
+            sql = 'insert into packages (name, normalized_name) values (%s, %s)'
             safe_execute(cursor, sql, (name, normalize_package_name(name)))
 
             # journal entry
