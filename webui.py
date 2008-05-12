@@ -1302,7 +1302,7 @@ class WebUI:
                 "You are not allowed to store '%s' package information"%name
 
         if not has_package:
-            names = store.find_package(name)
+            names = self.store.find_package(name)
             if names:
                 raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
 
