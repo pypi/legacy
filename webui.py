@@ -353,7 +353,14 @@ class WebUI:
                     if pw != user['password']:
                         raise Unauthorised, 'Incorrect password'
                     self.username = un
-                    self.store.set_user(un, self.env['REMOTE_ADDR'])
+                    last_login = user['last_login']
+                    # Only update last_login every minute
+                    update_last_login = not last_login or (time.time()-last_login.ticks() > 60)
+                    self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
+                    if update_last_login:
+                        # The only change so far was the update of last_login;
+                        # commit that to release the lock
+                        self.store.commit()
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()

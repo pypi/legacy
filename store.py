@@ -511,7 +511,7 @@ class Store:
         return result
 
     def get_stable_version(self, name):
-        ''' Retrieve the version marked as a package's stable version.
+        ''' Retrieve the version marked as a package:s stable version.
         '''
         cursor = self.get_cursor()
         sql = 'select stable_version from packages where name=%s'
@@ -997,7 +997,7 @@ class Store:
             (name, otk))
         return otk
 
-    _User = FastResultRow('name password email gpg_keyid')
+    _User = FastResultRow('name password email gpg_keyid last_login!')
     def get_user(self, name):
         ''' Retrieve info about the user from the database.
 
@@ -1005,7 +1005,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select name, password, email, gpg_keyid
+        safe_execute(cursor, '''select name, password, email, gpg_keyid, last_login
             from users where name=%s''', (name,))
         return self._User(None, cursor.fetchone())
 
@@ -1292,7 +1292,7 @@ class Store:
     def get_file_info(self, digest):
         '''Get the file info based on the md5 hash.
 
-        Raise KeyError if the digest doesn't match any file in the
+        Raise KeyError if the digest doesn:t match any file in the
         database.
         '''
         cursor = self.get_cursor()
@@ -1334,13 +1334,16 @@ class Store:
 
         cursor = self._cursor = self._conn.cursor()
 
-    def set_user(self, username, userip):
-        ''' Set the user who's doing the changes.
+    def set_user(self, username, userip, update_last_login):
+        ''' Set the user who is doing the changes.
         '''
         # now check the user
         if username is not None:
             if self.has_user(username):
                 self.username = username
+                if update_last_login:
+                    self.get_cursor().execute('''
+                    update users set last_login=now() where name=%s''', (username,))
         self.userip = userip
 
     def setpasswd(self, username, password):
