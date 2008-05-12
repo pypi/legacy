@@ -1703,7 +1703,7 @@ class WebUI:
             raise FormError, 'invalid distribution file'
 
         # check whether file name matches package name
-        prefix = safe_name(project_name)
+        prefix = safe_name(name)
         if safe_name(filename).startswith(prefix):
             raise FormError, 'The filename for %s must start with "%s" (any case)' % (name, prefix)
 
