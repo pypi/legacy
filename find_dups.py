@@ -73,6 +73,7 @@ def dup_users():
     for user in store.get_users():
         email = user['email']
         by_email[email] = by_email.get(email, []) + [user['name']]
+    rest = []
     print "BEGIN;"
     for email, users in by_email.items():
         if len(users) == 1: continue
@@ -83,6 +84,10 @@ def dup_users():
                 unused.add(user)
         if len(users-unused)<=1:
             mail_unused_user(email, users, unused)
+        else:
+            rest.append((email, users, unused))
     print "COMMIT;"
+    for r in rest:
+        print r
 
 dup_users()
