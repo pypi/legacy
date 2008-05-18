@@ -1829,8 +1829,6 @@ class WebUI:
             if v:
                 info[param] = v
             else:
-                if param == "email":
-                    raise FormError, "Clearing the email address is not allowed"
                 if param == "gpg_keyid":
                     info[param] = ""
 
@@ -1845,6 +1843,10 @@ class WebUI:
         if gpgid:
             if not re.match("^[A-Fa-f0-9]{8,8}$", gpgid):
                 raise FormError, 'GPG key ID is invalid'
+
+        # email requirement check
+        if 'email' not in info and 'otk' not in info:
+            raise FormError, "Clearing the email address is not allowed"
 
         if info.has_key('otk'):
             if self.username is None:
