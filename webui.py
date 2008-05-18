@@ -1823,6 +1823,8 @@ class WebUI:
                 2. new user sending in name, password and email
                 3. updating existing user details for currently authed user
         '''
+        message = ''
+
         info = {}
         for param in 'name password email otk confirm gpg_keyid'.split():
             v = self.form.get(param, '').strip()
@@ -1885,6 +1887,7 @@ class WebUI:
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
             response = 'Registration OK'
+            message = 'You should receive a confirmation email shortly.'
 
         else:
             # update details
@@ -1904,7 +1907,7 @@ class WebUI:
             self.store.store_user(self.username, password, email, gpg_keyid)
             response = 'Details updated OK'
 
-        self.write_template('message.pt', title=response, message="")
+        self.write_template('message.pt', title=response, message=message)
 
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
