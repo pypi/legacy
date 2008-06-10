@@ -20,7 +20,7 @@ def handle_request(webui_obj):
         if response is None:
             response = ''
         # xmlrpclib.dumps encodes Unicode as UTF-8
-        xml = xmlrpclib.dumps((response,), allow_none=True)
+        xml = xmlrpclib.dumps((response,), methodresponse=True, allow_none=True)
         webui_obj.handler.wfile.write(xml)
     except:
         out = StringIO()
