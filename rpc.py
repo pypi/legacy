@@ -25,7 +25,7 @@ def handle_request(webui_obj):
     except:
         out = StringIO()
         traceback.print_exc(file=out)
-        result = xmlrpclib.dumps(xmlrpclib.Fault(1, out.getvalue()))
+        result = xmlrpclib.dumps(xmlrpclib.Fault(1, out.getvalue()), methodresponse=True)
         webui_obj.handler.wfile.write(result)
 
 def list_packages(store):
