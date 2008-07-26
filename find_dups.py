@@ -32,6 +32,21 @@ def mail_dup(email, package1, package2):
     f.write("Kind regards,\nMartin v. Loewis\n")
     f.close()
 
+def mail_distinct_dup(users, package1, package2):
+    f = os.popen("/usr/lib/sendmail "+" ".join(users), "w")
+    for email in users:
+        f.write("To: %s\n" % email)
+    f.write("From: martin@v.loewis.de\n")
+    f.write("Subject: Please cleanup PyPI package names\n\n")
+    f.write("Dear Package Owners,\n")
+    f.write("You have currently registered the following to packages,\n")
+    f.write("which differ only in case:\n\n%s\n%s\n\n" % (package1, package2))
+    f.write("As a recent policy change, we are now rejecting this kind of\n")
+    f.write("setup. Please remove one of packages.\n\n")
+    f.write("If you need assistance, please let me know.\n\n")
+    f.write("Kind regards,\nMartin v. Loewis\n")
+    f.close()
+
 def dup_packages():
     lower = {}
     for name,version in store.get_packages():
@@ -43,7 +58,7 @@ def dup_packages():
             if owners:
                 mail_dup(owners.pop(),name,lower[lname])
             else:
-                print "Distinct dup", name, lower[lname], owner1, owner2
+                mail_distinct_dup(owner1.union(owner2),name,lower[lname])
         lower[lname] = name
 
 def mail_unused_user(email, all, unused):
@@ -90,4 +105,4 @@ def dup_users():
     for r in rest:
         print r
 
-dup_users()
+dup_packages()
