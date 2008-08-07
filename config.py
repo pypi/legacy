@@ -14,6 +14,7 @@ class Config:
         else:
             self.database_pw = None
         self.database_files_dir = c.get('database', 'files_dir')
+        self.database_docs_dir = c.get('database', 'docs_dir')
 
         self.mailhost = c.get('webui', 'mailhost')
         self.adminemail = c.get('webui', 'adminemail')
