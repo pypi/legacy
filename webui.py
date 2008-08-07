@@ -1801,9 +1801,10 @@ class WebUI:
         if not self.form.has_key('content'):
             raise FormError, "No file uploaded"
 
-        data = cStringIO.StringIO(self.form['content'].value)
+        data = self.form['content'].value
         if len(data) > 10*1024*1024:
             raise FormError, "Documentation zip file is too large"
+        data = cStringIO.StringIO(data)
         try:
             data = zipfile.ZipFile(data)
             members = data.namelist()
@@ -1816,18 +1817,18 @@ class WebUI:
             shutil.rmtree(path)
         os.mkdir(path)
         try:
-            for name in members:
-                if name.endswith("/"):
-                    os.mkdir(os.path.join(path, name))
+            for fname in members:
+                if fname.endswith("/"):
+                    os.mkdir(os.path.join(path, fname))
                     continue
-                outfile = open(os.path.join(path, name), "wb")
-                outfile.write(data.read(name))
+                outfile = open(os.path.join(path, fname), "wb")
+                outfile.write(data.read(fname))
                 outfile.close()
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
         self.store.log_docs(name, version)
-        return self.home()
+        raise Redirect("http://packages.python.org/%s/" % name)
 
     #
     # classifiers listing
