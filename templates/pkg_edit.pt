@@ -68,5 +68,16 @@ assigned to users for this package.</p>
 </table>
 </form>
 
+<p>As an experimental service, you can now host documentation at
+<a tal:attributes="href string:http://packages.python.org/${data/name}" tal:content="string:http://packages.python.org/${data/name}"></a>. To upload documentation, prepare a .zip file that is unpacked into this URL. Only static pages are supported.
+<form tal:attributes="action app/url_path" method="POST"
+    enctype="multipart/form-data">
+<input type="hidden" name=":action" value="doc_upload" />
+<input type="hidden" name="name" tal:attributes="value data/name" />
+<input size="40" type="file" name="content" />
+<input type="submit" value="Upload Documentation" />
+</form>
+</p>
+
 </metal:fill>
 </html>

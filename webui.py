@@ -1,7 +1,7 @@
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, sets
+import re, zipfile, logging, pprint, sets, shutil
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 
@@ -395,7 +395,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -1774,6 +1774,60 @@ class WebUI:
             self.handler.set_content_type('text/plain')
             self.handler.end_headers()
             self.wfile.write('OK\n')
+
+    #
+    # Documentation Upload
+    #
+    def doc_upload(self):
+        # make sure the user is identified
+        if not self.username:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        # figure the package name and version
+        name = version = None
+        if self.form.has_key('name'):
+            name = self.form['name']
+        if not name:
+            raise FormError, 'No package name given'
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        if not self.form.has_key('content'):
+            raise FormError, "No file uploaded"
+
+        data = cStringIO.StringIO(self.form['content'].value)
+        if len(data) > 10*1024*1024:
+            raise FormError, "Documentation zip file is too large"
+        try:
+            data = zipfile.ZipFile(data)
+            members = data.namelist()
+        except Error,e:
+            raise FormError, "Error uncompressing zipfile:" + str(e)
+
+        # Assume the file is valid; remove any previous data
+        path = os.path.join(self.config.database_docs_dir, name)
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.mkdir(path)
+        try:
+            for name in members:
+                if name.endswith("/"):
+                    os.mkdir(os.path.join(path, name))
+                    continue
+                outfile = open(os.path.join(path, name), "wb")
+                outfile.write(data.read(name))
+                outfile.close()
+        except Exception, e:
+            raise FormError, "Error unpacking zipfile:" + str(e)
+
+        self.store.log_docs(name, version)
+        return self.home()
 
     #
     # classifiers listing

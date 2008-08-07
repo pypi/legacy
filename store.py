@@ -1304,6 +1304,19 @@ class Store:
             raise KeyError, 'invalid digest %r'%digest
         return self._File_Info(None, row)
 
+    def log_docs(self, name, version):
+        cursor = self.get_cursor()
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (name, version, action,
+            submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (name,
+                                              version,
+                                              'docupdate',
+                                              date,
+                                              self.username,
+                                              self.userip))
+
+
     #
     # Handle the underlying database
     #
