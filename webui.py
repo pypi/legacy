@@ -1808,7 +1808,7 @@ class WebUI:
         try:
             data = zipfile.ZipFile(data)
             members = data.namelist()
-        except Error,e:
+        except Exception,e:
             raise FormError, "Error uncompressing zipfile:" + str(e)
 
         # Assume the file is valid; remove any previous data
