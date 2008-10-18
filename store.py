@@ -76,7 +76,7 @@ class ResultRow:
 def utf8getter(n):
     def utf8get(fields):
         if fields[n] is None: return fields[n]
-        return fields[n].decode('utf-8')
+        return fields[n].decode('utf-8', 'replace')
     return utf8get
 
 def itemgetter(n):
