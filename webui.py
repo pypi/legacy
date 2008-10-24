@@ -463,7 +463,7 @@ class WebUI:
         raise NotFound, path
 
     def home(self, nav_current='home'):
-        self.write_template('home.pt', title='Home')
+        self.write_template('home.pt', title='PyPI')
 
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
