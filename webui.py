@@ -214,9 +214,9 @@ class WebUI:
             except Forbidden, message:
                 message = str(message)
                 self.fail(message, code=403, heading='Forbidden')
-            except Redirect, path:
-                self.handler.send_response(301)
-                self.handler.send_header('Location', path)
+            except Redirect, e:
+                self.handler.send_response(301, 'Moved Permanently')
+                self.handler.send_header('Location', e.args[0])
                 self.handler.end_headers()
             except FormError, message:
                 message = str(message)
