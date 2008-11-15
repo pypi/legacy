@@ -14,7 +14,7 @@ class Request:
         self.wfile = cStringIO.StringIO()
         self.config = config.Config(prefix+'/config.ini', 'webui')
     
-    def send_response(self, code, message=''):
+    def send_response(self, code, message='no details available'):
         self.status = '%s %s' % (code, message)
         self.headers = []
         
