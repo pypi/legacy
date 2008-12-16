@@ -309,7 +309,7 @@ class WebUI:
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
         ('index', 'List packages'),
-        ('rss', 'RSS (last 30 updates)'),
+        ('rss', 'RSS (last 40 updates)'),
         ('role_form', 'Admin'),
     )
     def navlinks_html(self):

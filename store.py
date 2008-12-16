@@ -692,7 +692,7 @@ class Store:
         return Result(None, cursor.fetchall(), self._Changelog)
 
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
-    def latest_releases(self, num=30):
+    def latest_releases(self, num=40):
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
         cursor = self.get_cursor()
