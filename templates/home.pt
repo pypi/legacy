@@ -8,8 +8,17 @@
 <p>The Python Package Index is a repository of software for the Python
 programming language. There are currently
 <strong tal:content="app/store/count_packages" />
-packages here. You may:
+packages here.
 </p>
+          <form tal:attributes="action app/url_path" id="searchform"
+                method="get" name="searchform">
+            <input type="hidden" name=":action" value="search" />
+            <div id="search">
+              <input class="input-text" id="term" name="term" />
+              <input class="input-button" type="submit" name="submit"
+                     value="search" id="submit" />
+            </div>
+          </form>
 <ul>
 <li><a tal:attributes="href python:app.link_action('browse')">Browse the
 tree of packages</a></li>
@@ -23,7 +32,6 @@ register to submit</a>)</li>
 version of the index</a>. To use it, pass 
 "-i http://pypi.python.org/simple/" to easy_install.</p>
 
-<p>Last 40 updates:</p>
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
 
