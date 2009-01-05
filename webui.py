@@ -1818,9 +1818,15 @@ class WebUI:
         os.mkdir(path)
         try:
             for fname in members:
+                fpath = os.path.normpath(os.path.join(path, fname))
+                if not fpath.startswith(path):
+                    raise ValueError, "invalid path name:"+fname
                 if fname.endswith("/"):
-                    os.mkdir(os.path.join(path, fname))
+                    os.mkdir(fpath)
                     continue
+                upperdirs = os.path.dirname(fpath)
+                if not os.path.exists(upperdirs):
+                    os.makedirs(upperdirs)
                 outfile = open(os.path.join(path, fname), "wb")
                 outfile.write(data.read(fname))
                 outfile.close()
