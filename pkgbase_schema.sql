@@ -76,7 +76,7 @@ CREATE TABLE cheesecake_subindices (
 
 -- Table structure for table: releases
 CREATE TABLE releases ( 
-   name TEXT REFERENCES packages,
+   name TEXT REFERENCES packages ON UPDATE CASCADE,
    version TEXT,
    author TEXT,
    author_email TEXT,
@@ -142,7 +142,7 @@ CREATE TABLE release_provides (
    name TEXT,
    version TEXT,
    specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version)  ON UPDATE CASCADE
 );
 CREATE INDEX rel_prov_name_idx ON release_provides(name);
 CREATE INDEX rel_prov_version_id_idx ON release_provides(version);
@@ -153,7 +153,7 @@ CREATE TABLE release_requires (
    name TEXT,
    version TEXT,
    specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
 CREATE INDEX rel_req_name_idx ON release_requires(name);
 CREATE INDEX rel_req_version_id_idx ON release_requires(version);
@@ -164,7 +164,7 @@ CREATE TABLE release_obsoletes (
    name TEXT,
    version TEXT,
    specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
 CREATE INDEX rel_obs_name_idx ON release_obsoletes(name);
 CREATE INDEX rel_obs_version_id_idx ON release_obsoletes(version);
@@ -183,7 +183,7 @@ CREATE TABLE release_files (
    filename TEXT UNIQUE,
    md5_digest TEXT UNIQUE,
    downloads INTEGER DEFAULT 0,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
 CREATE INDEX release_files_name_idx ON release_files(name);
 CREATE INDEX release_files_version_idx ON release_files(version);
@@ -196,7 +196,7 @@ CREATE TABLE release_urls (
    version TEXT,
    url TEXT, 
    packagetype TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
 CREATE INDEX release_urls_name_idx ON release_urls(name);
 CREATE INDEX release_urls_version_idx ON release_urls(version);
@@ -207,7 +207,7 @@ CREATE TABLE description_urls (
    name TEXT,
    version TEXT,
    url TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
 CREATE INDEX description_urls_name_idx ON description_urls(name);
 CREATE INDEX description_urls_name_version_idx ON description_urls(name, version);
@@ -217,7 +217,7 @@ CREATE INDEX description_urls_name_version_idx ON description_urls(name, version
 CREATE TABLE roles ( 
    role_name TEXT, 
    user_name TEXT REFERENCES users, 
-   package_name TEXT REFERENCES packages
+   package_name TEXT REFERENCES packages ON UPDATE CASCADE
 );
 CREATE INDEX roles_pack_name_idx ON roles(package_name);
 CREATE INDEX roles_user_name_idx ON roles(user_name);
