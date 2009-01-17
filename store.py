@@ -860,6 +860,25 @@ class Store:
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
+    def rename_package(self, old, new):
+        ''' Rename a package. Relies on cascaded updates.
+        '''
+        cursor = self.get_cursor()
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''update packages
+        set name=%s, normalized_name=%s where name=%s''',
+                     (new, normalize_package_name(new), old))
+        safe_execute(cursor, '''update journals set name=%s where name=%s''',
+                     (new, old))
+        safe_execute(cursor,'''insert into journals (name, version, action,
+                submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (new,
+                                              None,
+                                              'rename from %s' % old,
+                                              date,
+                                              self.username,
+                                              self.userip))
+
     def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
         '''

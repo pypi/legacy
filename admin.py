@@ -5,8 +5,8 @@ sys.path.append('/usr/local/pypi/lib')
 import store, config
 
 def set_password(store, name, pw):
-    ''' Reset the user's password and send an email to the address given.
-    '''
+    """ Reset the user's password and send an email to the address given.
+    """
     user = store.get_user(name.strip())
     if user is None:
         raise ValueError, 'user name unknown to me'
@@ -68,6 +68,15 @@ def add_classifier(store, classifier):
         'values (%s,%s,%s,%s,%s,%s)', [id, classifier]+levels)
     print 'done'
 
+def rename_package(store, old, new):
+    ''' Rename a package. '''
+    if not store.has_package(old):
+        raise ValueError, 'no such package'
+    if store.has_package(new):
+        raise ValueError, new+' exists'
+    store.rename_package(old, new)
+    
+
 if __name__ == '__main__':
     config = config.Config('/usr/local/pypi/config.ini', 'webui')
     store = store.Store(config)
@@ -85,6 +94,8 @@ if __name__ == '__main__':
             add_owner(*args)
         elif command == 'delowner':
             delete_owner(*args)
+        elif command == 'rename':
+            rename_package(*args)
         else:
             print "unknown command '%s'!"%command
         store.commit()
