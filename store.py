@@ -870,6 +870,19 @@ class Store:
                      (new, normalize_package_name(new), old))
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
+        # move all files on disk
+        sql = '''select python_version, filename
+            from release_files where name=%s'''
+        safe_execute(cursor, sql, (new,))
+        for pyversion, filename in cursor.fetchall():
+            oldname = self.gen_file_path(pyversion, old, filename)
+            newname = self.gen_file_path(pyversion, new, filename)
+            if not os.path.exists(oldname):
+                continue
+            dirpath = os.path.split(newname)[0]
+            if not os.path.exists(dirpath):
+                os.makedirs(dirpath)
+            os.rename(oldname, newname)
         safe_execute(cursor,'''insert into journals (name, version, action,
                 submitted_date, submitted_by, submitted_from) values
                 (%s, %s, %s, %s, %s, %s)''', (new,
