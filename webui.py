@@ -437,6 +437,10 @@ class WebUI:
         if '/' not in path:
             urls = self.store.get_package_urls(path)
             if urls is None:
+                # check for normalized name
+                names = self.store.find_package(path)
+                if names and names[0] != path:
+                    raise Redirect, self.config.simple_script + '/' + names[0]
                 raise NotFound, path + " does not have any releases"
             html = []
             html.append("""<html><head><title>Links for %s</title></head>"""
