@@ -68,6 +68,22 @@ assigned to users for this package.</p>
 </table>
 </form>
 
+<p>By default, each new release will hide all other release from the
+regular display. If you want to select yourself which packages to hide,
+uncheck the button below</p>
+<form tal:attributes="action app/url_path" method="POST"
+    enctype="multipart/form-data">
+  <input type="hidden" name=":action" value="pkg_edit" />
+  <input type="hidden" name="name" tal:attributes="value data/name" />
+  
+  <!-- Apparently, we run TAL in XML mode, so the auto-remove feature
+       for the checked attribute will not work -->
+  <input tal:condition="data/autohide" type="checkbox" name="autohide"
+         checked="checked">Auto-hide old releases</input>
+  <input tal:condition="python:not data['autohide']" type="checkbox" name="autohide">Auto-hide old releases</input>
+  <input type="submit" name="submit_autohide" value="Change" />
+</form>
+
 <p>As an experimental service, you can now host documentation at
 <a tal:attributes="href string:http://packages.python.org/${data/name}" tal:content="string:http://packages.python.org/${data/name}"></a>. To upload documentation, prepare a .zip file that is unpacked into this URL. Only static pages are supported. The directory index file is index.html.</p>
 <form tal:attributes="action app/url_path" method="POST"

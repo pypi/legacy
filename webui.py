@@ -1475,6 +1475,10 @@ class WebUI:
             raise Forbidden, \
                 "You are not allowed to edit '%s' package information"%name
 
+        if self.form.has_key('submit_autohide'):
+            value = self.form.has_key('autohide')
+            self.store.set_package_autohide(name, value)
+
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -1500,6 +1504,7 @@ class WebUI:
             self.store.store_package(name, version, info)
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
+                            autohide=self.store.get_package_autohide(name),
             title="Package '%s' Editing"%name)
 
     def remove_pkg(self):

@@ -329,9 +329,10 @@ class Store:
             if not self.has_role('Owner', name):
                 self.add_role(self.username, 'Owner', name)
 
-            # hide all other releases of this package
-            safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
-                'name=%s and version <> %s', ('TRUE', name, version))
+            # hide all other releases of this package if thus configured
+            if self.get_package_autohide(name):
+                safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
+                             'name=%s and version <> %s', ('TRUE', name, version))
 
         # add description urls
         if html:
@@ -637,6 +638,17 @@ class Store:
         safe_execute(cursor, '''select role_name, user_name
             from roles where package_name=%s''', (name, ))
         return Result(None, cursor.fetchall(), self._Package_Roles)
+
+    def get_package_autohide(self, name):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select autohide from packages where name=%s',
+                     [name])
+        return cursor.fetchall()[0][0]
+
+    def set_package_autohide(self, name, value):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'update packages set autohide=%s where name=%s',
+                     [value, name])
 
     def get_unique(self, iterable):
         ''' Iterate over list of (name,version,date,summary) tuples
