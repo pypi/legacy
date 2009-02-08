@@ -1247,8 +1247,8 @@ class Store:
         # add database entry
         cursor = self.get_cursor()
         sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest) values
-            (%s, %s, %s, %s, %s, %s, %s)'''
+            packagetype, comment_text, filename, md5_digest, upload_time) values
+            (%s, %s, %s, %s, %s, %s, %s, now())'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
 
@@ -1280,15 +1280,15 @@ class Store:
             self.username, self.userip))
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
-    filename md5_digest size! has_sig! downloads!''')
+    filename md5_digest size! has_sig! downloads! upload_time!''')
     def list_files(self, name, version):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest, downloads from release_files
+            filename, md5_digest, downloads, upload_time from release_files
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        for pt, pv, ct, fn, m5, dn in cursor.fetchall():
+        for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
             try:
                 size = os.stat(path)[stat.ST_SIZE]
@@ -1297,7 +1297,7 @@ class Store:
                 # file not on disk any more - don't list it
                 continue
             has_sig = os.path.exists(path+'.asc')
-            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn)))
+            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         return l
 
     def has_file(self, name, version, filename):
@@ -1360,6 +1360,21 @@ class Store:
                                               self.username,
                                               self.userip))
 
+    def update_upload_times(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor,
+                     "select python_version, name, filename from release_files "
+                     "where upload_time is null")
+        for pyversion, name, filename in cursor.fetchall():
+            fn = self.gen_file_path(pyversion, name, filename)
+            try:
+                st = os.stat(fn)
+            except OSError:
+                continue
+            date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(st.st_mtime))
+            safe_execute(cursor, "update release_files "
+            "set upload_time=%s where python_version=%s and name=%s "
+            "and filename = %s", (date, pyversion, name, filename))
 
     #
     # Handle the underlying database
@@ -1516,6 +1531,9 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'update_normalized_text':
         store.update_normalized_text()
+        store.commit()
+    elif sys.argv[2] == 'update_upload_times':
+        store.update_upload_times()
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]

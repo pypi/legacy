@@ -37,7 +37,8 @@ CREATE INDEX journals_changelog ON
 CREATE TABLE packages ( 
    name TEXT PRIMARY KEY, 
    stable_version TEXT,
-   normalized_name TEXT
+   normalized_name TEXT,
+   autohide BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE cheesecake_main_indices (
@@ -182,6 +183,7 @@ CREATE TABLE release_files (
    comment_text TEXT,
    filename TEXT UNIQUE,
    md5_digest TEXT UNIQUE,
+   upload_time TIMESTAMP,
    downloads INTEGER DEFAULT 0,
    FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
