@@ -5,6 +5,8 @@ import re, zipfile, logging, pprint, sets, shutil
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 
+import psycopg
+
 try:
     import cElementTree
 except ImportError:
@@ -224,6 +226,12 @@ class WebUI:
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
+            except psycopg.OperationalError, message:
+                # clean things up
+                self.store.force_close()
+                message = str(message)
+                self.fail('Please try again later.\n<!-- %s -->'%message,
+                    code=500, heading='Database connection failed')
             except:
                 exc, value, tb = sys.exc_info()
                 if ('connection limit exceeded for non-superusers'

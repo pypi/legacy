@@ -1406,6 +1406,16 @@ class Store:
 
         cursor = self._cursor = self._conn.cursor()
 
+    def force_close(self):
+        '''Force closure of the current persistent connection.
+        '''
+        global connection
+        try:
+            connection.close()
+        except Exception:
+            pass
+        connection = None
+
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
         '''
