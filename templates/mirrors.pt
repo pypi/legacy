@@ -1,0 +1,22 @@
+# PyPI mirrors
+#    
+# If you want to register a new mirror, send an email
+# to the catalog-SIG@python.org with:
+#
+# - The urls of your mirror:
+#   - the root of the server
+#   - the index page 
+#   - the last modified page
+#   - the daily local stats directory
+#   - the daily global stats directory
+#   - the mirrors page
+#
+# - The PyPI account name of the maintainer.
+#   
+#   The registering is done manually and to become a
+#   mirror, you need to strictly follow the mirror protocol
+#   described here:
+#
+#    http://wiki.python.org/PEP_374
+#    
+<tal:block tal:repeat="mirror app/store/list_mirrors"><tal:block tal:replace="python:','.join(mirror)"/></tal:block>

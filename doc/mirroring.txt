@@ -1,0 +1,64 @@
+==============
+PyPI Mirroring
+==============
+
+..contents::
+
+When mirrors are used by the PyPI server ?
+==========================================
+
+The mirrors are used :
+
+- to collect the download stats once a day
+- to display the /mirrors page, that contains a list of mirrors
+
+How to configure the mirroring parameters
+=========================================
+
+In config.ini, add a new section called `mirrors`, with three
+elements:
+
+- cache-root: the directory used by the script to store 
+  stats files that where downloaded from the mirrors
+- local-stats: the directory where the local stats files are 
+  created.
+- global-stats: the directory where the global stats are 
+  created.
+
+Example::
+
+    [mirrors]
+    cache-root = /tmp/pypi/mirrors-cache
+    local-stats = /tmp/pypi/mirroring/local-stats
+    global-stats = /tmp/pypi/mirroringglobal-stats
+
+How to publish the stats files to the world
+===========================================
+
+The two stats directories need to be added as browsable
+directories in Apache.
+
+Collecting stats
+================
+
+To run the stats collector, just run::
+
+    $ python tools/apache_count.py config.ini apachelog 
+
+Adding a mirror
+===============
+
+Command to add a mirror::
+
+    $ python admin.py addmirror http://example.com/ simple last-modified locat-stats stats mirrors
+
+
+This line will add a mirror that has those urls:
+
+- http://example.com/simple : index root
+- http://example.com/last-modified : url of the last modified date
+- http://example.com/local-stats : root url of the daily local stats
+- http://example.com/local-stats : root url of the global stats
+- http://example.com/local-stats : root url of the global stats
+
+

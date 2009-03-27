@@ -272,7 +272,10 @@ class WebUI:
         content = template(**context)
 
         self.handler.send_response(200, 'OK')
-        self.handler.set_content_type('text/html; charset=utf-8')
+        if 'content-type' in options:
+            self.handler.set_content_type(options['content-type'])
+        else:
+            self.handler.set_content_type('text/html; charset=utf-8')
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
@@ -403,7 +406,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload mirrors'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -2053,4 +2056,11 @@ class WebUI:
         name = cgi.escape(name)
         version = cgi.escape(version)
         return u'<a href="%s">%s&nbsp;%s</a>'%(url, name, version)
+
+    def mirrors(self):
+        ''' display the list of mirrors
+        '''
+        options = {'title': 'PyPI mirrors', 
+                   'content-type': 'text/plain; charset=utf-8'}
+        self.write_template('mirrors.pt', **options)
 
