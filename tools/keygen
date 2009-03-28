@@ -1,0 +1,5 @@
+#!/bin/sh
+openssl dsaparam -out param 2048
+openssl gendsa -out privkey param
+openssl dsa -in privkey -pubout -out pubkey
+rm param

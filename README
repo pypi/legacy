@@ -10,4 +10,4 @@ To run the PyPI software, you need:
 	zope.tales
 	zope.i18nmessageid
 	psycopg and PostgreSQL
-
+	M2Crypto

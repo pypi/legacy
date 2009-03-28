@@ -4,6 +4,7 @@ import time, random, smtplib, base64, sha, email, types, stat, urlparse
 import re, zipfile, logging, pprint, sets, shutil
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
+from M2Crypto import EVP, DSA
 
 import psycopg
 
@@ -166,6 +167,7 @@ class WebUI:
         self.env = env
         random.seed(int(time.time())%256)
         self.nav_current = None
+        self.privkey = None
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -343,10 +345,12 @@ class WebUI:
         ''' Figure out what the request is, and farm off to the appropriate
             handler.
         '''
-        # See if this is the "simple" pages
+        # See if this is the "simple" pages and signatures
         script_name = self.env.get('SCRIPT_NAME')
         if script_name and script_name == self.config.simple_script:
             return self.run_simple()
+        if script_name and script_name == self.config.simple_sign_script:
+            return self.run_simple_sign()
         # see if the user has provided a username/password
         self.username = None
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
@@ -424,6 +428,33 @@ class WebUI:
     def xmlrpc(self):
         rpc.handle_request(self)
 
+    def simple_body(self, path):
+        urls = self.store.get_package_urls(path)
+        if urls is None:
+            # check for normalized name
+            names = self.store.find_package(path)
+            if names and names[0] != path:
+                raise Redirect, self.config.simple_script + '/' + names[0]
+            raise NotFound, path + " does not have any releases"
+        html = []
+        html.append("""<html><head><title>Links for %s</title></head>"""
+                    % path)
+        html.append("<body><h1>Links for %s</h1>" % path)
+        for href, rel, text in urls:
+            if href.startswith('http://cheeseshop.python.org/pypi') or \
+                    href.startswith('http://pypi.python.org/pypi') or \
+                    href.startswith('http://www.python.org/pypi'):
+                # Suppress URLs that point to us
+                continue
+            if rel:
+                rel = ' rel="%s"' % rel
+            else:
+                rel = ''
+            html.append("<a href='%s'%s>%s</a><br/>\n" % (href, rel, text))
+        html.append("</body></html>")
+        html = ''.join(html)
+        return html
+
     def run_simple(self):
         path = self.env.get('PATH_INFO')
         if not path:
@@ -447,30 +478,7 @@ class WebUI:
         if path.endswith('/'):
             path = path[:-1]
         if '/' not in path:
-            urls = self.store.get_package_urls(path)
-            if urls is None:
-                # check for normalized name
-                names = self.store.find_package(path)
-                if names and names[0] != path:
-                    raise Redirect, self.config.simple_script + '/' + names[0]
-                raise NotFound, path + " does not have any releases"
-            html = []
-            html.append("""<html><head><title>Links for %s</title></head>"""
-                        % path)
-            html.append("<body><h1>Links for %s</h1>" % path)
-            for href, rel, text in urls:
-                if href.startswith('http://cheeseshop.python.org/pypi') or \
-                   href.startswith('http://pypi.python.org/pypi') or \
-                   href.startswith('http://www.python.org/pypi'):
-                    # Suppress URLs that point to us
-                    continue
-                if rel:
-                    rel = ' rel="%s"' % rel
-                else:
-                    rel = ''
-                html.append("<a href='%s'%s>%s</a><br/>\n" % (href, rel, text))
-            html.append("</body></html>")
-            html = ''.join(html)
+            html = self.simple_body(path)
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.end_headers()
@@ -478,6 +486,25 @@ class WebUI:
             return
         raise NotFound, path
 
+    def run_simple_sign(self):
+        path = self.env.get('PATH_INFO')
+        if not path:
+            raise Redirect, self.config.simple_script+'/'
+        path = path[1:]
+        if '/' in path:
+            raise NotFound, path
+        html = self.simple_body(path)
+        if not self.privkey:
+            self.privkey = DSA.load_key(self.config.privkey)
+        md = EVP.MessageDigest('sha1')
+        md.update(html)
+        digest = md.final()
+        sig = self.privkey.sign_asn1(digest)
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('application/octet-stream')
+        self.handler.end_headers()
+        self.wfile.write(sig)
+        
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='PyPI')
 
