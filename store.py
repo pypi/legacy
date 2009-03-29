@@ -500,8 +500,10 @@ class Store:
         safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
         where name=%s''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
-            result.append((self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
-                           None, fname))
+            # Put files first, to have setuptools consider 
+            # them before going to other sites
+            result.insert(0, (self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
+                              None, fname))
 
         # urls from description
         safe_execute(cursor, '''select distinct url from description_urls
