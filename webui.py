@@ -351,6 +351,8 @@ class WebUI:
             return self.run_simple()
         if script_name and script_name == self.config.simple_sign_script:
             return self.run_simple_sign()
+        if script_name == '/mirrors':
+            return self.mirrors()
         # see if the user has provided a username/password
         self.username = None
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
@@ -410,7 +412,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload mirrors'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'

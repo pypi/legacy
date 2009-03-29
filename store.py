@@ -1378,16 +1378,14 @@ class Store:
     #
     # Mirrors managment
     #
-    def add_mirror(self, root, user, index, last_modified, locat_stats, stats, 
-                  mirrors):
+    def add_mirror(self, root, user):
         ''' Add a mirror to the mirrors list
         '''
         cursor = self.get_cursor()
-        sql = ('insert into mirrors (root_url, user_name, index_url, last_modified_url, '
-               'local_stats_url, stats_url, mirrors_url) '
-               'values (%s, %s, %s, %s, %s, %s, %s)')
+        sql = ('insert into mirrors (root_url, user_name)'
+               'values (%s, %s)')
 
-        values = (root, user, index, last_modified, locat_stats, stats, mirrors)
+        values = (root, user)
         safe_execute(cursor, sql, values)
 
     def delete_mirror(self, root):
@@ -1400,7 +1398,7 @@ class Store:
         ''' Returns a list of mirrors
         '''
         cursor = self.get_cursor()
-        sql = '''select root_url, index_url, last_modified_url,local_stats_url,stats_url,mirrors_url from mirrors'''
+        sql = '''select root_url from mirrors'''
         safe_execute(cursor, sql)
         return cursor.fetchall()
 

@@ -77,11 +77,10 @@ def rename_package(store, old, new):
     store.rename_package(old, new)
     
 
-def add_mirror(store, root, user, index, last_modified, locat_stats, stats, mirrors):
+def add_mirror(store, root, user):
     ''' Add a mirror to the mirrors list
     '''
-    store.add_mirror(root, user, index, last_modified, locat_stats,
-                     stats, mirrors)
+    store.add_mirror(root, user)
 
     print 'done'
 
@@ -92,8 +91,7 @@ def delete_mirror(store, root):
     print 'done'
 
 if __name__ == '__main__':
-    #config = config.Config('/usr/local/pypi/config.ini', 'webui')
-    config = config.Config('config.ini', 'webui')
+    config = config.Config('/usr/local/pypi/config.ini', 'webui')
     store = store.Store(config)
     store.open()
     command = sys.argv[1]
