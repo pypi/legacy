@@ -1,6 +1,6 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, psycopg, time, sha, random, types, math, stat, errno
+import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
 import logging, cStringIO, string
 from distutils.version import LooseVersion
 import trove
@@ -1425,12 +1425,12 @@ class Store:
             # Rollback any uncommitted earlier change
             try:
                 self._conn.rollback()
-            except psycopg.InterfaceError, e:
+            except psycopg2.InterfaceError, e:
                 # already closed
                 connection = None
                 return self.open()
         else:
-            self._conn = connection = psycopg.connect(**cd)
+            self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
 

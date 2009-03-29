@@ -6,7 +6,7 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from M2Crypto import EVP, DSA
 
-import psycopg
+import psycopg2
 
 try:
     import cElementTree
@@ -228,7 +228,7 @@ class WebUI:
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
-            except psycopg.OperationalError, message:
+            except psycopg2.OperationalError, message:
                 # clean things up
                 self.store.force_close()
                 message = str(message)
