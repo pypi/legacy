@@ -500,7 +500,7 @@ class Store:
         safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
         where name=%s''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
-            # Put files first, to have setuptools consider 
+            # Put files first, to have setuptools consider
             # them before going to other sites
             result.insert(0, (self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
                               None, fname))
@@ -1380,27 +1380,27 @@ class Store:
     #
     # Mirrors managment
     #
-    def add_mirror(self, root, user):
+    def add_mirror(self, ip, user):
         ''' Add a mirror to the mirrors list
         '''
         cursor = self.get_cursor()
-        sql = ('insert into mirrors (root_url, user_name)'
+        sql = ('insert into mirrors (ip, user_name)'
                'values (%s, %s)')
 
-        values = (root, user)
+        values = (ip, user)
         safe_execute(cursor, sql, values)
 
-    def delete_mirror(self, root):
+    def delete_mirror(self, ip):
         ''' Delete a mirror
         '''
         cursor = self.get_cursor()
-        cursor.execute('delete from mirrors where root_url=%s', [root])
+        cursor.execute('delete from mirrors where ip=%s', [ip])
 
     def list_mirrors(self):
         ''' Returns a list of mirrors
         '''
         cursor = self.get_cursor()
-        sql = '''select root_url from mirrors'''
+        sql = '''select ip from mirrors'''
         safe_execute(cursor, sql)
         return cursor.fetchall()
 

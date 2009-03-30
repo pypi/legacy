@@ -243,7 +243,7 @@ CREATE TABLE browse_tally (
 
 -- Table structure for table: mirrors
 CREATE TABLE mirrors (
-   root_url TEXT PRIMARY KEY,
+   ip TEXT PRIMARY KEY,
    user_name TEXT REFERENCES users
 );
 
