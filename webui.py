@@ -168,6 +168,7 @@ class WebUI:
         random.seed(int(time.time())%256)
         self.nav_current = None
         self.privkey = None
+        self.username = None
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -354,7 +355,6 @@ class WebUI:
         if script_name == '/mirrors':
             return self.mirrors()
         # see if the user has provided a username/password
-        self.username = None
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
         if auth:
             authtype, auth = auth.split()
