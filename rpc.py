@@ -1,6 +1,7 @@
 import xmlrpclib
 import traceback
 import re
+import time
 from cStringIO import StringIO
 
 allowed = ('package_releases', 'package_urls', 'package_data',
@@ -80,7 +81,7 @@ def updated_releases(store, since):
 def changelog(store, since):
     result = store.changelog(since)
     return [(row['name'],row['version'],
-             int(row['submitted_date'].gmticks()),
+             int(time.mktime(row['submitted_date'].timetuple())),
              row['action'])
              for row in result]
 
