@@ -7,14 +7,6 @@ allowed = ('package_releases', 'package_urls', 'package_data',
     'search', 'list_packages', 'release_urls', 'release_data',
     'updated_releases', 'changelog', 'post_cheesecake_for_release')
 
-# monkey-patch xmlrpclib to marshal mx.DateTime correctly.
-import mx.DateTime
-def dump_DateTime(self, value, write):
-    write("<value><dateTime.iso8601>")
-    write(value.strftime("%Y%m%dT%H:%M:%S"))
-    write("</dateTime.iso8601></value>\n")
-xmlrpclib.Marshaller.dispatch[mx.DateTime.DateTimeType] = dump_DateTime
-
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
     webui_obj.handler.send_header('Content-type', 'text/xml')
