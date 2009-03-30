@@ -1,5 +1,6 @@
 import xmlrpclib
 import traceback
+import re
 from cStringIO import StringIO
 
 allowed = ('package_releases', 'package_urls', 'package_data',
@@ -29,6 +30,7 @@ def handle_request(webui_obj):
             response = ''
         # xmlrpclib.dumps encodes Unicode as UTF-8
         xml = xmlrpclib.dumps((response,), methodresponse=True, allow_none=True)
+        xml = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', xml)
         webui_obj.handler.wfile.write(xml)
     except:
         out = StringIO()
