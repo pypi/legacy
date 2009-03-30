@@ -506,7 +506,7 @@ class WebUI:
         self.handler.set_content_type('application/octet-stream')
         self.handler.end_headers()
         self.wfile.write(sig)
-        
+
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='PyPI')
 
@@ -2089,7 +2089,6 @@ class WebUI:
     def mirrors(self):
         ''' display the list of mirrors
         '''
-        options = {'title': 'PyPI mirrors', 
-                   'content-type': 'text/plain; charset=utf-8'}
+        options = {'title': 'PyPI mirrors'}
         self.write_template('mirrors.pt', **options)
 

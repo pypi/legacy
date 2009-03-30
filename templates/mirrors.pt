@@ -1,15 +1,34 @@
-# PyPI mirrors
-#    
-# If you want to register a new mirror, send an email
-# to the catalog-SIG@python.org with:
-#
-# - The base url of your mirror.
-# - The PyPI account name of the maintainer.
-#   
-#   The registering is done manually and to become a
-#   mirror, you need to strictly follow the mirror protocol
-#   described here:
-#
-#    http://www.python.org/dev/peps/pep-0381/
-#    
-<tal:block tal:repeat="mirror app/store/list_mirrors"><tal:block tal:replace="python:','.join(mirror)"/></tal:block>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+      <metal:fill fill-slot="body">
+
+ <p>The PyPI repository provides alternative locations that stores the packages.
+ A mirror ring is available at this hostname : <b>mirrors.pypi.python.org</b></p>
+
+ <p>If you want to register a new mirror, send an email
+ to the catalog-SIG mailing list and provide:</p>
+ <ul>
+  <li>The IP of your mirror.</li>
+  <li>The PyPI account name of the maintainer.</li>
+ </ul>
+
+ <p>The registering is done manually by the PyPI administrator.
+ To become a mirror, you need to strictly follow the protocol
+ described here:</p>
+
+ <a href="http://www.python.org/dev/peps/pep-0381">http://www.python.org/dev/peps/pep-0381</a>
+
+ <p>Notice that the mirror maintainer must provide a permanent IP.</p>
+
+ <h2>Current mirror list</h2>
+ <ul>
+   <li tal:repeat="mirror app/store/list_mirrors">
+      <tal:block tal:replace="python:mirror[0]"/>
+   </li>
+ </ul>
+ </metal:fill>
+</html>
+
