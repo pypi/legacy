@@ -372,7 +372,7 @@ class WebUI:
                     self.username = un
                     last_login = user['last_login']
                     # Only update last_login every minute
-                    update_last_login = not last_login or (time.time()-last_login.ticks() > 60)
+                    update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
                     self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
                     if update_last_login:
                         # The only change so far was the update of last_login;
