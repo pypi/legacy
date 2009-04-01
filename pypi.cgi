@@ -39,7 +39,7 @@ try:
     sys.path.insert(0, '/tmp/pypi')
     from webui import WebUI
     import config
-    cfg = config.Config('/tmp/pypi/config.ini', 'webui')
+    cfg = config.Config('/tmp/pypi/config.ini')
     request = RequestWrapper(cfg, sys.stdin, sys.stdout)
     handler = WebUI(request, os.environ)
     handler.run()

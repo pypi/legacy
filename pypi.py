@@ -26,7 +26,7 @@ class RequestWrapper:
 
 def handle(req):
     req.content_type = req.headers_out['Content-Type'] = 'text/html'
-    cfg = config.Config('/data/pypi/config.ini', 'webui')
+    cfg = config.Config('/data/pypi/config.ini')
     request = RequestWrapper(cfg, req)
     pseudoenv = {}
     pseudoenv['CONTENT_TYPE'] = req.headers_in.get('content-type', '')

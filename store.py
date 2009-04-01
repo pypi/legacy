@@ -1551,7 +1551,7 @@ def get_description_urls(html):
 
 if __name__ == '__main__':
     import config
-    cfg = config.Config(sys.argv[1], 'webui')
+    cfg = config.Config(sys.argv[1])
     store = Store(cfg)
     store.open()
     if sys.argv[2] == 'changepw':

@@ -3,8 +3,7 @@ import ConfigParser
 class Config:
     ''' Read in the config and set up the vars with the correct type.
     '''
-    def __init__(self, configfile, name):
-        # "name" argument no longer used
+    def __init__(self, configfile):
         c = ConfigParser.ConfigParser()
         c.read(configfile)
         self.database_name = c.get('database', 'name')

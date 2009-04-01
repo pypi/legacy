@@ -9,7 +9,7 @@ class XMLRPC ( unittest.TestCase ):
 
     def setUp( self ):
         # get a storage object to use in calls to xmlrpc functions
-        self.store = store.Store( config.Config( "/tmp/pypi/config.ini", "webui" ) )
+        self.store = store.Store( config.Config( "/tmp/pypi/config.ini" ) )
 
     def testEcho( self ):
         result = rpc.echo(self.store, 'a', 'b', 1, 3.4)

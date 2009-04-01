@@ -12,7 +12,7 @@ class Request:
         self.start_response = start_response
         self.rfile = cStringIO.StringIO(environ['wsgi.input'].read())
         self.wfile = cStringIO.StringIO()
-        self.config = config.Config(prefix+'/config.ini', 'webui')
+        self.config = config.Config(prefix+'/config.ini')
     
     def send_response(self, code, message='no details available'):
         self.status = '%s %s' % (code, message)

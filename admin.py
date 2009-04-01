@@ -91,7 +91,7 @@ def delete_mirror(store, root):
     print 'done'
 
 if __name__ == '__main__':
-    config = config.Config('/usr/local/pypi/config.ini', 'webui')
+    config = config.Config('/usr/local/pypi/config.ini')
     store = store.Store(config)
     store.open()
     command = sys.argv[1]

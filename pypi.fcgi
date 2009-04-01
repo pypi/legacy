@@ -46,7 +46,7 @@ def handle_request(req, env):
 prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
 import config
-cfg = config.Config(prefix+'/config.ini', 'webui')
+cfg = config.Config(prefix+'/config.ini')
 fcg = thfcgi.FCGI(handle_request, 
                   max_requests=-1,
                   backlog=50,

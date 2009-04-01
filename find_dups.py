@@ -2,7 +2,7 @@ import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
 import store, config
 
 try:
-    config = config.Config(sys.argv[1], 'webui')
+    config = config.Config(sys.argv[1])
 except IndexError:
     print "Usage: find_dups.py config.ini"
     raise SystemExit
