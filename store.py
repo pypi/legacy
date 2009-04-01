@@ -1283,7 +1283,7 @@ class Store:
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
     filename md5_digest size! has_sig! downloads! upload_time!''')
-    def list_files(self, name, version):
+    def list_files(self, name, version, show_missing=False):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
             filename, md5_digest, downloads, upload_time from release_files
@@ -1296,8 +1296,11 @@ class Store:
                 size = os.stat(path)[stat.ST_SIZE]
             except OSError, error:
                 if error.errno != errno.ENOENT: raise
-                # file not on disk any more - don't list it
-                continue
+
+                if show_missing:
+                    size = 0
+                else:
+                    continue
             has_sig = os.path.exists(path+'.asc')
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         return l
