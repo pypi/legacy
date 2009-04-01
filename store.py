@@ -1171,7 +1171,7 @@ class Store:
         t = self.trove()
         cursor.execute("select value from timestamps where name='browse_tally'")
         date = cursor.fetchone()[0]
-        if time.time() - date.ticks() > 10*60:
+        if time.time() - time.mktime(date.timetuple()) > 10*60:
             # Regenerate tally. First, release locks we hold on the timestamps
             self._conn.commit()
             # Clear old tally
