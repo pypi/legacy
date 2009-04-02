@@ -1,7 +1,7 @@
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, sets, shutil
+import re, zipfile, logging, pprint, sets, shutil, Cookie
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from M2Crypto import EVP, DSA
@@ -169,6 +169,8 @@ class WebUI:
         self.nav_current = None
         self.privkey = None
         self.username = None
+        self.authenticated = False # was a password passed?
+        self.loggedin = False      # was a cookie sent?
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -258,7 +260,12 @@ class WebUI:
     error_message = None
     ok_message = None
 
-    def write_template(self, filename, **options):
+    def write_template(self, filename, cookie = None, **options):
+        if not self.loggedin:
+            # user chose to logout, so don't render it
+            self.username = None
+        else:
+            cookie = self.username
         context = {}
         options.setdefault('norobots', False)
         context['data'] = options
@@ -279,6 +286,9 @@ class WebUI:
             self.handler.set_content_type(options['content-type'])
         else:
             self.handler.set_content_type('text/html; charset=utf-8')
+        if cookie:
+            # remember the username in a cookie
+            self.handler.send_header('Set-Cookie', 'pypi='+cookie)
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
@@ -370,6 +380,7 @@ class WebUI:
                     if pw != user['password']:
                         raise Unauthorised, 'Incorrect password'
                     self.username = un
+                    self.authenticated = True
                     last_login = user['last_login']
                     # Only update last_login every minute
                     update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
@@ -378,6 +389,18 @@ class WebUI:
                         # The only change so far was the update of last_login;
                         # commit that to release the lock
                         self.store.commit()
+
+        # on logout, we set the cookie to "logged_out"
+        try:
+            un = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))['pypi'].value
+            if self.username and un != self.username:
+                # bad cookie, ignore
+                un = None
+        except KeyError:
+            un = None
+        if un and self.store.has_user(un):
+            self.loggedin = True
+            self.username = un
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -406,7 +429,7 @@ class WebUI:
 
         # make sure the user has permission
         if action in ('submit', ):
-            if self.username is None:
+            if not self.authenticated:
                 raise Unauthorised
             if self.store.get_otk(self.username):
                 raise Unauthorised, "Incomplete registration; check your email"
@@ -507,8 +530,8 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(sig)
 
-    def home(self, nav_current='home'):
-        self.write_template('home.pt', title='PyPI')
+    def home(self, nav_current='home', cookie = None):
+        self.write_template('home.pt', title='PyPI', cookie = cookie)
 
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
@@ -671,11 +694,13 @@ class WebUI:
             norobots=True)
 
     def logout(self):
-        raise Unauthorised
+        self.loggedin = False
+        self.home(cookie = 'logged_out')
     def login(self):
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised
-        self.home()
+        self.loggedin = True
+        self.home(cookie = self.username)
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -1151,8 +1176,12 @@ class WebUI:
         '''
         # submission of this form requires a login, so we should check
         # before someone fills it in ;)
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, 'You must log in.'
+
+        if not self.loggedin:
+            # Authenticated, but not logged in - auto-login
+            self.loggedin = True
 
         # are we editing a specific entry?
         info = {}
@@ -1270,7 +1299,7 @@ class WebUI:
         ''' Handle the submission of distro metadata as a PKG-INFO file.
         '''
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to store package information"
 
@@ -1364,7 +1393,7 @@ class WebUI:
         ''' Handle the submission of distro metadata.
         '''
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to store package information"
 
@@ -1500,7 +1529,7 @@ class WebUI:
         ''' Edit info about a bunch of packages at one go
         '''
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
@@ -1555,7 +1584,7 @@ class WebUI:
             remove releases.
         '''
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
@@ -1680,7 +1709,7 @@ class WebUI:
     CURRENT_UPLOAD_PROTOCOL = "1"
     def file_upload(self, response=True):
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
@@ -1830,7 +1859,7 @@ class WebUI:
     #
     def doc_upload(self):
         # make sure the user is identified
-        if not self.username:
+        if not self.authenticaed:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
@@ -1904,7 +1933,7 @@ class WebUI:
     def user_form(self):
         ''' Make the user authenticate before viewing the "register" form.
         '''
-        if not self.username:
+        if not self.authenticated:
             raise Unauthorised, 'You must authenticate'
         self.register_form()
 
@@ -1966,7 +1995,7 @@ class WebUI:
             raise FormError, "Clearing the email address is not allowed"
 
         if info.has_key('otk'):
-            if self.username is None:
+            if not self.authenticated:
                 raise Unauthorised
             # finish off rego
             if info['otk'] != self.store.get_otk(self.username):
