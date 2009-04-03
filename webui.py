@@ -1859,7 +1859,7 @@ class WebUI:
     #
     def doc_upload(self):
         # make sure the user is identified
-        if not self.authenticaed:
+        if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
