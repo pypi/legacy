@@ -17,6 +17,7 @@ dist_file_types = [
     ('bdist_dumb',       '"dumb" binary'),
     ('bdist_rpm',        'RPM'),
     ('bdist_wininst',    'MS Windows installer'),
+    ('bdist_msi',        'MS Windows MSI installer'),
     ('bdist_egg',        'Python Egg'),
     ('bdist_dmg',        'OS X Disk Image'),
 ]
