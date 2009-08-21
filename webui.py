@@ -1138,33 +1138,42 @@ class WebUI:
             ('summary', 2),
             ('description', 1),
         ]
-        # XXX currently this code doesn't use name,version for uniqueness
-        #     so a package with multiple visible releases will get a much
-        #     higher score
+
+
+        # score all package/release versions, and also record the
+        # max value of _pypi_ordering per package
+        max_ordering = {}
         for t in terms:
             for col, score in columns:
                 spec = {'_pypi_hidden': False, col: t}
                 for r in self.store.query_packages(spec):
-                    e = d.get(r['name'], [0, r])
+                    e = d.get((r['name'], r['version']), [0, r])
                     if col == 'name' and t == r['name'].lower():
                         e[0] += score*2
                     else:
                         e[0] += score
-                    d[r['name']] = e
+                    d[(r['name'],r['version'])] = e
+                    old_max = max_ordering.get(r['name'], -1)
+                    max_ordering[r['name']] = max(old_max, r['_pypi_ordering'])
 
-        # now sort by score, name and version ordering
+        # drop old releases
+        for (name, version), (score, r) in d.items():
+            if max_ordering[name] != r['_pypi_ordering']:
+                del d[(name, version)]
+
+        # now sort by score and name ordering
         l = []
         scores = {}
         for k,v in d.items():
-            l.append((-v[0], k.lower(), v[1]['_pypi_ordering'], v[1]))
-            scores[k] = v[0]
+            l.append((-v[0], k[0].lower(), v[1]))
+            scores[k[0]] = v[0]
 
         if len(l) == 1:
             self.form['name'] = l[0][-1]['name']
             self.form['version'] = l[0][-1]['version']
             return self.display()
 
-        # sort and pull out just the
+        # sort and pull out just the record
         l.sort()
         l = [e[-1] for e in l]
 
