@@ -1137,6 +1137,8 @@ class WebUI:
             ('name', 4),      # doubled for exact (case-insensitive) match
             ('summary', 2),
             ('description', 1),
+            ('author', 1),
+            ('maintainer', 1),
         ]
 
 
