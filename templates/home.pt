@@ -8,7 +8,8 @@
 <p>The Python Package Index is a repository of software for the Python
 programming language. There are currently
 <strong tal:content="app/store/count_packages" />
-packages here.
+packages here. To contact the PyPI admins, please 
+use the "Get help" or "Bug reports" links on the left.
 </p>
           <form tal:attributes="action app/url_path" id="searchform"
                 method="get" name="searchform">
