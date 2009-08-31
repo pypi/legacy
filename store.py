@@ -1466,7 +1466,7 @@ class Store:
         cursor = self.get_cursor()
         # Check for existing session
         sql = '''select id,url, assoc_handle from openid_sessions
-                 where provider=%s and expires<now()'''
+                 where provider=%s and expires>now()'''
         safe_execute(cursor, sql, (provider[0],))
         sessions = cursor.fetchall()
         if sessions:
