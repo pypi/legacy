@@ -25,7 +25,7 @@ def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi)$', re.I)
-safe_username = re.compile(r'^[A-Za-z0-9]+$')
+safe_username = re.compile(r'^[A-Za-z0-9._]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
@@ -2057,7 +2057,7 @@ class WebUI:
             # new user, create entry and email otk
             name = info['name']
             if not safe_username.match(name):
-                raise FormError, 'Username is invalid (ASCII alphanum only)'
+                raise FormError, 'Username is invalid (ASCII alphanum,.,_ only)'
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
@@ -2227,10 +2227,17 @@ class WebUI:
         duplicate = False
         if 'ok' in self.form:
             # User has picked a username
-            if not self.store.has_user(self.form['username']):
+            username = self.form.get('username', '')
+            if not username:
+                error = 'Please pick a username'
+            elif not safe_username.match(username):
+                error = 'Username is invalid (ASCII alphanum,.,_ only)'
+            elif self.store.has_user(username):
+                error = 'User %s already exists, please pick a different name' % username
+            else:
                 if self.store.duplicate_nonce(nonce):
                     return self.fail('replay attack detected')
-                self.username = self.form['username']
+                self.username = username
                 password = ''.join([random.choice(store.chars) for x in range(32)])
                 self.store.store_user(self.username, password,
                                       email, None, otk=False)
@@ -2238,9 +2245,6 @@ class WebUI:
                 self.loggedin = self.authenticated = True
                 self.usercookie = self.store.create_cookie(self.username)
                 return self.home()
-            # Username is a duplicate
-            duplicate = True
-            username = self.form['username']
         else:
             # Just returned from OpenID, select username
             username = openid.get_username(qs)
@@ -2248,7 +2252,9 @@ class WebUI:
                 username = '.'.join(username)
             elif username is None:
                 username = email.split('@')[0]
-            duplicate = False
+            username = username.replace(' ','.')
+            username = re.sub('[^a-zA-Z0-9._]','',username)
+            error = 'Please choose a username to complete registration'
         if self.store.has_user(username):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
@@ -2260,7 +2266,7 @@ class WebUI:
                 hidden.append((k,v[0]))
         return self.write_template('openid_return.pt', title='Register through OpenID',
                                    hidden=hidden,
-                                   username = username, duplicate=duplicate)
+                                   username = username, error=error)
             
 
     def rp_discovery(self):

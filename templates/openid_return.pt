@@ -14,7 +14,7 @@ obfuscated).</li>
 </ol>
 
 
-    <em tal:condition="data/duplicate">The userid already exists. Please pick a different one, e.g. <span tal:replace="data/username"/></em>
+    <em tal:condition="data/error"><span tal:replace="data/error"/></em>
 
     <form method="GET">
       <input type="hidden" tal:repeat="h data/hidden"
