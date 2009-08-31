@@ -1470,10 +1470,11 @@ class Store:
         safe_execute(cursor, sql, (provider[0],))
         sessions = cursor.fetchall()
         if sessions:
+            id, url, assoc_handle = sessions[0]
             safe_execute(cursor, 'select stype from openid_stypes where id=%s',
-                         (sessions[0][0],))
+                         (id,))
             stypes = [t[0] for t in cursor.fetchall()]
-            return t, sessions[1], sessions[2]
+            return stypes, url, assoc_handle
 
         # start from scratch:
         # discover service URL
