@@ -1983,7 +1983,7 @@ class WebUI:
         ''' Throw up a form for registering.
         '''
         info = {'name': '', 'password': '', 'confirm': '', 'email': '',
-                'gpg_keyid': ''}
+                'gpg_keyid': '', 'openids': []}
         if self.username:
             user = self.store.get_user(self.username)
             info['new_user'] = False
