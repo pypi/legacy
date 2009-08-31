@@ -91,6 +91,7 @@ chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
              ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
+#             ('Launchpad', 'https://login.launchpad.net/favicon.ico', 'https://login.launchpad.net/')
              )
 
 class Provider:
@@ -300,7 +301,8 @@ class WebUI:
         else:
             self.handler.set_content_type('text/html; charset=utf-8')
         if self.usercookie:
-            self.handler.send_header('Set-Cookie', 'pypi='+self.usercookie)
+            self.handler.send_header('Set-Cookie',
+                                     'pypi='+self.usercookie+';path='+self.url_path)
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
