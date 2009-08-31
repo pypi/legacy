@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+
+  <p>If you would like to see support in PyPI for additional providers, please report that to the <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">bug tracker</a>. Notice that we have the following requirements for adding a new provider:</p>
+  <ul>
+  <li>must be in wide use, using procedures that the community trusts</li>
+  <li>must support OpenID 2.0</li>
+  <li>must support provider-driven identifier selection</li>
+  <li>must provide a validated email address, either through AX or SREG</li>
+  <li>must support direct communication over https</li>
+  </ul>
+
+  </metal:fill>
+</html>

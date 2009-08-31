@@ -107,18 +107,25 @@
             </div>
 
             <div id="document-navigation">
-              <tal:if-not-user condition="not: app/username">
+              <tal:if-not-user condition="not: app/loggedin">
                 <h4>Not Logged In</h4>
 
                 <ul>
                   <li><a tal:attributes="href python: app.link_action('login')">Login</a></li>
                   <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
                   <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
+		  <li>Use <a tal:attributes="href string:${app/url_path}?:action=openid">OpenID</a>
+                    <tal:block tal:repeat="prov data/providers">
+                     <a tal:attributes="href prov/login">
+                     <img tal:attributes="src prov/favicon; title prov/title"/>
+                     </a>
+                    </tal:block>
+                  </li>
                 </ul>
 
               </tal:if-not-user>
 
-              <tal:if-user condition="app/username">
+              <tal:if-user condition="app/loggedin">
 
                 <h4>Welcome <span tal:replace="app/username"/></h4>
                 <li>

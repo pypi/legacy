@@ -1,9 +1,9 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
-import logging, cStringIO, string
+import logging, cStringIO, string, datetime, calendar
 from distutils.version import LooseVersion
-import trove
+import trove, openid
 from mini_pkg_resources import safe_name
 
 def enumerate(sequence):
@@ -1008,7 +1008,7 @@ class Store:
             (name, ))
         return int(cursor.fetchone()[0])
 
-    def store_user(self, name, password, email, gpg_keyid):
+    def store_user(self, name, password, email, gpg_keyid, otk=True):
         ''' Store info about the user to the database.
 
             The "password" argument is passed in cleartext and sha-ed
@@ -1039,6 +1039,8 @@ class Store:
         safe_execute(cursor,
            'insert into users (name, password, email) values (%s, %s, %s)',
            (name, password, email))
+        if not otk:
+            return None
         otk = ''.join([random.choice(chars) for x in range(32)])
         safe_execute(cursor, 'insert into rego_otk (name, otk) values (%s, %s)',
             (name, otk))
@@ -1068,6 +1070,19 @@ class Store:
             from users where email=%s''', (email,))
         return self._User(None, cursor.fetchone())
 
+    def get_user_by_openid(self, openid):
+        ''' Retrieve info about the user from the database, looked up by
+            email address.
+
+            Returns a mapping with the user info or None if there is no
+            such user.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select users.name, password, email, gpg_keyid
+            from users,openids where users.name=openids.name
+            and openids.id=%s''', (openid,))
+        return self._User(None, cursor.fetchone())
+
     _Users = FastResultRow('name email')
     def get_users(self):
         ''' Fetch the complete list of users from the database.
@@ -1075,6 +1090,12 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name,email from users order by lower(name)')
         return Result(None, cursor.fetchall(), self._Users)
+
+    _Openid = FastResultRow('id')
+    def get_openids(self, username):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select id from openids where name=%s', (username,))
+        return Result(None, cursor.fetchall(), self._Openid)
 
     def has_role(self, role_name, package_name=None, user_name=None):
         ''' Determine whether the current user has the named Role for the
@@ -1407,6 +1428,103 @@ class Store:
         sql = '''select ip from mirrors'''
         safe_execute(cursor, sql)
         return cursor.fetchall()
+
+    def find_user_by_cookie(self, cookie):
+        '''Return username of user if cookie is valid, else None.'''
+        if not cookie:
+            return None
+        cursor = self.get_cursor()
+        sql = 'select name, last_seen from cookies where cookie=%s'
+        safe_execute(cursor, sql, (cookie,))
+        users = cursor.fetchall()
+        if users:
+            # cookie was found
+            name, last_seen = users[0]
+            if datetime.datetime.now()-datetime.timedelta(0,60) > last_seen:
+                # refresh cookie every minute
+                sql = 'update cookies set last_seen=now() where cookie=%s'
+                safe_execute(cursor, sql, (cookie,))
+            return name
+        return None
+
+    def create_cookie(self, username):
+        '''Create and return a new cookie for the user.'''
+        cursor = self.get_cursor()
+        cookie = ''.join([random.choice(chars) for x in range(32)])
+        sql = '''insert into cookies(cookie, name, last_seen)
+                 values(%s, %s, now())'''
+        safe_execute(cursor, sql, (cookie, username))
+        return cookie
+
+    def delete_cookie(self, cookie):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'delete from cookies where cookie=%s', (cookie,))
+
+    # OpenID
+
+    def get_provider_session(self, provider):
+        cursor = self.get_cursor()
+        # Check for existing session
+        sql = '''select id,url, assoc_handle from openid_sessions
+                 where provider=%s and expires<now()'''
+        safe_execute(cursor, sql, (provider[0],))
+        sessions = cursor.fetchall()
+        if sessions:
+            safe_execute(cursor, 'select stype from openid_stypes where id=%s',
+                         (sessions[0][0],))
+            stypes = [t[0] for t in cursor.fetchall()]
+            return t, sessions[1], sessions[2]
+
+        # start from scratch:
+        # discover service URL
+        stypes, url = openid.discover(provider[2])
+        # associate session
+        now = datetime.datetime.now()
+        session = openid.associate(url)
+        # store it
+        sql = '''insert into openid_sessions
+                 (provider, url, assoc_handle, expires, mac_key)
+                 values (%s, %s, %s, %s, %s)'''
+        safe_execute(cursor, sql, (provider[0], url,
+                                   session['assoc_handle'],
+                                   now+datetime.timedelta(0,int(session['expires_in'])),
+                                   session['mac_key']))
+        for t in stypes:
+            safe_execute(cursor, '''insert into openid_stypes(id, stype)
+                                    values(currval('openid_sessions_id_seq'),%s)''',
+                         (t,))
+        return stypes, url, session['assoc_handle']
+
+    def get_session_by_handle(self, assoc_handle):
+        cursor = self.get_cursor()
+        sql = 'select mac_key from openid_sessions where assoc_handle=%s'
+        safe_execute(cursor, sql, (assoc_handle,))
+        sessions = cursor.fetchall()
+        if sessions:
+            return {'assoc_handle':assoc_handle, 'mac_key':sessions[0][0]}
+        return None
+
+    def duplicate_nonce(self, nonce):
+        '''Return true if we might have seen this nonce before.'''
+        stamp = openid.parse_nonce(nonce)
+        utc = calendar.timegm(stamp.utctimetuple())
+        if utc < time.time()-3600:
+            # older than 1h: this is probably a replay
+            return True
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select * from openid_nonces where nonce=%s',
+                     (nonce,))
+        if cursor.fetchone():
+            return True
+        safe_execute(cursor, '''insert into openid_nonces(created, nonce)
+                                values(%s,%s)''', (stamp, nonce))
+        return False
+
+    def associate_openid(self, username, openid):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'insert into openids(id, name) values(%s,%s)',
+                     (openid, username))
+        
 
     #
     # Handle the underlying database

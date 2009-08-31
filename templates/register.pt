@@ -56,5 +56,20 @@ obfuscated).</li>
       <p>To complete the registration process, visit the link indicated in the
       email.</p>
     </tal:block>
+
+    <tal:block tal:condition="data/openids">
+     <p>Your OpenIDs:</p>
+     <ul>
+       <li tal:repeat="curid data/openids"><span tal:replace="curid/id"/></li>
+     </ul>
+    </tal:block>
+
+    <p>Claim OpenID: 
+     <tal:block tal:repeat="prov data/providers">
+      <a tal:attributes="href prov/claim">
+       <img tal:attributes="src prov/favicon; title prov/title"/>
+      </a>
+     </tal:block>
+    </p>
   </metal:fill>
 </html>

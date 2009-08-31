@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+
+  <p>By signing up to this system, you agree to:</p>
+<ol>
+<li>Not upload inappropriate material (<b>only</b> Python packages are
+allowed).</li>
+<li>You agree that all information you post is published (email addresses are
+obfuscated).</li>
+</ol>
+
+
+    <em tal:condition="data/duplicate">The userid already exists. Please pick a different one, e.g. <span tal:replace="data/username"/></em>
+
+    <form method="GET">
+      <input type="hidden" tal:repeat="h data/hidden"
+       tal:attributes="name python:h[0]; value python:h[1]"/>
+      <input type="hidden" name=":action" value="openid_return"/>
+      <input name="username" tal:attributes="value data/username"/>
+     <input type="submit" name="ok" value="ok"/>
+    </form>
+
+  </metal:fill>
+</html>

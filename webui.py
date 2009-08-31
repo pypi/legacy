@@ -15,7 +15,7 @@ except ImportError:
 
 # local imports
 import store, config, trove, versionpredicate, verify_filetype, rpc
-import MailingLogger
+import MailingLogger, openid
 from mini_pkg_resources import safe_name
 
 esc = cgi.escape
@@ -36,6 +36,8 @@ class Unauthorised(Exception):
 class Forbidden(Exception):
     pass
 class Redirect(Exception):
+    pass
+class RedirectTemporary(Exception): # 307
     pass
 class FormError(Exception):
     pass
@@ -86,6 +88,16 @@ register</a>.</p>
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
+             ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
+             )
+
+class Provider:
+    def __init__(self, name, favicon, url):
+        self.name = self.title = name
+        self.favicon = favicon
+        self.url = url
 
 class _PyPiPageTemplate(PageTemplateFile):
     def pt_getContext(self, args=(), options={}, **kw):
@@ -169,8 +181,8 @@ class WebUI:
         self.nav_current = None
         self.privkey = None
         self.username = None
-        self.authenticated = False # was a password passed?
-        self.loggedin = False      # was a cookie sent?
+        self.authenticated = False # was a password or a valid cookie passed?
+        self.loggedin = False      # was a valid cookie sent?
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -225,6 +237,11 @@ class WebUI:
                 self.handler.send_response(301, 'Moved Permanently')
                 self.handler.send_header('Location', e.args[0])
                 self.handler.end_headers()
+            except RedirectTemporary, e:
+                # ask browser not to cache this redirect
+                self.handler.send_response(307, 'Temporary Redirect')
+                self.handler.send_header('Location', e.args[0])
+                self.handler.end_headers()
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
@@ -260,14 +277,10 @@ class WebUI:
     error_message = None
     ok_message = None
 
-    def write_template(self, filename, cookie = None, **options):
-        if not self.loggedin:
-            # user chose to logout, so don't render it
-            self.username = None
-        else:
-            cookie = self.username
+    def write_template(self, filename, **options):
         context = {}
         options.setdefault('norobots', False)
+        options['providers'] = self.get_providers()
         context['data'] = options
         context['app'] = self
         fpi = self.config.url+self.env.get('PATH_INFO',"")
@@ -286,9 +299,8 @@ class WebUI:
             self.handler.set_content_type(options['content-type'])
         else:
             self.handler.set_content_type('text/html; charset=utf-8')
-        if cookie:
-            # remember the username in a cookie
-            self.handler.send_header('Set-Cookie', 'pypi='+cookie)
+        if self.usercookie:
+            self.handler.send_header('Set-Cookie', 'pypi='+self.usercookie)
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
@@ -385,22 +397,23 @@ class WebUI:
                     # Only update last_login every minute
                     update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
                     self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
-                    if update_last_login:
-                        # The only change so far was the update of last_login;
-                        # commit that to release the lock
-                        self.store.commit()
 
         # on logout, we set the cookie to "logged_out"
+        self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
         try:
-            un = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))['pypi'].value
-            if self.username and un != self.username:
-                # bad cookie, ignore
-                un = None
+            self.usercookie = self.cookie['pypi'].value
         except KeyError:
-            un = None
-        if un and self.store.has_user(un):
+            self.usercookie = None
+
+        name = self.store.find_user_by_cookie(self.usercookie)
+        if name:
             self.loggedin = True
-            self.username = un
+            self.authenticated = True # implied by loggedin
+            self.username = name
+
+        # Commit all user-related changes made up to here
+        if self.username:
+            self.store.commit()
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -435,7 +448,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -530,8 +543,8 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(sig)
 
-    def home(self, nav_current='home', cookie = None):
-        self.write_template('home.pt', title='PyPI', cookie = cookie)
+    def home(self, nav_current='home'):
+        self.write_template('home.pt', title='PyPI')
 
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
@@ -695,12 +708,27 @@ class WebUI:
 
     def logout(self):
         self.loggedin = False
-        self.home(cookie = 'logged_out')
+        self.store.delete_cookie(self.usercookie)
+        self.home()
+
     def login(self):
+        if 'provider' in self.form:
+            # OpenID login
+            for p in providers:
+                if p[0] == self.form['provider']:
+                    break
+            else:
+                return self.fail('Unknown provider')
+            stypes, url, assoc_handle = self.store.get_provider_session(p)
+            return_to = self.config.url+'?:action=openid_return'
+            url = openid.request_authentication(stypes, url, assoc_handle, return_to)
+            self.store.commit()
+            raise RedirectTemporary(url)
         if not self.authenticated:
             raise Unauthorised
-        self.loggedin = True
-        self.home(cookie = self.username)
+        self.usercookie = self.store.create_cookie(self.username)
+        self.loggedin = 1
+        self.home()
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -959,6 +987,8 @@ class WebUI:
             return ''
 
         # permission to do this?
+        if not self.loggedin:
+            return
         if not (self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or
                 self.store.has_role('Maintainer', name)):
@@ -1193,6 +1223,7 @@ class WebUI:
         if not self.loggedin:
             # Authenticated, but not logged in - auto-login
             self.loggedin = True
+            self.usercookie = self.store.create_cookie(self.username)
 
         # are we editing a specific entry?
         info = {}
@@ -1949,7 +1980,7 @@ class WebUI:
         self.register_form()
 
     def register_form(self):
-        ''' Throw up a form for regstering.
+        ''' Throw up a form for registering.
         '''
         info = {'name': '', 'password': '', 'confirm': '', 'email': '',
                 'gpg_keyid': ''}
@@ -1961,6 +1992,7 @@ class WebUI:
             info['action'] = 'Update details'
             info['gpg_keyid'] = user['gpg_keyid'] or ""
             info['title'] = 'User profile'
+            info['openids'] = self.store.get_openids(self.username)
             self.nav_current = 'user_form'
         else:
             info['new_user'] = True
@@ -2132,3 +2164,128 @@ class WebUI:
         options = {'title': 'PyPI mirrors'}
         self.write_template('mirrors.pt', **options)
 
+    def openid(self):
+        self.write_template('openid.pt', title='OpenID Providers')
+
+    def claim(self):
+        '''Claim an OpenID.'''
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if not self.form.has_key("provider"):
+            return self.fail('Missing parameter')
+        for p in providers:
+            if p[0] == self.form['provider']:
+                break
+        else:
+            return self.fail('Unknown provider')
+        stypes, url, assoc_handle = self.store.get_provider_session(p)
+        return_to = self.config.url+'?:action=openid_return'
+        url = openid.request_authentication(stypes, url, assoc_handle, return_to)
+        self.store.commit()
+        raise RedirectTemporary(url)
+
+    def openid_return(self):
+        '''Return from OpenID provider.'''
+        qs = cgi.parse_qs(self.env['QUERY_STRING'])
+        if 'openid.ns' not in qs:
+            # Not an indirect call: treat it as RP discovery
+            return self.rp_discovery()
+        session = self.store.get_session_by_handle(qs['openid.assoc_handle'][0])
+        if not session:
+            return self.fail('invalid session')
+        try:
+            openid.authenticate(session, qs)
+        except Exception, e:
+            return self.fail('Login failed:'+repr(e))
+        claimed_id = qs['openid.claimed_id'][0]
+        nonce = qs['openid.response_nonce'][0]
+        user = self.store.get_user_by_openid(claimed_id)
+        # Three cases: logged-in user claimed some ID,
+        # new login, or registration
+        if self.loggedin:
+            # claimed ID
+            if user:
+                return self.fail('OpenID is already claimed')
+            if self.store.duplicate_nonce(nonce):
+                return self.fail('replay attack detected')
+            self.store.associate_openid(self.username, claimed_id)
+            self.store.commit()
+            return self.register_form()
+        if user:
+            # Login
+            if self.store.duplicate_nonce(nonce):
+                return self.fail('replay attack detected')
+            self.store.commit()
+            self.username = user['name']
+            self.loggedin = self.authenticated = True
+            self.usercookie = self.store.create_cookie(self.username)
+            return self.home()
+        # New registration
+        email = openid.get_email(qs)
+        if not email:
+            return self.fail('OpenID provider did not provide your email address')
+        duplicate = False
+        if 'ok' in self.form:
+            # User has picked a username
+            if not self.store.has_user(self.form['username']):
+                if self.store.duplicate_nonce(nonce):
+                    return self.fail('replay attack detected')
+                self.username = self.form['username']
+                password = ''.join([random.choice(store.chars) for x in range(32)])
+                self.store.store_user(self.username, password,
+                                      email, None, otk=False)
+                self.store.associate_openid(self.username, claimed_id)
+                self.loggedin = self.authenticated = True
+                self.usercookie = self.store.create_cookie(self.username)
+                return self.home()
+            # Username is a duplicate
+            duplicate = True
+            username = self.form['username']
+        else:
+            # Just returned from OpenID, select username
+            username = openid.get_username(qs)
+            if isinstance(username, tuple):
+                username = '.'.join(username)
+            elif username is None:
+                username = email.split('@')[0]
+            duplicate = False
+        if self.store.has_user(username):
+            suffix = 2
+            while self.store.has_user("%s_%d" % (username, suffix)):
+                suffix += 1
+            username = "%s_%d" % (username, suffix)
+        hidden = []
+        for k,v in qs.items():
+            if k.startswith("openid."):
+                hidden.append((k,v[0]))
+        return self.write_template('openid_return.pt', title='Register through OpenID',
+                                   hidden=hidden,
+                                   username = username, duplicate=duplicate)
+            
+
+    def rp_discovery(self):
+        payload = '''<xrds:XRDS  
+                xmlns:xrds="xri://$xrds"  
+                xmlns="xri://$xrd*($v*2.0)">  
+                <XRD>  
+                     <Service priority="1">  
+                              <Type>http://specs.openid.net/auth/2.0/return_to</Type>  
+                              <URI>%s</URI>  
+                     </Service>  
+                </XRD>  
+                </xrds:XRDS>
+        ''' % (self.base_url+"/?returned=1")
+        self.handler.send_response(200)
+        self.handler.send_header("Content-type", 'application/xrds+xml')
+        self.handler.send_header("Content-length", str(len(payload)))
+        self.handler.end_headers()
+        self.handler.wfile.write(payload)
+
+    def get_providers(self):
+        res = []
+        for r in providers:
+            r = Provider(*r)
+            r.login = "%s?:action=login&provider=%s" % (self.url_path, r.name)
+            r.claim = "%s?:action=claim&provider=%s" % (self.url_path, r.name)
+            res.append(r)
+        return res
