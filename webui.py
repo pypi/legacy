@@ -2284,7 +2284,7 @@ class WebUI:
                      </Service>  
                 </XRD>  
                 </xrds:XRDS>
-        ''' % (self.base_url+"/?returned=1")
+        ''' % (self.config.url+'?:action=openid_return')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
