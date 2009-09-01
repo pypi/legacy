@@ -2267,7 +2267,7 @@ class WebUI:
         hidden = []
         for k,v in qs.items():
             if k.startswith("openid."):
-                hidden.append((k,v[0]))
+                hidden.append((k,v[0].decode('utf-8')))
         return self.write_template('openid_return.pt', title='Register through OpenID',
                                    hidden=hidden,
                                    username = username, error=error)
