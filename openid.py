@@ -11,8 +11,11 @@
 # - direct requests require https
 # - as a signature algorithm, HMAC-SHA1 is requested
 
-import urllib, urllib2, BeautifulSoup, xml.etree.ElementTree
+import urllib, BeautifulSoup, xml.etree.ElementTree
 import cStringIO, base64, hmac, sha, datetime
+
+# Don't use urllib2, since it breaks in 2.5
+# for https://login.launchpad.net//+xrds
 
 def parse_response(s):
     '''Parse a key-value form (OpenID section 4.1.1) into a dictionary'''
@@ -26,7 +29,7 @@ def discover(url):
     '''Perform service discovery on the OP URL.
     Return list of service types, and the auth/2.0 URL,
     or None if discovery fails.'''
-    res = urllib2.urlopen(url)
+    res = urllib.urlopen(url)
 
     content_type = res.headers.gettype()
 
@@ -76,8 +79,7 @@ def associate(url):
         'openid.assoc_type':"HMAC-SHA1",
         'openid.session_type':"no-encryption",
         }
-    res = urllib2.urlopen(url, urllib.urlencode(data))
-    assert res.code == 200
+    res = urllib.urlopen(url, urllib.urlencode(data))
     data = parse_response(res.read())
     return data
 
@@ -244,12 +246,14 @@ def get_username(resp):
 import BaseHTTPServer, cgi
 
 # supported providers
-providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('Yahoo', 'http://www.yahoo.com/favicon.ico', 'http://yahoo.com/'),
-             # Verisigns service URL is not https
-             #('Verisign', 'https://pip.verisignlabs.com/favicon.ico', 'https://pip.verisignlabs.com')
-             ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
-             )
+providers = (
+    ('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
+    ('Yahoo', 'http://www.yahoo.com/favicon.ico', 'http://yahoo.com/'),
+    # Verisigns service URL is not https
+    #('Verisign', 'https://pip.verisignlabs.com/favicon.ico', 'https://pip.verisignlabs.com')
+    ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
+    ('Launchpad', 'https://login.launchpad.net/favicon.ico', 'https://login.launchpad.net/')
+    )
              
 sessions = []
 class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -303,7 +307,6 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                     authenticate(session, query)
                 except Exception, e:
                     self.error("Authentication failed"+repr(e))
-                import pdb;pdb.set_trace()
                 claimed = query['openid.claimed_id'][0]
                 payload = "Hello "+claimed+"\n"
                 email = get_email(query)
