@@ -29,7 +29,11 @@ def discover(url):
     '''Perform service discovery on the OP URL.
     Return list of service types, and the auth/2.0 URL,
     or None if discovery fails.'''
-    res = urllib.urlopen(url)
+    opener = urllib.FancyURLopener()
+    opener.addheader('Accept', "text/html; q=0.3, "+
+                     "application/xhtml+xml; q=0.5, "+
+                     "application/xrds+xml")
+    res = opener.open(url)
 
     content_type = res.headers.gettype()
 
