@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
-import logging, cStringIO, string, datetime, calendar
+import logging, cStringIO, string, datetime, calendar, binascii
 from distutils.version import LooseVersion
 import trove, openid
 from mini_pkg_resources import safe_name
@@ -1450,7 +1450,7 @@ class Store:
     def create_cookie(self, username):
         '''Create and return a new cookie for the user.'''
         cursor = self.get_cursor()
-        cookie = ''.join([random.choice(chars) for x in range(32)])
+        cookie = binascii.hexlify(os.urandom(16))
         sql = '''insert into cookies(cookie, name, last_seen)
                  values(%s, %s, now())'''
         safe_execute(cursor, sql, (cookie, username))
