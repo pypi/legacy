@@ -2192,7 +2192,7 @@ class WebUI:
         if 'openid.ns' not in qs:
             # Not an indirect call: treat it as RP discovery
             return self.rp_discovery()
-        if qs.get('openid.mode') == 'cancel':
+        if qs.get('openid.mode')[0] == 'cancel':
             return self.fail('Login failed')
         session = self.store.get_session_by_handle(qs['openid.assoc_handle'][0])
         if not session:
