@@ -91,7 +91,7 @@ chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
              ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
-#             ('Launchpad', 'https://login.launchpad.net/favicon.ico', 'https://login.launchpad.net/')
+             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
              )
 
 class Provider:
