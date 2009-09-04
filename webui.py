@@ -412,6 +412,9 @@ class WebUI:
             self.loggedin = True
             self.authenticated = True # implied by loggedin
             self.username = name
+            # no login time update, since looking for the
+            # cookie did that already
+            self.store.set_user(name, self.env['REMOTE_ADDR'], False)
 
         # Commit all user-related changes made up to here
         if self.username:

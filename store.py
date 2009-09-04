@@ -1441,9 +1441,11 @@ class Store:
             # cookie was found
             name, last_seen = users[0]
             if datetime.datetime.now()-datetime.timedelta(0,60) > last_seen:
-                # refresh cookie every minute
+                # refresh cookie and login time every minute
                 sql = 'update cookies set last_seen=now() where cookie=%s'
                 safe_execute(cursor, sql, (cookie,))
+                sql ='update users set last_login=now() where name=%s'
+                safe_execute(cursor, sql, (name,))
             return name
         return None
 
