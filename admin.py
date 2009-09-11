@@ -90,6 +90,15 @@ def delete_mirror(store, root):
     store.delete_mirror(root)
     print 'done'
 
+def delete_old_docs(config, store):
+    '''Delete documentation directories for packages that have been deleted'''
+    for i in os.listdir(config.database_docs_dir):
+        if not store.has_package(i):
+           path = os.path.join(config.database_docs_dir, i)
+           print "Deleting", path
+           shutil.rmtree(path)
+
+
 if __name__ == '__main__':
     config = config.Config('/usr/local/pypi/config.ini')
     store = store.Store(config)
@@ -113,6 +122,8 @@ if __name__ == '__main__':
             add_mirror(*args)
         elif command == 'delmirror':
             delete_mirror(*args)
+        elif command == 'delolddocs':
+            delete_old_docs(config, *args)
         else:
             print "unknown command '%s'!"%command
         store.commit()
