@@ -18,6 +18,7 @@ class Config:
         self.mailhost = c.get('webui', 'mailhost')
         self.adminemail = c.get('webui', 'adminemail')
         self.url = c.get('webui', 'url')
+        self.pydotorg = c.get('webui', 'pydotorg')
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')

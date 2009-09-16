@@ -12,25 +12,25 @@
       <meta content="python programming language object oriented web free source" name="keywords" />
       <meta content="Home page for Python, an interpreted, interactive, object-oriented, extensible programming language. It provides an extraordinary combination of clarity and versatility, and is free and comprehensively ported.
                      " name="description" />
-       <link rel="stylesheet" href="http://www.python.org/css/pypi.css" type="text/css"/>
+       <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
 
        <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
-      <link media="screen" href="http://www.python.org/styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
-      <link media="screen" href="http://www.python.org/styles/netscape4.css" type="text/css" rel="stylesheet" />
-      <link media="print" href="http://www.python.org/styles/print.css" type="text/css" rel="stylesheet" />
-      <link media="screen" href="http://www.python.org/styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
-      <link media="screen" href="http://www.python.org/styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
+      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
+      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
+      <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
+      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
+      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
       
       <metal:slot define-slot="head" />
     </head>
     <body>
       <!--  Logo  -->
       <h1 id="logoheader">
-        <a accesskey="1" href="http://www.python.org" id="logolink"><img src="http://www.python.org/images/python-logo.gif" alt="homepage" border="0" id="logo" /></a>
+        <a accesskey="1" href="http://www.python.org" id="logolink"><img tal:attributes="src string:${app/config/pydotorg}images/python-logo.gif" alt="homepage" border="0" id="logo" /></a>
       </h1>
       <!--  Skip to Navigation  -->
-      <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="http://www.python.org/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
-      <div class="skiptonav"><a accesskey="3" href="#content-body"><img src="http://www.python.org/images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
+      <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img tal:attributes="src string:${app/config/pydotorg}images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
+      <div class="skiptonav"><a accesskey="3" href="#content-body"><img tal:attributes="src string:${app/config/pydotorg}images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
       <!--  Utility Menu  -->
 
       <div id="utility-menu">
