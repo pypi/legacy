@@ -215,6 +215,9 @@
     </form>
   </div>
 </div>
+<div tal:condition="not:app/loggedin">
+ <p><em>Log in to rate this package.</em></p>
+</div>
 
 <div tal:condition="data/nr_ratings">
        Package rating (<span tal:replace="data/nr_ratings"/> votes): 
