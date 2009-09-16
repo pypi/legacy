@@ -175,45 +175,6 @@
 </ul>
 
 
-<div tal:define="has_cheesecake data/release/cheesecake_installability | nothing"
-     tal:condition="python:has_cheesecake and (app.store.has_role('Admin') or app.store.has_role('Maintainer') or app.store.has_role('Owner'))">
-  <strong>Cheesecake score</strong>
-  <ul class="nodot">
-    <li>
-      <span style="text-decoration: underline;" tal:content="string:Installability: ${data/release/cheesecake_installability/absolute} (${data/release/cheesecake_installability/relative}%)" />
-      <table style="margin-left: 2em;">
-	<tr tal:repeat="score data/release/cheesecake_installability/subindices">
-	  <td style="padding: 3px;" tal:content="score/name" />
-	  <td style="padding: 3px;" tal:content="score/value" />
-	  <td style="padding: 3px;"><em tal:content="score/details" /></td>
-	</tr>
-      </table>
-    </li>
-
-    <li>
-      <span style="text-decoration: underline;" tal:content="string:Documentation: ${data/release/cheesecake_documentation/absolute} (${data/release/cheesecake_documentation/relative}%)" />
-      <table style="margin-left: 2em;">
-	<tr tal:repeat="score data/release/cheesecake_documentation/subindices">
-	  <td style="padding: 3px;" tal:content="score/name" />
-	  <td style="padding: 3px;" tal:content="score/value" />
-	  <td style="padding: 3px;"><em tal:content="score/details" /></td>
-	</tr>
-      </table>
-    </li>
-
-    <li>
-      <span style="text-decoration: underline;" tal:content="string:Code kwalitee: ${data/release/cheesecake_code_kwalitee/absolute} (${data/release/cheesecake_code_kwalitee/relative}%)" />
-      <table style="margin-left: 2em;">
-	<tr tal:repeat="score data/release/cheesecake_code_kwalitee/subindices">
-	  <td style="padding: 3px;" tal:content="score/name" />
-	  <td style="padding: 3px;" tal:content="score/value" />
-	  <td style="padding: 3px;"><em tal:content="score/details" /></td>
-	</tr>
-      </table>
-    </li>
-  </ul>
-</div>
-
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or
   app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))" class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
