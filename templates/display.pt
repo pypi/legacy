@@ -174,6 +174,67 @@
 
 </ul>
 
+<div tal:condition="python:app.loggedin and not (app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))">
+  <div tal:condition="data/has_rated">
+    <form tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
+      <input type="hidden" name=":action" value="rate"/>
+      <input type="hidden" name="name" tal:attributes="value data/name"/>
+      <input type="hidden" name="version" tal:attributes="value data/version"/>
+      <input type="submit" name="remove" value="Remove your vote" />
+    </form>
+  </div>
+  <div tal:condition="not:data/has_rated">
+    <form tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
+      <input type="hidden" name=":action" value="rate"/>
+      <input type="hidden" name="name" tal:attributes="value data/name"/>
+      <input type="hidden" name="version" tal:attributes="value data/version"/>
+      <table>
+      <tr>
+      <td>Rate this release: 0</td>
+      <td><input type="radio" name="rating" value="0"/></td>
+      <td><input type="radio" name="rating" value="1"/></td>
+      <td><input type="radio" name="rating" value="2"/></td>
+      <td><input type="radio" name="rating" value="3"/></td>
+      <td><input type="radio" name="rating" value="4"/></td>
+      <td><input type="radio" name="rating" value="5"/></td>
+      <td>5 (best)</td>
+      </tr>
+      </table>
+      <table><tr><td>Comment:</td><td>
+         <!--XXX trick TAL into not minimizing tag-->
+         <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
+      </td></tr></table>
+      <input type="submit" name="rate" value="Vote"/>
+    </form>
+    <form tal:condition="data/latest_rating" tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
+      <input type="hidden" name=":action" value="rate"/>
+      <input type="hidden" name="name" tal:attributes="value data/name"/>
+      <input type="hidden" name="version" tal:attributes="value data/version"/>
+      <input type="hidden" name="fromversion" tal:attributes="value data/latest_rating"/>
+      <input type="submit" name="copy" tal:attributes="value string:Copy your vote from release ${data/latest_rating}"/>
+    </form>
+  </div>
+</div>
+
+<div tal:condition="data/nr_ratings">
+       Package rating (<span tal:replace="data/nr_ratings"/> votes): 
+       <span tal:replace="python:float(data['sum_ratings'])/data['nr_ratings']"/>
+
+  <ul>
+   <tal:block  tal:repeat="i python:range(6)">
+   <li tal:condition="python:data['tally_ratings'][i]">
+    <span tal:replace="i"/> points: <span tal:replace="python:data['tally_ratings'][i]"/> votes
+   </li>
+   </tal:block>
+  </ul>
+</div>
+
+<div tal:condition="data/comments">
+<b>Package Comments:</b>
+<ul>
+<li tal:repeat="i data/comments"><span tal:replace="i"/></li>
+</ul>
+</div>
 
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or
   app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))" class="history">

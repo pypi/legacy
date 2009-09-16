@@ -453,7 +453,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -1116,12 +1116,32 @@ class WebUI:
                 id = c['trove_id']))
 
         latest_version_url = self.config.url+'/'+name+'/'+latest_version
+
+        # Compute rating data
+        has_rated = self.loggedin and self.store.has_rating(name, version)
+        latest_rating = self.loggedin and self.store.latest_rating(name)
+        ratings = self.store.get_ratings(name, version)
+        total = 0.0
+        comments = []
+        tally = [0]*6
+        for r in ratings:
+            total += r['rating']
+            tally[r['rating']] += 1
+            if r['message']:
+                comments.append("%(message)s (%(rating)d points)" % r)
+
         self.write_template('display.pt',
                             name=name, version=version, release=release,
                             title=name + " " +version,
                             requires=values('requires'),
                             provides=values('provides'),
                             obsoletes=values('obsoletes'),
+                            has_rated=has_rated,
+                            latest_rating=latest_rating,
+                            sum_ratings=total,
+                            nr_ratings=len(ratings),
+                            tally_ratings=tally,
+                            comments=comments,
                             categories=categories,
                             roles=roles,
                             newline_to_br=newline_to_br,
@@ -1623,6 +1643,43 @@ class WebUI:
         self.write_template('pkg_edit.pt', releases=releases, name=name,
                             autohide=self.store.get_package_autohide(name),
             title="Package '%s' Editing"%name)
+
+    def rate(self):
+        '''Add or delete a rating.'''
+        if not self.loggedin:
+            raise Unauthorised, "You need to login to rate"
+
+        name = self.form.get('name', '')
+        version = self.form.get('version', '')
+
+        if self.store.has_role('Owner', name) or self.store.has_role('Maintainer', name):
+            raise Forbidden, "You cannot rate your own packages"
+
+        if not name or not version:
+            raise FormError, 'name and version required'
+
+        if self.form.has_key('remove'):
+            if not self.store.has_rating(name, version):
+                raise Forbidden, "You did not rate that release"
+            self.store.remove_rating(name, version)
+            return self.display()
+
+        if self.form.has_key('copy'):
+            if self.store.has_rating(name, version):
+                raise Forbidden, "You have already rated this release"
+            if not self.form.has_key('fromversion'):
+                raise FormError, "fromversion missing"
+            self.store.copy_rating(name, self.form['fromversion'], version)
+            return self.display()
+        if self.form.has_key('rate'):
+            if self.store.has_rating(name, version):
+                raise Forbidden, "You have already rated this release"
+            if not self.form.has_key('rating'):
+                raise FormError, "rating not provided"
+            self.store.add_rating(name, version, self.form['rating'], self.form['comment'].strip())
+            return self.display()
+
+        raise FormError, "Bad button"
 
     def remove_pkg(self):
         ''' Remove a release or a whole package from the db.

@@ -907,6 +907,52 @@ class Store:
                                               self.username,
                                               self.userip))
 
+    def add_rating(self, name, version, rating, message):
+        '''Add a user rating of a release; message is optional'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''insert into ratings (name, version, user_name, date, rating, message)
+                     values(%s, %s, %s, now(), %s, %s)''', (name, version, self.username, rating, message))
+
+    def copy_rating(self, name, fromversion, toversion):
+        '''Copy a user's rating of package name from one version to another'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating,message) 
+                     select name,%s,user_name,now(),rating,message from ratings
+                     where name=%s and version=%s and user_name=%s''',
+                     (toversion, name, fromversion, self.username))
+
+    def remove_rating(self, name, version):
+        '''Remove a rating for the current user'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s", 
+                     (self.username, name, version))
+
+    _Rating=FastResultRow('date! rating! message')
+    def get_ratings(self, name, version):
+        '''Return ratings for a release.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select date, rating, message from ratings 
+                     where name=%s and version=%s order by date''', (name, version))
+        res = cursor.fetchall()
+        return Result(None, res, self._Rating)
+
+    def has_rating(self, name, version):
+        '''Check whether user has rated this release'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select count(*) from ratings 
+                     where user_name=%s and name=%s and version=%s''', (self.username, name, version))
+        return cursor.fetchall()[0][0]
+
+    def latest_rating(self, name):
+        '''Return the user's latest rating on any release, or None.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select version from ratings 
+                     where user_name=%s and name=%s order by date desc limit 1''', (self.username, name))
+        res = cursor.fetchone()
+        if res:
+            res = res[0]
+        return res
+
     def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
         '''
