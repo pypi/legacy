@@ -215,7 +215,7 @@
 </div>
 
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or
-  app.store.has_role('Maintainer') or app.store.has_role('Owner'))" class="history">
+  app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))" class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
  <tr><th>Action</th><th>Date</th><th>User</th><th>Address</th></tr>
  <tr tal:repeat="
