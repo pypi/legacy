@@ -1128,7 +1128,9 @@ class WebUI:
             total += r['rating']
             tally[r['rating']] += 1
             if r['message']:
-                comments.append("%(message)s (%(rating)d points)" % r)
+                message = cgi.escape(r['message'])
+                message = '<br />'.join(message.split('\r\n'))
+                comments.append("%s (%d points)" % (message, r['rating']))
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,

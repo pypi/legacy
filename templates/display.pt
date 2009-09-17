@@ -235,7 +235,7 @@
 <div tal:condition="data/comments">
 <b>Package Comments:</b>
 <ul>
-<li tal:repeat="i data/comments"><span tal:replace="i"/></li>
+<li tal:repeat="i data/comments"><span tal:replace="structure i"/></li>
 </ul>
 </div>
 
