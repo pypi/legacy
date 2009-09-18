@@ -1130,7 +1130,9 @@ class WebUI:
             if r['message']:
                 message = cgi.escape(r['message'])
                 message = '<br />'.join(message.split('\r\n'))
-                comments.append("%s (%d points)" % (message, r['rating']))
+                date = r['date'].strftime("%Y-%m-%d")
+                comments.append("%s (%s, %s, %d points)" % 
+                                (message, r['user'], date, r['rating']))
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
