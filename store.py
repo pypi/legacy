@@ -927,11 +927,11 @@ class Store:
         safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s", 
                      (self.username, name, version))
 
-    _Rating=FastResultRow('date! rating! message')
+    _Rating=FastResultRow('date! user rating! message')
     def get_ratings(self, name, version):
         '''Return ratings for a release.'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select date, rating, message from ratings 
+        safe_execute(cursor, '''select date, user_name, rating, message from ratings 
                      where name=%s and version=%s order by date''', (name, version))
         res = cursor.fetchall()
         return Result(None, res, self._Rating)
