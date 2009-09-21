@@ -24,5 +24,9 @@ obfuscated).</li>
      <input type="submit" name="ok" value="ok"/>
     </form>
 
+    <b>If you complete this form, a new PyPI account is created and associated with this OpenID. 
+	    If you already have an account that you want to associate with this OpenID, login
+	    with your username and password, and follow the links labelled "claim openid" on
+	    the page "Your details".</b>
   </metal:fill>
 </html>
