@@ -1569,6 +1569,13 @@ class WebUI:
         if data.has_key('metadata_version'):
             del data['metadata_version']
 
+        # Traditionally, package names are restricted only for
+        # technical reasons; / is not allowed because it may be
+        # possible to break path names for file and documentation
+        # uploads
+        if '/' in data['name']:
+            raise ValueError, "Invalid package name"
+
         # check requires and obsoletes
         def validate_version_predicates(col, sequence):
             try:
