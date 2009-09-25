@@ -2006,7 +2006,7 @@ class WebUI:
             raise FormError, "Error uncompressing zipfile:" + str(e)
 
         # Assume the file is valid; remove any previous data
-        path = os.path.join(self.config.database_docs_dir, name)
+        path = os.path.join(self.config.database_docs_dir, name, "")
         if os.path.exists(path):
             shutil.rmtree(path)
         os.mkdir(path)
