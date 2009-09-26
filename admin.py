@@ -17,12 +17,7 @@ def set_password(store, name, pw):
 def remove_package(store, name):
     ''' Remove a package from the database
     '''
-    cursor = store.get_cursor()
-    cursor.execute('delete from release_classifiers where name=%s', [name])
-    cursor.execute('delete from releases where name=%s', [name])
-    cursor.execute('delete from roles where package_name=%s', [name])
-    cursor.execute('delete from packages where name=%s', [name])
-    cursor.execute('delete from journals where name=%s', [name])
+    store.remove_package(name)
     print 'done'
 
 def add_owner(store, package, owner):
