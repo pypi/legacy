@@ -146,7 +146,6 @@ def comment_email(store, package, version, author, comment):
         'url': '%s/%s/%s' % (store.config.url, package, version),
         }
     smtp = smtplib.SMTP(store.config.mailhost)
-    smtp.set_debuglevel(10)
     smtp.sendmail(store.config.adminemail, list(emails), comment_message % info)
 
 
