@@ -206,8 +206,8 @@ class WebUI:
                     '%(asctime)s %(name)s:%(levelname)s %(message)s')
                 hdlr.setFormatter(formatter)
                 hdlrs.append(hdlr)
-            if self.config.mailhost:
-                hdlr = MailingLogger.MailingLogger(self.config.mailhost,
+            if self.config.logging_mailhost:
+                hdlr = MailingLogger.MailingLogger(self.config.logging_mailhost,
                     self.config.fromaddr, self.config.toaddrs,
                     '[PyPI] %(line)s', False, flood_level=10)
                 hdlrs.append(hdlr)

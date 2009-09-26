@@ -28,7 +28,7 @@ class Config:
         self.simple_sign_script = c.get('webui', 'simple_sign_script')
 
         self.logfile = c.get('logging', 'file')
-        self.mailhost = c.get('logging', 'mailhost')
+        self.logging_mailhost = c.get('logging', 'mailhost')
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
