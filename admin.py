@@ -93,6 +93,14 @@ def delete_old_docs(config, store):
            print "Deleting", path
            shutil.rmtree(path)
 
+def send_comments(store):
+    '''Send out comments to package owners. Normally, this will
+    be done automatically, but the very first comments had not been sent.'''
+    import webui
+    c = store.get_cursor()
+    c.execute("select name, version, user_name, message from ratings where message!=''")
+    for package, version, author, comment in c.fetchall():
+        webui.comment_email(store, package, version, author, comment)
 
 if __name__ == '__main__':
     config = config.Config('/usr/local/pypi/config.ini')
@@ -119,6 +127,8 @@ if __name__ == '__main__':
             delete_mirror(*args)
         elif command == 'delolddocs':
             delete_old_docs(config, *args)
+        elif command == 'send_comments':
+            send_comments(*args)
         else:
             print "unknown command '%s'!"%command
         store.commit()

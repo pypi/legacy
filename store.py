@@ -914,12 +914,17 @@ class Store:
                      values(%s, %s, %s, now(), %s, %s)''', (name, version, self.username, rating, message))
 
     def copy_rating(self, name, fromversion, toversion):
-        '''Copy a user's rating of package name from one version to another'''
+        '''Copy a user-s rating of package name from one version to another;
+        return the new rating'''
         cursor = self.get_cursor()
         safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating,message) 
                      select name,%s,user_name,now(),rating,message from ratings
                      where name=%s and version=%s and user_name=%s''',
                      (toversion, name, fromversion, self.username))
+        safe_execute(cursor, '''select date, user_name, rating, message from ratings
+                     where name=%s and version=%s and user_name=%s''',
+                     (name, toversion, self.username))
+        return self._Rating(None, cursor.fetchone())
 
     def remove_rating(self, name, version):
         '''Remove a rating for the current user'''
@@ -944,7 +949,7 @@ class Store:
         return cursor.fetchall()[0][0]
 
     def latest_rating(self, name):
-        '''Return the user's latest rating on any release, or None.'''
+        '''Return the user-s latest rating on any release, or None.'''
         cursor = self.get_cursor()
         safe_execute(cursor, '''select version from ratings 
                      where user_name=%s and name=%s order by date desc limit 1''', (self.username, name))
@@ -1559,6 +1564,7 @@ class Store:
         utc = calendar.timegm(stamp.utctimetuple())
         if utc < time.time()-3600:
             # older than 1h: this is probably a replay
+            # the cronjob deletes old nonces after 1day
             return True
         cursor = self.get_cursor()
         safe_execute(cursor, 'select * from openid_nonces where nonce=%s',

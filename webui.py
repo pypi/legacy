@@ -87,6 +87,17 @@ register</a>.</p>
 <a href="%(url_path)s?:action=forgotten_password_form">reset for you</a>.</p>
 '''
 
+comment_message = '''Subject: New comment on %(package)s
+From: %(admin)s
+To: %(email)s
+
+%(author)s has made the following comment on your package.
+
+%(comment)s
+
+You can read all comments on %(url)s.
+'''
+
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
@@ -119,6 +130,25 @@ if cache_templates:
             return t
 else:
     PyPiPageTemplate = _PyPiPageTemplate
+
+def comment_email(store, package, version, author, comment):
+    emails = set()
+    for r in store.get_package_roles(package):
+        email = store.get_user(r['user_name'])['email']
+        if email:
+            emails.add(email)
+    info = {
+        'package': package,
+        'admin': store.config.adminemail,
+        'author': author,
+        'email': ','.join(emails),
+        'comment': comment,
+        'url': '%s/%s/%s' % (store.config.url, package, version),
+        }
+    smtp = smtplib.SMTP(store.config.mailhost)
+    smtp.set_debuglevel(10)
+    smtp.sendmail(store.config.adminemail, list(emails), comment_message % info)
+
 
 class FileUpload:
     pass
@@ -1680,14 +1710,18 @@ class WebUI:
                 raise Forbidden, "You have already rated this release"
             if not self.form.has_key('fromversion'):
                 raise FormError, "fromversion missing"
-            self.store.copy_rating(name, self.form['fromversion'], version)
+            r = self.store.copy_rating(name, self.form['fromversion'], version)
+            if r['message']:
+                comment_email(self.store, name, version, self.username, r['message'])
             return self.display()
         if self.form.has_key('rate'):
             if self.store.has_rating(name, version):
                 raise Forbidden, "You have already rated this release"
             if not self.form.has_key('rating'):
                 raise FormError, "rating not provided"
-            self.store.add_rating(name, version, self.form['rating'], self.form['comment'].strip())
+            message = self.form['comment'].strip()
+            self.store.add_rating(name, version, self.form['rating'], message)
+            comment_email(self.store, name, version, self.username, message)
             return self.display()
 
         raise FormError, "Bad button"
