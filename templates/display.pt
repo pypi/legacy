@@ -220,13 +220,14 @@
 </div>
 
 <div tal:condition="data/nr_ratings">
-       Package rating (<span tal:replace="data/nr_ratings"/> votes): 
+       Package rating (<span tal:replace="data/nr_ratings"/> vote<tal:block tal:condition="python:data['nr_ratings'] != 1">s</tal:block>): 
        <span tal:replace="python:float(data['sum_ratings'])/data['nr_ratings']"/>
 
   <ul>
    <tal:block  tal:repeat="i python:range(6)">
    <li tal:condition="python:data['tally_ratings'][i]">
-    <span tal:replace="i"/> points: <span tal:replace="python:data['tally_ratings'][i]"/> votes
+    <span tal:replace="i"/> point<tal:block tal:condition="python:i != 1">s</tal:block>:
+    <span tal:replace="python:data['tally_ratings'][i]"/> vote<tal:block tal:condition="python:data['tally_ratings'][i] != 1">s</tal:block>
    </li>
    </tal:block>
   </ul>
