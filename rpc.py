@@ -6,7 +6,8 @@ from cStringIO import StringIO
 
 allowed = ('package_releases', 'package_urls', 'package_data',
     'search', 'list_packages', 'release_urls', 'release_data',
-    'updated_releases', 'changelog', 'post_cheesecake_for_release')
+    'updated_releases', 'changelog', 'post_cheesecake_for_release',
+    'ratings')
 
 def handle_request(webui_obj):
     webui_obj.handler.send_response(200, 'OK')
@@ -91,3 +92,12 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
 
     store.save_cheesecake_score(name, version, score_data)
     store.commit()
+
+def ratings(store, name, version, since):
+    result = store.all_ratings(name, version, since)
+    return [(row['name'], row['version'],
+             row['user_name'] if row['message'] else '',
+             int(time.mktime(row['date'].timetuple())),
+             row['rating'],
+             row['message'] if row['message'] else '')
+            for row in result]

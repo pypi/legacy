@@ -941,6 +941,24 @@ class Store:
         res = cursor.fetchall()
         return Result(None, res, self._Rating)
 
+    _AllRatings=FastResultRow('name version user_name date! rating! message')
+    def all_ratings(self, name, version, date):
+        '''Return all ratings since UTC timestamp. name and version may be None.'''
+        cursor = self.get_cursor()
+        date = time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(date))
+        if name:
+            if version:
+                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                from ratings where name=%s and version=%s and date > %s''', (name, version, date))
+            else:
+                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                from ratings where name=%s and date > %s''', (name,date))
+        else:
+                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                from ratings where date > %s''', (date,))
+        res = cursor.fetchall()
+        return Result(None, res, self._AllRatings)
+
     def has_rating(self, name, version):
         '''Check whether user has rated this release'''
         cursor = self.get_cursor()
