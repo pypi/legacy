@@ -90,7 +90,9 @@ register</a>.</p>
 comment_message = '''Subject: New comment on %(package)s
 From: %(admin)s
 To: %(email)s
+Reply-To: %(replyto)s
 
+[REPLYS TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
 %(author)s has made the following comment on your package.
 
 %(comment)s
@@ -140,6 +142,7 @@ def comment_email(store, package, version, author, comment):
     info = {
         'package': package,
         'admin': store.config.adminemail,
+        'replyto': store.config.replyto,
         'author': author,
         'email': ','.join(emails),
         'comment': comment,
