@@ -21,5 +21,6 @@
    <input type="submit"/>
 </form>
 </p>
+<p><em>Note:</em>If <span tal:replace="data/comment/user"/> deletes the original message, your response to it will also get deleted.</p>
 </metal:fill>
 </html>
