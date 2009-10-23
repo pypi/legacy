@@ -94,10 +94,13 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
     store.commit()
 
 def ratings(store, name, version, since):
-    result = store.all_ratings(name, version, since)
-    return [(row['name'], row['version'],
-             row['user_name'] if row['message'] else '',
-             int(time.mktime(row['date'].timetuple())),
-             row['rating'],
-             row['message'] if row['message'] else '')
-            for row in result]
+    ratings, comments = store.all_ratings(name, version, since)
+    for i, r in enumerate(ratings):
+        r = list(r)
+        r[3] = int(time.mktime(r[3].timetuple()))
+        ratings[i] = tuple(r)
+    for i, c in enumerate(comments):
+        c = list(c)
+        c[5] = int(time.mktime(c[5].timetuple()))
+        comments[i] = c
+    return ratings, comments

@@ -1001,16 +1001,35 @@ class Store:
         date = time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(date))
         if name:
             if version:
-                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                safe_execute(cursor, '''select name, version, user_name, date, rating
                 from ratings where name=%s and version=%s and date > %s''', (name, version, date))
+                ratings = cursor.fetchall()
+                safe_execute(cursor, '''select c.id, c.in_reply_to, r.name, r.version,
+                c.user_name, c.date, c.message
+                from ratings r, comments c where
+                r.name=%s and r.version=%s and r.id=c.rating and c.date > %s''',
+                             (name, version, date))
+                comments = cursor.fetchall()
             else:
-                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                safe_execute(cursor, '''select name, version, user_name, date, rating
                 from ratings where name=%s and date > %s''', (name,date))
+                ratings = cursor.fetchall()
+                safe_execute(cursor, '''select c.id, c.in_reply_to, r.name, r.version,
+                c.user_name, c.date, c.message
+                from ratings r, comments c where
+                r.name=%s and r.id=c.rating and c.date > %s''',
+                             (name, date))
+                comments = cursor.fetchall()
         else:
-                safe_execute(cursor, '''select name, version, user_name, date, rating, message
+                safe_execute(cursor, '''select name, version, user_name, date, rating
                 from ratings where date > %s''', (date,))
-        res = cursor.fetchall()
-        return Result(None, res, self._AllRatings)
+                ratings = cursor.fetchall()
+                safe_execute(cursor, '''select c.id, c.in_reply_to, r.name, r.version,
+                c.user_name, c.date, c.message
+                from ratings r, comments c where
+                r.id=c.rating and c.date > %s''', (date,))
+                comments = cursor.fetchall()
+        return ratings, comments
 
     def has_rating(self, name, version):
         '''Check whether user has rated this release'''
