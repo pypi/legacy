@@ -236,9 +236,7 @@
 
 <div tal:condition="data/comments">
 <b>Package Comments:</b>
-<ul>
-<li tal:repeat="i data/comments"><span tal:replace="structure i"/></li>
-</ul>
+<span tal:replace="structure data/comments"/>
 </div>
 
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or

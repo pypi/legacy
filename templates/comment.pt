@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+
+<metal:fill fill-slot="head">
+ <style type="text/css">
+  table.form th {white-space: pre;}
+ </style>
+</metal:fill>
+
+<metal:fill fill-slot="body">
+<p>The comment from <span tal:replace="data/comment/user"/> said <cite tal:content="data/comment/message"/></p>
+<p>Your reply:
+<form tal:attributes="action app/url_path" method="POST">
+   <input type="hidden" name=":action" value="addcomment"/>
+   <input type="hidden" name="msg" tal:attributes="value data/comment/id"/>
+   <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
+   <br/>
+   <input type="submit"/>
+</form>
+</p>
+</metal:fill>
+</html>

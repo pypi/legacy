@@ -284,15 +284,32 @@ CREATE TABLE mirrors (
 );
 
 -- ratings
+CREATE TABLE comments(
+  id SERIAL PRIMARY KEY,
+  rating INTEGER REFERENCES ratings(id) ON DELETE CASCADE,
+  user_name TEXT REFERENCES users ON DELETE CASCADE,
+  date TIMESTAMP,
+  message TEXT,
+  in_reply_to INTEGER REFERENCES comments ON DELETE CASCADE
+);
 CREATE TABLE ratings(
+   id SERIAL UNIQUE;
    name TEXT,
    version TEXT,
    user_name TEXT REFERENCES users ON DELETE CASCADE,
    date TIMESTAMP,
    rating INTEGER,
-   message TEXT,
    PRIMARY KEY (name, version, user_name),
    FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE INDEX rating_name_version ON ratings(name, version);
+CREATE TABLE comments_journal(
+  name text,
+  version text,
+  id INTEGER,
+  submitted_by TEXT REFERENCES users ON DELETE CASCADE,
+  date TIMESTAMP,
+  action TEXT,
+  FOREIGN KEY (name, version) REFERENCES releases (name, version) ON DELETE CASCADE
+);
 

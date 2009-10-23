@@ -910,21 +910,38 @@ class Store:
     def add_rating(self, name, version, rating, message):
         '''Add a user rating of a release; message is optional'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''insert into ratings (name, version, user_name, date, rating, message)
-                     values(%s, %s, %s, now(), %s, %s)''', (name, version, self.username, rating, message))
+        safe_execute(cursor, '''insert into ratings (name, version, user_name, date, rating)
+                     values(%s, %s, %s, now(), %s)''', (name, version, self.username, rating))
+        safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
+                     values(currval('ratings_id_seq'), %s, now(), %s, NULL)''', (self.username, message))
+        safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
+                     values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''', (name, version, self.username,
+                     'add_rating %r' % message))
 
     def copy_rating(self, name, fromversion, toversion):
         '''Copy a user-s rating of package name from one version to another;
-        return the new rating'''
+        return the comment if any'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating,message) 
-                     select name,%s,user_name,now(),rating,message from ratings
+        safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating) 
+                     select name,%s,user_name,now(),rating from ratings
                      where name=%s and version=%s and user_name=%s''',
                      (toversion, name, fromversion, self.username))
-        safe_execute(cursor, '''select date, user_name, rating, message from ratings
-                     where name=%s and version=%s and user_name=%s''',
-                     (name, toversion, self.username))
-        return self._Rating(None, cursor.fetchone())
+        # only copy comment, not follow-ups
+        safe_execute(cursor, 'select c.id from comments c, ratings r where c.rating=r.id and r.name=%s and r.version=%s', (name, fromversion))
+        cid = cursor.fetchone()
+        if cid:
+            cid = cid[0]
+            safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
+                     select currval('ratings_id_seq'), user_name, date, message, in_reply_to 
+                     from comments where id=%s''', (cid,))
+            safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
+                     values(%s, %s, currval('comments_id_seq'), %s, now(), %s)''', (name, toversion, 
+                     self.username, 'copied %s' % cid))
+
+            safe_execute(cursor, '''select message from comments
+                     where id=%s''', (cid,))
+            return cursor.fetchone()[0]
+        return None
 
     def remove_rating(self, name, version):
         '''Remove a rating for the current user'''
@@ -932,14 +949,50 @@ class Store:
         safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s", 
                      (self.username, name, version))
 
-    _Rating=FastResultRow('date! user rating! message')
+    _Rating=FastResultRow('id! date! user rating!')
+    _Comment=FastResultRow('id! rating! user date! message in_reply_to!')
     def get_ratings(self, name, version):
-        '''Return ratings for a release.'''
+        '''Return ratings,messages for a release.'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select date, user_name, rating, message from ratings 
+        safe_execute(cursor, '''select id, date, user_name, rating from ratings 
                      where name=%s and version=%s order by date''', (name, version))
         res = cursor.fetchall()
-        return Result(None, res, self._Rating)
+        safe_execute(cursor, '''select c.id, c.rating, c.user_name, c.date, c.message, c.in_reply_to from
+                     ratings r, comments c where r.name=%s and r.version=%s and r.id=c.rating order by c.date''', (name, version))
+        res2 = cursor.fetchall()
+        return Result(None, res, self._Rating), Result(None, res2, self._Comment)
+
+    def get_comment(self, id):
+        '''Return a single comment.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select id, rating, user_name, date, message, in_reply_to from
+                     comments where id=%s''', (id,))
+        res = cursor.fetchall()
+        if res:
+            return self._Comment(None, res[0])
+        else:
+            return None
+
+    def add_comment(self, msg, comment):
+        "Add a comment as a reply to msg. Return name and version"
+        cursor = self.get_cursor()
+        safe_execute(cursor, "select c.rating, r.name, r.version from comments c, ratings r where c.id=%s and c.rating=r.id", (msg,))
+        rating, name, version = cursor.fetchone()
+        safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
+                     values(%s,%s,now(),%s,%s)''', (rating, self.username, comment, msg))
+        safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
+                     values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''', (name, version, self.username,
+                     'add %s %r' % (msg, comment)))
+        return name, version
+
+    def remove_comment(self, msg):
+        "Delete a comment and all its follow-ups."
+        cursor = self.get_cursor()
+        safe_execute(cursor, "select r.name, r.version from ratings r, comments c where c.id=%s and r.id=c.rating", (msg,))
+        name, version = cursor.fetchone()
+        safe_execute(cursor, "delete from comments where id=%s", (msg,))
+        safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
+                     values(%s, %s, %s, %s, now(), 'delete')''', (name, version, msg, self.username))
 
     _AllRatings=FastResultRow('name version user_name date! rating! message')
     def all_ratings(self, name, version, date):

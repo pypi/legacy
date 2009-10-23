@@ -133,10 +133,11 @@ if cache_templates:
 else:
     PyPiPageTemplate = _PyPiPageTemplate
 
-def comment_email(store, package, version, author, comment):
+def comment_email(store, package, version, author, comment, add_recipients):
     emails = set()
-    for r in store.get_package_roles(package):
-        email = store.get_user(r['user_name'])['email']
+    recipients = [r['user_name'] for r in store.get_package_roles(package)] + add_recipients
+    for r in recipients:
+        email = store.get_user(r)['email']
         if email:
             emails.add(email)
     info = {
@@ -485,7 +486,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -1152,19 +1153,57 @@ class WebUI:
         # Compute rating data
         has_rated = self.loggedin and self.store.has_rating(name, version)
         latest_rating = self.loggedin and self.store.latest_rating(name)
-        ratings = self.store.get_ratings(name, version)
+        ratings, comments = self.store.get_ratings(name, version)
         total = 0.0
-        comments = []
+        hcomments = [] # as a hierarchy
+        parent_comments = {}
         tally = [0]*6
+        rating_by_id = {}
         for r in ratings:
+            rating_by_id[r['id']] = r
             total += r['rating']
             tally[r['rating']] += 1
-            if r['message']:
-                message = cgi.escape(r['message'])
+
+        for c in comments:
+            add = c, []
+            parent_comments[c['id']] = add[1]
+            if c['in_reply_to']:
+                parent_comments[c['in_reply_to']].append(add)
+            else:
+                hcomments.append(add)
+
+        def render_comments(comments, toplevel):
+            if not comments:
+                return []
+            result = ["<ul>\n"]
+            for c,children in comments:
+                message = cgi.escape(c['message'])
                 message = '<br />'.join(message.split('\r\n'))
-                date = r['date'].strftime("%Y-%m-%d")
-                comments.append("%s (%s, %s, %d points)" % 
-                                (message, r['user'], date, r['rating']))
+                date = c['date'].strftime("%Y-%m-%d")
+                if not self.loggedin:
+                    reply = ''
+                elif self.username != c['user']:
+                    reply = " <a href='%s?:action=comment&msg=%d'>Reply</a>" % (self.url_path, c['id'])
+                elif toplevel:
+                    reply = ''
+                else:
+                    if children:
+                        msg = "Remove (including followups)"
+                    else:
+                        msg = "Remove"
+                    reply = " <a href='%s?:action=delcomment&msg=%d&name=%s&version=%s'>%s</a>" % (self.url_path, c['id'], name, version, msg)
+                if toplevel:
+                    rating = ', %s points' % rating_by_id[c['rating']]
+                else:
+                    rating = ''
+                result.append("<li>%s (%s, %s%s)%s" % 
+                                (message, c['user'], date, rating, reply))
+                if children:
+                    result.extend(render_comments(children, False))
+                result.append("</li>\n")
+            result.append("</ul>\n")
+            return result
+        comments = "".join(render_comments(hcomments, True))
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
@@ -1712,9 +1751,9 @@ class WebUI:
                 raise Forbidden, "You have already rated this release"
             if not self.form.has_key('fromversion'):
                 raise FormError, "fromversion missing"
-            r = self.store.copy_rating(name, self.form['fromversion'], version)
-            if r['message']:
-                comment_email(self.store, name, version, self.username, r['message'])
+            comment = self.store.copy_rating(name, self.form['fromversion'], version)
+            if comment:
+                comment_email(self.store, name, version, self.username, comment, [])
             return self.display()
         if self.form.has_key('rate'):
             if self.store.has_rating(name, version):
@@ -1723,10 +1762,58 @@ class WebUI:
                 raise FormError, "rating not provided"
             message = self.form['comment'].strip()
             self.store.add_rating(name, version, self.form['rating'], message)
-            comment_email(self.store, name, version, self.username, message)
+            comment_email(self.store, name, version, self.username, message, [])
             return self.display()
 
         raise FormError, "Bad button"
+
+    def comment(self):
+        'Ask for a follow-up comment'
+        if not self.form.has_key('msg'):
+            raise FormError
+        comment = self.store.get_comment(self.form['msg'])
+        self.write_template('comment.pt', title='Reply to comment', 
+                            comment=comment)
+
+    def addcomment(self):
+        'Post a follow-up comment'
+        if not self.authenticated:
+            raise Unauthorised, "You need to be identified to post a comment"
+        if not self.form.has_key('msg') or not self.form.has_key('comment'):
+            raise FormError
+        msg = self.form['msg']
+        comment = self.form['comment']
+        orig = self.store.get_comment(msg)
+        if not orig:
+            raise FormError, "Invalid message"
+        if orig['user'] == self.username:
+            raise FormError, "You cannot respond to your own comments"
+        comment = comment.strip()
+        if not comment:
+            raise FormError, "You must fill in a comment"
+
+        name, version = self.store.add_comment(msg, comment)
+        comment_email(self.store, name, version, self.username, comment, [orig['user']])
+
+        return self.display(name=name, version=version)
+        
+
+    def delcomment(self):
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to delete a comment"
+
+        if not self.form.has_key('msg'):
+            raise FormError
+
+        msg = self.form['msg']
+        comment = self.store.get_comment(msg)
+        if not comment:
+            raise FormError, "Invalid comment ID"
+        if comment['user'] != self.username or not comment['in_reply_to']:
+            raise FormError, "You cannot delete this comment" + comment['user']
+        self.store.remove_comment(comment['id'])
+        return self.display()
 
     def remove_pkg(self):
         ''' Remove a release or a whole package from the db.
