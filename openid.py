@@ -11,11 +11,14 @@
 # - direct requests require https
 # - as a signature algorithm, HMAC-SHA1 is requested
 
-import urllib, BeautifulSoup, xml.etree.ElementTree
+import urlparse, httplib, BeautifulSoup, xml.etree.ElementTree
 import cStringIO, base64, hmac, sha, datetime
 
 # Don't use urllib2, since it breaks in 2.5
 # for https://login.launchpad.net//+xrds
+
+# Don't use urllib, since it sometimes selects HTTP/1.1 (e.g. in PyPI)
+# and then fails to parse chunked responses.
 
 def parse_response(s):
     '''Parse a key-value form (OpenID section 4.1.1) into a dictionary'''
@@ -29,23 +32,28 @@ def discover(url):
     '''Perform service discovery on the OP URL.
     Return list of service types, and the auth/2.0 URL,
     or None if discovery fails.'''
-    opener = urllib.FancyURLopener()
-    opener.addheader('Accept', "text/html; q=0.3, "+
-                     "application/xhtml+xml; q=0.5, "+
-                     "application/xrds+xml")
-    res = opener.open(url)
+    scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
+    assert not query and not fragment
+    assert scheme == 'https'
+    conn = httplib.HTTPSConnection(netloc)
+    conn.putrequest("GET", path)
+    conn.putheader('Accept', "text/html; q=0.3, "+
+                   "application/xhtml+xml; q=0.5, "+
+                   "application/xrds+xml")
+    conn.endheaders()
 
-    content_type = res.headers.gettype()
+    res = conn.getresponse()
+    data = res.read()
+    conn.close()
+
+    content_type = res.msg.gettype()
 
     # Yadis 6.2.5 option 2 and 3: header includes x-xrds-location
-    xrds_loc = res.headers.get('x-xrds-location')
+    xrds_loc = res.msg.get('x-xrds-location')
     if xrds_loc and content_type != 'application/xrds+xml':
-        res.close()
         return discover(xrds_loc)
 
     if content_type == 'text/html':
-        data = res.read()
-        res.close()
         soup = BeautifulSoup.BeautifulSoup(data)
         # Yadis 6.2.5 option 1: meta tag
         meta = soup.findAll('meta', {'http-equiv':lambda v:v.lower()=='x-xrds-location'})
@@ -58,8 +66,7 @@ def discover(url):
             
     if content_type == 'application/xrds+xml':
         # Yadis 6.2.5 option 4
-        doc = xml.etree.ElementTree.parse(res)
-        res.close()
+        doc = xml.etree.ElementTree.fromstring(data)
         for svc in doc.findall(".//{xri://$xrd*($v*2.0)}Service"):
             services = [x.text for x in svc.findall("{xri://$xrd*($v*2.0)}Type")]
             if not 'http://specs.openid.net/auth/2.0/server' in services:
