@@ -88,7 +88,7 @@ register</a>.</p>
 '''
 
 comment_message = '''Subject: New comment on %(package)s
-From: %(admin)s
+From: PyPI operators <%(admin)s>
 To: %(email)s
 Reply-To: %(replyto)s
 
