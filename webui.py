@@ -1215,8 +1215,8 @@ class WebUI:
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
-                            description=release['summary'] or name,
-                            keywords=release['keywords'],
+                            description=release.get('summary') or name,
+                            keywords=release.get('keywords', ''),
                             title=name + " " +version,
                             requires=values('requires'),
                             provides=values('provides'),

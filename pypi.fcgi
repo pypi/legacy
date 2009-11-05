@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import thfcgi, os, sys, StringIO, traceback, cgi
+import thfcgi, os, sys, StringIO, traceback, cgi, syslog
 
 #
 # Provide interface to CGI HTTP response handling
@@ -46,11 +46,20 @@ def handle_request(req, env):
 prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
 import config
-cfg = config.Config(prefix+'/config.ini')
+cfg = config.Config('/data/pypi/config.ini')
 fcg = thfcgi.FCGI(handle_request, 
                   max_requests=-1,
                   backlog=50,
                   max_threads=1)
-fcg.run()
+try:
+    try:
+        fcg.run()
+        syslog.syslog("pypi.fcgi: run completed")
+    except:
+        import traceback
+        syslog.syslog(''.join(traceback.format_exception(*sys.exc_info())))
+        raise
+finally:
+    syslog.syslog("pypi.fcgi: exiting")
 
 

@@ -36,10 +36,10 @@ class RequestWrapper:
 # Now do the actual CGI handling
 #
 try:
-    sys.path.insert(0, '/tmp/pypi')
+    sys.path.insert(0, '/data/pypi/src/pypi')
     from webui import WebUI
     import config
-    cfg = config.Config('/tmp/pypi/config.ini')
+    cfg = config.Config('/data/pypi/config.ini')
     request = RequestWrapper(cfg, sys.stdin, sys.stdout)
     handler = WebUI(request, os.environ)
     handler.run()

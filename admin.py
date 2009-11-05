@@ -1,6 +1,6 @@
 
-import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt
-sys.path.append('/usr/local/pypi/lib')
+import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, shutil
+#sys.path.append('/usr/local/pypi/lib')
 
 import store, config
 
@@ -103,7 +103,7 @@ def send_comments(store):
         webui.comment_email(store, package, version, author, comment)
 
 if __name__ == '__main__':
-    config = config.Config('/usr/local/pypi/config.ini')
+    config = config.Config('/data/pypi/config.ini')
     store = store.Store(config)
     store.open()
     command = sys.argv[1]

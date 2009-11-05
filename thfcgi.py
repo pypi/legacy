@@ -45,6 +45,7 @@ import errno
 import cgi
 from cStringIO import StringIO
 import struct
+import syslog
 
 try:
     import threading as _threading
@@ -236,8 +237,10 @@ class Record:
 
         try:
             sock.sendall(hdr + content + padlen*"\x00")
-        except socket.error:
-            # Write error, probably broken pipe. Exit. 
+        except socket.error, e:
+            # Write error, probably broken pipe. Close connection
+	    syslog.syslog(str(e))
+	    sock.close()
             raise SocketErrorOnWrite
 
 
@@ -361,6 +364,7 @@ class Request:
         if not self.keep_conn:
             self.conn.close()
             if self.inthread:
+	        syslog.syslog("Exiting: inthread and not keep_conn")
                 raise SystemExit
 
     #
@@ -527,7 +531,10 @@ class FCGI:
             req = Request(conn, self.req_handler, inthread)
             req.run()
         except SocketErrorOnWrite:
-            raise SystemExit
+	    syslog.syslog("Exiting: SocketErrorOnWrite")
+	    # this used to exit the FCGI server. Now just discard this
+	    # connection, and go on accepting the next one
+            #raise SystemExit
 
     def _make_socket(self):
         """Create socket and verify FCGI environment."""
