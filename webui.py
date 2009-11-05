@@ -314,6 +314,10 @@ class WebUI:
     def write_template(self, filename, **options):
         context = {}
         options.setdefault('norobots', False)
+        options.setdefault('keywords', 'python programming language object'
+            ' oriented web free source package index download software')
+        options.setdefault('description', 'The Python Package Index is a'
+            ' repository of software for the Python programming language.')
         options['providers'] = self.get_providers()
         context['data'] = options
         context['app'] = self
@@ -1103,7 +1107,11 @@ class WebUI:
 #            return self.fail('No such package / version',
 #                heading='%s %s'%(name, version),
 #                content="I can't find the package / version you're requesting")
-        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
+
+# RJ: disabled cheesecake because the (strange) errors were getting annoying
+#        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
+        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
+
         release = {'description_html': ''}
         for column in columns:
             value = info[column]
@@ -1126,7 +1134,7 @@ class WebUI:
                 value = '%s <%s>'%(start, value)
             elif column.startswith('cheesecake_'):
                 column = column[:-3]
-                value = self.store.get_cheesecake_index(value)
+                value = self.store.get_cheesecake_index(int(value))
             release[column] = value
 
         roles = {}
@@ -1207,6 +1215,8 @@ class WebUI:
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
+                            description=release['summary'] or name,
+                            keywords=release['keywords'],
                             title=name + " " +version,
                             requires=values('requires'),
                             provides=values('provides'),
@@ -1258,7 +1268,9 @@ class WebUI:
         score for each package that matches.
         '''
         term = self.form.get('term', '').strip().lower()
+        term = re.sub(r'[^\w\s\.]', '', term)
         terms = [t for t in term.split() if t not in self.STOPWORDS]
+        terms = filter(None, terms)
         if not terms:
             raise FormError, 'You need to supply a search term'
 

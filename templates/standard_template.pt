@@ -9,12 +9,11 @@
       <meta content="text/html; charset=utf-8" http-equiv="content-type" />
       <base tal:attributes="href data/FULL_PATH_INFO"/>
       <title tal:content="string:Python Package Index : ${data/title}" />
-      <meta content="python programming language object oriented web free source" name="keywords" />
-      <meta content="Home page for Python, an interpreted, interactive, object-oriented, extensible programming language. It provides an extraordinary combination of clarity and versatility, and is free and comprehensively ported.
-                     " name="description" />
-       <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
+      <meta tal:attributes="content data/keywords" />
+      <meta tal:attributes="content data/description" />
+      <link rel="stylesheet" href="http://www.python.org/css/pypi.css" type="text/css"/>
 
-       <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
+      <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
       <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
