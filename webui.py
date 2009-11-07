@@ -323,8 +323,10 @@ class WebUI:
         context['data'] = options
         context['app'] = self
         fpi = self.config.url+self.env.get('PATH_INFO',"")
-        fpi = unicode(fpi, "utf-8")
-        options['FULL_PATH_INFO'] = fpi
+        try:
+            options['FULL_PATH_INFO'] = fpi.decode("utf-8")
+        except UnicodeError:
+            raise NotFound, fpi + ' is not utf-8 encoded'
 
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         context['standard_template'] = PyPiPageTemplate(
