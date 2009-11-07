@@ -10,14 +10,14 @@ programming language. There are currently
 <strong tal:content="app/store/count_packages" />
 packages here. To contact the PyPI admins, please 
 use the
-"<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513504">Get help</a>"
+<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>"
 or
-"<a href="http://sourceforge.net/tracker/?group_id=66150&atid=513503">Bug reports</a>"
-links on the left.
+<a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>"
+links.
 </p>
 <p>To submit a package use "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>" and to use a package
-from this index either download it and "python setup.py install" or use "<a
-href="http://pip.openplans.org/">pip</a> install <i>package</i>".</p>
+from this index either download it and "python setup.py install" or use
+"<a href="http://pip.openplans.org/">pip</a> install <i>package</i>".</p>
 
           <form tal:attributes="action app/url_path" id="searchform"
                 method="get" name="searchform">
