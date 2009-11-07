@@ -15,9 +15,11 @@ or
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
 links.
 </p>
-<p>To submit a package use "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>" and to use a package
-from this index either download it and "python setup.py install" or use
-"<a href="http://pip.openplans.org/">pip</a> install <i>package</i>".</p>
+<p>To submit a package use
+"<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"
+and to use a package from this index either
+"<a href="http://pip.openplans.org/">pip</a> install <i>package</i>"
+or download, unpack and "python setup.py install" it.</p>
 
           <form tal:attributes="action app/url_path" id="searchform"
                 method="get" name="searchform">
