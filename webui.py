@@ -467,7 +467,10 @@ class WebUI:
             action = self.form[':action']
         elif path:
             # Split into path items, drop leading slash
-            items = path.split('/')[1:]
+            try:
+                items = path.decode('utf-8').split('/')[1:]
+            except UnicodeError:
+                raise NotFound(path + " is not UTF-8 encoded")
             if path == '/':
                 self.form['name'] = ''
                 action = 'index'
