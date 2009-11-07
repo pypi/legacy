@@ -217,6 +217,7 @@ class WebUI:
         self.username = None
         self.authenticated = False # was a password or a valid cookie passed?
         self.loggedin = False      # was a valid cookie sent?
+        self.usercookie = None
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
