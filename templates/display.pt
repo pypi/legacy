@@ -200,7 +200,7 @@
       <td>5 (best)</td>
       </tr>
       </table>
-      <table><tr><td>Comment:</td><td>
+      <table><tr><td>Review: (<em>Please use the package's bug reporting channels <br/>(trackers, mailing lists) for bug reports and requests for help</em>)</td><td>
          <!--XXX trick TAL into not minimizing tag-->
          <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
       </td></tr></table>
