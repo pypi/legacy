@@ -28,7 +28,7 @@ of the reasons for and against change. Please vote below: PyPI should
 <p tal:condition="not:app/loggedin">
 We currently run a <a href="http://wiki.python.org/moin/PyPIComments">public poll</a>
 to decide whether or not to continue the rating-and-comments feature that was recently
-added to PyPI. If you want to vote, you need to login. <a tal:attributes="href python:app.link_action('poll_results')">See the results so far.</a>
+added to PyPI. If you want to vote, you need to login to PyPI (on the right). <a tal:attributes="href python:app.link_action('poll_results')">See the results so far.</a>
 </p>
 <p>The poll will be closed on December 1, 2009.</p>
 
