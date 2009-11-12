@@ -1669,7 +1669,27 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'insert into openids(id, name) values(%s,%s)',
                      (openid, username))
-        
+
+    def addpoll(self, vote):
+        cursor = self.get_cursor()
+        # delete previous vote
+        safe_execute(cursor, 'delete from poll where name=%s', (self.username,))
+        # insert new vote
+        safe_execute(cursor, 'insert into poll(name, vote, date, host) values(%s, %s, now(), %s)',
+                     (self.username, vote, self.userip))
+
+    def getvote(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select vote from poll where name=%s', (self.username,))
+        return [v[0] for v in cursor.fetchall()]
+
+    def tally(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select vote,count(*) from poll group by vote')
+        res = [0] * 5
+        for vote, count in cursor.fetchall():
+            res[vote] = count
+        return res
 
     #
     # Handle the underlying database

@@ -15,6 +15,23 @@ or
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
 links.
 </p>
+<p tal:condition="app/loggedin">
+We currently run a <a href="http://wiki.python.org/moin/PyPIComments">public poll</a>.
+See the <a href="http://wiki.python.org/moin/PyPIComments">wiki page</a> for a summary
+of the reasons for and against change. Please vote below: PyPI should
+<form tal:attributes="action app/url_path" method="post">
+  <input type="hidden" name=":action" value="poll"/>
+  <span tal:replace="structure app/get_poll_options"/>
+  <br/><input type="submit" name="submit" value="Vote"/> [<a tal:attributes="href python:app.link_action('poll_results')">Results</a>]
+</form>
+</p>
+<p tal:condition="not:app/loggedin">
+We currently run a <a href="http://wiki.python.org/moin/PyPIComments">public poll</a>
+to decide whether or not to continue the rating-and-comments feature that was recently
+added to PyPI. If you want to vote, you need to login. <a tal:attributes="href python:app.link_action('poll_results')">See the results so far.</a>
+</p>
+<p>The poll will be closed on December 1, 2009.</p>
+
 <p>To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"
 and to use a package from this index either
