@@ -478,13 +478,13 @@ class WebUI:
                 self.form['name'] = ''
                 action = 'index'
             elif len(items) >= 1:
-                self.form['name'] = items[0].decode('utf-8')
+                self.form['name'] = items[0]
                 action = 'display'
             if len(items) >= 2 and items[1]:
-                self.form['version'] = items[1].decode('utf-8')
+                self.form['version'] = items[1]
                 action = 'display'
             if len(items) == 3 and items[2]:
-                action = self.form[':action'] = items[2].decode('utf-8')
+                action = self.form[':action'] = items[2]
         else:
             action = 'home'
 
