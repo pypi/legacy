@@ -30,7 +30,7 @@ We currently run a <a href="http://wiki.python.org/moin/PyPIComments">public pol
 to decide whether or not to continue the rating-and-comments feature that was recently
 added to PyPI. If you want to vote, you need to login to PyPI (on the right). <a tal:attributes="href python:app.link_action('poll_results')">See the results so far.</a>
 </p>
-<p>The poll will be closed on December 1, 2009.</p>
+<p>The poll will be closed on December 1, 2009. The option that receives most votes will be implemented.</p>
 
 <p>To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"
