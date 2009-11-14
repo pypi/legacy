@@ -92,7 +92,7 @@ From: PyPI operators <%(admin)s>
 To: %(email)s
 Reply-To: %(replyto)s
 
-[REPLYS TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
+[REPLIES TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
 %(author)s has made the following comment on your package.
 
 %(comment)s
