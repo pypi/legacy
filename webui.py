@@ -2504,6 +2504,8 @@ class WebUI:
         email = openid.get_email(qs)
         if not email:
             return self.fail('OpenID provider did not provide your email address')
+        if self.store.get_user_by_email(email):
+            return self.fail('Email address already registered for a different user')
         duplicate = False
         if 'ok' in self.form:
             # User has picked a username

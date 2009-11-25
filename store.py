@@ -1174,6 +1174,12 @@ class Store:
                     (gpg_keyid, name))
             return None
 
+        # Make sure email addresses are unique
+        safe_execute(cursor, 'select count(*) from users where lower(email)=%s',
+                     (email.lower(),))
+        if cursor.fetchone()[0] > 0:
+            raise ValueError, "Email address already belongs to a different user"
+
         password = sha.sha(password).hexdigest()
 
         # new user
@@ -1208,7 +1214,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, '''select name, password, email, gpg_keyid
-            from users where email=%s''', (email,))
+            from users where lower(email)=%s''', (email.lower(),))
         return self._User(None, cursor.fetchone())
 
     def get_user_by_openid(self, openid):
