@@ -2,3 +2,4 @@
 delete from cookies where last_seen < now()-INTERVAL'1day';
 delete from openid_sessions where expires < now();
 delete from openid_nonces where created < now()-INTERVAL'1day'; 
+delete from users where name in (select name from rego_otk where date < now()-INTERVAL'7days');

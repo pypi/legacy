@@ -2368,12 +2368,24 @@ class WebUI:
     def password_reset(self):
         """Reset the user's password and send an email to the address given.
         """
+        def resend_otk():
+            info = {'otk':self.store.get_otk(user['name']), 'url':self.config.url,
+                    'admin':self.config.adminemail, 'email': user['email'],
+                    'name':user['name']}
+            self.send_email(info['email'], rego_message%info)
+            response = 'Registration OK'
+            message = 'You should receive a confirmation email shortly.'
+            self.write_template('message.pt', title="Resending registration key",
+                message='Email with registration key resent')
+
         if self.form.has_key('email') and self.form['email'].strip():
             email = self.form['email'].strip()
             user = self.store.get_user_by_email(email)
             if not user:
                 self.fail('email address unknown to me')
                 return
+            if self.store.get_otk(user['name']):
+                return resend_otk()
             pw = ''.join([random.choice(chars) for x in range(10)])
             self.store.store_user(user['name'], pw, user['email'], None)
             info = {'name': user['name'], 'password': pw,
@@ -2388,6 +2400,8 @@ class WebUI:
             if not user:
                 self.fail('user name unknown to me')
                 return
+            if self.store.get_otk(user['name']):
+                return resend_otk()
             info = {'name': user['name'], 'url': self.config.url,
                  'email': urllib.quote(user['email'])}
             info['admin'] = self.config.adminemail

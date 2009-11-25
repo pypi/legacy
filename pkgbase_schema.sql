@@ -48,7 +48,8 @@ CREATE INDEX cookies_last_seen ON cookies(last_seen);
 -- Table structure for table: rego_otk
 CREATE TABLE rego_otk ( 
    name TEXT REFERENCES users, 
-   otk TEXT );
+   otk TEXT,
+   date TIMESTAMP );
 CREATE INDEX rego_otk_name_idx ON rego_otk(name);
 
 

@@ -1183,7 +1183,7 @@ class Store:
         if not otk:
             return None
         otk = ''.join([random.choice(chars) for x in range(32)])
-        safe_execute(cursor, 'insert into rego_otk (name, otk) values (%s, %s)',
+        safe_execute(cursor, 'insert into rego_otk (name, otk, date) values (%s, %s, now())',
             (name, otk))
         return otk
 
