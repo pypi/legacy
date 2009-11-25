@@ -134,12 +134,17 @@
                 <tal:let define="packages python:app.store.user_packages(app.username)">
                   <tal:if-packages condition="packages">
                     <li>
-                      Your packages:
+                      Your packages<tal:block tal:condition="python:len(packages)&gt;=20">(truncated)</tal:block>:
                     </li>
                     <ul>
-                      
-                      <li>
+                      <li tal:condition="python:len(packages)&lt;20">
                         <tal:block repeat="pkg_info packages">
+                          <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
+                             tal:content="python:pkg_info[0]">package</a><br />
+                        </tal:block>
+                      </li>
+                      <li tal:condition="python:len(packages)&gt;=20">
+                        <tal:block repeat="pkg_info python:packages[:20]">
                           <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
                              tal:content="python:pkg_info[0]">package</a><br />
                         </tal:block>
