@@ -1207,11 +1207,15 @@ class WebUI:
                         msg = "Remove"
                     reply = " <a href='%s?:action=delcomment&msg=%d&name=%s&version=%s'>%s</a>" % (self.url_path, c['id'], name, version, msg)
                 if toplevel:
-                    rating = ', %s points' % rating_by_id[c['rating']]
+                    rating = rating_by_id[c['rating']]['rating']
+                    if rating == 1:
+                        rating = ', 1 point'
+                    else:
+                        rating = ', %s points' % rating
                 else:
                     rating = ''
-                result.append("<li>%s (%s, %s%s)%s" % 
-                                (message, c['user'], date, rating, reply))
+                result.append("<li>%s (%s%s):<br/>%s %s" % 
+                                (c['user'], date, rating, message, reply))
                 if children:
                     result.extend(render_comments(children, False))
                 result.append("</li>\n")
