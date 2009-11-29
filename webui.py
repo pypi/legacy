@@ -496,7 +496,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment poll poll_results'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment poll poll_results clear_auth'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -757,6 +757,11 @@ class WebUI:
     def logout(self):
         self.loggedin = False
         self.store.delete_cookie(self.usercookie)
+        self.home()
+
+    def clear_auth(self):
+        if self.username:
+            raise Unauthorised, "Clearing basic auth"
         self.home()
 
     def login(self):

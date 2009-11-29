@@ -110,6 +110,7 @@
                 <h4>Not Logged In</h4>
 
                 <ul>
+		  <li tal:condition="app/username"><a tal:attributes="href python:app.link_action('clear_auth')">Clear Basic Auth</a></li>
                   <li><a tal:attributes="href python: app.link_action('login')">Login</a></li>
                   <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
                   <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
