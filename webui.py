@@ -2335,6 +2335,10 @@ class WebUI:
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
                 return
+            if not self.form.has_key('agree'):
+                self.fail('You need to confirm the usage agreement.',
+                          heading='User registration')
+                return
             olduser = self.store.get_user_by_email(info['email'])
             if olduser:
                 raise FormError, 'You have already registered as user '+olduser['name']
@@ -2518,6 +2522,8 @@ class WebUI:
         duplicate = False
         if 'ok' in self.form:
             # User has picked a username
+            if not self.form.has_key('agree'):
+                return self.fail('You need to confirm the usage agreement')
             username = self.form.get('username', '')
             if not username:
                 error = 'Please pick a username'
