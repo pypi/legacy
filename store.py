@@ -1472,6 +1472,7 @@ class Store:
                     continue
             has_sig = os.path.exists(path+'.asc')
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
+        l.sort(key=lambda r:r['filename'])
         return l
 
     def has_file(self, name, version, filename):
