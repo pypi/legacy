@@ -1299,21 +1299,39 @@ class WebUI:
         ]
 
 
-        # score all package/release versions, and also record the
-        # max value of _pypi_ordering per package
-        max_ordering = {}
+        # score all package/release versions
+        # require that each term occurs at least once (AND search)
         for t in terms:
+            d_new = {}
             for col, score in columns:
                 spec = {'_pypi_hidden': False, col: t}
                 for r in self.store.query_packages(spec):
-                    e = d.get((r['name'], r['version']), [0, r])
+                    key = (r['name'], r['version'])
+                    if d:
+                        # must find current score in d
+                        if key not in d:
+                            # not a candidate anymore
+                            continue
+                        else:
+                            e = d[key]
+                    else:
+                        # may find score in d_new
+                        e = d_new.get(key, [0, r])
                     if col == 'name' and t == r['name'].lower():
                         e[0] += score*2
                     else:
                         e[0] += score
-                    d[(r['name'],r['version'])] = e
-                    old_max = max_ordering.get(r['name'], -1)
-                    max_ordering[r['name']] = max(old_max, r['_pypi_ordering'])
+                    d_new[key] = e
+            d = d_new
+            if not d:
+                # no packages match
+                break
+
+        # record the max value of _pypi_ordering per package
+        max_ordering = {}
+        for score,r in d.values():
+            old_max = max_ordering.get(r['name'], -1)
+            max_ordering[r['name']] = max(old_max, r['_pypi_ordering'])
 
         # drop old releases
         for (name, version), (score, r) in d.items():
