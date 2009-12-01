@@ -1283,7 +1283,7 @@ class WebUI:
         score for each package that matches.
         '''
         term = self.form.get('term', '').strip().lower()
-        term = re.sub(r'[^\w\s\.]', '', term)
+        term = re.sub(r'[^\w\s\.\-]', '', term)
         terms = [t for t in term.split() if t not in self.STOPWORDS]
         terms = filter(None, terms)
         if not terms:
