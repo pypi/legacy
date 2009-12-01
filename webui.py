@@ -1881,6 +1881,7 @@ class WebUI:
         return res
 
     def poll(self):
+        raise Unauthorised, "The poll is closed now"
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to participate in the poll"
