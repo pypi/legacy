@@ -653,6 +653,17 @@ class Store:
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
 
+    def get_package_comments(self, name):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select comments from packages where name=%s',
+                     [name])
+        return cursor.fetchall()[0][0]
+
+    def set_package_comments(self, name, value):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'update packages set comments=%s where name=%s',
+                     [value, name])
+
     def get_unique(self, iterable):
         ''' Iterate over list of (name,version,date,summary) tuples
             and return list of unique (taking name and version into
@@ -993,6 +1004,20 @@ class Store:
         safe_execute(cursor, "delete from comments where id=%s", (msg,))
         safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
                      values(%s, %s, %s, %s, now(), 'delete')''', (name, version, msg, self.username))
+
+    def has_package_comments(self, name):
+        "Return true if the package has any comments"
+        cursor = self.get_cursor()
+        safe_execute(cursor, """select r.name,count(*) from ratings r,comments c
+                     where r.id=c.rating and r.name=%s group by(r.name)""", (name,))
+        return len(cursor.fetchall()) > 0
+
+    def get_package_commenters(self, name):
+        "Return the email addresses of all commenters on a package."
+        cursor = self.get_cursor()
+        safe_execute(cursor, """select distinct(email) from ratings r,comments c,users u
+                     where r.id=c.rating and r.name=%s and c.user_name=u.name""", (name,))
+        return [r[0] for r in cursor.fetchall()]
 
     _AllRatings=FastResultRow('name version user_name date! rating! message')
     def all_ratings(self, name, version, date):

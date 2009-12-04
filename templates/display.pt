@@ -200,7 +200,7 @@
       <td>5 (best)</td>
       </tr>
       </table>
-      <table><tr><td>Review: (<em>Please use the package's bug reporting channels <br/>(trackers, mailing lists) for bug reports and requests for help</em>)</td><td>
+      <table tal:condition="python:app.store.get_package_comments(data['name'])"><tr><td>Review: (<em>Please use the package's bug reporting channels <br/>(trackers, mailing lists) for bug reports and requests for help</em>)</td><td>
          <!--XXX trick TAL into not minimizing tag-->
          <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
       </td></tr></table>
@@ -234,7 +234,9 @@
   <p>Ratings range from 0 to 5 (best).</p>
 </div>
 
-<div tal:condition="data/comments">
+<div tal:condition="python:not app.store.get_package_comments(data['name'])">The package owner has disabled commenting on this package.</div>
+
+<div tal:condition="python:app.store.get_package_comments(data['name']) and data['comments']">
 <b>Package Comments:</b>
 <span tal:replace="structure data/comments"/>
 </div>

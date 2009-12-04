@@ -75,7 +75,8 @@ CREATE TABLE packages (
    name TEXT PRIMARY KEY, 
    stable_version TEXT,
    normalized_name TEXT,
-   autohide BOOLEAN DEFAULT TRUE
+   autohide BOOLEAN DEFAULT TRUE,
+   comments BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE cheesecake_main_indices (

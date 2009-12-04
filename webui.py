@@ -1743,6 +1743,10 @@ class WebUI:
             value = self.form.has_key('autohide')
             self.store.set_package_autohide(name, value)
 
+        if self.form.has_key('submit_comments'):
+            value = self.form.has_key('comments')
+            self.store.set_package_comments(name, value)
+
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -1769,6 +1773,7 @@ class WebUI:
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
                             autohide=self.store.get_package_autohide(name),
+                            comments=self.store.get_package_comments(name),
             title="Package '%s' Editing"%name)
 
     def rate(self):
@@ -1806,6 +1811,8 @@ class WebUI:
             if not self.form.has_key('rating'):
                 raise FormError, "rating not provided"
             message = self.form['comment'].strip()
+            if message and not self.store.get_package_comments(name):
+                raise FormError, "package does not allow comments"
             self.store.add_rating(name, version, self.form['rating'], message)
             comment_email(self.store, name, version, self.username, message, [])
             return self.display()
