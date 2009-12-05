@@ -15,10 +15,6 @@ or
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
 links.
 </p>
-<p>
-The <a href="http://wiki.python.org/moin/PyPIComments">poll</a>
-is closed now. See the <a tal:attributes="href python:app.link_action('poll_results')">results.</a>
-</p>
 
 <p>To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"

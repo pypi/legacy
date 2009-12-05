@@ -496,7 +496,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment poll poll_results clear_auth'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment clear_auth'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -1866,57 +1866,6 @@ class WebUI:
             raise FormError, "You cannot delete this comment" + comment['user']
         self.store.remove_comment(comment['id'])
         return self.display()
-
-    poll_options = [
-        'Allow ratings and comments on all packages (status quo)',
-        'Allow package owners to disallow comments (ratings unmodified).',
-        'Allow comments, but only send them to package owners (ratings unmodified).',
-        'Disallow comments (ratings unmodified).',
-        'Disallow ratings and comments (status three months ago).',
-        ]
-    def get_poll_options(self):
-        if not self.authenticated:
-            return ""
-        vote = self.store.getvote()
-        res = ""
-        for i in range(len(self.poll_options)):
-            if vote and vote[0] == i:
-                checked = " checked"
-            else:
-                checked = ""
-            res += '<br/><input type="radio" name="poll" value="%s"%s>%s</input>' % (i, checked, self.poll_options[i])
-        return res
-
-    def poll(self):
-        raise Unauthorised, "The poll is closed now"
-        if not self.authenticated:
-            raise Unauthorised, \
-                "You must be identified to participate in the poll"
-
-        if not self.form.has_key('poll') or not self.form['poll']:
-            raise "HERE"
-            raise FormError, "you need to cast a vote"
-
-        try:
-            vote = int(self.form['poll'])
-            if vote < 0 or vote >= len(self.poll_options):
-                raise ValueError
-        except ValueError:
-            raise FormError, "Invalid vote"
-                      
-        self.store.addpoll(vote)
-        return self.poll_results()
-
-    def poll_results(self):
-        res = "<html><head><title>Poll Results</title></head>\n<body>\n<table>\n"
-        for option, count in zip(self.poll_options, self.store.tally()):
-            res += "<tr><td>%s</td><td>%s</td></tr>\n" % (option, count)
-        res += "</table>\n</body>\n</html>"
-
-        self.handler.send_response(200, 'OK')
-        self.handler.set_content_type('text/html; charset=utf-8')
-        self.handler.end_headers()
-        self.wfile.write(res)
 
     def remove_pkg(self):
         ''' Remove a release or a whole package from the db.
