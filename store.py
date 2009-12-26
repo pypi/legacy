@@ -957,6 +957,9 @@ class Store:
     def remove_rating(self, name, version):
         '''Remove a rating for the current user'''
         cursor = self.get_cursor()
+        safe_execute(cursor, """insert into comments_journal(name, version, id, submitted_by, date, action)
+        select %s, %s, id, %s, now(), 'deleted' from ratings where user_name=%s and name=%s and version=%s""",
+                     (name, version, self.username, self.username, name, version))
         safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s", 
                      (self.username, name, version))
 
