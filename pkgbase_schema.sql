@@ -175,6 +175,7 @@ CREATE TABLE release_classifiers (
 CREATE INDEX rel_class_name_idx ON release_classifiers(name);
 CREATE INDEX rel_class_version_id_idx ON release_classifiers(version);
 CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
+CREATE INDEX rel_class_name_version_idx ON release_classifiers(name, version);
 
 -- Table structure for table: release_provides
 CREATE TABLE release_provides (
@@ -185,6 +186,7 @@ CREATE TABLE release_provides (
 );
 CREATE INDEX rel_prov_name_idx ON release_provides(name);
 CREATE INDEX rel_prov_version_id_idx ON release_provides(version);
+CREATE INDEX rel_prov_name_version_idx ON release_provides (name,version);
 
 
 -- Table structure for table: release_requires
@@ -196,7 +198,7 @@ CREATE TABLE release_requires (
 );
 CREATE INDEX rel_req_name_idx ON release_requires(name);
 CREATE INDEX rel_req_version_id_idx ON release_requires(version);
-
+CREATE INDEX rel_req_name_version_idx ON release_obsoletes (name,version);
 
 -- Table structure for table: release_obsoletes
 CREATE TABLE release_obsoletes (
@@ -207,6 +209,7 @@ CREATE TABLE release_obsoletes (
 );
 CREATE INDEX rel_obs_name_idx ON release_obsoletes(name);
 CREATE INDEX rel_obs_version_id_idx ON release_obsoletes(version);
+CREATE INDEX rel_obs_name_version_idx ON release_obsoletes (name,version);
 
 
 -- Table structure for table: package_files
@@ -228,6 +231,7 @@ CREATE TABLE release_files (
 CREATE INDEX release_files_name_idx ON release_files(name);
 CREATE INDEX release_files_version_idx ON release_files(version);
 CREATE INDEX release_files_packagetype_idx ON release_files(packagetype);
+CREATE INDEX release_files_name_version_idx ON release_files(name,version);
 
 
 -- Table structure for table: package_urls
