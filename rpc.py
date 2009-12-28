@@ -33,6 +33,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         # This should be thread-safe, as the store is really a singleton
         self.store = webui_obj.store
         response = self._marshaled_dispatch(data)
+        response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
         webui_obj.handler.wfile.write(response)
 
     def _dispatch(self, method, params):
