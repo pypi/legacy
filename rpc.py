@@ -3,34 +3,48 @@ import traceback
 import re
 import time
 from cStringIO import StringIO
+from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 
-allowed = ('package_releases', 'package_urls', 'package_data',
-    'search', 'list_packages', 'release_urls', 'release_data',
-    'updated_releases', 'changelog', 'post_cheesecake_for_release',
-    'ratings')
+class RequestHandler(SimpleXMLRPCDispatcher):
+    """A request dispatcher for the PyPI XML-RPC API."""
+    
+    def __init__(self):
+        SimpleXMLRPCDispatcher.__init__(self, True, 'utf-8')
+        self.register_function(list_packages)
+        self.register_function(package_releases)
+        self.register_function(release_urls)
+        self.register_function(release_urls, name='package_urls') # Deprecated
+        self.register_function(release_data)
+        self.register_function(release_data, name='package_data') # Deprecated
+        self.register_function(search)
+        self.register_function(updated_releases)
+        self.register_function(changelog)
+        self.register_function(post_cheesecake_for_release)
+        self.register_function(ratings)
+        self.register_introspection_functions()
+        self.register_multicall_functions()
+    
+    def __call__(self, webui_obj):
+        webui_obj.handler.send_response(200, 'OK')
+        webui_obj.handler.send_header('Content-type', 'text/xml')
+        webui_obj.handler.send_header('charset', 'UTF-8' );
+        webui_obj.handler.end_headers()
+        data = webui_obj.handler.rfile.read()
+        # This should be thread-safe, as the store is really a singleton
+        self.store = webui_obj.store
+        response = self._marshaled_dispatch(data)
+        webui_obj.handler.wfile.write(response)
 
-def handle_request(webui_obj):
-    webui_obj.handler.send_response(200, 'OK')
-    webui_obj.handler.send_header('Content-type', 'text/xml')
-    webui_obj.handler.send_header('charset', 'UTF-8' );
-    webui_obj.handler.end_headers()
-    try:
-        methodArgs, methodName = xmlrpclib.loads(webui_obj.handler.rfile.read())
-        if methodName in allowed:
-            response = globals()[methodName](webui_obj.store, *methodArgs)
-        else:
-            raise KeyError, "Method %r does not exist" % (methodName,)
-        if response is None:
-            response = ''
-        # xmlrpclib.dumps encodes Unicode as UTF-8
-        xml = xmlrpclib.dumps((response,), methodresponse=True, allow_none=True)
-        xml = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', xml)
-        webui_obj.handler.wfile.write(xml)
-    except:
-        out = StringIO()
-        traceback.print_exc(file=out)
-        result = xmlrpclib.dumps(xmlrpclib.Fault(1, out.getvalue()), methodresponse=True)
-        webui_obj.handler.wfile.write(result)
+    def _dispatch(self, method, params):
+        if not method.startswith('system.'):
+            # Add store to all of our own methods
+            params = (self.store,)+tuple(params)
+        return SimpleXMLRPCDispatcher._dispatch(self, method, params)
+
+    def system_multicall(self, call_list):
+        if len(call_list) > 100:
+            raise Fault, "multicall too large"
+        return SimpleXMLRPCDispatcher.system_multicall(self, call_list)
 
 def list_packages(store):
     result = store.get_packages()
@@ -104,3 +118,5 @@ def ratings(store, name, version, since):
         c[5] = int(time.mktime(c[5].timetuple()))
         comments[i] = c
     return ratings, comments
+
+handle_request = RequestHandler()
