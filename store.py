@@ -923,11 +923,13 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''insert into ratings (name, version, user_name, date, rating)
                      values(%s, %s, %s, now(), %s)''', (name, version, self.username, rating))
-        safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                     values(currval('ratings_id_seq'), %s, now(), %s, NULL)''', (self.username, message))
-        safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''', (name, version, self.username,
-                     'add_rating %r' % message))
+        if message:
+            safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
+                                    values(currval('ratings_id_seq'), %s, now(), %s, NULL)''',
+                         (self.username, message))
+            safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
+                                    values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''',
+                         (name, version, self.username, 'add_rating %r' % message))
 
     def copy_rating(self, name, fromversion, toversion):
         '''Copy a user-s rating of package name from one version to another;
