@@ -33,9 +33,15 @@ def discover(url):
     Return list of service types, and the auth/2.0 URL,
     or None if discovery fails.'''
     scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
-    assert not query and not fragment
-    assert scheme == 'https'
-    conn = httplib.HTTPSConnection(netloc)
+    assert not fragment
+    if scheme == 'https':
+        conn = httplib.HTTPSConnection(netloc)
+    elif scheme == 'http':
+        conn = httplib.HTTPConnection(netloc)
+    else:
+        raise ValueError, "Unsupported scheme "+scheme
+    if query:
+        path += '?'+query
     conn.putrequest("GET", path)
     conn.putheader('Accept', "text/html; q=0.3, "+
                    "application/xhtml+xml; q=0.5, "+
@@ -56,33 +62,60 @@ def discover(url):
     if content_type == 'text/html':
         soup = BeautifulSoup.BeautifulSoup(data)
         # Yadis 6.2.5 option 1: meta tag
-        meta = soup.findAll('meta', {'http-equiv':lambda v:v.lower()=='x-xrds-location'})
+        meta = soup.find('meta', {'http-equiv':lambda v:v.lower()=='x-xrds-location'})
         if meta:
-            xrds_loc = meta.attrs['content']
+            xrds_loc = meta['content']
             return discover(xrds_loc)
-        # OpenID 7.3, item 3: attempt html based discovery
-        # TODO
-        return None
+        # OpenID 7.3.3: attempt html based discovery
+        claimed_id = url
+        op_endpoint = soup.find('link', {'rel':lambda v:v.lower()=='openid2.provider'})
+        if not op_endpoint:
+            # discovery failed
+            return None
+        op_endpoint = op_endpoint['href']
+        op_local = soup.find('link', {'rel':lambda v:v.lower()=='openid2.local_id'})
+        if op_local:
+            op_local = op_local['href']
+        else:
+            op_local = claimed_id
+        return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, claimed_id, op_local
             
     if content_type == 'application/xrds+xml':
         # Yadis 6.2.5 option 4
         doc = xml.etree.ElementTree.fromstring(data)
         for svc in doc.findall(".//{xri://$xrd*($v*2.0)}Service"):
             services = [x.text for x in svc.findall("{xri://$xrd*($v*2.0)}Type")]
-            if not 'http://specs.openid.net/auth/2.0/server' in services:
-                # We don't support discovery of Claimed Identifiers, only OP Identifiers
-                continue
-            uri = svc.find("{xri://$xrd*($v*2.0)}URI")
-            if uri is None:
-                return None # invalid service
-            break
+            if 'http://specs.openid.net/auth/2.0/server' in services:
+                # 7.3.2.1.1 OP Identifier Element
+                uri = svc.find("{xri://$xrd*($v*2.0)}URI")
+                if uri is not None:
+                    claimed_id = op_local = None
+                    op_endpoint = uri.text
+                    break
+            elif 'http://specs.openid.net/auth/2.0/signon' in services:
+                # 7.3.2.1.2.  Claimed Identifier Element
+                claimed_id = url
+                op_local = svc.find("{xri://$xrd*($v*2.0)}URI")
+                if op_local is not None:
+                    op_local = op_local.text
+                else:
+                    op_local = claimed_id
+                uri = svc.find("{xri://$xrd*($v*2.0)}URI")
+                if uri is not None:
+                    op_endpoint = uri.text
+                    break
         else:
             return None # No OpenID 2.0 service found
-    return services, uri.text
+    return services, op_endpoint, claimed_id, op_local
 
 def associate(url):
     '''Create an association (OpenID section 8) between RP and OP.
     Return response as a dictionary.'''
+    if url.startswith('http:'):
+        pieces = urlparse.urlparse(url)
+        if pieces[1] == 'www.myopenid.com':
+            pieces = ('https',) + pieces[1:]
+            url = urlparse.urlunparse(pieces) 
     assert url.startswith('https') # we only support no-encryption sessions
     data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
@@ -94,7 +127,8 @@ def associate(url):
     data = parse_response(res.read())
     return data
 
-def request_authentication(services, url, assoc_handle, return_to):
+def request_authentication(services, url, assoc_handle, return_to,
+                           claimed = None, op_local = None):
     '''Request authentication (OpenID section 9).
     services is the list of discovered service types,
     url the OP service URL, assoc_handle the established session
@@ -108,13 +142,18 @@ def request_authentication(services, url, assoc_handle, return_to):
     first/last name, or nickname.
 
     Return the URL that the browser should be redirected to.'''
+
+    if claimed is None:
+        claimed = "http://specs.openid.net/auth/2.0/identifier_select"
+    if op_local is None:
+        op_local = "http://specs.openid.net/auth/2.0/identifier_select"
     data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
         'openid.mode':"checkid_setup",
         'openid.assoc_handle':assoc_handle,
         'openid.return_to':return_to,
-        'openid.claimed_id':"http://specs.openid.net/auth/2.0/identifier_select",
-        'openid.identity':"http://specs.openid.net/auth/2.0/identifier_select",
+        'openid.claimed_id':claimed,
+        'openid.identity':op_local,
         'openid.realm':return_to,
         'openid.ns.sreg':"http://openid.net/sreg/1.0",
         'openid.sreg.required':'nickname,email',
@@ -133,7 +172,10 @@ def request_authentication(services, url, assoc_handle, return_to):
             'openid.ns.sreg11':"http://openid.net/extensions/sreg/1.1",
             'openid.sreg11.required':'nickname,email'
             })
-    return url+"?"+urllib.urlencode(data)
+    if '?' in url:
+        return url+'&'+urllib.urlencode(data)
+    else:
+        return url+"?"+urllib.urlencode(data)
 
 class NotAuthenticated(Exception):
     pass
@@ -292,9 +334,8 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                 if len(prov) != 1:
                     return self.not_found()
                 prov = prov[0]
-                services, url = discover(prov[2])
+                services, url, claimed, op_local = discover(prov[2])
                 session = associate(url)
-                print session
                 sessions.append(session)
                 self.send_response(307) # temporary redirect - do not cache
                 self.send_header("Location", request_authentication
@@ -302,6 +343,19 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                                   self.base_url+"?returned=1"))
                 self.end_headers()
                 return
+            if 'claimed' in query:
+                res = discover(query['claimed'][0])
+                if res is None:
+                    return self.error('Discovery failed')
+                services, url, claimed, op_local = res
+                session = associate(url)
+                sessions.append(session)
+                self.send_response(307)
+                self.send_header("Location", request_authentication
+                                 (services, url, session['assoc_handle'],
+                                  self.base_url+"?returned=1"))
+                self.end_headers()
+                return                
             if 'returned' in query:
                 if 'openid.ns' not in query:
                     return self.rp_discovery()
@@ -318,7 +372,11 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                     authenticate(session, query)
                 except Exception, e:
                     self.error("Authentication failed"+repr(e))
-                claimed = query['openid.claimed_id'][0]
+                if claimed in query:
+                    claimed = query['openid.claimed_id'][0]
+                else:
+                    # OpenID 1, claimed ID not reported - should set cookie
+                    claimed = query['openid.identity'][0]
                 payload = "Hello "+claimed+"\n"
                 email = get_email(query)
                 if email:
@@ -346,11 +404,12 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.write(text, "text/plain")
 
     def root(self):
-        payload = "<html><head><title>OpenID login</title></head><body>"
+        payload = "<html><head><title>OpenID login</title></head><body>\n"
         
         for name, icon, provider in providers:
-            payload += "<p><a href='%s?provider=%s'><img src='%s' alt='%s'></a></p>" % (
+            payload += "<p><a href='%s?provider=%s'><img src='%s' alt='%s'></a></p>\n" % (
                 self.base_url, name, icon, name)
+        payload += "<form>Type your OpenID:<input name='claimed'/><input type='submit'/></form>\n"
         payload += "</body></html>"
         self.write(payload, "text/html")
 
@@ -381,7 +440,7 @@ def test_server():
     if len(sys.argv) > 1:
         base_url = sys.argv[1]
     else:
-        base_url = "http://" + socket.getfqdn() + "/"
+        base_url = "http://" + socket.getfqdn() + ":8000/"
     Handler.base_url = base_url
     BaseHTTPServer.HTTPServer.address_family = socket.AF_INET6
     httpd = BaseHTTPServer.HTTPServer(('', 8000), Handler)
