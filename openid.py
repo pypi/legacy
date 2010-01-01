@@ -40,9 +40,13 @@ def discover(url):
         conn = httplib.HTTPConnection(netloc)
     else:
         raise ValueError, "Unsupported scheme "+scheme
+    # conn.set_debuglevel(1)
     if query:
         path += '?'+query
-    conn.putrequest("GET", path)
+    # httplib in 2.5 incorrectly sends https port in Host
+    # header even if it is 443
+    conn.putrequest("GET", path, skip_host=1)
+    conn.putheader('Host', netloc)
     conn.putheader('Accept', "text/html; q=0.3, "+
                    "application/xhtml+xml; q=0.5, "+
                    "application/xrds+xml")
@@ -68,18 +72,27 @@ def discover(url):
             return discover(xrds_loc)
         # OpenID 7.3.3: attempt html based discovery
         claimed_id = url
-        op_endpoint = soup.find('link', {'rel':lambda v:v.lower()=='openid2.provider'})
-        if not op_endpoint:
-            # discovery failed
-            return None
-        op_endpoint = op_endpoint['href']
-        op_local = soup.find('link', {'rel':lambda v:v.lower()=='openid2.local_id'})
-        if op_local:
-            op_local = op_local['href']
-        else:
-            op_local = claimed_id
-        return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, claimed_id, op_local
-            
+        op_endpoint = soup.find('link', {'rel':lambda v:'openid2.provider' in v.lower()})
+        if op_endpoint:
+            op_endpoint = op_endpoint['href']
+            op_local = soup.find('link', {'rel':lambda v:'openid2.local_id' in v.lower()})
+            if op_local:
+                op_local = op_local['href']
+            else:
+                op_local = claimed_id
+            return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, claimed_id, op_local
+        # 14.2.1: 1.1 compatibility
+        op_endpoint = soup.find('link', {'rel':lambda v:'openid.server' in v.lower()})
+        if op_endpoint:
+            op_local = soup.find('link', {'rel':lambda v:'openid.delegate' in v.lower()})
+            if op_local:
+                op_local = op_local['href']
+            else:
+                op_local = claimed_id
+            return ['http://openid.net/signon/1.1'], op_endpoint, claimed_id, op_local
+        # Discovery failed
+        return None
+
     if content_type == 'application/xrds+xml':
         # Yadis 6.2.5 option 4
         doc = xml.etree.ElementTree.fromstring(data)
@@ -95,7 +108,23 @@ def discover(url):
             elif 'http://specs.openid.net/auth/2.0/signon' in services:
                 # 7.3.2.1.2.  Claimed Identifier Element
                 claimed_id = url
-                op_local = svc.find("{xri://$xrd*($v*2.0)}URI")
+                op_local = svc.find("{xri://$xrd*($v*2.0)}LocalID")
+                if op_local is not None:
+                    op_local = op_local.text
+                else:
+                    op_local = claimed_id
+                uri = svc.find("{xri://$xrd*($v*2.0)}URI")
+                if uri is not None:
+                    op_endpoint = uri.text
+                    break
+            elif 'http://openid.net/server/1.0' in services or \
+                 'http://openid.net/server/1.1' in services or \
+                 'http://openid.net/signon/1.0' in services or \
+                 'http://openid.net/signon/1.1' in services:
+                # 14.2.1 says we also need to check for the 1.x types;
+                # XXX should check 1.x only if no 2.0 service is found
+                claimed_id = url
+                op_local = svc.find("{http://openid.net/xmlns/1.0}Delegate")
                 if op_local is not None:
                     op_local = op_local.text
                 else:
@@ -108,7 +137,20 @@ def discover(url):
             return None # No OpenID 2.0 service found
     return services, op_endpoint, claimed_id, op_local
 
-def associate(url):
+def is_compat_1x(services):
+    for uri in ('http://specs.openid.net/auth/2.0/signon',
+                'http://specs.openid.net/auth/2.0/server'):
+        if uri in services:
+            return False
+    for uri in ('http://openid.net/signon/1.0',
+                'http://openid.net/signon/1.1',
+                'http://openid.net/server/1.0',
+                'http://openid.net/server/1.1'):
+        if uri in services:
+            return True
+    raise ValueError, "Neither 1.x nor 2.0 service found"
+
+def associate(services, url):
     '''Create an association (OpenID section 8) between RP and OP.
     Return response as a dictionary.'''
     if url.startswith('http:'):
@@ -123,6 +165,9 @@ def associate(url):
         'openid.assoc_type':"HMAC-SHA1",
         'openid.session_type':"no-encryption",
         }
+    if is_compat_1x(services):
+        # 14.2.1: clear session_type in 1.1 compatibility mode
+        data['openid.session_type'] = ''
     res = urllib.urlopen(url, urllib.urlencode(data))
     data = parse_response(res.read())
     return data
@@ -158,6 +203,11 @@ def request_authentication(services, url, assoc_handle, return_to,
         'openid.ns.sreg':"http://openid.net/sreg/1.0",
         'openid.sreg.required':'nickname,email',
         }
+    if is_compat_1x(services):
+        del data['openid.ns']
+        del data['openid.claimed_id']
+        del data['openid.realm']
+        data['openid.trust_root'] = return_to
     if "http://openid.net/srv/ax/1.0" in services:
         data.update({
             'openid.ns.ax':"http://openid.net/srv/ax/1.0",
@@ -185,7 +235,7 @@ def authenticate(session, response):
     session must be the established session (minimally including
     assoc_handle and mac_key), response is the query string as parse
     by cgi.parse_qs.
-    If authentication succeeds, return None.
+    If authentication succeeds, return the list of signed fields.
     If the user was not authenticated, NotAuthenticated is raised.
     If the HTTP request is invalid (missing parameters, failure to
     validate signature), different exceptions will be raised, typically
@@ -194,23 +244,21 @@ def authenticate(session, response):
     Callers must check openid.response_nonce for replay attacks.
     '''
 
-    if response['openid.ns'][0] != 'http://specs.openid.net/auth/2.0':
-        raise ValueError('missing openid.ns')
+    # 1.1 compat: openid.ns may not be sent
+    # if response['openid.ns'][0] != 'http://specs.openid.net/auth/2.0':
+    #    raise ValueError('missing openid.ns')
     if session['assoc_handle'] != response['openid.assoc_handle'][0]:
         raise ValueError('incorrect session')
     if response['openid.mode'][0] == 'cancel':
         raise NotAuthenticated('provider did not authenticate user (cancelled)')
     if response['openid.mode'][0] != 'id_res':
         raise ValueError('invalid openid.mode')
-    if  'openid.claimed_id' not in response:
-        raise ValueError('missing openid.claimed_id')
+    if  'openid.identity' not in response:
+        raise ValueError('missing openid.identity')
 
     # Won't check nonce value - caller must verify this is not a replay
 
     signed = response['openid.signed'][0].split(',')
-    if not (set(['op_endpoint', 'return_to', 'response_nonce',
-                 'assoc_handle', 'claimed_id']) < set(signed)):
-        raise ValueError("signature failed to sign important fields")
     query = []
     for name in signed:
         value = response['openid.'+name][0]
@@ -223,6 +271,8 @@ def authenticate(session, response):
 
     if transmitted_sig != computed_sig:
         raise ValueError('Invalid signature')
+
+    return signed
 
 def parse_nonce(nonce):
     '''Split a nonce into a (timestamp, ID) pair'''
@@ -335,7 +385,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                     return self.not_found()
                 prov = prov[0]
                 services, url, claimed, op_local = discover(prov[2])
-                session = associate(url)
+                session = associate(services, url)
                 sessions.append(session)
                 self.send_response(307) # temporary redirect - do not cache
                 self.send_header("Location", request_authentication
@@ -348,16 +398,17 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                 if res is None:
                     return self.error('Discovery failed')
                 services, url, claimed, op_local = res
-                session = associate(url)
+                session = associate(services, url)
                 sessions.append(session)
                 self.send_response(307)
                 self.send_header("Location", request_authentication
                                  (services, url, session['assoc_handle'],
-                                  self.base_url+"?returned=1"))
+                                  self.base_url+"?returned=1",
+                                  claimed, op_local))
                 self.end_headers()
                 return                
             if 'returned' in query:
-                if 'openid.ns' not in query:
+                if 'openid.identity' not in query:
                     return self.rp_discovery()
                 handle = query['openid.assoc_handle'][0]
                 for session in sessions:
@@ -367,15 +418,19 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                     session = None
                 if not session:
                     return self.error('Not authenticated (no session)')
-                print query
                 try:
-                    authenticate(session, query)
+                    signed = authenticate(session, query)
                 except Exception, e:
-                    self.error("Authentication failed"+repr(e))
-                if claimed in query:
+                    self.error("Authentication failed: "+repr(e))
+                    return
+                if 'openid.claimed_id' in query:
+                    if 'claimed_id' not in signed:
+                        return self.error('Incomplete signature')
                     claimed = query['openid.claimed_id'][0]
                 else:
                     # OpenID 1, claimed ID not reported - should set cookie
+                    if 'identity' not in signed:
+                        return self.error('Incomplete signature')
                     claimed = query['openid.identity'][0]
                 payload = "Hello "+claimed+"\n"
                 email = get_email(query)
