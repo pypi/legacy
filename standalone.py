@@ -16,6 +16,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             # invalid URL
             return
 
+        # The text below is mostly copied from CGIHTTPServer
+
         i = rest.rfind('?')
         if i >= 0:
             rest, query = rest[:i], rest[i+1:]
