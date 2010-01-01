@@ -4,7 +4,11 @@ import time, random, smtplib, base64, sha, email, types, stat, urlparse
 import re, zipfile, logging, pprint, sets, shutil, Cookie
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
+
+# Importing M2Crypto patches urllib; don't let them do that
+orig = urllib.URLopener.open_https.im_func
 from M2Crypto import EVP, DSA
+urllib.URLopener.open_https = orig
 
 import psycopg2
 

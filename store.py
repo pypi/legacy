@@ -1658,10 +1658,10 @@ class Store:
 
         # start from scratch:
         # discover service URL
-        stypes, url = openid.discover(provider[2])
+        stypes, url, claimed, op_local = openid.discover(provider[2])
         # associate session
         now = datetime.datetime.now()
-        session = openid.associate(url)
+        session = openid.associate(stypes, url)
         # store it
         sql = '''insert into openid_sessions
                  (provider, url, assoc_handle, expires, mac_key)
