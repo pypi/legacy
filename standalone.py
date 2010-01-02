@@ -1,8 +1,9 @@
 #!/usr/bin/python
-import config, webui, BaseHTTPServer, urllib, sys, getopt
+import config, webui, BaseHTTPServer, urllib, sys, getopt, os
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     config = config.Config("config.ini")
+    ssh_user = None
 
     def set_content_type(self, content_type):
         self.send_header('Content-Type', content_type)
@@ -48,15 +49,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if len(authorization) == 2:
                 import base64, binascii
                 env['AUTH_TYPE'] = authorization[0]
-                if authorization[0].lower() == "basic":
-                    try:
-                        authorization = base64.decodestring(authorization[1])
-                    except binascii.Error:
-                        pass
-                    else:
-                        authorization = authorization.split(':')
-                        if len(authorization) == 2:
-                            env['REMOTE_USER'] = authorization[0]
+        if self.ssh_user:
+            env['SSH_USER'] = self.ssh_user
         if self.headers.typeheader is None:
             env['CONTENT_TYPE'] = self.headers.type
         else:
@@ -85,9 +79,14 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     do_GET = do_POST = run
 
 class StdinoutHandler(RequestHandler):
-    def __init__(self):
+    def __init__(self, remote_user):
+        self.ssh_user = remote_user
+        try:
+            host,port,_ = os.environ['SSH_CLIENT'].split()
+        except KeyError:
+            host = port = ''
         # request, client_address, server
-        RequestHandler.__init__(self, None, ('',0), None)
+        RequestHandler.__init__(self, None, (host, port), None)
     def setup(self):
         self.rfile = sys.stdin
         #import StringIO
@@ -96,19 +95,23 @@ class StdinoutHandler(RequestHandler):
 
 def main():
     port = 8000
-    opts, args =  getopt.getopt(sys.argv[1:], 'ip:',
-                                ['interactive', 'port='])
+    remote_user = None
+    opts, args =  getopt.getopt(sys.argv[1:], 'ir:p:',
+                                ['interactive', 'remote-user=', 'port='])
     assert not args
     for opt, val in opts:
         if opt in ('-i', '--interactive'):
             port = None
+        elif opt in ('-r','--remote-user'):
+            port = None # implies -i
+            remote_user = val
         elif opt in ('-p', '--port'):
             port = int(val)
     if port:
         httpd = BaseHTTPServer.HTTPServer(('',8000), RequestHandler)
         httpd.serve_forever()
     else:
-        StdinoutHandler()
+        StdinoutHandler(remote_user)
 
 if __name__=='__main__':
     main()

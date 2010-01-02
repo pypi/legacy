@@ -443,6 +443,16 @@ class WebUI:
                     # Only update last_login every minute
                     update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
                     self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
+        else:
+            un = self.env.get('SSH_USER', '')
+            if un and self.store.has_user(un):
+                user = self.store.get_user(un)
+                self.username = un
+                self.authenticated = self.loggedin = True
+                last_login = user['last_login']
+                # Only update last_login every minute
+                update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
+                self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
