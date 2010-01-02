@@ -1,7 +1,7 @@
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
 import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, sets, shutil, Cookie
+import re, zipfile, logging, pprint, sets, shutil, Cookie, subprocess
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 
@@ -510,7 +510,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment clear_auth'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment clear_auth addkey delkey'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -2255,6 +2255,7 @@ class WebUI:
             info['gpg_keyid'] = user['gpg_keyid'] or ""
             info['title'] = 'User profile'
             info['openids'] = self.store.get_openids(self.username)
+            info['sshkeys'] = self.store.get_sshkeys(self.username)
             self.nav_current = 'user_form'
         else:
             info['new_user'] = True
@@ -2361,6 +2362,44 @@ class WebUI:
             response = 'Details updated OK'
 
         self.write_template('message.pt', title=response, message=message)
+
+    def addkey(self):
+        if not self.authenticated:
+            raise Unauthorised
+
+        if "key" not in self.form:
+            raise FormError, "missing key"
+
+        key = self.form['key'].splitlines()
+        for line in key[1:]:
+            if line.strip():
+                raise FormError, "Invalid key format: multiple lines"
+        key = key[0].strip()
+        if not key.startswith('ssh-dss') and not key.startswith('ssh-rsa'):
+            raise FormError, "Invalid key format: does not start with ssh-dss or ssh-rsa"
+        self.store.add_sshkey(self.username, key)
+        self.store.commit()
+        self.update_sshkeys()
+        return self.register_form()
+
+    def delkey(self):
+        if not self.authenticated:
+            raise Unauthorised
+        if "id" not in self.form:
+            raise FormError, "missing parameter"
+        try:
+            id = int(self.form["id"])
+        except:
+            raise FormError, "invalid ID"
+        for key in self.store.get_sshkeys(self.username):
+            if key['id'] == id:
+                break
+        else:
+            raise Unauthorised, "not your key"
+        self.store.delete_sshkey(id)
+        self.store.commit()
+        self.update_sshkeys()
+        return self.register_form()
 
     def forgotten_password_form(self):
         ''' Enable the user to reset their password.
@@ -2581,3 +2620,14 @@ class WebUI:
             r.claim = "%s?:action=claim&provider=%s" % (self.url_path, r.name)
             res.append(r)
         return res
+
+    def update_sshkeys(self):
+        if not self.config.sshkeys_update:
+            return
+        p = subprocess.Popen([self.config.sshkeys_update],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        stdout = p.communicate()[0]
+        if p.returncode != 0:
+            raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
+        

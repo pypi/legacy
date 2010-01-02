@@ -1274,6 +1274,26 @@ class Store:
         safe_execute(cursor, 'select id from openids where name=%s', (username,))
         return Result(None, cursor.fetchall(), self._Openid)
 
+    _Sshkey = FastResultRow('id! key')
+    def get_sshkeys(self, username):
+        '''Fetch the list of SSH keys for a user.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select id,key from sshkeys where name=%s', (username,))
+        return Result(None, cursor.fetchall(), self._Sshkey)
+
+    def add_sshkey(self, username, key):
+        '''Add a new SSH key for a user.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'insert into sshkeys(name, key) values(%s, %s)', (username, key))
+        
+    def delete_sshkey(self, id):
+        '''Delete an SSH key given by ID.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'delete from sshkeys where id=%s', (id,))
+
     def has_role(self, role_name, package_name=None, user_name=None):
         ''' Determine whether the current user has the named Role for the
             named package.

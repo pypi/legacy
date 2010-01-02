@@ -28,7 +28,7 @@
 	  <td><input name="email" tal:attributes="value data/email" /></td>
 	</tr>
 	<tr>
-	  <th>PGP Key ID:</th>
+	  <th>PGP Key ID (optional):</th>
 	  <td><input name="gpg_keyid" tal:attributes="value data/gpg_keyid" />
           (This identifies a <a
           href="http://www.gnupg.org/documentation/howtos.html">PGP or GPG
@@ -69,6 +69,20 @@
       <p>A confirmation email will be sent to the address you nominate above.</p>
       <p>To complete the registration process, visit the link indicated in the
       email.</p>
+    </tal:block>
+
+    <tal:block tal:condition="not:data/new_user">
+      <form method="POST" tal:repeat="key data/sshkeys">
+      <input type="hidden" name=":action" value="delkey" />
+      <input type="hidden" name="id" tal:attributes="value key/id" />
+      <textarea name="key" cols="50" rows="4" readonly="1" tal:content="key/key"/>
+      <input type="submit" value="Delete this key"/>
+      </form>
+      <form method="POST">
+      <input type="hidden" name=":action" value="addkey" />
+      <textarea name="key" cols="50" rows="4"> </textarea>
+      <input type="submit" value="Add SSH key"/>
+      </form>
     </tal:block>
 
     <tal:block tal:condition="data/openids">

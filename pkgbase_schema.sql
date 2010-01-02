@@ -45,6 +45,13 @@ CREATE TABLE cookies (
 );
 CREATE INDEX cookies_last_seen ON cookies(last_seen);
 
+CREATE TABLE sshkeys(
+   id SERIAL PRIMARY KEY,
+   name TEXT REFERENCES users ON DELETE CASCADE,
+   key TEXT
+);
+CREATE INDEX sshkeys_name ON sshkeys(name);
+
 -- Table structure for table: rego_otk
 CREATE TABLE rego_otk ( 
    name TEXT REFERENCES users, 

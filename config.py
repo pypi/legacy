@@ -27,6 +27,10 @@ class Config:
         self.cheesecake_password = c.get('webui', 'cheesecake_password')
         self.privkey = c.get('webui', 'privkey')
         self.simple_sign_script = c.get('webui', 'simple_sign_script')
+        if c.has_option('webui', 'sshkeys_update'):
+            self.sshkeys_update = c.get('webui', 'sshkeys_update')
+        else:
+            self.sshkeys_update = None
 
         self.logfile = c.get('logging', 'file')
         self.logging_mailhost = c.get('logging', 'mailhost')
