@@ -43,6 +43,7 @@ def handle_request(req, env):
 #
 # Now do the actual CGI handling
 #
+os.umask(002) # make directories group-writable
 prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
 import config

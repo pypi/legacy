@@ -94,6 +94,7 @@ class StdinoutHandler(RequestHandler):
         self.wfile = sys.stdout
 
 def main():
+    os.umask(002) # make directories group-writable
     port = 8000
     remote_user = None
     opts, args =  getopt.getopt(sys.argv[1:], 'ir:p:',
