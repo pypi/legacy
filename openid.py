@@ -12,13 +12,113 @@
 # - as a signature algorithm, HMAC-SHA1 is requested
 
 import urlparse, urllib, httplib, BeautifulSoup, xml.etree.ElementTree
-import cStringIO, base64, hmac, sha, datetime
+import cStringIO, base64, hmac, sha, datetime, re
 
 # Don't use urllib2, since it breaks in 2.5
 # for https://login.launchpad.net//+xrds
 
 # Don't use urllib, since it sometimes selects HTTP/1.1 (e.g. in PyPI)
 # and then fails to parse chunked responses.
+
+def normalize_uri(uri):
+    """Normalize an uri according to OpenID section 7.2. Return a pair
+    type,value, where type can be either 'xri' or 'uri'."""
+    
+    # 7.2 Normalization
+    if uri.startswith('xri://'):
+        uri = uri[6:]
+    if uri[0] in ("=", "@", "+", "$", "!", ")"):
+        return 'xri', uri
+    if not uri.startswith('http'):
+        uri = 'http://' + uri
+    # RFC 3986, section 6
+
+    # 6.2.2.1 case normalization
+    parts = urlparse.urlparse(uri) # already lower-cases scheme
+    if '@' in parts.netloc:
+        userinfo,hostname = parts.netloc.rsplit('@', 1)
+    else:
+        userinfo,hostname = None,parts.netloc
+    if ':' in hostname:
+        host,port = hostname.rsplit(':', 1)
+        if ']' in port:
+            # IPv6
+            host,port = hostname,None
+    else:
+        host,port = hostname,None
+    netloc = hostname = host.lower()
+    if port:
+        netloc = hostname = host+':'+port
+    if userinfo:
+        netloc = userinfo + '@' + hostname
+    parts = list(parts)
+    parts[1] = netloc
+    uri = urlparse.urlunparse(parts)
+
+    # 6.2.2.2. normalize case in % escapes
+    # XXX should restrict search to parts that can be pct-encoded
+    for match in re.findall('%[0-9a-fA-F][0-9a-fA-F]', uri):
+        m2 = match.upper()
+        if m2 != match:
+            uri = uri.replace(match, m2)
+
+    # 6.2.2.3 remove dot segments
+    parts = urlparse.urlparse(uri)
+    path = parts.path
+    newpath = ''
+    while path:
+        if path.startswith('../'):
+            path = path[3:]
+        elif path.startswith('./'):
+            path = path[2:]
+        elif path.startswith('/./'):
+            newpath += '/'; path = path[3:]
+        elif path == '/.':
+            newpath += '/'; path = ''
+        elif path.startswith('/../'):
+            newpath = newpath.rsplit('/', 1)[0]
+            path = path[3:] # leave /
+        elif path == '/..':
+            newpath = newpath.rsplit('/', 1)[0]
+            path = '/'
+        elif path == '.' or path=='..':
+            path = ''
+        else:
+            pos = path.find('/', 1)
+            if pos == -1:
+                pos = len(path)
+            newpath += path[:pos]
+            path = path[pos:]
+    parts = list(parts)
+    parts[2] = newpath
+    uri = urlparse.urlunparse(parts)
+
+    # 6.2.3 scheme based normalization
+
+    # XXX port normalization doesn't support a standalone :
+    # (e.g. http://www.python.org:/)
+    parts = urlparse.urlparse(uri)
+    netloc = parts.netloc
+    if parts.scheme == 'http' and parts.port == 80:
+        netloc = parts.netloc[:-3]
+    if parts.scheme == 'https' and parts.port == 443:
+        netloc = parts.netloc[:-4]
+    # other default ports not considered here
+
+    path = parts.path
+    if parts.scheme in ('http', 'https') and parts.path=='':
+        path = '/'
+
+    # 6.2.5 protocol-based normalization not done, as it
+    # is not appropriate to resolve the URL just for normalization
+    # it seems like a bug in the OpenID spec that it doesn't specify
+    # which normalizations exactly should be performed
+
+    parts = list(parts)
+    parts[1] = netloc
+    parts[2] = path
+    return 'uri', urlparse.urlunparse(parts)
+
 
 def parse_response(s):
     '''Parse a key-value form (OpenID section 4.1.1) into a dictionary'''
