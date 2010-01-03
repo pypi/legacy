@@ -171,7 +171,6 @@ def discover(url):
             xrds_loc = meta['content']
             return discover(xrds_loc)
         # OpenID 7.3.3: attempt html based discovery
-        claimed_id = url
         op_endpoint = soup.find('link', {'rel':lambda v:'openid2.provider' in v.lower()})
         if op_endpoint:
             op_endpoint = op_endpoint['href']
@@ -179,8 +178,8 @@ def discover(url):
             if op_local:
                 op_local = op_local['href']
             else:
-                op_local = claimed_id
-            return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, claimed_id, op_local
+                op_local = None
+            return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, op_local
         # 14.2.1: 1.1 compatibility
         op_endpoint = soup.find('link', {'rel':lambda v:'openid.server' in v.lower()})
         if op_endpoint:
@@ -188,8 +187,8 @@ def discover(url):
             if op_local:
                 op_local = op_local['href']
             else:
-                op_local = claimed_id
-            return ['http://openid.net/signon/1.1'], op_endpoint, claimed_id, op_local
+                op_local = None
+            return ['http://openid.net/signon/1.1'], op_endpoint, op_local
         # Discovery failed
         return None
 
@@ -202,17 +201,14 @@ def discover(url):
                 # 7.3.2.1.1 OP Identifier Element
                 uri = svc.find("{xri://$xrd*($v*2.0)}URI")
                 if uri is not None:
-                    claimed_id = op_local = None
+                    op_local = None
                     op_endpoint = uri.text
                     break
             elif 'http://specs.openid.net/auth/2.0/signon' in services:
                 # 7.3.2.1.2.  Claimed Identifier Element
-                claimed_id = url
                 op_local = svc.find("{xri://$xrd*($v*2.0)}LocalID")
                 if op_local is not None:
                     op_local = op_local.text
-                else:
-                    op_local = claimed_id
                 uri = svc.find("{xri://$xrd*($v*2.0)}URI")
                 if uri is not None:
                     op_endpoint = uri.text
@@ -223,19 +219,16 @@ def discover(url):
                  'http://openid.net/signon/1.1' in services:
                 # 14.2.1 says we also need to check for the 1.x types;
                 # XXX should check 1.x only if no 2.0 service is found
-                claimed_id = url
                 op_local = svc.find("{http://openid.net/xmlns/1.0}Delegate")
                 if op_local is not None:
                     op_local = op_local.text
-                else:
-                    op_local = claimed_id
                 uri = svc.find("{xri://$xrd*($v*2.0)}URI")
                 if uri is not None:
                     op_endpoint = uri.text
                     break
         else:
             return None # No OpenID 2.0 service found
-    return services, op_endpoint, claimed_id, op_local
+    return services, op_endpoint, op_local
 
 def is_compat_1x(services):
     for uri in ('http://specs.openid.net/auth/2.0/signon',
@@ -333,7 +326,7 @@ class NotAuthenticated(Exception):
 def authenticate(session, response):
     '''Process an authentication response.
     session must be the established session (minimally including
-    assoc_handle and mac_key), response is the query string as parse
+    assoc_handle and mac_key), response is the query string as parsed
     by cgi.parse_qs.
     If authentication succeeds, return the list of signed fields.
     If the user was not authenticated, NotAuthenticated is raised.
@@ -371,6 +364,19 @@ def authenticate(session, response):
 
     if transmitted_sig != computed_sig:
         raise ValueError('Invalid signature')
+
+    # Check that all critical fields are signed. OpenID 2.0 says
+    # that in a positive assertion, op_endpoint, return_to,
+    # response_nonce and assoc_handle must be signed, and claimed_id
+    # and identity if present in the response. 1.1 compatibility
+    # says that response_nonce and op_endpoint may be missing.
+    # In addition, OpenID 1.1 providers apparently fail to sign
+    # assoc_handle often.
+    if response['openid.mode'][0] == 'id_res':
+        if 'return_to' not in signed or \
+           ('openid.identity' in response and 'identity' not in signed) or \
+           ('openid.claimed_id' in response and 'claimed_id' not in signed):
+            raise ValueError, "Critical field missing in signature"
 
     return signed
 
@@ -484,7 +490,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                 if len(prov) != 1:
                     return self.not_found()
                 prov = prov[0]
-                services, url, claimed, op_local = discover(prov[2])
+                services, url, op_local = discover(prov[2])
                 session = associate(services, url)
                 sessions.append(session)
                 self.send_response(307) # temporary redirect - do not cache
@@ -494,10 +500,11 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.end_headers()
                 return
             if 'claimed' in query:
-                res = discover(query['claimed'][0])
+                claimed = query['claimed'][0]
+                res = discover(claimed)
                 if res is None:
                     return self.error('Discovery failed')
-                services, url, claimed, op_local = res
+                services, url, op_local = res
                 session = associate(services, url)
                 sessions.append(session)
                 self.send_response(307)

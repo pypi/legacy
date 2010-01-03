@@ -51,6 +51,7 @@ CREATE TABLE sshkeys(
    key TEXT
 );
 CREATE INDEX sshkeys_name ON sshkeys(name);
+CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
 
 -- Table structure for table: rego_otk
 CREATE TABLE rego_otk ( 

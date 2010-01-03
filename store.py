@@ -1352,6 +1352,16 @@ class Store:
             return ''
         return res[0]
 
+    def get_user_by_otk(self, otk):
+        '''Find a user by its otk.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, "select user from rego_otk where otk=%s", (otk, ))
+        res = cursor.fetchone()
+        if res is None:
+            return ''
+        return res[0]
+
     _User_Packages = FastResultRow('package_name')
     def user_packages(self, user):
         ''' Retrieve package info for all packages of a user
@@ -1678,7 +1688,7 @@ class Store:
 
         # start from scratch:
         # discover service URL
-        stypes, url, claimed, op_local = openid.discover(provider[2])
+        stypes, url, op_local = openid.discover(provider[2])
         # associate session
         now = datetime.datetime.now()
         session = openid.associate(stypes, url)
@@ -1696,13 +1706,40 @@ class Store:
                          (t,))
         return stypes, url, session['assoc_handle']
 
+    def get_session_for_endpoint(self, claimed, stypes, endpoint):
+        '''Return the assoc_handle for the a claimed ID/endpoint pair;
+        create a new session if necessary. Discovery is supposed to be
+        done by the caller.'''
+        cursor = self.get_cursor()
+        # Check for existing session
+        sql = '''select assoc_handle from openid_sessions
+                 where provider=%s and url=%s and expires>now()'''
+        safe_execute(cursor, sql, (claimed, endpoint,))
+        sessions = cursor.fetchall()
+        if sessions:
+            return sessions[0][0]
+
+        # associate new session
+        now = datetime.datetime.now()
+        session = openid.associate(stypes, endpoint)
+        # store it
+        sql = '''insert into openid_sessions
+                 (provider, url, assoc_handle, expires, mac_key)
+                 values (%s, %s, %s, %s, %s)'''
+        safe_execute(cursor, sql, (claimed, endpoint,
+                                   session['assoc_handle'],
+                                   now+datetime.timedelta(0,int(session['expires_in'])),
+                                   session['mac_key']))
+        return session['assoc_handle']
+
     def get_session_by_handle(self, assoc_handle):
         cursor = self.get_cursor()
-        sql = 'select mac_key from openid_sessions where assoc_handle=%s'
+        sql = 'select provider, url, mac_key from openid_sessions where assoc_handle=%s'
         safe_execute(cursor, sql, (assoc_handle,))
         sessions = cursor.fetchall()
         if sessions:
-            return {'assoc_handle':assoc_handle, 'mac_key':sessions[0][0]}
+            provider, url, mac_key = sessions[0]
+            return provider, url, {'assoc_handle':assoc_handle, 'mac_key':mac_key}
         return None
 
     def duplicate_nonce(self, nonce):

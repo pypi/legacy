@@ -5,14 +5,18 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
 
-  <p>If you would like to see support in PyPI for additional providers, please report that to the <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">bug tracker</a>. Notice that we have the following requirements for adding a new provider:</p>
+  <p>Use the field below to enter your OpenID, to either login (if the ID is already known to us), or register with PyPI. Alternatively, select one of the icons to have your provider guide you in the identifier selection.</p>
+  <form>
+   <input type='hidden' name=':action' value='login'/>
+   Enter your OpenID: <input name='openid_identifier' size='60'/>
+   <input type='submit' value='Login'/>
+  </form>
+  <p>If you would like to see additional provider icons added on the main page, please report that to the <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">bug tracker</a>. Notice that we have the following requirements for adding a new provider:</p>
   <ul>
   <li>must be in wide use, using procedures that the community trusts</li>
   <li>must support OpenID 2.0</li>
   <li>must support provider-driven identifier selection</li>
-  <li>must provide a validated email address, either through AX or SREG</li>
   <li>must support direct communication over https</li>
   </ul>
-
   </metal:fill>
 </html>

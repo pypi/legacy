@@ -791,6 +791,22 @@ class WebUI:
             url = openid.request_authentication(stypes, url, assoc_handle, return_to)
             self.store.commit()
             raise RedirectTemporary(url)
+        if 'openid_identifier' in self.form:
+            # OpenID with explicit ID
+            kind, claimed_id = openid.normalize_uri(self.form['openid_identifier'])
+            if kind == 'xri':
+                return self.fail('xri resolution is not supported.')
+            res = openid.discover(claimed_id)
+            if not res:
+                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
+            stypes, op_endpoint, op_local = res
+            if not op_local:
+                op_local = claimed_id
+            assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            return_to = self.config.url+'?:action=openid_return'
+            url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
+            self.store.commit()
+            raise RedirectTemporary(url)
         if not self.authenticated:
             raise Unauthorised
         self.usercookie = self.store.create_cookie(self.username)
@@ -2241,11 +2257,12 @@ class WebUI:
             raise Unauthorised, 'You must authenticate'
         self.register_form()
 
-    def register_form(self):
+    def register_form(self, openid_fields = (), username='', email='', openid=''):
         ''' Throw up a form for registering.
         '''
         info = {'name': '', 'password': '', 'confirm': '', 'email': '',
-                'gpg_keyid': '', 'openids': []}
+                'gpg_keyid': '', 'openids': [], 'openid_fields': openid_fields,
+                'openid': openid}
         if self.username:
             user = self.store.get_user(self.username)
             info['new_user'] = False
@@ -2259,6 +2276,8 @@ class WebUI:
             self.nav_current = 'user_form'
         else:
             info['new_user'] = True
+            info['name'] = username
+            info['email'] = email
             info['action'] = 'Register'
             info['title'] = 'Manual user registration'
             self.nav_current = 'register_form'
@@ -2301,10 +2320,8 @@ class WebUI:
             raise FormError, "Clearing the email address is not allowed"
 
         if info.has_key('otk'):
-            if not self.authenticated:
-                raise Unauthorised
             # finish off rego
-            if info['otk'] != self.store.get_otk(self.username):
+            if self.store.get_otk(info['otk']):
                 response = 'Error: One Time Key invalid'
             else:
                 # OK, delete the key
@@ -2312,9 +2329,42 @@ class WebUI:
                 response = 'Registration complete'
 
         elif self.username is None:
-            for param in 'name password email confirm'.split():
+            for param in 'name email'.split():
                 if not info.has_key(param):
                     raise FormError, '%s is required'%param
+
+            if 'password' not in info or 'confirm' not in info:
+                if 'openid.assoc_handle' not in self.form:
+                    raise FormError, 'password and confirm are required'
+                info['password'] = ''.join([random.choice(store.chars) for x in range(32)])
+                # Recheck OpenID response
+                qs = {}
+                for key, value in self.form.items():
+                    qs[key] = [value]
+                session = self.store.get_session_by_handle(self.form['openid.assoc_handle'])
+                provider, url, session = session
+                try:
+                    signed = openid.authenticate(session, qs)
+                except Exception, e:
+                    return self.fail('OpenID response has been tampered with:'+repr(e))
+                if provider.startswith('http'):
+                    claimed_id = provider
+                elif 'claimed_id' in signed:
+                    claimed_id = qs['openid.claimed_id'][0]
+                else:
+                    return self.fail('Claimed ID got lost. Please report this as a bug.')
+                if self.store.get_user_by_openid(claimed_id):
+                    return self.fail('OpenID already associated with a different account')
+                if 'response_nonce' in signed:
+                    nonce = qs['openid.response_nonce'][0]
+                else:
+                    # OpenID 1.1
+                    nonce = None
+            else:
+                claimed_id = nonce = None
+                if not info.has_key('confirm') or info['password'] <> info['confirm']:
+                    self.fail("password and confirm don't match", heading='Users')
+                    return
 
             # validate a complete set of stuff
             # new user, create entry and email otk
@@ -2332,11 +2382,13 @@ class WebUI:
             olduser = self.store.get_user_by_email(info['email'])
             if olduser:
                 raise FormError, 'You have already registered as user '+olduser['name']
-            if not info.has_key('confirm') or info['password'] <> info['confirm']:
-                self.fail("password and confirm don't match", heading='Users')
-                return
+            # we are about to commit the user; check the reply nonce
+            if nonce and self.store.duplicate_nonce(nonce):
+                return self.fail('replay attack detected')
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'], info.get('gpg_keyid', ''))
+            if claimed_id:
+                self.store.associate_openid(name, claimed_id)
             info['url'] = self.config.url
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
@@ -2484,12 +2536,27 @@ class WebUI:
         self.write_template('mirrors.pt', **options)
 
     def openid(self):
-        self.write_template('openid.pt', title='OpenID Providers')
+        self.write_template('openid.pt', title='OpenID Login')
 
     def claim(self):
         '''Claim an OpenID.'''
         if not self.loggedin:
             return self.fail('You are not logged in')
+        if 'openid_identifier' in self.form:
+            kind, claimed_id = openid.normalize_uri(self.form['openid_identifier'])
+            if kind == 'xri':
+                return self.fail('XRI resolution is not supported')
+            res = openid.discover(claimed_id)
+            if not res:
+                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
+            stypes, op_endpoint, op_local = res
+            if not op_local:
+                op_local = claimed_id
+            assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            return_to = self.config.url+'?:action=openid_return'
+            url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
+            self.store.commit()
+            raise RedirectTemporary(url)
         if not self.form.has_key("provider"):
             return self.fail('Missing parameter')
         for p in providers:
@@ -2506,20 +2573,43 @@ class WebUI:
     def openid_return(self):
         '''Return from OpenID provider.'''
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
-        if 'openid.ns' not in qs:
+        if 'openid.mode' not in qs:
             # Not an indirect call: treat it as RP discovery
             return self.rp_discovery()
-        if qs.get('openid.mode')[0] == 'cancel':
-            return self.fail('Login failed')
+        mode = qs['openid.mode'][0]
+        if mode == 'cancel':
+            return self.fail('Login cancelled')
+        if mode == 'error':
+            return self.fail('OpenID login failed: '+qs['openid.error'][0])
+        if mode != 'id_res':
+            return self.fail('OpenID login failed')
         session = self.store.get_session_by_handle(qs['openid.assoc_handle'][0])
         if not session:
             return self.fail('invalid session')
+        provider, url, session = session
         try:
-            openid.authenticate(session, qs)
+            signed = openid.authenticate(session, qs)
         except Exception, e:
             return self.fail('Login failed:'+repr(e))
-        claimed_id = qs['openid.claimed_id'][0]
-        nonce = qs['openid.response_nonce'][0]
+        # the claimed ID in the response can't be trusted for signon requests,
+        # as the user may have changed it when getting redirected.
+        # For a signon login, the database has stored the claimed id in the
+        # provider field of the session table.
+        # XXX as the assoc_handle may not be signed, the return_to url should
+        # contain a nonce for 1.1 providers
+        if provider.startswith('http'):
+            claimed_id = provider
+        elif 'claimed_id' in signed:
+            claimed_id = qs['openid.claimed_id'][0]
+        else:
+            return self.fail('Claimed ID got lost. Please report this as a bug.')
+        if 'response_nonce' in signed:
+            nonce = qs['openid.response_nonce'][0]
+        else:
+            # OpenID 1.1
+            nonce = None
+            if 'openid.ns' in qs and qs['openid.ns'][0] == 'http://specs.openid.net/auth/2.0':
+                return self.fail('OpenID 2.0 provider failed to protect against replay attacks')
         user = self.store.get_user_by_openid(claimed_id)
         # Three cases: logged-in user claimed some ID,
         # new login, or registration
@@ -2527,72 +2617,42 @@ class WebUI:
             # claimed ID
             if user:
                 return self.fail('OpenID is already claimed')
-            if self.store.duplicate_nonce(nonce):
+            if nonce and self.store.duplicate_nonce(nonce):
                 return self.fail('replay attack detected')
             self.store.associate_openid(self.username, claimed_id)
             self.store.commit()
             return self.register_form()
         if user:
             # Login
-            if self.store.duplicate_nonce(nonce):
+            if nonce and self.store.duplicate_nonce(nonce):
                 return self.fail('replay attack detected')
             self.store.commit()
             self.username = user['name']
             self.loggedin = self.authenticated = True
             self.usercookie = self.store.create_cookie(self.username)
             return self.home()
-        # New registration
+        # Fill openid response fields into register form as hidden fields
+        del qs[':action']
+        openid_fields = []
+        for key, value in qs.items():
+            openid_fields.append((key, value[0]))
+        # propose email address based on response
         email = openid.get_email(qs)
-        if not email:
-            return self.fail('OpenID provider did not provide your email address')
-        if self.store.get_user_by_email(email):
-            return self.fail('Email address already registered for a different user')
-        duplicate = False
-        if 'ok' in self.form:
-            # User has picked a username
-            if not self.form.has_key('agree'):
-                return self.fail('You need to confirm the usage agreement')
-            username = self.form.get('username', '')
-            if not username:
-                error = 'Please pick a username'
-            elif not safe_username.match(username):
-                error = 'Username is invalid (ASCII alphanum,.,_ only)'
-            elif self.store.has_user(username):
-                error = 'User %s already exists, please pick a different name' % username
-            else:
-                if self.store.duplicate_nonce(nonce):
-                    return self.fail('replay attack detected')
-                self.username = username
-                password = ''.join([random.choice(store.chars) for x in range(32)])
-                self.store.store_user(self.username, password,
-                                      email, None, otk=False)
-                self.store.associate_openid(self.username, claimed_id)
-                self.loggedin = self.authenticated = True
-                self.usercookie = self.store.create_cookie(self.username)
-                return self.home()
-        else:
-            # Just returned from OpenID, select username
-            username = openid.get_username(qs)
-            if isinstance(username, tuple):
-                username = '.'.join(username)
-            elif username is None:
-                username = email.split('@')[0]
-            username = username.replace(' ','.')
-            username = re.sub('[^a-zA-Z0-9._]','',username)
-            error = 'Please choose a username to complete registration'
+        # propose user name based on response
+        username = openid.get_username(qs)
+        if isinstance(username, tuple):
+            username = '.'.join(username)
+        elif username is None:
+            username = email.split('@')[0]
+        username = username.replace(' ','.')
+        username = re.sub('[^a-zA-Z0-9._]','',username)
+        error = 'Please choose a username to complete registration'
         if self.store.has_user(username):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
                 suffix += 1
             username = "%s_%d" % (username, suffix)
-        hidden = []
-        for k,v in qs.items():
-            if k.startswith("openid."):
-                hidden.append((k,v[0].decode('utf-8')))
-        return self.write_template('openid_return.pt', title='Register through OpenID',
-                                   hidden=hidden,
-                                   username = username, error=error)
-            
+        return self.register_form(openid_fields, username, email, claimed_id)
 
     def rp_discovery(self):
         payload = '''<xrds:XRDS  
