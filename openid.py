@@ -243,6 +243,14 @@ def is_compat_1x(services):
             return True
     raise ValueError, "Neither 1.x nor 2.0 service found"
 
+def is_op_endpoint(services):
+    for uri in ('http://specs.openid.net/auth/2.0/server',
+                'http://openid.net/server/1.0',
+                'http://openid.net/server/1.1'):
+        if uri in services:
+            return True
+    return False
+
 def associate(services, url):
     '''Create an association (OpenID section 8) between RP and OP.
     Return response as a dictionary.'''
@@ -280,6 +288,10 @@ def request_authentication(services, url, assoc_handle, return_to,
     first/last name, or nickname.
 
     Return the URL that the browser should be redirected to.'''
+
+    if is_op_endpoint(services):
+        # claimed is an OP identifier
+        claimed = op_local = None
 
     if claimed is None:
         claimed = "http://specs.openid.net/auth/2.0/identifier_select"

@@ -2342,12 +2342,14 @@ class WebUI:
                 for key, value in self.form.items():
                     qs[key] = [value]
                 session = self.store.get_session_by_handle(self.form['openid.assoc_handle'])
-                provider, url, session = session
+                if not session:
+                    raise FormError, "Invalid session"
+                provider, url, stypes, session = session
                 try:
                     signed = openid.authenticate(session, qs)
                 except Exception, e:
                     return self.fail('OpenID response has been tampered with:'+repr(e))
-                if provider.startswith('http'):
+                if not openid.is_op_endpoint(stypes):
                     claimed_id = provider
                 elif 'claimed_id' in signed:
                     claimed_id = qs['openid.claimed_id'][0]
@@ -2586,7 +2588,7 @@ class WebUI:
         session = self.store.get_session_by_handle(qs['openid.assoc_handle'][0])
         if not session:
             return self.fail('invalid session')
-        provider, url, session = session
+        provider, url, stypes, session = session
         try:
             signed = openid.authenticate(session, qs)
         except Exception, e:
@@ -2597,7 +2599,7 @@ class WebUI:
         # provider field of the session table.
         # XXX as the assoc_handle may not be signed, the return_to url should
         # contain a nonce for 1.1 providers
-        if provider.startswith('http'):
+        if not openid.is_op_endpoint(stypes):
             claimed_id = provider
         elif 'claimed_id' in signed:
             claimed_id = qs['openid.claimed_id'][0]

@@ -1730,16 +1730,24 @@ class Store:
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
                                    session['mac_key']))
+        # store stypes as well, so we can remember whether claimed is an OP ID or a user ID
+        for t in stypes:
+            safe_execute(cursor, '''insert into openid_stypes(id, stype)
+                                    values(currval('openid_sessions_id_seq'),%s)''',
+                         (t,))
         return session['assoc_handle']
 
     def get_session_by_handle(self, assoc_handle):
         cursor = self.get_cursor()
-        sql = 'select provider, url, mac_key from openid_sessions where assoc_handle=%s'
+        sql = 'select id, provider, url, mac_key from openid_sessions where assoc_handle=%s'
         safe_execute(cursor, sql, (assoc_handle,))
         sessions = cursor.fetchall()
         if sessions:
-            provider, url, mac_key = sessions[0]
-            return provider, url, {'assoc_handle':assoc_handle, 'mac_key':mac_key}
+            id, provider, url, mac_key = sessions[0]
+            safe_execute(cursor, 'select stype from openid_stypes where id=%s',
+                         (id,))
+            stypes = [t[0] for t in cursor.fetchall()]
+            return provider, url, stypes, {'assoc_handle':assoc_handle, 'mac_key':mac_key}
         return None
 
     def duplicate_nonce(self, nonce):
