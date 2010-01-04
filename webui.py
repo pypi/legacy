@@ -802,7 +802,10 @@ class WebUI:
             stypes, op_endpoint, op_local = res
             if not op_local:
                 op_local = claimed_id
-            assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            try:
+                assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            except ValueError, e:
+                return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
             url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()
@@ -2555,7 +2558,10 @@ class WebUI:
             stypes, op_endpoint, op_local = res
             if not op_local:
                 op_local = claimed_id
-            assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            try:
+                assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+            except ValueError, e:
+                return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
             url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()

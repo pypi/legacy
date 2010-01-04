@@ -166,24 +166,24 @@ def discover(url):
     if content_type == 'text/html':
         soup = BeautifulSoup.BeautifulSoup(data)
         # Yadis 6.2.5 option 1: meta tag
-        meta = soup.find('meta', {'http-equiv':lambda v:v.lower()=='x-xrds-location'})
+        meta = soup.find('meta', {'http-equiv':lambda v:v and v.lower()=='x-xrds-location'})
         if meta:
             xrds_loc = meta['content']
             return discover(xrds_loc)
         # OpenID 7.3.3: attempt html based discovery
-        op_endpoint = soup.find('link', {'rel':lambda v:'openid2.provider' in v.lower()})
+        op_endpoint = soup.find('link', {'rel':lambda v:v and 'openid2.provider' in v.lower()})
         if op_endpoint:
             op_endpoint = op_endpoint['href']
-            op_local = soup.find('link', {'rel':lambda v:'openid2.local_id' in v.lower()})
+            op_local = soup.find('link', {'rel':lambda v:v and 'openid2.local_id' in v.lower()})
             if op_local:
                 op_local = op_local['href']
             else:
                 op_local = None
             return ['http://specs.openid.net/auth/2.0/signon'], op_endpoint, op_local
         # 14.2.1: 1.1 compatibility
-        op_endpoint = soup.find('link', {'rel':lambda v:'openid.server' in v.lower()})
+        op_endpoint = soup.find('link', {'rel':lambda v:v and 'openid.server' in v.lower()})
         if op_endpoint:
-            op_local = soup.find('link', {'rel':lambda v:'openid.delegate' in v.lower()})
+            op_local = soup.find('link', {'rel':lambda v:v and 'openid.delegate' in v.lower()})
             if op_local:
                 op_local = op_local['href']
             else:
@@ -259,7 +259,8 @@ def associate(services, url):
         if pieces[1] == 'www.myopenid.com':
             pieces = ('https',) + pieces[1:]
             url = urlparse.urlunparse(pieces) 
-    assert url.startswith('https') # we only support no-encryption sessions
+    if not url.startswith('https:'):
+        raise ValueError, "Provider (%s) does not use https protocol" % url
     data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
         'openid.mode':"associate",
