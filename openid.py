@@ -12,7 +12,13 @@
 # - as a signature algorithm, HMAC-SHA1 is requested
 
 import urlparse, urllib, httplib, BeautifulSoup, xml.etree.ElementTree
-import cStringIO, base64, hmac, sha, datetime, re
+import cStringIO, base64, hmac, sha, datetime, re, binascii, struct
+import itertools
+
+# Importing M2Crypto patches urllib; don't let them do that
+orig = urllib.URLopener.open_https.im_func
+from M2Crypto import DH
+urllib.URLopener.open_https = orig
 
 # Don't use urllib2, since it breaks in 2.5
 # for https://login.launchpad.net//+xrds
@@ -251,27 +257,67 @@ def is_op_endpoint(services):
             return True
     return False
 
+# OpenSSL MPI integer representation
+def bin2mpi(bin):
+    if ord(bin[0]) >= 128:
+        # avoid interpretation as a negative number
+        bin = "\x00" + bin
+    return struct.pack(">i", len(bin))+bin
+def mpi2bin(mpi):
+    assert len(mpi)-4 == struct.unpack(">i", mpi[:4])[0]
+    return mpi[4:]
+
+# Appendix B; DH default prime
+dh_prime = """
+DCF93A0B883972EC0E19989AC5A2CE310E1D37717E8D9571BB7623731866E61E
+F75A2E27898B057F9891C2E27A639C3F29B60814581CD3B2CA3986D268370557
+7D45C2E7E52DC81C7A171876E5CEA74B1448BFDFAF18828EFD2519F14E45E382
+6634AF1949E5B535CC829A483B8A76223E5D490A257F05BDFF16F2FB22C583AB
+"""
+dh_prime = binascii.unhexlify("".join(dh_prime.split()))
+# OpenSSL MPI representation: dh_prime, 2
+dh = DH.set_params(bin2mpi(dh_prime), '\x00\x00\x00\x01\x02')
+dh.gen_key()
+dh_public_base64 = base64.b64encode(mpi2bin(dh.pub))
+
+def string_xor(s1, s2):
+    res = []
+    for c1, c2 in itertools.izip(s1, s2):
+        res.append(chr(ord(c1) ^ ord(c2)))
+    return ''.join(res)
+
 def associate(services, url):
     '''Create an association (OpenID section 8) between RP and OP.
     Return response as a dictionary.'''
-    if url.startswith('http:'):
-        pieces = urlparse.urlparse(url)
-        if pieces[1] == 'www.myopenid.com':
-            pieces = ('https',) + pieces[1:]
-            url = urlparse.urlunparse(pieces) 
-    if not url.startswith('https:'):
-        raise ValueError, "Provider (%s) does not use https protocol" % url
     data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
         'openid.mode':"associate",
         'openid.assoc_type':"HMAC-SHA1",
         'openid.session_type':"no-encryption",
         }
+    if url.startswith('http:'):
+        # Use DH exchange
+        data['openid.session_type'] = "DH-SHA1"
+        # No need to send key and generator
+        data['openid.dh_consumer_public'] = dh_public_base64
     if is_compat_1x(services):
         # 14.2.1: clear session_type in 1.1 compatibility mode
         data['openid.session_type'] = ''
     res = urllib.urlopen(url, urllib.urlencode(data))
     data = parse_response(res.read())
+    if url.startswith('http:'):
+        enc_mac_key = base64.b64decode(data['enc_mac_key'])
+        dh_server_public = base64.b64decode(data['dh_server_public'])
+        # compute_key does not return an MPI
+        shared_secret = dh.compute_key(bin2mpi(dh_server_public))
+        if ord(shared_secret[0]) >= 128:
+            # btwoc: add leading zero if number would otherwise be negative
+            shared_secret = '\x00' + shared_secret
+        shared_secret = sha.new(shared_secret).digest()
+        if len(shared_secret) != len(enc_mac_key):
+            raise ValueError, "incorrect DH key size"
+        # Fake mac_key result
+        data['mac_key'] = base64.b64encode(string_xor(enc_mac_key, shared_secret))
     return data
 
 def request_authentication(services, url, assoc_handle, return_to,
@@ -513,7 +559,9 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
                 self.end_headers()
                 return
             if 'claimed' in query:
-                claimed = query['claimed'][0]
+                kind, claimed = normalize_uri(query['claimed'][0])
+                if kind == 'xri':
+                    return self.error('XRI resolution not supported')
                 res = discover(claimed)
                 if res is None:
                     return self.error('Discovery failed')
