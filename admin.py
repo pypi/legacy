@@ -102,6 +102,26 @@ def send_comments(store):
     for package, version, author, comment in c.fetchall():
         webui.comment_email(store, package, version, author, comment)
 
+def merge_user(store, old, new):
+    c = store.get_cursor()
+    if not store.get_user(old):
+        print "Old does not exist"
+        raise SystemExit
+    if not store.get_user(new):
+        print "New does not exist"
+        raise SystemExit
+
+    c.execute('update openids set name=%s where name=%s', (new, old))
+    c.execute('update sshkeys set name=%s where name=%s', (new, old))
+    c.execute('update roles set user_name=%s where user_name=%s', (new, old))
+    c.execute('delete from rego_otk where name=%s', (old,))
+    c.execute('update journals set submitted_by=%s where submitted_by=%s', (new, old))
+    c.execute('update mirrors set user_name=%s where user_name=%s', (new, old))
+    c.execute('update comments set user_name=%s where user_name=%s', (new, old))
+    c.execute('update ratings set user_name=%s where user_name=%s', (new, old))
+    c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
+    c.execute('delete from users where name=%s', (old,))
+
 if __name__ == '__main__':
     config = config.Config('/data/pypi/config.ini')
     store = store.Store(config)
@@ -129,6 +149,8 @@ if __name__ == '__main__':
             delete_old_docs(config, *args)
         elif command == 'send_comments':
             send_comments(*args)
+        elif command == 'mergeuser':
+            merge_user(*args)
         else:
             print "unknown command '%s'!"%command
         store.commit()
