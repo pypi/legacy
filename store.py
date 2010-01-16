@@ -1772,6 +1772,10 @@ class Store:
         safe_execute(cursor, 'insert into openids(id, name) values(%s,%s)',
                      (openid, username))
 
+    def drop_openid(self, openid):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'delete from openids where id=%s', (openid,))
+
     #
     # Handle the underlying database
     #

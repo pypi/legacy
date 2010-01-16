@@ -510,7 +510,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return rate comment addcomment delcomment clear_auth addkey delkey'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return dropid rate comment addcomment delcomment clear_auth addkey delkey'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -2662,6 +2662,19 @@ class WebUI:
                 suffix += 1
             username = "%s_%d" % (username, suffix)
         return self.register_form(openid_fields, username, email, claimed_id)
+
+    def dropid(self):
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if 'openid' not in self.form:
+            raise FormError, "ID missing"
+        openid = self.form['openid']
+        for i in self.store.get_openids(self.username):
+            if openid == i['id']:break
+        else:
+            raise Forbidden, "You don't own this ID"
+        self.store.drop_openid(openid)
+        return self.register_form()
 
     def rp_discovery(self):
         payload = '''<xrds:XRDS  

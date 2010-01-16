@@ -97,7 +97,13 @@
     <tal:block tal:condition="data/openids">
      <p>Your OpenIDs:</p>
      <ul>
-       <li tal:repeat="curid data/openids"><span tal:replace="curid/id"/></li>
+       <li tal:repeat="curid data/openids"><span tal:replace="curid/id"/>
+       <form method="POST">
+        <input type="hidden" name=":action" value="dropid"/>
+        <input type="hidden" name="openid" tal:attributes="value curid/id"/>
+        <input type="submit" value="Drop this ID"/>
+       </form>
+       </li>
      </ul>
     </tal:block>
 
