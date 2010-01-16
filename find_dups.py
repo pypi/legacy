@@ -62,12 +62,12 @@ def dup_packages():
         lower[lname] = name
 
 def mail_unused_user(email, all, unused):
-    for user in unused:
-        if all-unused:
-            newuser = (all-unused).pop()
-            print "UPDATE journals SET submitted_by='%s' WHERE submitted_by='%s';" % (newuser,user)
-        print "DELETE FROM rego_otk WHERE name='%s';" % user
-        print "DELETE FROM users WHERE name='%s';" % user
+    #for user in unused:
+    #    if all-unused:
+    #        newuser = (all-unused).pop()
+    #        print "UPDATE journals SET submitted_by='%s' WHERE submitted_by='%s';" % (newuser,user)
+    #    print "DELETE FROM rego_otk WHERE name='%s';" % user
+    #    print "DELETE FROM users WHERE name='%s';" % user
     email = "martin@v.loewis.de"
     f = os.popen("/usr/lib/sendmail "+email, "w")
     f.write("To: %s\n" % email)
@@ -75,11 +75,11 @@ def mail_unused_user(email, all, unused):
     f.write("Subject: Unused PyPI account deleted\n\n")
     f.write("Dear PyPI user,\n")
     f.write("You have currently registered the following user names,\n")
-    f.write("all for the email account %s: \n\n%s\n" % (email, ' '.join(all)))
-    f.write("As this kind of setup has been causing problems,\n")
-    f.write("we have deleted the following accounts which are not currently\n")
-    f.write("owner or maintainer of any package:\n\n%s\n\n" % ' '.join(unused))
-    f.write("If you need assistance, please let me know.\n\n")
+    f.write("all for the email account %s: \n\n%s\n\n" % (email, ' '.join(all)))
+    f.write("As this kind of setup causes problems, we would like to delete,\n")
+    f.write("one of the accounts, or somehow merge it with the other.\n")
+    f.write("Please let me know what kind of action I should take,\n")
+    f.write("please respond before February 1st.\n\n")
     f.write("Kind regards,\nMartin v. Loewis\n")
     f.close()
 
@@ -97,7 +97,7 @@ def dup_users():
         for user in users:
             if not store.user_packages(user):
                 unused.add(user)
-        if len(users-unused)<=1:
+        if 1:#len(users-unused)<=1:
             mail_unused_user(email, users, unused)
         else:
             rest.append((email, users, unused))
@@ -105,4 +105,4 @@ def dup_users():
     for r in rest:
         print r
 
-dup_packages()
+dup_users()
