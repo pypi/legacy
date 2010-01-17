@@ -11,9 +11,14 @@
 # - direct requests require https
 # - as a signature algorithm, HMAC-SHA1 is requested
 
-import urlparse, urllib, httplib, BeautifulSoup, xml.etree.ElementTree
+import urlparse, urllib, httplib, BeautifulSoup, time
 import cStringIO, base64, hmac, sha, datetime, re, binascii, struct
 import itertools
+
+try:
+    from xml.etree import ElementTree
+except ImportError:
+    from elementtree import ElementTree
 
 # Importing M2Crypto patches urllib; don't let them do that
 orig = urllib.URLopener.open_https.im_func
@@ -41,10 +46,10 @@ def normalize_uri(uri):
 
     # 6.2.2.1 case normalization
     parts = urlparse.urlparse(uri) # already lower-cases scheme
-    if '@' in parts.netloc:
-        userinfo,hostname = parts.netloc.rsplit('@', 1)
+    if '@' in parts[1]: #netloc
+        userinfo,hostname = parts[1].rsplit('@', 1)
     else:
-        userinfo,hostname = None,parts.netloc
+        userinfo,hostname = None,parts[1]
     if ':' in hostname:
         host,port = hostname.rsplit(':', 1)
         if ']' in port:
@@ -70,7 +75,7 @@ def normalize_uri(uri):
 
     # 6.2.2.3 remove dot segments
     parts = urlparse.urlparse(uri)
-    path = parts.path
+    path = parts[2] #path
     newpath = ''
     while path:
         if path.startswith('../'):
@@ -101,18 +106,18 @@ def normalize_uri(uri):
 
     # 6.2.3 scheme based normalization
 
-    # XXX port normalization doesn't support a standalone :
-    # (e.g. http://www.python.org:/)
-    parts = urlparse.urlparse(uri)
-    netloc = parts.netloc
-    if parts.scheme == 'http' and parts.port == 80:
-        netloc = parts.netloc[:-3]
-    if parts.scheme == 'https' and parts.port == 443:
-        netloc = parts.netloc[:-4]
+    parts = urlparse.urlparse(uri)    
+    netloc = parts[1]
+    if netloc.endswith(':'):
+        netloc = netloc[:-1]
+    elif parts[0] == 'http' and netloc.endswith(':80'):
+        netloc = netloc[:-3]
+    elif parts[0] == 'https' and netloc.endswith(':443'):
+        netloc = netloc[:-4]
     # other default ports not considered here
 
-    path = parts.path
-    if parts.scheme in ('http', 'https') and parts.path=='':
+    path = parts[2]
+    if parts[0] in ('http', 'https') and parts[2]=='':
         path = '/'
 
     # 6.2.5 protocol-based normalization not done, as it
@@ -149,6 +154,11 @@ def discover(url):
     # conn.set_debuglevel(1)
     if query:
         path += '?'+query
+    try:
+        conn.connect()
+    except:
+        # DNS or TCP error
+        return None
     # httplib in 2.5 incorrectly sends https port in Host
     # header even if it is 443
     conn.putrequest("GET", path, skip_host=1)
@@ -161,6 +171,9 @@ def discover(url):
     res = conn.getresponse()
     data = res.read()
     conn.close()
+
+    if res.status in (301, 302, 303, 307):
+        return discover(res.msg.get('location'))
 
     content_type = res.msg.gettype()
 
@@ -200,7 +213,7 @@ def discover(url):
 
     if content_type == 'application/xrds+xml':
         # Yadis 6.2.5 option 4
-        doc = xml.etree.ElementTree.fromstring(data)
+        doc = ElementTree.fromstring(data)
         for svc in doc.findall(".//{xri://$xrd*($v*2.0)}Service"):
             services = [x.text for x in svc.findall("{xri://$xrd*($v*2.0)}Type")]
             if 'http://specs.openid.net/auth/2.0/server' in services:
@@ -321,7 +334,7 @@ def associate(services, url):
     return data
 
 def request_authentication(services, url, assoc_handle, return_to,
-                           claimed = None, op_local = None):
+                           claimed=None, op_local=None, realm=None):
     '''Request authentication (OpenID section 9).
     services is the list of discovered service types,
     url the OP service URL, assoc_handle the established session
@@ -344,6 +357,8 @@ def request_authentication(services, url, assoc_handle, return_to,
         claimed = "http://specs.openid.net/auth/2.0/identifier_select"
     if op_local is None:
         op_local = "http://specs.openid.net/auth/2.0/identifier_select"
+    if realm is None:
+        realm = return_to
     data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
         'openid.mode':"checkid_setup",
@@ -351,7 +366,7 @@ def request_authentication(services, url, assoc_handle, return_to,
         'openid.return_to':return_to,
         'openid.claimed_id':claimed,
         'openid.identity':op_local,
-        'openid.realm':return_to,
+        'openid.realm':realm,
         'openid.ns.sreg':"http://openid.net/sreg/1.0",
         'openid.sreg.required':'nickname,email',
         }
@@ -442,7 +457,8 @@ def authenticate(session, response):
 def parse_nonce(nonce):
     '''Split a nonce into a (timestamp, ID) pair'''
     stamp = nonce.split('Z', 1)[0]
-    stamp = datetime.datetime.strptime(stamp,"%Y-%m-%dT%H:%M:%S")
+    stamp = time.strptime(stamp, "%Y-%m-%dT%H:%M:%S")[:6]
+    stamp = datetime.datetime(*stamp)
     return stamp
 
 def get_namespaces(resp):
