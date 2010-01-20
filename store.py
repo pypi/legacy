@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
-import logging, cStringIO, string, datetime, calendar, binascii
+import logging, cStringIO, string, datetime, calendar, binascii, urllib2
 from distutils.version import LooseVersion
 import trove, openid
 from mini_pkg_resources import safe_name
@@ -717,6 +717,9 @@ class Store:
 
         return Result(None, cursor.fetchall(), self._Changelog)
 
+    def changelog_last_hour(self):
+        return self.changelog(int(time.time())-3600)
+
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
     def latest_releases(self, num=40):
         ''' Fetch "number" latest releases, youngest to oldest.
@@ -865,6 +868,12 @@ class Store:
         safe_execute(cursor, 'delete from releases where name=%s and version=%s',
             (name, version))
 
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (name, version, action,
+                submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (name, version, 'remove', date,
+                                              self.username, self.userip))        
+
     def remove_package(self, name):
         ''' Delete an entire package from the database.
         '''
@@ -885,6 +894,12 @@ class Store:
         safe_execute(cursor, 'delete from journals where name=%s', (name,))
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
+
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (name, version, action,
+                submitted_date, submitted_by, submitted_from) values
+                (%s, %s, %s, %s, %s, %s)''', (name, None, 'remove', date,
+                                              self.username, self.userip))
 
     def rename_package(self, old, new):
         ''' Rename a package. Relies on cascaded updates.
@@ -1544,13 +1559,13 @@ class Store:
 
     def remove_file(self, digest):
         cursor = self.get_cursor()
-        sql = '''select python_version, name, filename from release_files
+        sql = '''select python_version, name, version, filename from release_files
             where md5_digest=%s'''
         safe_execute(cursor, sql, (digest, ))
         info = cursor.fetchone()
         if not info:
             raise KeyError, 'no such file'
-        pyversion, name, filename = info
+        pyversion, name, version, filename = info
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
@@ -1565,6 +1580,13 @@ class Store:
                 break
             os.rmdir(dirpath)
             dirpath = os.path.split(dirpath)[0]
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+            (name, version, 'remove file '+filename, date,
+            self.username, self.userip))
+
 
     _File_Info = FastResultRow('''python_version packagetype name comment_text
                                 filename''')
@@ -1857,6 +1879,22 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
+
+    def changed(self):
+        '''A journalled change has been made. Notify listeners'''
+        self.commit()
+        # XXX consider running this in a separate thread
+        if self.config.pubsubhubbub:
+            try:
+                urllib2.urlopen(self.config.pubsubhubbub, "hub.mode=publish&hub.url="+
+                                urllib2.quote(self.config.url+'?:action=lasthour'))
+            except urllib2.HTTPError, e:
+                if e.code == 204:
+                    # no content, ok
+                    return
+                # ignore all other errors
+            except Exception:
+                pass
 
 def processDescription(source, output_encoding='unicode'):
     """Given an source string, returns an HTML fragment as a string.

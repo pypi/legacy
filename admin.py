@@ -153,7 +153,7 @@ if __name__ == '__main__':
             merge_user(*args)
         else:
             print "unknown command '%s'!"%command
-        store.commit()
+        store.changed()
     finally:
         store.close()
 

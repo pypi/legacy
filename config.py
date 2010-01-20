@@ -14,7 +14,10 @@ class Config:
             self.database_pw = None
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
-
+        if c.has_option('database', 'pubsubhubbub'):
+            self.pubsubhubbub = c.get('database', 'pubsubhubbub')
+        else:
+            self.pubsubhubbub = None
         self.mailhost = c.get('webui', 'mailhost')
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')

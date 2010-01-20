@@ -510,7 +510,7 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return dropid rate comment addcomment delcomment clear_auth addkey delkey'.split():
+        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return dropid rate comment addcomment delcomment clear_auth addkey delkey lasthour'.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action'
@@ -636,6 +636,9 @@ class WebUI:
             f.write(content.encode('utf-8'))
         finally:
             f.close()
+
+    def lasthour(self):
+        self.write_template('rss1hour.xml', **{'content-type':'text/xml; charset=utf-8'})
 
     def browse(self, nav_current='browse'):
         ua = self.env.get('HTTP_USER_AGENT', '')
@@ -897,6 +900,7 @@ class WebUI:
             if self.store.has_role(role_name, package_name, user_name):
                 raise FormError, 'user has that role already'
             self.store.add_role(user_name, role_name, package_name)
+            self.store.changed()
             self.ok_message = 'Role Added OK'
         else:
             # make sure the user has the role
@@ -911,6 +915,7 @@ class WebUI:
                     # No other owner found
                     raise FormError, "You can't remove yourself as the last owner; remove the package instead"
             self.store.delete_role(user_name, role_name, package_name)
+            self.store.changed()
             self.ok_message = 'Role Removed OK'
             if user_name == self.username:
                 # Might not have access to the package anymore
@@ -1603,7 +1608,7 @@ class WebUI:
 
         # save off the data
         message = self.store.store_package(name, version, data)
-        self.store.commit()
+        self.store.changed()
 
         # return a display of the package
         self.form['name'] = data['name']
@@ -1650,7 +1655,7 @@ class WebUI:
 
         # save off the data
         message = self.store.store_package(name, version, data)
-        self.store.commit()
+        self.store.changed()
 
         # return a display of the package
         self.display(ok_message=message)
@@ -1804,6 +1809,7 @@ class WebUI:
         # update the database
         for version, info in reldict.items():
             self.store.store_package(name, version, info)
+            self.store.changed()
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
                             autohide=self.store.get_package_autohide(name),
@@ -1939,9 +1945,11 @@ class WebUI:
             if version:
                 for v in version:
                     self.store.remove_release(name, v)
+                self.store.changed()
                 self.ok_message='Release removed'
             else:
                 self.store.remove_package(name)
+                self.store.changed()
                 self.ok_message='Package removed'
                 return self.home()
 
@@ -2004,6 +2012,8 @@ class WebUI:
                         self.store.remove_file(digest)
                     except KeyError:
                         return self.fail('No such files to remove', code=200)
+                    else:
+                        self.store.changed()
 
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
@@ -2074,6 +2084,7 @@ class WebUI:
                 raise FormError, message
             data['_pypi_hidden'] = False
             self.store.store_package(name, version, data)
+            self.store.changed()
 
         # verify we have enough information
         pyversion = 'source'
@@ -2171,6 +2182,7 @@ class WebUI:
 
         self.store.add_file(name, version, content, md5_digest,
             filetype, pyversion, comment, filename, signature)
+        self.store.changed()
 
         if response:
             self.handler.send_response(200, 'OK')
@@ -2237,6 +2249,7 @@ class WebUI:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
         self.store.log_docs(name, version)
+        self.store.changed()
         raise Redirect("http://packages.python.org/%s/" % name)
 
     #
@@ -2521,9 +2534,13 @@ class WebUI:
         ''' return a URL for the link to display a particular package
         '''
         if not isinstance(name, str): name = name.encode('utf-8')
-        if not isinstance(version, str): version = version.encode('utf-8')
-        return u'%s/%s/%s'%(self.url_path, urllib.quote(name),
-            urllib.quote(version))
+        if version is None:
+            # changelog entry with no version
+            version = ''
+        else:
+            if not isinstance(version, str): version = version.encode('utf-8')
+            version = '/'+urllib.quote(version)
+        return u'%s/%s%s'%(self.url_path, urllib.quote(name), version)
 
     def packageLink(self, name, version):
         ''' return a link to display a particular package
@@ -2712,4 +2729,3 @@ class WebUI:
         stdout = p.communicate()[0]
         if p.returncode != 0:
             raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
-        
