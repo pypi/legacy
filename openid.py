@@ -433,7 +433,11 @@ def authenticate(session, response):
     signed = response['openid.signed'][0].split(',')
     query = []
     for name in signed:
+        if isinstance(name, unicode):
+            name = name.encode('ascii')
         value = response['openid.'+name][0]
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
         query.append('%s:%s\n' % (name, value))
     query = ''.join(query)
 
