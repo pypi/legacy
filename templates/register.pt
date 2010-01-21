@@ -10,7 +10,7 @@
       <input type="hidden" name="name" tal:condition="not:data/new_user"
 	     tal:attributes="value data/name"/>
       <tal:block tal:repeat="field data/openid_fields">
-       <input type="hidden" tal:attributes="name python:field[0];value python:field[1]"/>
+       <input type="hidden" tal:attributes="name python:field[0];value python:field[1].decode('utf-8')"/>
       </tal:block>
       <table class="form">
 	<tr>
