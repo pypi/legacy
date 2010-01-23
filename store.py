@@ -1493,8 +1493,9 @@ class Store:
         '''Generate the URL for a given file download.'''
         if not prefix:
             prefix = self.config.files_url
-        return os.path.join(prefix, pyversion,
-            name[0], name, filename)
+        return cgi.escape(os.path.join(prefix, pyversion,
+                                       name[0], name, filename),
+                          quote=True)
 
     def gen_file_path(self, pyversion, name, filename):
         '''Generate the path to the file on disk.'''
