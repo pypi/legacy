@@ -538,8 +538,8 @@ class WebUI:
             raise NotFound, path + " does not have any releases"
         html = []
         html.append("""<html><head><title>Links for %s</title></head>"""
-                    % path)
-        html.append("<body><h1>Links for %s</h1>" % path)
+                    % cgi.escape(path))
+        html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
         for href, rel, text in urls:
             if href.startswith('http://cheeseshop.python.org/pypi') or \
                     href.startswith('http://pypi.python.org/pypi') or \
