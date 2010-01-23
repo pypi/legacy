@@ -1,7 +1,8 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
-import logging, cStringIO, string, datetime, calendar, binascii, urllib2
+import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
+from xml.parsers import expat
 from distutils.version import LooseVersion
 import trove, openid
 from mini_pkg_resources import safe_name
@@ -489,11 +490,12 @@ class Store:
         releases where name=%s''', (name,))
         any_releases = False
         for version, home_page, download_url in cursor.fetchall():
+            # assume that home page and download URL are unescaped
             any_releases = True
             if home_page and home_page != 'UNKNOWN':
-                result.append((home_page, 'homepage', version + ' home_page'))
+                result.append((cgi.escape(home_page), 'homepage', version + ' home_page'))
             if download_url and download_url != 'UNKNOWN':
-                result.append((download_url, 'download', version + ' download_url'))
+                result.append((cgi.escape(download_url), 'download', version + ' download_url'))
         if not any_releases:
             return None
 
@@ -510,6 +512,7 @@ class Store:
         safe_execute(cursor, '''select distinct url from description_urls
         where name=%s''', (name,))
         for url, in cursor.fetchall():
+            # assume that description urls are escaped
             result.append((url, None, url))
 
         return result
@@ -838,6 +841,15 @@ class Store:
         for name, version, desc in cursor.fetchall():
             urls = get_description_urls(desc)
             self.update_description_urls(name, version, urls)
+
+    def updateurls2(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select name, version, url from description_urls')
+        for name, version, url in cursor.fetchall():
+            url2 = xmlescape(url)
+            if url==url2:continue
+            safe_execute(cursor, 'update description_urls set url=%s where name=%s and version=%s and url=%s',
+                         (url2, name, version, url))
 
     def update_normalized_text(self):
         cursor = self.get_cursor()
@@ -1945,6 +1957,16 @@ def processDescription(source, output_encoding='unicode'):
 
     return output
 
+def xmlescape(url):
+    '''Make sure a URL is valid XML'''
+    p = expat.ParserCreate()
+    try:
+        p.Parse('<x y="%s"/>' % url, True)
+    except expat.ExpatError:
+        return cgi.escape(url)
+    else:
+        return url
+
 def get_description_urls(html):
     from htmllib import HTMLParser
     from formatter import NullFormatter
@@ -1958,7 +1980,7 @@ def get_description_urls(html):
     result = []
     for url in parser.anchorlist:
         if urlparse.urlparse(url)[0]:
-            result.append(url)
+            result.append(xmlescape(url))
     return result
 
 if __name__ == '__main__':
@@ -1978,6 +2000,9 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'updateurls':
         store.updateurls()
+        store.commit()
+    elif sys.argv[2] == 'updateurls2':
+        store.updateurls2()
         store.commit()
     elif sys.argv[2] == 'update_normalized_text':
         store.update_normalized_text()
