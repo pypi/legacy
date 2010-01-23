@@ -476,7 +476,7 @@ class Store:
         safe_execute(cursor, sql, (name, version))
         return self._Package(None, cursor.fetchone())
 
-    def get_package_urls(self, name):
+    def get_package_urls(self, name, relative=None):
         ''' Return all URLS (home, download, files) for a package,
 
             Return pairs of (link, rel, label).
@@ -503,7 +503,7 @@ class Store:
         for fname, pyversion, md5 in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
-            result.insert(0, (self.gen_file_url(pyversion, name, fname)+"#md5="+md5,
+            result.insert(0, (self.gen_file_url(pyversion, name, fname, relative)+"#md5="+md5,
                               None, fname))
 
         # urls from description
@@ -1477,9 +1477,11 @@ class Store:
     #
     # File handling
     #
-    def gen_file_url(self, pyversion, name, filename):
+    def gen_file_url(self, pyversion, name, filename, prefix=None):
         '''Generate the URL for a given file download.'''
-        return os.path.join(self.config.files_url, pyversion,
+        if not prefix:
+            prefix = self.config.files_url
+        return os.path.join(prefix, pyversion,
             name[0], name, filename)
 
     def gen_file_path(self, pyversion, name, filename):

@@ -529,7 +529,7 @@ class WebUI:
         rpc.handle_request(self)
 
     def simple_body(self, path):
-        urls = self.store.get_package_urls(path)
+        urls = self.store.get_package_urls(path, relative="../../packages")
         if urls is None:
             # check for normalized name
             names = self.store.find_package(path)
@@ -575,8 +575,9 @@ class WebUI:
             return
 
         path = path[1:]
-        if path.endswith('/'):
-            path = path[:-1]
+        if not path.endswith('/'):
+            raise Redirect, self.config.simple_script + '/' + path + '/'
+        path = path[:-1]
         if '/' not in path:
             html = self.simple_body(path)
             self.handler.send_response(200, 'OK')
@@ -588,9 +589,9 @@ class WebUI:
 
     def run_simple_sign(self):
         path = self.env.get('PATH_INFO')
-        if not path:
-            raise Redirect, self.config.simple_script+'/'
-        path = path[1:]
+        if not path.endswith('/'):
+            raise Redirect, self.config.simple_sign_script+path+'/'
+        path = path[1:-1]
         if '/' in path:
             raise NotFound, path
         html = self.simple_body(path)
