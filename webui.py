@@ -550,7 +550,7 @@ class WebUI:
                 rel = ' rel="%s"' % rel
             else:
                 rel = ''
-            html.append("<a href='%s'%s>%s</a><br/>\n" % (href, rel, text))
+            html.append("""<a href="%s"%s>%s</a><br/>\n""" % (href, rel, text))
         html.append("</body></html>")
         html = ''.join(html)
         return html
