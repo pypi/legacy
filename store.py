@@ -858,6 +858,13 @@ class Store:
             safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
                          [normalize_package_name(name), name])
 
+    def update_description_html(self, name):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select version,description from releases where name=%s', (name,))
+        for version, description in cursor.fetchall():
+            safe_execute(cursor, 'update releases set description_html=%s where name=%s and version=%s',
+                         (processDescription(description), name, version))
+
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
         '''
@@ -1928,8 +1935,8 @@ def processDescription(source, output_encoding='unicode'):
     source = trim_docstring(source)
 
     settings_overrides={
-        'raw_enabled': '0',  # no raw HTML code
-        'file_insertion_enabled': '0',  # no file/URL access
+        'raw_enabled': 0,  # no raw HTML code
+        'file_insertion_enabled': 0,  # no file/URL access
         'halt_level': 2,  # at warnings or errors, raise an exception
         'report_level': 5,  # never report problems with the reST code
         }
@@ -1949,7 +1956,7 @@ def processDescription(source, output_encoding='unicode'):
 
     # original text if publishing errors occur
     if parts is None or len(s.getvalue()) > 0:
-        output = "".join('<PRE>\n' + source + '</PRE>')
+        output = "".join('<PRE>\n' + cgi.escape(source) + '</PRE>')
     else:
         output = parts['body']
 
@@ -2010,6 +2017,9 @@ if __name__ == '__main__':
         store.commit()
     elif sys.argv[2] == 'update_upload_times':
         store.update_upload_times()
+        store.commit()
+    elif sys.argv[2] == 'update_html':
+        store.update_description_html(sys.argv[3])
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]
