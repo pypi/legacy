@@ -2371,6 +2371,10 @@ class WebUI:
                     claimed_id = provider
                 elif 'claimed_id' in signed:
                     claimed_id = qs['openid.claimed_id'][0]
+                    # Need to perform discovery to verify claimed ID is really managed by provider
+                    discovered = openid.discover(claimed_id)
+                    if not discovered or discovered[1] != url:
+                        return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
                 else:
                     return self.fail('Claimed ID got lost. Please report this as a bug.')
                 if self.store.get_user_by_openid(claimed_id):
@@ -2628,6 +2632,10 @@ class WebUI:
             claimed_id = provider
         elif 'claimed_id' in signed:
             claimed_id = qs['openid.claimed_id'][0]
+            # Need to perform discovery to verify claimed ID is really managed by provider
+            discovered = openid.discover(claimed_id)
+            if not discovered or discovered[1] != url:
+                return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
         else:
             return self.fail('Claimed ID got lost. Please report this as a bug.')
         if 'response_nonce' in signed:
