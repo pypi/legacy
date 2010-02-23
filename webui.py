@@ -2227,6 +2227,9 @@ class WebUI:
         except Exception,e:
             raise FormError, "Error uncompressing zipfile:" + str(e)
 
+        if 'index.html' not in members:
+            raise FormError, 'Error: top-level "index.html" missing in the zipfile'
+
         # Assume the file is valid; remove any previous data
         path = os.path.join(self.config.database_docs_dir, name, "")
         if os.path.exists(path):

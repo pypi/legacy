@@ -92,7 +92,11 @@ uncheck the button below</p>
 </form>
 
 <p>You can now host documentation at
-<a tal:attributes="href string:http://packages.python.org/${data/name}" tal:content="string:http://packages.python.org/${data/name}"></a>. To upload documentation, prepare a .zip file that is unpacked into this URL. Only static pages are supported. The directory index file is index.html.</p>
+<a tal:attributes="href string:http://packages.python.org/${data/name}"
+tal:content="string:http://packages.python.org/${data/name}"></a>. To
+upload documentation, prepare a .zip file that is unpacked into this URL.
+Only static pages are supported. The zip file must have a top-level
+"index.html".</p>
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
 <input type="hidden" name=":action" value="doc_upload" />
