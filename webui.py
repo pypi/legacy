@@ -2680,8 +2680,17 @@ class WebUI:
         username = openid.get_username(qs)
         if isinstance(username, tuple):
             username = '.'.join(username)
-        elif username is None:
+        elif email and not username:
             username = email.split('@')[0]
+        else:
+            # suggest OpenID host name as username
+            username = urlparse.urlsplit(claimed_id)[1]
+            if ':' in username:
+                username = username.split(':')[0]
+            if '@' in username:
+                username = username.rsplit('@', 1)[0]
+            if not username:
+                username = "nonamegiven"
         username = username.replace(' ','.')
         username = re.sub('[^a-zA-Z0-9._]','',username)
         error = 'Please choose a username to complete registration'
