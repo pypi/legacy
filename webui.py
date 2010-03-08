@@ -1100,11 +1100,12 @@ class WebUI:
         url = '%s?name=%s&amp;version=%s'%(self.url_path, un, uv)
         return '''<p class="release-nav">Package:
   <a href="%s?:action=role_form&amp;package_name=%s">admin</a> |
+  <a href="%s?:action=pkg_edit&amp;name=%s">releases</a> |
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
   <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
-</p>'''%(self.url_path, un, url, url, url, url)
+</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url)
 
     def quote_plus(self, data):
         return urllib.quote_plus(data)
