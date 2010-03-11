@@ -106,7 +106,7 @@
               
             </div>
 
-            <div id="document-navigation">
+            <div id="document-navigation" style="overflow-y: auto; max-height: 15em; overflow-x: hidden;">
               <tal:if-not-user condition="not: app/loggedin">
                 <h4>Not Logged In</h4>
 
@@ -136,17 +136,12 @@
                 <tal:let define="packages python:app.store.user_packages(app.username)">
                   <tal:if-packages condition="packages">
                     <li>
-                      Your packages<tal:block tal:condition="python:len(packages)&gt;=20">(truncated)</tal:block>:
+                      Your packages:
                     </li>
                     <ul>
-                      <li tal:condition="python:len(packages)&lt;20">
+                      
+                      <li>
                         <tal:block repeat="pkg_info packages">
-                          <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
-                             tal:content="python:pkg_info[0]">package</a><br />
-                        </tal:block>
-                      </li>
-                      <li tal:condition="python:len(packages)&gt;=20">
-                        <tal:block repeat="pkg_info python:packages[:20]">
                           <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
                              tal:content="python:pkg_info[0]">package</a><br />
                         </tal:block>
