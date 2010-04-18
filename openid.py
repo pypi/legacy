@@ -182,7 +182,7 @@ def discover(url):
     if xrds_loc and content_type != 'application/xrds+xml':
         return discover(xrds_loc)
 
-    if content_type == 'text/html':
+    if content_type in ('text/html', 'application/xhtml+xml'):
         soup = BeautifulSoup.BeautifulSoup(data)
         # Yadis 6.2.5 option 1: meta tag
         meta = soup.find('meta', {'http-equiv':lambda v:v and v.lower()=='x-xrds-location'})
@@ -212,7 +212,7 @@ def discover(url):
         # Discovery failed
         return None
 
-    if content_type == 'application/xrds+xml':
+    elif content_type == 'application/xrds+xml':
         # Yadis 6.2.5 option 4
         doc = ElementTree.fromstring(data)
         for svc in doc.findall(".//{xri://$xrd*($v*2.0)}Service"):
@@ -248,6 +248,9 @@ def discover(url):
                     break
         else:
             return None # No OpenID 2.0 service found
+    else:
+        # unknown content type
+        return None
     return services, op_endpoint, op_local
 
 def is_compat_1x(services):
