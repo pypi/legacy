@@ -1,5 +1,5 @@
 -- New fields
-ALTER TABLE release ADD COLUMN requires_python TEXT;
+ALTER TABLE releases ADD COLUMN requires_python TEXT;
 
 --
 -- New tables
