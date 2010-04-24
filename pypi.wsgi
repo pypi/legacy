@@ -6,18 +6,24 @@ import cStringIO, webui, store, config
 
 store.keep_conn = True
 
+CONFIG_FILE = 'config.ini'
+
 class Request:
 
     def __init__(self, environ, start_response):
         self.start_response = start_response
-        self.rfile = cStringIO.StringIO(environ['wsgi.input'].read())
+        try:
+            length = int(environ['CONTENT_LENGTH'])
+        except ValueError:
+            length = 0
+        self.rfile = cStringIO.StringIO(environ['wsgi.input'].read(length))
         self.wfile = cStringIO.StringIO()
-        self.config = config.Config('/data/pypi/config.ini')
-    
+        self.config = config.Config(CONFIG_FILE )
+
     def send_response(self, code, message='no details available'):
         self.status = '%s %s' % (code, message)
         self.headers = []
-        
+
     def send_header(self, keyword, value):
         self.headers.append((keyword, value))
 
@@ -47,3 +53,11 @@ def application(environ, start_response):
     r = Request(environ, start_response)
     webui.WebUI(r, environ).run()
     return [r.wfile.getvalue()]
+
+if __name__ == '__main__':
+    # very simple wsgi server so we can play locally
+    from wsgiref.simple_server import make_server
+    httpd = make_server('', 8000, application)
+    print "Serving on port 8000..."
+    httpd.serve_forever()
+

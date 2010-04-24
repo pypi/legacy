@@ -156,6 +156,64 @@
   </ul>
  </li>
 
+
+
+ <li tal:condition="data/requires_dist | nothing">
+   <strong>Requires Distributions</strong>
+   <ul class="nodot">
+     <li tal:repeat="require data/requires_dist">
+       <a tal:condition="require/href" tal:attributes="href require/href"
+           tal:content="require/name"/>
+        <tal:block tal:condition="not:require/href" 
+                   tal:replace="require/name">
+        </tal:block>
+     </li>
+   </ul>
+ </li>
+
+ <li tal:condition="data/provides_dist | nothing">
+   <strong>Provides Distributions</strong>
+   <ul class="nodot">
+     <li tal:repeat="provide data/provides_dist">
+       <a tal:condition="provide/href" tal:attributes="href provide/href"
+           tal:content="provide/name"/>
+       <tal:block tal:condition="not:provide/href" 
+                   tal:replace="provide/name">
+        </tal:block>
+
+     </li>
+   </ul>
+ </li>
+
+ <li tal:condition="data/obsoletes_dist | nothing">
+   <strong>Obsoletes Distributions</strong>
+   <ul class="nodot">
+     <li tal:repeat="obsolete data/obsoletes_dist">
+       <a tal:condition="obsolete/href" tal:attributes="href obsolete/href"
+           tal:content="obsolete/name"/>
+        <tal:block tal:condition="not:obsolete/href" 
+                   tal:replace="obsolete/name">
+        </tal:block>
+
+     </li>
+   </ul>
+ </li>
+
+ <li tal:condition="data/requires_external | nothing">
+   <strong>Requires Externals</strong>
+   <ul class="nodot">
+     <li tal:repeat="require data/requires_external">
+        <tal:block tal:replace="require">
+        </tal:block>
+     </li>
+   </ul>
+ </li>
+
+ <li tal:condition="data/requires_python | nothing">
+    <strong>Requires Python</strong>: <tal:block tal:replace="data/requires_python"></tal:block>
+ </li>
+
+
  <li tal:condition="data/roles/Owner | nothing">
   <strong>Package Index Owner:</strong>
   <span tal:content="python:', '.join(data['roles']['Owner'])" />

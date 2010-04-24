@@ -79,6 +79,7 @@ def utf8getter(n):
     def utf8get(fields):
         if fields[n] is None: return fields[n]
         return fields[n].decode('utf-8', 'replace')
+
     return utf8get
 
 def itemgetter(n):
@@ -199,7 +200,6 @@ class Store:
         journal entry.
         '''
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-
         cursor = self.get_cursor()
         # see if we're inserting or updating a package
         if not self.has_package(name):
@@ -268,7 +268,9 @@ class Store:
                 old.append('classifiers')
 
             # get old classifiers list
-            for col in ('requires', 'provides', 'obsoletes'):
+            for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
+                        'provides_dist', 'obsoletes_dist',
+                        'requires_external', 'project_url'):
                 relationships[col] = self.get_release_relationships(name,
                     version, col)
                 relationships[col].sort()
@@ -311,7 +313,10 @@ class Store:
                 info['description_html'] = ''
 
             # perform the insert
-            cols = 'name version author author_email maintainer maintainer_email home_page license summary description description_html keywords platform download_url _pypi_ordering _pypi_hidden'.split()
+            cols = ('name version author author_email maintainer '
+                    'maintainer_email home_page license summary description '
+                    'description_html keywords platform requires_python '
+                    'download_url _pypi_ordering _pypi_hidden').split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
             scols = ','.join(cols)
@@ -353,7 +358,9 @@ class Store:
                     (name, version, trove_id))
 
         # handle relationship specifiers
-        for col in ('requires', 'provides', 'obsoletes'):
+        for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
+                    'provides_dist', 'obsoletes_dist',
+                    'requires_external', 'project_url'):
             if not info.has_key(col) or relationships.get(col, []) == info[col]:
                 continue
             safe_execute(cursor, '''delete from release_%s where name=%%s
@@ -455,8 +462,8 @@ class Store:
 
     _Package = FastResultRow('''name stable_version version author author_email
             maintainer maintainer_email home_page license summary description
-            description_html keywords platform download_url _pypi_ordering!
-            _pypi_hidden! cheesecake_installability_id!
+            description_html keywords platform requires_python download_url
+            _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
             cheesecake_documentation_id! cheesecake_code_kwalitee_id!''')
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
@@ -467,7 +474,8 @@ class Store:
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, description_html, keywords,
-                  platform, download_url, _pypi_ordering, _pypi_hidden,
+                  platform, requires_python, download_url, _pypi_ordering,
+                  _pypi_hidden,
                   cheesecake_installability_id,
                   cheesecake_documentation_id,
                   cheesecake_code_kwalitee_id
@@ -655,6 +663,64 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
+
+    def _get_package_url(self, name):
+        name = name.split()[0]
+        cursor = self.get_cursor()
+        sql = 'select * from packages where name=%s'
+        safe_execute(cursor, sql, (name, ))
+        exists = cursor.fetchone() is not None
+        if not exists:
+            return None
+        return self.config.url + '/' + name
+
+    def get_package_requires_dist(self, name, version):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select specifier from release_requires_dist
+            where name=%s and version=%s ''', (name, version))
+        packages = []
+        for package in cursor.fetchall():
+            pack = {'name': package[0],
+                    'href': self._get_package_url(package[0])}
+            packages.append(pack)
+        return packages
+
+    def get_package_provides_dist(self, name, version):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select specifier from release_provides_dist
+            where name=%s and version=%s ''', (name, version))
+        packages = []
+        for package in cursor.fetchall():
+            pack = {'name': package[0],
+                    'href': self._get_package_url(package[0])}
+            packages.append(pack)
+        return packages
+
+    def get_package_obsoletes_dist(self, name, version):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select specifier from release_obsoletes_dist
+            where name=%s and version=%s ''', (name, version))
+        packages = []
+        for package in cursor.fetchall():
+            pack = {'name': package[0],
+                    'href': self._get_package_url(package[0])}
+            packages.append(pack)
+        return packages
+
+    def get_package_requires_external(self, name, version):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select specifier from release_requires_external
+            where name=%s and version=%s ''', (name, version))
+        return [package[0] for package in cursor.fetchall()]
+
+    def get_package_project_url(self, name, version):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select specifier from release_project_url
+            where name=%s and version=%s ''', (name, version))
+        project_urls = []
+        for project in cursor.fetchall():
+            project_urls.append(project[0].split(','))
+        return project_urls
 
     def get_package_comments(self, name):
         cursor = self.get_cursor()
@@ -877,7 +943,9 @@ class Store:
 
         # delete ancillary table entries
         for tab in ('files', 'provides', 'requires', 'obsoletes',
-                'classifiers'):
+                'classifiers', 'requires_dist', 'provides_dist',
+                'obsoletes_dist', 'requires_external',
+                'project_url'):
             safe_execute(cursor, '''delete from release_%s where
                 name=%%s and version=%%s'''%tab, (name, version))
         safe_execute(cursor, 'delete from description_urls where name=%s and version=%s',
@@ -891,7 +959,7 @@ class Store:
         safe_execute(cursor, '''insert into journals (name, version, action,
                 submitted_date, submitted_by, submitted_from) values
                 (%s, %s, %s, %s, %s, %s)''', (name, version, 'remove', date,
-                                              self.username, self.userip))        
+                                              self.username, self.userip))
 
     def remove_package(self, name):
         ''' Delete an entire package from the database.
@@ -904,7 +972,9 @@ class Store:
 
         # delete ancillary table entries
         for tab in ('files', 'provides', 'requires', 'obsoletes',
-                'classifiers'):
+                'classifiers', 'requires_dist', 'provides_dist',
+                'obsoletes_dist', 'requires_external',
+                'project_url'):
             safe_execute(cursor, 'delete from release_%s where name=%%s'%tab,
                 (name, ))
 
@@ -969,7 +1039,7 @@ class Store:
         '''Copy a user-s rating of package name from one version to another;
         return the comment if any'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating) 
+        safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating)
                      select name,%s,user_name,now(),rating from ratings
                      where name=%s and version=%s and user_name=%s''',
                      (toversion, name, fromversion, self.username))
@@ -979,10 +1049,10 @@ class Store:
         if cid:
             cid = cid[0]
             safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                     select currval('ratings_id_seq'), user_name, date, message, in_reply_to 
+                     select currval('ratings_id_seq'), user_name, date, message, in_reply_to
                      from comments where id=%s''', (cid,))
             safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s, %s, currval('comments_id_seq'), %s, now(), %s)''', (name, toversion, 
+                     values(%s, %s, currval('comments_id_seq'), %s, now(), %s)''', (name, toversion,
                      self.username, 'copied %s' % cid))
 
             safe_execute(cursor, '''select message from comments
@@ -996,7 +1066,7 @@ class Store:
         safe_execute(cursor, """insert into comments_journal(name, version, id, submitted_by, date, action)
         select %s, %s, id, %s, now(), 'deleted' from ratings where user_name=%s and name=%s and version=%s""",
                      (name, version, self.username, self.username, name, version))
-        safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s", 
+        safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s",
                      (self.username, name, version))
 
     _Rating=FastResultRow('id! date! user rating!')
@@ -1004,7 +1074,7 @@ class Store:
     def get_ratings(self, name, version):
         '''Return ratings,messages for a release.'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select id, date, user_name, rating from ratings 
+        safe_execute(cursor, '''select id, date, user_name, rating from ratings
                      where name=%s and version=%s order by date''', (name, version))
         res = cursor.fetchall()
         safe_execute(cursor, '''select c.id, c.rating, c.user_name, c.date, c.message, c.in_reply_to from
@@ -1098,14 +1168,14 @@ class Store:
     def has_rating(self, name, version):
         '''Check whether user has rated this release'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select count(*) from ratings 
+        safe_execute(cursor, '''select count(*) from ratings
                      where user_name=%s and name=%s and version=%s''', (self.username, name, version))
         return cursor.fetchall()[0][0]
 
     def latest_rating(self, name):
         '''Return the user-s latest rating on any release, or None.'''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select version from ratings 
+        safe_execute(cursor, '''select version from ratings
                      where user_name=%s and name=%s order by date desc limit 1''', (self.username, name))
         res = cursor.fetchone()
         if res:
@@ -1321,7 +1391,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, 'insert into sshkeys(name, key) values(%s, %s)', (username, key))
-        
+
     def delete_sshkey(self, id):
         '''Delete an SSH key given by ID.
         '''

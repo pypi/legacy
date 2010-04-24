@@ -7,7 +7,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 
 class RequestHandler(SimpleXMLRPCDispatcher):
     """A request dispatcher for the PyPI XML-RPC API."""
-    
+
     def __init__(self):
         SimpleXMLRPCDispatcher.__init__(self, True, 'utf-8')
         self.register_function(list_packages)
@@ -23,7 +23,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(ratings)
         self.register_introspection_functions()
         self.register_multicall_functions()
-    
+
     def __call__(self, webui_obj):
         webui_obj.handler.send_response(200, 'OK')
         webui_obj.handler.send_header('Content-type', 'text/xml')
@@ -77,7 +77,9 @@ package_urls = release_urls     # "deprecated"
 def release_data(store, package_name, version):
     info = store.get_package(package_name, version).as_dict()
     del info['description_html']
-    for col in ('requires', 'provides', 'obsoletes'):
+    for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
+                'obsoletes_dist', 'project_url', 'provides_dist',
+                'requires_external'):
         rows = store.get_release_relationships(package_name, version, col)
         info[col] = [row['specifier'] for row in rows]
     classifiers = [r[0] for r in store.get_release_classifiers(package_name,

@@ -1,13 +1,44 @@
-
 Required packages
-----------------------
+-----------------
 
-To run the PyPI software, you need:
-	cElementTree
-	zope.interface (in PyPI)
-	zope.pagetemplates (in PyPI)
-	zope.tal
-	zope.tales
-	zope.i18nmessageid
-	psycopg2 and PostgreSQL
-	M2Crypto
+To run the PyPI software, you need PostgreSQL, and all
+these packages located at PyPI:
+
+- cElementTree
+- zope.interface
+- zope.pagetemplate
+- zope.tal
+- zope.tales
+- zope.i18nmessageid
+- psycopg2
+- M2Crypto
+- BeautifulSoup
+- docutils
+- distutils2
+
+Quick development setup
+-----------------------
+
+Make sure you read http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints
+and you have a working PostgreSQL DB.
+
+Make sure your config.ini is up-to-date. Change CONFIG_FILE at the begining
+of pypi.wsgi, so it looks like this::
+
+    CONFIG_FILE = 'config.ini'
+
+Then, you can create a development environment like this, if you have
+virtualenv installed::
+
+    $ virtualenv --no-site-packages --distribute .
+    $ bin/easy_install cElementTree zope.interface zope.pagetemplate
+    $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
+    $ bin/easy_install  M2Crypto BeautifulSoup docutils
+
+Then you can launch the server using the pypi.wsgi script::
+
+    $ bin/python pypi.wsgi
+    Serving on port 8000...
+
+PyPI will be available in your browser at http://localhost:8000
+

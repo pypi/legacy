@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metal:macro define-macro="page"
-             xmlns="http://www.w3.org/1999/xhtml" 
+             xmlns="http://www.w3.org/1999/xhtml"
              xmlns:tal="http://xml.zope.org/namespaces/tal"
              xmlns:metal="http://xml.zope.org/namespaces/metal">
   <html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -14,14 +14,111 @@
        <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
 
        <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
-      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
-      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
-      <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
-      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
-      <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
-      <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
-      
-      <metal:slot define-slot="head" />
+       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
+       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
+       <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
+       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
+       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
+       <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
+
+       <metal:slot define-slot="head" />
+
+       <style type="text/css" rel="stylesheet">
+	 #document-floating {
+  	   width: 15em;
+	 }
+	 .floating-box {
+	   float: right;
+	 }
+	 .homepage-box h4, #document-project-url h4, .externallinks h4
+	 {
+	 font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+	 font-size: 88%;
+	 font-weight: bold;
+	 padding: 3px 0 4px 12px;
+	 margin-bottom:8px;
+	 border-bottom:3px solid #d5ad42;
+	 background-color: #F4F4F4;
+	 text-align: left;
+	 z-index: 0;
+	 -moz-border-radius-topleft: 16px;
+	 }
+
+	 #document-project-url h4, .homepage-box h4, .externallinks h4 {
+	 -moz-border-radius-topleft:11px;
+	 background-color:#376A94;
+	 color:#FFFFFF;
+	 font-family:Arial,Verdana,Geneva,"Bitstream Vera Sans",Helvetica,sans-serif;
+	 font-size:94%;
+	 font-weight:bold;
+	 margin:0;
+	 padding:3px 0 4px 12px;
+	 text-align:left;
+	 z-index:0;
+	 }
+
+	 #document-project-url
+	 {
+	 font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+	 font-size:  98%;
+	 text-align: left;
+	 color: #3C4B6B;
+	 background-color: #F7F6F0;
+	 width: 15em;
+	 border: 1px solid #B7BECC;
+	 z-index: 999;
+	 float:right;
+	 margin: 0 12px 12px 12px;
+	 padding-bottom: 10px;
+	 list-style:none;
+	 -moz-border-radius-topleft: 12px;
+	 -moz-border-radius-bottomright: 12px;
+	 }
+
+	 #document-project-url ul
+	 {
+	 list-style: none;
+	 display: block;
+	 border:0;
+	 padding: 0;
+	 margin: 0 3em 0 1.1em;
+	 color: #3C4B6B;
+	 background: none;
+	 width: auto;
+	 font-size: 103%;
+	 font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+	 }
+
+	 #document-project-url a:link, #document-project-url a:visited
+	 {
+	 color:#3C4B6B;
+	 text-decoration:  none;
+	 }
+
+	 #document-project-url a:hover
+	 {
+	 color: #000000;
+	 text-decoration: underline;
+	 }
+
+	 #document-project-url h4 a:link, #document-project-url  h4 a:visited
+	 {
+	 color: #FFFFFF;
+	 }
+
+
+	 #document-project-url h4 a:hover
+	 {
+	 color: #FFFFFF;
+
+	 }
+	 #document-project-url form {
+	 margin:12px;
+	 }
+	 #document-project-url input {
+	 margin-top:3px;
+	 }
+       </style>
     </head>
     <body>
       <!--  Logo  -->
@@ -49,15 +146,15 @@
 <!-- XXX: reinstate this       <div id="screen-switcher"></div> -->
       </div>
       <div id="left-hand-navigation">
-        
+
         <!--  Main Menu NEED LEVEL TWO HEADER AND FOOTER -->
         <div id="menu">
-          <ul class="level-one">            
+          <ul class="level-one">
             <li class="selected">
               <a class="selected" tal:attributes="href app/url_path">Package Index</a>
-            
+
               <ul class="level-two">
-                
+
                 <tal:for-nav repeat="link app/navlinks_html">
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
@@ -76,13 +173,13 @@
             </li>
 
 
-            
+
 
             <li class=""><a href="http://www.python.org/about" class="" title="About The Python Language">About</a>
             </li><li class=""><a href="http://www.python.org/news" class="" title="">News</a>
             </li><li class=""><a href="http://www.python.org/doc" class="" title="">Documentation</a>
             </li><li class=""><a href="http://www.python.org/download" title="">Download</a>
-            
+
 
             </li><li class=""><a href="http://www.python.org/community" class="" title="">Community</a>
             </li><li class=""><a href="http://www.python.org/psf" class="" title="Python Software Foundation">Foundation</a>
@@ -91,7 +188,7 @@
           </li>
           </ul>
         </div>
-              
+
       </div>
       <div id="content-body">
         <div id="body-main">
@@ -100,81 +197,96 @@
             <div id="breadcrumb">
               <a tal:attributes="href app/url_path">Package Index</a>
               <tal:block condition="exists:data/version">
-                <span class="breadcrumb-separator">&gt;</span> 
+                <span class="breadcrumb-separator">&gt;</span>
                 <a tal:content="data/title" tal:attributes="href python:app.packageURL(data['name'], data['version'])"></a>
               </tal:block>
-              
+
             </div>
 
-            <div id="document-navigation" style="overflow-y: auto; max-height: 15em; overflow-x: hidden;">
-              <tal:if-not-user condition="not: app/loggedin">
-                <h4>Not Logged In</h4>
+	    <div id="document-floating" class="floating-box">
 
-                <ul>
-		  <li tal:condition="app/username"><a tal:attributes="href python:app.link_action('clear_auth')">Clear Basic Auth</a></li>
-                  <li><a tal:attributes="href python: app.link_action('login')">Login</a></li>
-                  <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
-                  <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
-		  <li>Use <a tal:attributes="href string:${app/url_path}?:action=openid">OpenID</a>
-                    <tal:block tal:repeat="prov data/providers">
-                     <a tal:attributes="href prov/login">
-                     <img tal:attributes="src prov/favicon; title prov/title"/>
-                     </a>
-                    </tal:block>
-                  </li>
-                </ul>
+              <div id="document-navigation" class="floating-box">
+		<tal:if-not-user condition="not: app/loggedin">
+                  <h4>Not Logged In</h4>
 
-              </tal:if-not-user>
-
-              <tal:if-user condition="app/loggedin">
-
-                <h4>Welcome <span tal:replace="app/username"/></h4>
-                <li>
-                  <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
-                </li>
-
-                <tal:let define="packages python:app.store.user_packages(app.username)">
-                  <tal:if-packages condition="packages">
-                    <li>
-                      Your packages:
+                  <ul>
+		    <li tal:condition="app/username"><a tal:attributes="href python:app.link_action('clear_auth')">Clear Basic Auth</a></li>
+                    <li><a tal:attributes="href python: app.link_action('login')">Login</a></li>
+                    <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
+                    <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
+		    <li>Use <a tal:attributes="href string:${app/url_path}?:action=openid">OpenID</a>
+                      <tal:block tal:repeat="prov data/providers">
+			<a tal:attributes="href prov/login">
+                       <img tal:attributes="src prov/favicon; title prov/title"/>
+			</a>
+                      </tal:block>
                     </li>
-                    <ul>
-                      
+                  </ul>
+
+		</tal:if-not-user>
+
+		<tal:if-user condition="app/loggedin">
+
+                  <h4>Welcome <span tal:replace="app/username"/></h4>
+                  <li>
+                    <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
+                  </li>
+
+                  <tal:let define="packages python:app.store.user_packages(app.username)">
+                    <tal:if-packages condition="packages">
                       <li>
-                        <tal:block repeat="pkg_info packages">
-                          <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
-                             tal:content="python:pkg_info[0]">package</a><br />
-                        </tal:block>
+			Your packages:
                       </li>
-                    </ul>
-                  </tal:if-packages>
-                </tal:let>
+                      <ul>
+			<li>
+                          <tal:block repeat="pkg_info packages">
+                            <a tal:attributes="href python: app.link_action('pkg_edit', name=pkg_info[0])"
+                               tal:content="python:pkg_info[0]">package</a><br />
+                          </tal:block>
+			</li>
+                      </ul>
+                    </tal:if-packages>
+                  </tal:let>
 
-                <li>
-                  <a tal:attributes="href python:app.link_action('logout')">Logout</a>
-                </li>
-              </tal:if-user>
+                  <li>
+                    <a tal:attributes="href python:app.link_action('logout')">Logout</a>
+                  </li>
+		</tal:if-user>
 
-            
             </div>
+
+	    <tal:block condition="data/project_url | nothing">
+	      <div id="document-project-url" class="floating-box">
+		<h4>Project Links</h4>
+		<ul>
+		  <tal:block tal:repeat="project data/project_url">
+          <li>
+            <a tal:content="python:project[0]" tal:attributes="href python:project[1]"></a>
+		    </li>
+		  </tal:block>
+		</ul>
+	      </div>
+	    </tal:block>
+
+	    </div>
 
             <div class="section">
 
               <h1 tal:content="data/title"></h1>
 
               <metal:slot define-slot="body">
-                
+
                 This template has not replaced its body slot.
-                
+
               </metal:slot>
-              
+
             </div>
 
 
           </div>
           <div id="footer"><div id="credits">
             <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
-            <a href="http://www.xs4all.com/" title="Web and email hosting provided by xs4all, Netherlands">hosting by xs4all</a> / 
+            <a href="http://www.xs4all.com/" title="Web and email hosting provided by xs4all, Netherlands">hosting by xs4all</a> /
             <a href="http://www.pollenation.net/" title="Design and content management system by Pollenation Internet, Yorkshire">design by pollenation</a>
           </div>
           Copyright © 1990-2010, <a href="http://www.python.org/psf">Python Software Foundation</a><br />

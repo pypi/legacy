@@ -1,10 +1,10 @@
 -- Table structure for table: users
-CREATE TABLE users ( 
-   name TEXT PRIMARY KEY, 
-   password TEXT, 
-   email TEXT, 
+CREATE TABLE users (
+   name TEXT PRIMARY KEY,
+   password TEXT,
+   email TEXT,
    gpg_keyid TEXT,
-   last_login TIMESTAMP,
+   last_login TIMESTAMP
 );
 CREATE INDEX users_email_idx ON users(email);
 
@@ -12,7 +12,7 @@ CREATE INDEX users_email_idx ON users(email);
 
 CREATE TABLE openids (
    id TEXT PRIMARY KEY,
-   name TEXT REFERENCES users,
+   name TEXT REFERENCES users
 );
 
 CREATE TABLE openid_sessions (
@@ -41,7 +41,7 @@ CREATE INDEX openid_nonces_nonce ON openid_nonces(nonce);
 CREATE TABLE cookies (
     cookie text PRIMARY KEY,
     name text references users,
-    last_seen timestamp,
+    last_seen timestamp
 );
 CREATE INDEX cookies_last_seen ON cookies(last_seen);
 
@@ -54,33 +54,33 @@ CREATE INDEX sshkeys_name ON sshkeys(name);
 CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
 
 -- Table structure for table: rego_otk
-CREATE TABLE rego_otk ( 
-   name TEXT REFERENCES users, 
+CREATE TABLE rego_otk (
+   name TEXT REFERENCES users,
    otk TEXT,
    date TIMESTAMP );
 CREATE INDEX rego_otk_name_idx ON rego_otk(name);
 
 
 -- Table structure for table: journals
-CREATE TABLE journals ( 
-   name TEXT, 
-   version TEXT, 
-   action TEXT, 
-   submitted_date TIMESTAMP, 
-   submitted_by TEXT REFERENCES users, 
+CREATE TABLE journals (
+   name TEXT,
+   version TEXT,
+   action TEXT,
+   submitted_date TIMESTAMP,
+   submitted_by TEXT REFERENCES users,
    submitted_from TEXT
 );
 CREATE INDEX journals_name_idx ON journals(name);
 CREATE INDEX journals_version_idx ON journals(version);
-CREATE INDEX journals_latest_releases ON 
-  journals(submitted_date, name, version) 
+CREATE INDEX journals_latest_releases ON
+  journals(submitted_date, name, version)
   WHERE version IS NOT NULL AND action='new release';
-CREATE INDEX journals_changelog ON 
+CREATE INDEX journals_changelog ON
   journals(submitted_date, name, version, action);
 
 -- Table structure for table: packages
-CREATE TABLE packages ( 
-   name TEXT PRIMARY KEY, 
+CREATE TABLE packages (
+   name TEXT PRIMARY KEY,
    stable_version TEXT,
    normalized_name TEXT,
    autohide BOOLEAN DEFAULT TRUE,
@@ -122,7 +122,7 @@ CREATE TABLE cheesecake_subindices (
 
 
 -- Table structure for table: releases
-CREATE TABLE releases ( 
+CREATE TABLE releases (
    name TEXT REFERENCES packages ON UPDATE CASCADE,
    version TEXT,
    author TEXT,
@@ -137,25 +137,22 @@ CREATE TABLE releases (
    keywords TEXT,
    platform TEXT,
    download_url TEXT,
+   requires_python TEXT,
    cheesecake_installability_id INTEGER REFERENCES cheesecake_main_indices,
    cheesecake_documentation_id INTEGER REFERENCES cheesecake_main_indices,
    cheesecake_code_kwalitee_id INTEGER REFERENCES cheesecake_main_indices,
    _pypi_ordering INTEGER,
    _pypi_hidden BOOLEAN,
-   cheesecake_installability_id INTEGER REFERENCES cheesecake_main_indices,
-   cheesecake_documentation_id INTEGER REFERENCES cheesecake_main_indices,
-   cheesecake_code_kwalitee_id INTEGER REFERENCES cheesecake_main_indices,
    PRIMARY KEY (name, version)
 );
 CREATE INDEX release_pypi_hidden_idx ON releases(_pypi_hidden);
-
 
 -- Table structure for table: trove_classifiers
 -- l2, l3, l4, l5 is the corresponding parent;
 -- 0 if there is no parent on that level (each node is its
 -- own parent)
-CREATE TABLE trove_classifiers ( 
-   id INTEGER PRIMARY KEY, 
+CREATE TABLE trove_classifiers (
+   id INTEGER PRIMARY KEY,
    classifier TEXT UNIQUE,
    l2 INTEGER,
    l3 INTEGER,
@@ -219,12 +216,66 @@ CREATE INDEX rel_obs_name_idx ON release_obsoletes(name);
 CREATE INDEX rel_obs_version_id_idx ON release_obsoletes(version);
 CREATE INDEX rel_obs_name_version_idx ON release_obsoletes (name,version);
 
+-- Table structure for table: release_requires_external
+CREATE TABLE release_requires_external (
+   name TEXT,
+   version TEXT,
+   specifier TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
+);
+CREATE INDEX rel_req_ext_name_idx ON release_requires_external(name);
+CREATE INDEX rel_req_ext_version_id_idx ON release_requires_external(version);
+CREATE INDEX rel_req_ext_name_version_idx ON release_requires_external(name,version);
+
+-- Table structure for table: release_requires_dist
+CREATE TABLE release_requires_dist (
+   name TEXT,
+   version TEXT,
+   specifier TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
+);
+CREATE INDEX rel_req_dist_name_idx ON release_requires_dist(name);
+CREATE INDEX rel_req_dist_version_id_idx ON release_requires_dist(version);
+CREATE INDEX rel_req_dist_name_version_idx ON release_requires_dist(name,version);
+
+-- Table structure for table: release_provides_dist
+CREATE TABLE release_provides_dist (
+   name TEXT,
+   version TEXT,
+   specifier TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
+);
+CREATE INDEX rel_prov_dist_name_idx ON release_provides_dist(name);
+CREATE INDEX rel_prov_dist_version_id_idx ON release_provides_dist(version);
+CREATE INDEX rel_prov_dist_name_version_idx ON release_provides_dist(name,version);
+
+-- Table structure for table: release_obsoletes_dist
+CREATE TABLE release_obsoletes_dist (
+   name TEXT,
+   version TEXT,
+   specifier TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
+);
+CREATE INDEX rel_obs_dist_name_idx ON release_obsoletes_dist(name);
+CREATE INDEX rel_obs_dist_version_id_idx ON release_obsoletes_dist(version);
+CREATE INDEX rel_obs_dist_name_version_idx ON release_obsoletes_dist(name,version);
+
+-- Table structure for table: release_project_url
+CREATE TABLE release_project_url (
+   name TEXT,
+   version TEXT,
+   specifier TEXT,
+   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
+);
+CREATE INDEX rel_proj_url_name_idx ON release_project_url(name);
+CREATE INDEX rel_proj_url_version_id_idx ON release_project_url(version);
+CREATE INDEX rel_proj_url_name_version_idx ON release_project_url(name,version);
 
 -- Table structure for table: package_files
 -- python version is only first two digits
 -- actual file path is constructed <py version>/<a-z>/<name>/<filename>
 -- we remember filename because it can differ
-CREATE TABLE release_files ( 
+CREATE TABLE release_files (
    name TEXT,
    version TEXT,
    python_version TEXT,
@@ -243,10 +294,10 @@ CREATE INDEX release_files_name_version_idx ON release_files(name,version);
 
 
 -- Table structure for table: package_urls
-CREATE TABLE release_urls ( 
+CREATE TABLE release_urls (
    name TEXT,
    version TEXT,
-   url TEXT, 
+   url TEXT,
    packagetype TEXT,
    FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
 );
@@ -266,9 +317,9 @@ CREATE INDEX description_urls_name_version_idx ON description_urls(name, version
 
 -- Table structure for table: roles
 -- Note: roles are Maintainer, Admin, Owner
-CREATE TABLE roles ( 
-   role_name TEXT, 
-   user_name TEXT REFERENCES users, 
+CREATE TABLE roles (
+   role_name TEXT,
+   user_name TEXT REFERENCES users,
    package_name TEXT REFERENCES packages ON UPDATE CASCADE
 );
 CREATE INDEX roles_pack_name_idx ON roles(package_name);
@@ -287,7 +338,7 @@ INSERT INTO timestamps(name, value) VALUES('browse_tally','1970-01-01');
 -- Table structure for table: timestamps
 -- Note: stamp_name is ftp, http
 CREATE TABLE browse_tally (
-   trove_id INTEGER PRIMARY KEY,	
+   trove_id INTEGER PRIMARY KEY,
    tally INTEGER
 );
 
@@ -307,7 +358,7 @@ CREATE TABLE comments(
   in_reply_to INTEGER REFERENCES comments ON DELETE CASCADE
 );
 CREATE TABLE ratings(
-   id SERIAL UNIQUE;
+   id SERIAL UNIQUE,
    name TEXT,
    version TEXT,
    user_name TEXT REFERENCES users ON DELETE CASCADE,

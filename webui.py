@@ -4,6 +4,7 @@ import time, random, smtplib, base64, sha, email, types, stat, urlparse
 import re, zipfile, logging, pprint, sets, shutil, Cookie, subprocess
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
+from distutils2.metadata import DistributionMetadata
 
 # Importing M2Crypto patches urllib; don't let them do that
 orig = urllib.URLopener.open_https.im_func
@@ -335,7 +336,6 @@ class WebUI:
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         context['standard_template'] = PyPiPageTemplate(
             "standard_template.pt", template_dir)
-
         template = PyPiPageTemplate(filename, template_dir)
         content = template(**context)
 
@@ -1021,7 +1021,8 @@ class WebUI:
     def display_pkginfo(self, name=None, version=None):
         '''Reconstruct and send a PKG-INFO metadata file.
         '''
-
+        # XXX tarek need to add 1.2 support here
+        #
         info, name, version = self._get_pkg_info(name, version)
         if not info:
             return self.fail('No such package / version',
@@ -1161,7 +1162,10 @@ class WebUI:
 
 # RJ: disabled cheesecake because the (strange) errors were getting annoying
 #        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
-        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform'.split()
+        columns = ('name version author author_email maintainer '
+                   'maintainer_email home_page requires_python download_url '
+                   'summary license description description_html keywords '
+                   'platform').split()
 
         release = {'description_html': ''}
         for column in columns:
@@ -1223,6 +1227,13 @@ class WebUI:
             total += r['rating']
             tally[r['rating']] += 1
 
+        # New metadata
+        requires_dist = self.store.get_package_requires_dist(name, version)
+        provides_dist = self.store.get_package_provides_dist(name, version)
+        obsoletes_dist = self.store.get_package_obsoletes_dist(name, version)
+        project_url = self.store.get_package_project_url(name, version)
+        requires_external = self.store.get_package_requires_external(name, version)
+
         for c in comments:
             add = c, []
             parent_comments[c['id']] = add[1]
@@ -1259,7 +1270,7 @@ class WebUI:
                         rating = ', %s points' % rating
                 else:
                     rating = ''
-                result.append("<li>%s (%s%s):<br/>%s %s" % 
+                result.append("<li>%s (%s%s):<br/>%s %s" %
                                 (c['user'], date, rating, message, reply))
                 if children:
                     result.extend(render_comments(children, False))
@@ -1288,7 +1299,13 @@ class WebUI:
                             usinglatest=using_latest,
                             latestversion=latest_version,
                             latestversionurl=latest_version_url,
-                            action=self.link_action())
+                            action=self.link_action(),
+                            requires_dist=requires_dist,
+                            provides_dist=provides_dist,
+                            obsoletes_dist=obsoletes_dist,
+                            requires_external=requires_external,
+                            project_url=project_url,
+                            requires_python=release.get('requires_python', ''))
 
     def index(self, nav_current='index', releases=None):
         ''' Print up an index page
@@ -1569,7 +1586,10 @@ class WebUI:
             data['platform'] = ','.join(data['platform'])
 
         # make sure relationships are lists
-        for name in ('requires', 'provides', 'obsoletes'):
+        for name in ('requires', 'provides', 'obsoletes',
+                     'requires_dist', 'provides_dist',
+                     'obsoletes_dist',
+                     'requires_external', 'project_url'):
             if data.has_key(name) and not isinstance(data[name],
                     types.ListType):
                 data[name] = [data[name]]
@@ -1671,7 +1691,10 @@ class WebUI:
             v = self.form[k]
             if k == '_pypi_hidden':
                 v = v == '1'
-            elif k in ('requires', 'provides', 'obsoletes'):
+            elif k in ('requires', 'provides', 'obsoletes',
+                       'requires_dist', 'provides_dist',
+                       'obsoletes_dist',
+                       'requires_external', 'project_url'):
                 if not isinstance(v, list):
                     v = [x.strip() for x in re.split('\s*[\r\n]\s*', v)]
                 else:
@@ -1689,7 +1712,10 @@ class WebUI:
             data[k.lower()] = v
 
         # make sure relationships are lists
-        for name in ('requires', 'provides', 'obsoletes'):
+        for name in ('requires', 'provides', 'obsoletes',
+                     'requires_dist', 'provides_dist',
+                     'obsoletes_dist',
+                     'requires_external', 'project_url'):
             if data.has_key(name) and not isinstance(data[name],
                     types.ListType):
                 data[name] = [data[name]]
@@ -1716,6 +1742,23 @@ class WebUI:
         self.write_template('message.pt', title='Package verification',
             message='Validated OK')
 
+    def _validate_metadata_1_2(self, data):
+        # loading the metadata into
+        # a DistributionMetadata instance
+        # so we can use its check() method
+        metadata = DistributionMetadata()
+        for key, value in data.items():
+            metadata[key] = value
+        metadata['Metadata-Version'] = '1.2'
+        missing, warnings = metadata.check()
+
+        # raising the first problem
+        if len(missing) > 0:
+            raise ValueError, '"%s" is missing' % missing[0]
+
+        if len(warnings) > 0:
+            raise ValueError, warnings[0]
+
     def validate_metadata(self, data):
         ''' Validate the contents of the metadata.
         '''
@@ -1724,7 +1767,10 @@ class WebUI:
         if not data.get('version', ''):
             raise ValueError, 'Missing required field "version"'
         if data.has_key('metadata_version'):
+            metadata_version = data['metadata_version']
             del data['metadata_version']
+        else:
+            metadata_version = '1.0'  # default
 
         # Traditionally, package names are restricted only for
         # technical reasons; / is not allowed because it may be
@@ -1749,6 +1795,10 @@ class WebUI:
                 map(versionpredicate.check_provision, data['provides'])
             except ValueError, message:
                 raise ValueError, 'Bad "provides" syntax: %s'%message
+
+        # check PEP 345 fields
+        if metadata_version == '1.2':
+            self._validate_metadata_1_2(data)
 
         # check classifiers
         if data.has_key('classifiers'):
@@ -1866,7 +1916,7 @@ class WebUI:
         if not self.form.has_key('msg'):
             raise FormError
         comment = self.store.get_comment(self.form['msg'])
-        self.write_template('comment.pt', title='Reply to comment', 
+        self.write_template('comment.pt', title='Reply to comment',
                             comment=comment)
 
     def addcomment(self):
@@ -1890,7 +1940,7 @@ class WebUI:
         comment_email(self.store, name, version, self.username, comment, [orig['user']])
 
         return self.display(name=name, version=version)
-        
+
 
     def delcomment(self):
         if not self.authenticated:
@@ -2716,15 +2766,15 @@ class WebUI:
         return self.register_form()
 
     def rp_discovery(self):
-        payload = '''<xrds:XRDS  
-                xmlns:xrds="xri://$xrds"  
-                xmlns="xri://$xrd*($v*2.0)">  
-                <XRD>  
-                     <Service priority="1">  
-                              <Type>http://specs.openid.net/auth/2.0/return_to</Type>  
-                              <URI>%s</URI>  
-                     </Service>  
-                </XRD>  
+        payload = '''<xrds:XRDS
+                xmlns:xrds="xri://$xrds"
+                xmlns="xri://$xrd*($v*2.0)">
+                <XRD>
+                     <Service priority="1">
+                              <Type>http://specs.openid.net/auth/2.0/return_to</Type>
+                              <URI>%s</URI>
+                     </Service>
+                </XRD>
                 </xrds:XRDS>
         ''' % (self.config.url+'?:action=openid_return')
         self.handler.send_response(200)
