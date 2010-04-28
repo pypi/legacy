@@ -184,4 +184,99 @@ ul.nodot {
     list-style-type: none;
 }
 
-</style>
+
+
+.floating-box {
+float: right;
+}
+
+.homepage-box h4, #document-project-url h4, .externallinks h4
+{
+font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+font-size: 88%;
+font-weight: bold;
+padding: 3px 0 4px 12px;
+margin-bottom:8px;
+border-bottom:3px solid #d5ad42;
+background-color: #F4F4F4;
+text-align: left;
+z-index: 0;
+-moz-border-radius-topleft: 16px;
+}
+
+#document-project-url h4, .homepage-box h4, .externallinks h4 {
+-moz-border-radius-topleft:11px;
+background-color:#376A94;
+color:#FFFFFF;
+font-family:Arial,Verdana,Geneva,"Bitstream Vera Sans",Helvetica,sans-serif;
+font-size:94%;
+font-weight:bold;
+margin:0;
+padding:3px 0 4px 12px;
+text-align:left;
+z-index:0;
+}
+
+#document-project-url
+{
+font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+font-size:  98%;
+text-align: left;
+color: #3C4B6B;
+background-color: #F7F6F0;
+width: 15em;
+border: 1px solid #B7BECC;
+z-index: 999;
+float:right;
+margin: 0 12px 12px 12px;
+padding-bottom: 10px;
+list-style:none;
+-moz-border-radius-topleft: 12px;
+-moz-border-radius-bottomright: 12px;
+}
+
+#document-project-url ul
+{
+list-style: none;
+display: block;
+border:0;
+padding: 0;
+margin: 0 3em 0 1.1em;
+color: #3C4B6B;
+background: none;
+width: auto;
+font-size: 103%;
+font-family: Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+}
+
+#document-project-url a:link, #document-project-url a:visited
+{
+color:#3C4B6B;
+text-decoration:  none;
+}
+
+#document-project-url a:hover
+{
+color: #000000;
+text-decoration: underline;
+}
+
+#document-project-url h4 a:link, #document-project-url  h4 a:visited
+{
+color: #FFFFFF;
+}
+
+
+#document-project-url h4 a:hover
+{
+color: #FFFFFF;
+
+}
+#document-project-url form {
+margin:12px;
+}
+#document-project-url input {
+margin-top:3px;
+}
+
+
