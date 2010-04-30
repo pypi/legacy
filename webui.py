@@ -2292,7 +2292,8 @@ class WebUI:
                 if not fpath.startswith(path):
                     raise ValueError, "invalid path name:"+fname
                 if fname.endswith("/"):
-                    os.mkdir(fpath)
+                    if not os.path.isdir(fpath):
+                        os.mkdir(fpath)
                     continue
                 upperdirs = os.path.dirname(fpath)
                 if not os.path.exists(upperdirs):
