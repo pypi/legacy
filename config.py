@@ -22,7 +22,7 @@ class Config:
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
-        self.pydotorg = c.get('webui', 'pydotorg')
+        self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')
@@ -40,3 +40,12 @@ class Config:
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
+    def make_https(self):
+        if self.url.startswith("http:"):
+            self.url = "https"+self.url[4:]
+            self.pydotorg = '/'
+
+    def make_http(self):
+        if self.url.startswith("https:"):
+            self.url = "http"+self.url[5:]
+            self.pydotorg = self.orig_pydotorg

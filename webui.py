@@ -107,7 +107,7 @@ You can read all comments on %(url)s.
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-providers = (('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
+providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
              ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
              ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
              )
@@ -230,6 +230,11 @@ class WebUI:
             self.form = decode_form(fs)
         else:
             self.form = None
+
+        if env.get("HTTPS") == 'on':
+            self.config.make_https()
+        else:
+            self.config.make_http()
 
         (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
         self.url_machine = '%s://%s'%(protocol, machine)
