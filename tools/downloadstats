@@ -1,0 +1,24 @@
+#!/usr/bin/python
+# Generates download stats for all days in the given log files,
+# except for the oldest and the newest day.
+import sys, os, csv
+import apache_reader, apache_stats
+
+statsdir = '/data/pypi/local-stats/'
+
+days = set()
+records = []
+for fn in sys.argv[1:]:
+    for record in apache_reader.ApacheLogReader(fn, '/packages'):
+        days.add((record['year'], record['month'], record['day']))
+        records.append(record)
+
+days = sorted(days)[1:-1]
+
+class Stats(apache_stats.LocalStats):
+    def _get_logs(self, logfile, files_url):
+        return records
+stats = Stats()
+for year,month,day in days:
+    stats.build_local_stats(year, month, day, None, statsdir+'days')
+
