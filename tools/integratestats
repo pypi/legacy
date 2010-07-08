@@ -3,7 +3,7 @@ import sys, os, socket, psycopg2, urllib, re, bz2, cStringIO, ConfigParser
 sys.path.append(os.path.dirname(__file__)+"/..")
 import apache_stats
 
-statsdir = '/data/pypi/stats/'
+statsdir = '/data/www/pypi/stats/'
 
 def integrate(config, data):
     # Setup database connection
