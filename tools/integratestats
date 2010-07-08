@@ -3,7 +3,7 @@ import sys, os, socket, psycopg2, urllib, re, bz2, cStringIO, ConfigParser
 sys.path.append(os.path.dirname(__file__)+"/..")
 import apache_stats
 
-statsdir = '/data/www/pypi/stats/'
+statsdir = '/data/www/pypi/stats'
 
 def integrate(config, data):
     # Setup database connection
@@ -24,7 +24,7 @@ def integrate_remote(config, host, dbupdate=True):
     index = urllib.urlopen('http://%s.pypi.python.org/local-stats/days' % host).read()
     files = set(re.findall('href=.(20..-..-..).bz2', index))
     try:
-        integrated = open('/data/pypi/stats/integrated/'+host).readlines()
+        integrated = open(statsdir+'/integrated/'+host).readlines()
         integrated = set([x.strip() for x in integrated])
     except IOError:
         integrated = set()
@@ -41,7 +41,7 @@ def integrate_remote(config, host, dbupdate=True):
             # database integration
             integrate(config, delta)
         integrated.add(m)
-        open('/data/pypi/stats/integrated/'+host, 'w').write('\n'.join(sorted(integrated)))
+        open(statsdir+'/integrated/'+host, 'w').write('\n'.join(sorted(integrated)))
 
 def main():
     lasts = socket.gethostbyname_ex('last.pypi.python.org')
