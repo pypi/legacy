@@ -37,13 +37,6 @@ class LocalStats(object):
         current line. if the callable returns True, 
         the line is not included
         """
-        if isinstance(fileobj, str):
-            fileobj = self._get_file_obj(fileobj, 'w', compression)
-            file_created = True
-        else:
-            file_created = False
-
-        writer = csv.writer(fileobj)
         downloads = {}
         for log in self._get_logs(logfile, files_url):
             if filter is not None:
@@ -58,6 +51,16 @@ class LocalStats(object):
                 downloads[key] += count
             else:
                 downloads[key] = count
+        self._write_stats(fileobj, downloads)
+
+    def _write_stats(self, fileobj, downloads, compression=None):
+        if isinstance(fileobj, str):
+            fileobj = self._get_file_obj(fileobj, 'w', compression)
+            file_created = True
+        else:
+            file_created = False
+
+        writer = csv.writer(fileobj)
         filenames = downloads.keys()
         filenames.sort()
         for key in filenames:
@@ -107,8 +110,16 @@ class LocalStats(object):
             yield {'packagename': line[0],
                    'filename': line[1],
                    'useragent': line[2],
-                   'count': line[3]}
+                   'count': int(line[3])}
         #reader.close()
+
+    def read_stats_dict(self, stats_file):
+        res = {}
+        for r in self.read_stats(stats_file):
+            key = (r['packagename'], r['filename'], r['useragent'])
+            value = r['count']
+            res[key] = value
+        return res
 
     def build_local_stats(self, year, month, day, logfile, directory=None):
         """builds local stats with default values"""
@@ -118,6 +129,27 @@ class LocalStats(object):
 
         self.build_daily_stats(year, month, day, logfile, filename, 
                                compression='bz2')
+
+    def integrate_stats(self, targetdir, year, month, day, fd):
+        new = self.read_stats_dict(fd)
+        oldpath = "%s/days/%s-%.2s-%.2s.bz2" % (targetdir, year, month, day)
+        if os.path.exists(oldpath):
+            old = self.read_stats_dict(oldpath)
+            for k, v in new.items():
+                old[k] = old.get(k, 0) + v
+        else:
+            old = new
+        self._write_stats(oldpath, old, 'bz2')
+        monthpath = "%s/months/%s-%.2s.bz2" % (targetdir, year, month)
+        if os.path.exists(monthpath):
+            old = self.read_stats_dict(monthpath)
+            for k, v in new.items():
+                old[k] = old.get(k, 0) + v
+        else:
+            old = new
+        self._write_stats(monthpath, old, 'bz2')
+        return new
+        
 
 class ApacheLocalStats(LocalStats):
     """concrete class that uses the ApacheLogReader"""

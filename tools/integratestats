@@ -1,0 +1,65 @@
+#!/usr/bin/python
+import sys, os, socket, psycopg2, urllib, re, bz2, cStringIO, ConfigParser
+sys.path.append(os.path.dirname(__file__)+"/..")
+import apache_stats
+
+statsdir = '/data/pypi/stats/'
+
+def integrate(config, data):
+    # Setup database connection
+    c = ConfigParser.ConfigParser({'user':'', 'password':''})
+    c.read(config)
+    dbname = c.get('database', 'name')
+    dbuser = c.get('database', 'user')
+    dbpass = c.get('database', 'password')
+    dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass)
+    cursor = dbconn.cursor()
+    for (package, filename, browser), count in data.items():
+        cursor.execute('update release_files set downloads=downloads+%s where filename=%s',
+                       (count, filename))
+    dbconn.commit()
+    dbconn.close()
+
+def integrate_remote(config, host, dbupdate=True):
+    index = urllib.urlopen('http://%s.pypi.python.org/local-stats/days' % host).read()
+    files = set(re.findall('href=.(20..-..-..).bz2', index))
+    try:
+        integrated = open('/data/pypi/stats/integrated/'+host).readlines()
+        integrated = set([x.strip() for x in integrated])
+    except IOError:
+        integrated = set()
+    missing = files-integrated
+    stats = apache_stats.LocalStats()
+    for m in missing:
+        data = urllib.urlopen('http://%s.pypi.python.org/local-stats/days/%s.bz2' % (host, m)).read()
+        data = bz2.decompress(data)
+        data = cStringIO.StringIO(data)
+        year, month, day = m.split('-')
+        # index integration
+        delta = stats.integrate_stats(statsdir, year, month, day, data)
+        if dbupdate:
+            # database integration
+            integrate(config, delta)
+        integrated.add(m)
+        open('/data/pypi/stats/integrated/'+host, 'w').write('\n'.join(sorted(integrated)))
+
+def main():
+    lasts = socket.gethostbyname_ex('last.pypi.python.org')
+    # look for name X.pypi.python.org
+    lasts = [lasts[0]] + lasts[1]
+    for last in lasts:
+        if last[1:] == '.pypi.python.org':
+            break
+    else:
+        raise ValueError, "Could not properly resolve last mirror name"
+    last = last.split('.')[0]
+    integrate_remote(None, 'a', False)
+    host = 'b'
+    while True:
+        integrate_remote(sys.argv[1], host)
+        host = chr(ord(host)+1)
+        if host == last:
+            break
+
+main()
+        
