@@ -51,7 +51,7 @@ class LocalStats(object):
                 downloads[key] += count
             else:
                 downloads[key] = count
-        self._write_stats(fileobj, downloads)
+        self._write_stats(fileobj, downloads, compression=compression)
 
     def _write_stats(self, fileobj, downloads, compression=None):
         if isinstance(fileobj, str):
