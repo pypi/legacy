@@ -6,11 +6,6 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
 
-# Importing M2Crypto patches urllib; don't let them do that
-orig = urllib.URLopener.open_https.im_func
-from M2Crypto import EVP, DSA
-urllib.URLopener.open_https = orig
-
 import psycopg2
 
 try:
@@ -20,7 +15,7 @@ except ImportError:
 
 # local imports
 import store, config, trove, versionpredicate, verify_filetype, rpc
-import MailingLogger, openid
+import MailingLogger, openid2rp
 from mini_pkg_resources import safe_name
 
 esc = cgi.escape
@@ -797,15 +792,15 @@ class WebUI:
                 return self.fail('Unknown provider')
             stypes, url, assoc_handle = self.store.get_provider_session(p)
             return_to = self.config.url+'?:action=openid_return'
-            url = openid.request_authentication(stypes, url, assoc_handle, return_to)
+            url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
             self.store.commit()
             raise RedirectTemporary(url)
         if 'openid_identifier' in self.form:
             # OpenID with explicit ID
-            kind, claimed_id = openid.normalize_uri(self.form['openid_identifier'])
+            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
             if kind == 'xri':
                 return self.fail('xri resolution is not supported.')
-            res = openid.discover(claimed_id)
+            res = openid2rp.discover(claimed_id)
             if not res:
                 return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
             stypes, op_endpoint, op_local = res
@@ -816,7 +811,7 @@ class WebUI:
             except ValueError, e:
                 return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
-            url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
+            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()
             raise RedirectTemporary(url)
         if not self.authenticated:
@@ -2424,15 +2419,15 @@ class WebUI:
                     raise FormError, "Invalid session"
                 provider, url, stypes, session = session
                 try:
-                    signed = openid.authenticate(session, qs)
+                    signed = openid2rp.authenticate(session, qs)
                 except Exception, e:
                     return self.fail('OpenID response has been tampered with:'+repr(e))
-                if not openid.is_op_endpoint(stypes):
+                if not openid2rp.is_op_endpoint(stypes):
                     claimed_id = provider
                 elif 'claimed_id' in signed:
                     claimed_id = qs['openid.claimed_id'][0]
                     # Need to perform discovery to verify claimed ID is really managed by provider
-                    discovered = openid.discover(claimed_id)
+                    discovered = openid2rp.discover(claimed_id)
                     if not discovered or discovered[1] != url:
                         return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
                 else:
@@ -2631,10 +2626,10 @@ class WebUI:
         if not self.loggedin:
             return self.fail('You are not logged in')
         if 'openid_identifier' in self.form:
-            kind, claimed_id = openid.normalize_uri(self.form['openid_identifier'])
+            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
             if kind == 'xri':
                 return self.fail('XRI resolution is not supported')
-            res = openid.discover(claimed_id)
+            res = openid2rp.discover(claimed_id)
             if not res:
                 return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
             stypes, op_endpoint, op_local = res
@@ -2645,7 +2640,7 @@ class WebUI:
             except ValueError, e:
                 return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
-            url = openid.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
+            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()
             raise RedirectTemporary(url)
         if not self.form.has_key("provider"):
@@ -2657,7 +2652,7 @@ class WebUI:
             return self.fail('Unknown provider')
         stypes, url, assoc_handle = self.store.get_provider_session(p)
         return_to = self.config.url+'?:action=openid_return'
-        url = openid.request_authentication(stypes, url, assoc_handle, return_to)
+        url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
         self.store.commit()
         raise RedirectTemporary(url)
 
@@ -2679,7 +2674,7 @@ class WebUI:
             return self.fail('invalid session')
         provider, url, stypes, session = session
         try:
-            signed = openid.authenticate(session, qs)
+            signed = openid2rp.authenticate(session, qs)
         except Exception, e:
             return self.fail('Login failed:'+repr(e))
         # the claimed ID in the response can't be trusted for signon requests,
@@ -2688,12 +2683,12 @@ class WebUI:
         # provider field of the session table.
         # XXX as the assoc_handle may not be signed, the return_to url should
         # contain a nonce for 1.1 providers
-        if not openid.is_op_endpoint(stypes):
+        if not openid2rp.is_op_endpoint(stypes):
             claimed_id = provider
         elif 'claimed_id' in signed:
             claimed_id = qs['openid.claimed_id'][0]
             # Need to perform discovery to verify claimed ID is really managed by provider
-            discovered = openid.discover(claimed_id)
+            discovered = openid2rp.discover(claimed_id)
             if not discovered or discovered[1] != url:
                 return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
         else:
@@ -2732,9 +2727,9 @@ class WebUI:
         for key, value in qs.items():
             openid_fields.append((key, value[0]))
         # propose email address based on response
-        email = openid.get_email(qs)
+        email = openid2rp.get_email(qs)
         # propose user name based on response
-        username = openid.get_username(qs)
+        username = openid2rp.get_username(qs)
         if isinstance(username, tuple):
             username = '.'.join(username)
         elif email and not username:

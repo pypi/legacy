@@ -11,8 +11,6 @@ these packages located at PyPI:
 - zope.tales
 - zope.i18nmessageid
 - psycopg2
-- M2Crypto
-- BeautifulSoup
 - docutils
 - distutils2
 

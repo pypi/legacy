@@ -4,7 +4,7 @@ import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
 import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
 from xml.parsers import expat
 from distutils.version import LooseVersion
-import trove, openid
+import trove, openid2rp
 from mini_pkg_resources import safe_name
 
 def enumerate(sequence):
@@ -1802,10 +1802,10 @@ class Store:
 
         # start from scratch:
         # discover service URL
-        stypes, url, op_local = openid.discover(provider[2])
+        stypes, url, op_local = openid2rp.discover(provider[2])
         # associate session
         now = datetime.datetime.now()
-        session = openid.associate(stypes, url)
+        session = openid2rp.associate(stypes, url)
         # store it
         sql = '''insert into openid_sessions
                  (provider, url, assoc_handle, expires, mac_key)
@@ -1835,7 +1835,7 @@ class Store:
 
         # associate new session
         now = datetime.datetime.now()
-        session = openid.associate(stypes, endpoint)
+        session = openid2rp.associate(stypes, endpoint)
         # store it
         sql = '''insert into openid_sessions
                  (provider, url, assoc_handle, expires, mac_key)
@@ -1866,7 +1866,7 @@ class Store:
 
     def duplicate_nonce(self, nonce):
         '''Return true if we might have seen this nonce before.'''
-        stamp = openid.parse_nonce(nonce)
+        stamp = openid2rp.parse_nonce(nonce)
         utc = calendar.timegm(stamp.utctimetuple())
         if utc < time.time()-3600:
             # older than 1h: this is probably a replay
