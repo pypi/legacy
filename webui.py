@@ -1,7 +1,7 @@
 # system imports
-import sys, os, urllib, cStringIO, traceback, cgi, binascii, getopt, md5
-import time, random, smtplib, base64, sha, email, types, stat, urlparse
-import re, zipfile, logging, pprint, sets, shutil, Cookie, subprocess
+import sys, os, urllib, cStringIO, traceback, cgi, binascii
+import time, random, smtplib, base64, email, types, urlparse
+import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
@@ -14,7 +14,7 @@ except ImportError:
     from xml.etree import cElementTree
 
 # local imports
-import store, config, trove, versionpredicate, verify_filetype, rpc
+import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp
 from mini_pkg_resources import safe_name
 
@@ -433,7 +433,7 @@ class WebUI:
                     # Invalid base64, or not exactly one colon
                     un = pw = ''
                 if self.store.has_user(un):
-                    pw = sha.sha(pw).hexdigest()
+                    pw = hashlib.sha1(pw).hexdigest()
                     user = self.store.get_user(un)
                     if pw != user['password']:
                         raise Unauthorised, 'Incorrect password'
@@ -989,7 +989,7 @@ class WebUI:
             write_element(pelem, person, 'foaf:name')
             email = info[person+'_email']
             if email and email != 'UNKNOWN':
-                obj = sha.new(email)
+                obj = hashlib.sha1(email)
                 email = binascii.b2a_hex(obj.digest())
                 elem = SE(pelem, 'foaf:mbox_sha1sum')
                 elem.text = email
@@ -1326,7 +1326,7 @@ class WebUI:
         self.write_template('index.pt', title="Index of Packages",
             matches=l)
 
-    STOPWORDS = sets.Set([
+    STOPWORDS = set([
         "a", "and", "are", "as", "at", "be", "but", "by",
         "for", "if", "in", "into", "is", "it",
         "no", "not", "of", "on", "or", "such",
@@ -2218,7 +2218,7 @@ class WebUI:
             raise FormError, "signature is not ASCII-armored"
 
         # digest content
-        m = md5.new()
+        m = hashlib.md5()
         m.update(content)
         calc_digest = m.hexdigest()
 
@@ -2228,7 +2228,7 @@ class WebUI:
             self.fail(heading='MD5 digest mismatch',
                 message='''The MD5 digest supplied does not match a
                 digest calculated from the uploaded file (m =
-                md5.new(); m.update(content); digest =
+                hashlib.md5(); m.update(content); digest =
                 m.hexdigest())''')
             return
 

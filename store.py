@@ -1,6 +1,6 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, psycopg2, time, sha, random, types, math, stat, errno
+import sys, os, re, psycopg2, time, hashlib, random, types, math, stat, errno
 import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
 from xml.parsers import expat
 from distutils.version import LooseVersion
@@ -1295,7 +1295,7 @@ class Store:
         if self.has_user(name):
             if password:
                 # update existing user, including password
-                password = sha.sha(password).hexdigest()
+                password = hashlib.sha1(password).hexdigest()
                 safe_execute(cursor,
                    'update users set password=%s, email=%s where name=%s',
                     (password, email, name))
@@ -1314,7 +1314,7 @@ class Store:
         if cursor.fetchone()[0] > 0:
             raise ValueError, "Email address already belongs to a different user"
 
-        password = sha.sha(password).hexdigest()
+        password = hashlib.sha1(password).hexdigest()
 
         # new user
         safe_execute(cursor,
@@ -1943,7 +1943,7 @@ class Store:
         self.userip = userip
 
     def setpasswd(self, username, password):
-        password = sha.sha(password).hexdigest()
+        password = hashlib.sha1(password).hexdigest()
         self.get_cursor().execute('''
             update users set password=%s where name=%s
             ''', (password, username))
