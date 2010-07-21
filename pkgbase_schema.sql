@@ -1,3 +1,4 @@
+begin;
 -- Table structure for table: users
 CREATE TABLE users (
    name TEXT PRIMARY KEY,
@@ -35,7 +36,7 @@ CREATE TABLE openid_nonces (
    created TIMESTAMP,
    nonce TEXT
 );
-CREATE INDEX openid_nonces_nonce ON openid_nonces(created);
+CREATE INDEX openid_nonces_created ON openid_nonces(created);
 CREATE INDEX openid_nonces_nonce ON openid_nonces(nonce);
 
 CREATE TABLE cookies (
@@ -51,7 +52,6 @@ CREATE TABLE sshkeys(
    key TEXT
 );
 CREATE INDEX sshkeys_name ON sshkeys(name);
-CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
 
 -- Table structure for table: rego_otk
 CREATE TABLE rego_otk (
@@ -59,7 +59,7 @@ CREATE TABLE rego_otk (
    otk TEXT,
    date TIMESTAMP );
 CREATE INDEX rego_otk_name_idx ON rego_otk(name);
-
+CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
 
 -- Table structure for table: journals
 CREATE TABLE journals (
@@ -101,25 +101,6 @@ CREATE TABLE cheesecake_subindices (
     details TEXT NOT NULL,
     PRIMARY KEY (main_index_id, name)
 );
-
--- Table structure for table: cheesecake_main_indices
-CREATE TABLE cheesecake_main_indices (
-    id SERIAL,
-    absolute INTEGER NOT NULL,
-    relative INTEGER NOT NULL,
-    PRIMARY KEY (id)
-);
-
-
--- Table structure for table: cheesecake_subindices
-CREATE TABLE cheesecake_subindices (
-    main_index_id INTEGER REFERENCES cheesecake_main_indices,
-    name TEXT,
-    value INTEGER NOT NULL,
-    details TEXT NOT NULL,
-    PRIMARY KEY (main_index_id, name)
-);
-
 
 -- Table structure for table: releases
 CREATE TABLE releases (
@@ -203,7 +184,7 @@ CREATE TABLE release_requires (
 );
 CREATE INDEX rel_req_name_idx ON release_requires(name);
 CREATE INDEX rel_req_version_id_idx ON release_requires(version);
-CREATE INDEX rel_req_name_version_idx ON release_obsoletes (name,version);
+CREATE INDEX rel_req_name_version_idx ON release_requires(name,version);
 
 -- Table structure for table: release_obsoletes
 CREATE TABLE release_obsoletes (
@@ -349,14 +330,6 @@ CREATE TABLE mirrors (
 );
 
 -- ratings
-CREATE TABLE comments(
-  id SERIAL PRIMARY KEY,
-  rating INTEGER REFERENCES ratings(id) ON DELETE CASCADE,
-  user_name TEXT REFERENCES users ON DELETE CASCADE,
-  date TIMESTAMP,
-  message TEXT,
-  in_reply_to INTEGER REFERENCES comments ON DELETE CASCADE
-);
 CREATE TABLE ratings(
    id SERIAL UNIQUE,
    name TEXT,
@@ -368,6 +341,14 @@ CREATE TABLE ratings(
    FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE INDEX rating_name_version ON ratings(name, version);
+CREATE TABLE comments(
+  id SERIAL PRIMARY KEY,
+  rating INTEGER REFERENCES ratings(id) ON DELETE CASCADE,
+  user_name TEXT REFERENCES users ON DELETE CASCADE,
+  date TIMESTAMP,
+  message TEXT,
+  in_reply_to INTEGER REFERENCES comments ON DELETE CASCADE
+);
 CREATE TABLE comments_journal(
   name text,
   version text,
@@ -378,3 +359,4 @@ CREATE TABLE comments_journal(
   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON DELETE CASCADE
 );
 
+commit;
