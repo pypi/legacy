@@ -8,6 +8,10 @@ class Config:
         c.read(configfile)
         self.database_name = c.get('database', 'name')
         self.database_user = c.get('database', 'user')
+        if c.has_option('database', 'driver'):
+            self.database_driver = c.get('database', 'driver')
+        else:
+            self.database_driver = 'psycopg2'
         if c.has_option('database', 'password'):
             self.database_pw = c.get('database', 'password')
         else:

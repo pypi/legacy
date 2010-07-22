@@ -1,4 +1,5 @@
 [database]
+driver = postgresql2
 name = packages
 user = pypi
 files_dir = /MacDev/svn.python.org/pypi-pep345/files
@@ -8,7 +9,7 @@ docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
 mailhost = mail.commonground.com.au
 adminemail = richard@commonground.com.au
 replyto = richard@commonground.com.au
-url =  http://localhost/cgi-bin/pypi.cgi
+url =  http://localhost:8000/pypi
 pydotorg = http://www.python.org/
 
 simple_script = /simple

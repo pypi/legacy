@@ -10,7 +10,7 @@ these packages located at PyPI:
 - zope.tal
 - zope.tales
 - zope.i18nmessageid
-- psycopg2
+- psycopg2 (for testing, sqlite3 might be sufficient)
 - docutils
 - distutils2
 
@@ -32,7 +32,7 @@ virtualenv installed::
     $ virtualenv --no-site-packages --distribute .
     $ bin/easy_install cElementTree zope.interface zope.pagetemplate
     $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
-    $ bin/easy_install  M2Crypto BeautifulSoup docutils
+    $ bin/easy_install docutils
 
 Then you can launch the server using the pypi.wsgi script::
 
@@ -41,3 +41,12 @@ Then you can launch the server using the pypi.wsgi script::
 
 PyPI will be available in your browser at http://localhost:8000
 
+Database Setup
+--------------
+
+To fill a database, run pkgbase_schema.sql on an empty Postgres database.
+Then run tools/demodata to populate the database with dummy data.
+
+For testing purposes, run tools/mksqlite to create packages.db. Set
+[database]driver to sqlite3, and [database]name to packages.db, then
+run tools/demodata to populate the database.

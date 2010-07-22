@@ -72,9 +72,11 @@ CREATE TABLE journals (
 );
 CREATE INDEX journals_name_idx ON journals(name);
 CREATE INDEX journals_version_idx ON journals(version);
+-- nosqlite
 CREATE INDEX journals_latest_releases ON
   journals(submitted_date, name, version)
   WHERE version IS NOT NULL AND action='new release';
+-- nosqlite-end
 CREATE INDEX journals_changelog ON
   journals(submitted_date, name, version, action);
 
@@ -145,10 +147,12 @@ CREATE INDEX trove_class_id_idx ON trove_classifiers(id);
 
 
 -- trove ids sequence
+-- nosqlite
 CREATE TABLE dual (dummy INTEGER);
 INSERT INTO dual VALUES (1);
 CREATE SEQUENCE trove_ids;
 SELECT setval('trove_ids', 1000) FROM dual;
+-- nosqlite-end
 
 
 -- Table structure for table: release_classifiers
@@ -312,9 +316,9 @@ CREATE TABLE timestamps (
    name TEXT PRIMARY KEY,
    value TIMESTAMP
 );
-INSERT INTO timestamps(name, value) VALUES('http','1970-01-01');
-INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01');
-INSERT INTO timestamps(name, value) VALUES('browse_tally','1970-01-01');
+INSERT INTO timestamps(name, value) VALUES('http','1970-01-01 00:00:00');
+INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01 00:00:00');
+INSERT INTO timestamps(name, value) VALUES('browse_tally','1970-01-01 00:00:00');
 
 -- Table structure for table: timestamps
 -- Note: stamp_name is ftp, http

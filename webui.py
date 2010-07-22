@@ -6,7 +6,12 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
 
-import psycopg2
+try:
+    import psycopg2
+    OperationalError = psycopg2.OperationalError
+except ImportError:
+    class OperationalError(Exception):
+        pass
 
 try:
     import cElementTree
@@ -259,6 +264,7 @@ class WebUI:
         self.store = store.Store(self.config)
         try:
             try:
+                self.store.get_cursor() # make sure we can connect
                 self.inner_run()
             except NotFound:
                 self.fail('Not Found', code=404)
@@ -288,7 +294,7 @@ class WebUI:
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
-            except psycopg2.OperationalError, message:
+            except OperationalError, message:
                 # clean things up
                 self.store.force_close()
                 message = str(message)

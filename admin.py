@@ -41,27 +41,30 @@ def delete_owner(store, package, owner):
         raise ValueError, "user is not currently owner"
     store.delete_role(owner, 'Owner', package)
 
-def add_classifier(store, classifier):
+def add_classifier(st, classifier):
     ''' Add a classifier to the trove_classifiers list
     '''
-    cursor = store.get_cursor()
+    cursor = st.get_cursor()
     cursor.execute("select max(id) from trove_classifiers")
-    id = int(cursor.fetchone()[0]) + 1
+    id = cursor.fetchone()[0]
+    if id:
+        id = int(id) + 1
+    else:
+        id = 1
     fields = [f.strip() for f in classifier.split('::')]
     for f in fields:
         assert ':' not in f
     levels = []
     for l in range(2, len(fields)):
         c2 = ' :: '.join(fields[:l])
-        cursor.execute('select id from trove_classifiers where classifier=%s', (c2,))
+        store.safe_execute(cursor, 'select id from trove_classifiers where classifier=%s', (c2,))
         l = cursor.fetchone()
         if not l:
             raise ValueError, c2 + " is not a known classifier"
         levels.append(l[0])
     levels += [id] + [0]*(3-len(levels))
-    cursor.execute('insert into trove_classifiers (id, classifier, l2, l3, l4, l5) '
+    store.safe_execute(cursor, 'insert into trove_classifiers (id, classifier, l2, l3, l4, l5) '
         'values (%s,%s,%s,%s,%s,%s)', [id, classifier]+levels)
-    print 'done'
 
 def rename_package(store, old, new):
     ''' Rename a package. '''
@@ -135,6 +138,7 @@ if __name__ == '__main__':
             remove_package(*args)
         elif command == 'addclass':
             add_classifier(*args)
+            print 'done'
         elif command == 'addowner':
             add_owner(*args)
         elif command == 'delowner':

@@ -1,7 +1,16 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, psycopg2, time, hashlib, random, types, math, stat, errno
+import sys, os, re, time, hashlib, random, types, math, stat, errno
 import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
+try:
+    import psycopg2
+except ImportError:
+    pass
+try:
+    import sqlite3
+    sqlite3_cursor = sqlite3.Cursor
+except ImportError:
+    sqlite3_cursor = type(None)
 from xml.parsers import expat
 from distutils.version import LooseVersion
 import trove, openid2rp
@@ -156,6 +165,9 @@ def safe_execute(cursor, sql, params=None):
     if params is None:
         return cursor.execute(sql)
 
+    if isinstance(cursor, sqlite3_cursor):
+        sql = sql.replace('%s', "?")
+
     # Encode every incoming param to UTF-8 if it's a string
     safe_params = []
     for param in params:
@@ -181,6 +193,12 @@ class Store:
         self._conn = None
         self._cursor = None
         self._trove = None
+        if self.config.database_driver == 'sqlite3':
+            self.true, self.false = '1', '0'
+            self.can_lock = False
+        else:
+            self.true, self.false = 'TRUE', 'FALSE'
+            self.can_lock = True
 
     def trove(self):
         if not self._trove:
@@ -339,7 +357,7 @@ class Store:
             # hide all other releases of this package if thus configured
             if self.get_package_autohide(name):
                 safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
-                             'name=%s and version <> %s', ('TRUE', name, version))
+                             'name=%s and version <> %s', (self.true, name, version))
 
         # add description urls
         if html:
@@ -594,8 +612,8 @@ class Store:
             where = ' %s '%operator.join(where)
 
         if '_pypi_hidden' in spec:
-            if spec['_pypi_hidden'] in ('1', 1): v = 'TRUE'
-            else: v = 'FALSE'
+            if spec['_pypi_hidden'] in ('1', 1): v = self.true
+            else: v = self.false
             if where:
                 where += ' AND _pypi_hidden = %s'%v
             else:
@@ -762,7 +780,7 @@ class Store:
             where j.version is not NULL
                   and j.action = 'new release'
                   and j.name = r.name and j.version = r.version
-                  and r._pypi_hidden = FALSE
+                  and r._pypi_hidden = '''+self.false+'''
                   and j.submitted_date > %s
             order by submitted_date desc
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
@@ -833,7 +851,7 @@ class Store:
             from journals j, releases r
             where j.version is not NULL
                   and j.name = r.name and j.version = r.version
-                  and r._pypi_hidden = FALSE
+                  and r._pypi_hidden = '''+self.false+'''
             order by submitted_date desc
         ''')
 
@@ -1026,13 +1044,13 @@ class Store:
         '''Add a user rating of a release; message is optional'''
         cursor = self.get_cursor()
         safe_execute(cursor, '''insert into ratings (name, version, user_name, date, rating)
-                     values(%s, %s, %s, now(), %s)''', (name, version, self.username, rating))
+                     values(%s, %s, %s, current_timestamp, %s)''', (name, version, self.username, rating))
         if message:
             safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                                    values(currval('ratings_id_seq'), %s, now(), %s, NULL)''',
+                                    values(currval('ratings_id_seq'), %s, current_timestamp, %s, NULL)''',
                          (self.username, message))
             safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                                    values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''',
+                                    values(%s,%s,currval('comments_id_seq'),%s,current_timestamp,%s)''',
                          (name, version, self.username, 'add_rating %r' % message))
 
     def copy_rating(self, name, fromversion, toversion):
@@ -1040,7 +1058,7 @@ class Store:
         return the comment if any'''
         cursor = self.get_cursor()
         safe_execute(cursor, '''insert into ratings(name,version,user_name,date,rating)
-                     select name,%s,user_name,now(),rating from ratings
+                     select name,%s,user_name,current_timestamp,rating from ratings
                      where name=%s and version=%s and user_name=%s''',
                      (toversion, name, fromversion, self.username))
         # only copy comment, not follow-ups
@@ -1052,7 +1070,7 @@ class Store:
                      select currval('ratings_id_seq'), user_name, date, message, in_reply_to
                      from comments where id=%s''', (cid,))
             safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s, %s, currval('comments_id_seq'), %s, now(), %s)''', (name, toversion,
+                     values(%s, %s, currval('comments_id_seq'), %s, current_timestamp, %s)''', (name, toversion,
                      self.username, 'copied %s' % cid))
 
             safe_execute(cursor, '''select message from comments
@@ -1064,7 +1082,7 @@ class Store:
         '''Remove a rating for the current user'''
         cursor = self.get_cursor()
         safe_execute(cursor, """insert into comments_journal(name, version, id, submitted_by, date, action)
-        select %s, %s, id, %s, now(), 'deleted' from ratings where user_name=%s and name=%s and version=%s""",
+        select %s, %s, id, %s, current_timestamp, 'deleted' from ratings where user_name=%s and name=%s and version=%s""",
                      (name, version, self.username, self.username, name, version))
         safe_execute(cursor, "delete from ratings where user_name=%s and name=%s and version=%s",
                      (self.username, name, version))
@@ -1099,9 +1117,9 @@ class Store:
         safe_execute(cursor, "select c.rating, r.name, r.version from comments c, ratings r where c.id=%s and c.rating=r.id", (msg,))
         rating, name, version = cursor.fetchone()
         safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                     values(%s,%s,now(),%s,%s)''', (rating, self.username, comment, msg))
+                     values(%s,%s,current_timestamp,%s,%s)''', (rating, self.username, comment, msg))
         safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s,%s,currval('comments_id_seq'),%s,now(),%s)''', (name, version, self.username,
+                     values(%s,%s,currval('comments_id_seq'),%s,current_timestamp,%s)''', (name, version, self.username,
                      'add %s %r' % (msg, comment)))
         return name, version
 
@@ -1112,7 +1130,7 @@ class Store:
         name, version = cursor.fetchone()
         safe_execute(cursor, "delete from comments where id=%s", (msg,))
         safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s, %s, %s, %s, now(), 'delete')''', (name, version, msg, self.username))
+                     values(%s, %s, %s, %s, current_timestamp, 'delete')''', (name, version, msg, self.username))
 
     def has_package_comments(self, name):
         "Return true if the package has any comments"
@@ -1283,7 +1301,7 @@ class Store:
             (name, ))
         return int(cursor.fetchone()[0])
 
-    def store_user(self, name, password, email, gpg_keyid, otk=True):
+    def store_user(self, name, password, email, gpg_keyid="", otk=True):
         ''' Store info about the user to the database.
 
             The "password" argument is passed in cleartext and sha-ed
@@ -1323,7 +1341,7 @@ class Store:
         if not otk:
             return None
         otk = ''.join([random.choice(chars) for x in range(32)])
-        safe_execute(cursor, 'insert into rego_otk (name, otk, date) values (%s, %s, now())',
+        safe_execute(cursor, 'insert into rego_otk (name, otk, date) values (%s, %s, current_timestamp)',
             (name, otk))
         return otk
 
@@ -1508,7 +1526,8 @@ class Store:
             # Regenerate tally. First, release locks we hold on the timestamps
             self._conn.commit()
             # Clear old tally
-            cursor.execute("lock table browse_tally")
+            if self.can_lock:
+                cursor.execute("lock table browse_tally")
             cursor.execute("delete from browse_tally")
             # Regenerate tally; see browse() below
             cursor.execute("""insert into browse_tally
@@ -1516,7 +1535,7 @@ class Store:
             from trove_classifiers t, release_classifiers rc, releases r
             where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
             group by t.l2, rc.name, rc.version) res group by res.l2""")
-            cursor.execute("update timestamps set value=now() where name='browse_tally'")
+            cursor.execute("update timestamps set value=current_timestamp where name='browse_tally'")
             self._conn.commit()
         cursor.execute("select trove_id, tally from browse_tally")
         return [], cursor.fetchall()
@@ -1534,7 +1553,7 @@ class Store:
             return [], cursor.fetchall()
 
         # First compute statement to produce all packages still selected
-        pkgs = "select name, version, summary from releases where _pypi_hidden=FALSE"
+        pkgs = "select name, version, summary from releases where _pypi_hidden="+self.false
         for c in selected_classifiers:
             level = t.trove[c].level
             pkgs = """select distinct a.name, a.version, summary from (%s) a, release_classifiers rc, trove_classifiers t
@@ -1586,7 +1605,7 @@ class Store:
         cursor = self.get_cursor()
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, now())'''
+            (%s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
 
@@ -1764,9 +1783,9 @@ class Store:
             name, last_seen = users[0]
             if datetime.datetime.now()-datetime.timedelta(0,60) > last_seen:
                 # refresh cookie and login time every minute
-                sql = 'update cookies set last_seen=now() where cookie=%s'
+                sql = 'update cookies set last_seen=current_timestamp where cookie=%s'
                 safe_execute(cursor, sql, (cookie,))
-                sql ='update users set last_login=now() where name=%s'
+                sql ='update users set last_login=current_timestamp where name=%s'
                 safe_execute(cursor, sql, (name,))
             return name
         return None
@@ -1776,7 +1795,7 @@ class Store:
         cursor = self.get_cursor()
         cookie = binascii.hexlify(os.urandom(16))
         sql = '''insert into cookies(cookie, name, last_seen)
-                 values(%s, %s, now())'''
+                 values(%s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (cookie, username))
         return cookie
 
@@ -1790,7 +1809,7 @@ class Store:
         cursor = self.get_cursor()
         # Check for existing session
         sql = '''select id,url, assoc_handle from openid_sessions
-                 where provider=%s and expires>now()'''
+                 where provider=%s and expires>current_timestamp'''
         safe_execute(cursor, sql, (provider[0],))
         sessions = cursor.fetchall()
         if sessions:
@@ -1827,7 +1846,7 @@ class Store:
         cursor = self.get_cursor()
         # Check for existing session
         sql = '''select assoc_handle from openid_sessions
-                 where provider=%s and url=%s and expires>now()'''
+                 where provider=%s and url=%s and expires>current_timestamp'''
         safe_execute(cursor, sql, (claimed, endpoint,))
         sessions = cursor.fetchall()
         if sessions:
@@ -1915,6 +1934,9 @@ class Store:
                 # already closed
                 connection = None
                 return self.open()
+        elif self.config.database_driver == 'sqlite3':
+            self._conn = connection = sqlite3.connect(self.config.database_name,
+                                                      detect_types=sqlite3.PARSE_DECLTYPES)
         else:
             self._conn = connection = psycopg2.connect(**cd)
 
@@ -1938,8 +1960,8 @@ class Store:
             if self.has_user(username):
                 self.username = username
                 if update_last_login:
-                    self.get_cursor().execute('''
-                    update users set last_login=now() where name=%s''', (username,))
+                    safe_execute(self.get_cursor(), '''
+                    update users set last_login=current_timestamp where name=%s''', (username,))
         self.userip = userip
 
     def setpasswd(self, username, password):
