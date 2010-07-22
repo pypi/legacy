@@ -20,8 +20,9 @@ Quick development setup
 Make sure you read http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints
 and you have a working PostgreSQL DB.
 
-Make sure your config.ini is up-to-date. Change CONFIG_FILE at the begining
-of pypi.wsgi, so it looks like this::
+Make sure your config.ini is up-to-date, initially copying from
+config.ini.template. Change CONFIG_FILE at the begining of pypi.wsgi,
+so it looks like this::
 
     CONFIG_FILE = 'config.ini'
 
