@@ -151,7 +151,7 @@ class OpenIDParser(htmllib.HTMLParser):
     def do_meta(self, attrs):
         attrs = dict(attrs)
         # Yadis 6.2.5 option 1: meta tag
-        if attrs['http-equiv'].lower() == 'x-xrds-location':
+        if attrs.get('http-equiv','').lower() == 'x-xrds-location':
             self.xrds_location = attrs['content']
 
 def discover(url):
@@ -340,6 +340,9 @@ def associate(services, url):
     if 'error' in data:
         raise ValueError, "associate failed: "+data['error']
     if url.startswith('http:'):
+        enc_mac_key = data.get('enc_mac_key')
+        if not enc_mac_key:
+            raise ValueError, "Provider protocol error: not using DH-SHA1"
         enc_mac_key = base64.b64decode(data['enc_mac_key'])
         dh_server_public = unbtwoc(base64.b64decode(data['dh_server_public']))
         # shared secret: sha1(2^(server_priv*priv) mod prime) xor enc_mac_key
