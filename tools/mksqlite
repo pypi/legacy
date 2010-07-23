@@ -22,5 +22,6 @@ for line in open('pkgbase_schema.sql'):
     if not passthrough:
         print >> sqlite
         continue
-    sqlite.write(line)
+    # make sqlite happy: SERIAL is not a valid type
+    sqlite.write(line.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY'))
 sqlite.close()
