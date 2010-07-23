@@ -98,7 +98,20 @@ To: %(email)s
 Reply-To: %(replyto)s
 
 [REPLIES TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
-%(author)s has made the following comment on your package.
+%(author)s has made the following comment on your package:
+
+%(comment)s
+
+You can read all comments on %(url)s.
+'''
+
+rating_message = '''Subject: New rating on %(package)s
+From: PyPI operators <%(admin)s>
+To: %(email)s
+Reply-To: %(replyto)s
+
+[REPLIES TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
+%(author)s has rated your package as %(rating)s/5.  Comment (optional):
 
 %(comment)s
 
@@ -138,7 +151,7 @@ if cache_templates:
 else:
     PyPiPageTemplate = _PyPiPageTemplate
 
-def comment_email(store, package, version, author, comment, add_recipients):
+def comment_email(store, package, version, author, comment, rating, add_recipients):
     emails = set()
     recipients = [r['user_name'] for r in store.get_package_roles(package)] + add_recipients
     for r in recipients:
@@ -153,9 +166,14 @@ def comment_email(store, package, version, author, comment, add_recipients):
         'email': ','.join(emails),
         'comment': comment,
         'url': '%s/%s/%s' % (store.config.url, package, version),
+        'rating': rating,
         }
     smtp = smtplib.SMTP(store.config.mailhost)
-    smtp.sendmail(store.config.adminemail, list(emails), comment_message % info)
+    if rating is None:
+        message = comment_message % info
+    else:
+        message = rating_message % info
+    smtp.sendmail(store.config.adminemail, list(emails), message)
 
 
 class FileUpload:
@@ -266,8 +284,8 @@ class WebUI:
             try:
                 self.store.get_cursor() # make sure we can connect
                 self.inner_run()
-            except NotFound:
-                self.fail('Not Found', code=404)
+            except NotFound, err:
+                self.fail('Not Found (%s)' % err, code=404)
             except Unauthorised, message:
                 message = str(message)
                 if not message:
@@ -516,10 +534,15 @@ class WebUI:
                 raise Unauthorised, "Incomplete registration; check your email"
 
         # handle the action
-        if action in 'debug home browse rss index search submit doap display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form display register_form user_form forgotten_password_form user password_reset role role_form list_classifiers login logout files file_upload show_md5 doc_upload claim openid openid_return dropid rate comment addcomment delcomment clear_auth addkey delkey lasthour'.split():
+        if action in '''debug home browse rss index search submit doap
+        display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form
+        display register_form user_form forgotten_password_form user
+        password_reset role role_form list_classifiers login logout files
+        file_upload show_md5 doc_upload claim openid openid_return dropid
+        rate comment addcomment delcomment clear_auth addkey delkey lasthour'''.split():
             getattr(self, action)()
         else:
-            #raise NotFound, 'Unknown action'
+            #raise NotFound, 'Unknown action %s' % action
             raise NotFound
 
         if action in 'submit submit_pkg_info pkg_edit remove_pkg'.split():
@@ -1276,8 +1299,8 @@ class WebUI:
                         rating = ', %s points' % rating
                 else:
                     rating = ''
-                result.append("<li>%s (%s%s):<br/>%s %s" %
-                                (c['user'], date, rating, message, reply))
+                result.append("<li class=\"comment\"><b>%s</b> (%s%s):<br/>%s %s" %
+                              (c['user'], date, rating, message, reply))
                 if children:
                     result.extend(render_comments(children, False))
                 result.append("</li>\n")
@@ -1901,18 +1924,21 @@ class WebUI:
                 raise FormError, "fromversion missing"
             comment = self.store.copy_rating(name, self.form['fromversion'], version)
             if comment:
-                comment_email(self.store, name, version, self.username, comment, [])
+                comment_email(self.store, name, version, self.username, comment,
+                              None, [])
             return self.display()
         if self.form.has_key('rate'):
             if self.store.has_rating(name, version):
                 raise Forbidden, "You have already rated this release"
             if not self.form.has_key('rating'):
                 raise FormError, "rating not provided"
-            message = self.form['comment'].strip()
+            message = self.form.get('comment', '').strip()
             if message and not self.store.get_package_comments(name):
                 raise FormError, "package does not allow comments"
-            self.store.add_rating(name, version, self.form['rating'], message)
-            comment_email(self.store, name, version, self.username, message, [])
+            rating = self.form['rating']
+            self.store.add_rating(name, version, rating, message)
+            comment_email(self.store, name, version, self.username, message,
+                          rating, [])
             return self.display()
 
         raise FormError, "Bad button"
@@ -1943,7 +1969,8 @@ class WebUI:
             raise FormError, "You must fill in a comment"
 
         name, version = self.store.add_comment(msg, comment)
-        comment_email(self.store, name, version, self.username, comment, [orig['user']])
+        comment_email(self.store, name, version, self.username, comment,
+                      None, [orig['user']])
 
         return self.display(name=name, version=version)
 
