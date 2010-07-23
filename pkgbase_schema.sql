@@ -90,10 +90,9 @@ CREATE TABLE packages (
 );
 
 CREATE TABLE cheesecake_main_indices (
-    id SERIAL,
+    id SERIAL PRIMARY KEY,
     absolute INTEGER NOT NULL,
-    relative INTEGER NOT NULL,
-    PRIMARY KEY (id)
+    relative INTEGER NOT NULL
 );
 
 CREATE TABLE cheesecake_subindices (
@@ -144,15 +143,6 @@ CREATE TABLE trove_classifiers (
 );
 CREATE INDEX trove_class_class_idx ON trove_classifiers(classifier);
 CREATE INDEX trove_class_id_idx ON trove_classifiers(id);
-
-
--- trove ids sequence
--- nosqlite
-CREATE TABLE dual (dummy INTEGER);
-INSERT INTO dual VALUES (1);
-CREATE SEQUENCE trove_ids;
-SELECT setval('trove_ids', 1000) FROM dual;
--- nosqlite-end
 
 
 -- Table structure for table: release_classifiers
@@ -335,13 +325,12 @@ CREATE TABLE mirrors (
 
 -- ratings
 CREATE TABLE ratings(
-   id SERIAL UNIQUE,
+   id SERIAL PRIMARY KEY,
    name TEXT,
    version TEXT,
    user_name TEXT REFERENCES users ON DELETE CASCADE,
    date TIMESTAMP,
    rating INTEGER,
-   PRIMARY KEY (name, version, user_name),
    FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE INDEX rating_name_version ON ratings(name, version);
