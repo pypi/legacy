@@ -200,6 +200,15 @@ class Store:
             self.true, self.false = 'TRUE', 'FALSE'
             self.can_lock = True
 
+    def last_id(self, tablename):
+        ''' Return an SQL expression that returns the last inserted row,
+        where the row is in the given table.
+        '''
+        if self.config.database_driver == 'sqlite3':
+            return 'last_insert_rowid()'
+        else:
+            return "currval('%s_id_seq')" % tablename
+
     def trove(self):
         if not self._trove:
             self._trove = trove.Trove(self.get_cursor())
@@ -1047,10 +1056,12 @@ class Store:
                      values(%s, %s, %s, current_timestamp, %s)''', (name, version, self.username, rating))
         if message:
             safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                                    values(currval('ratings_id_seq'), %s, current_timestamp, %s, NULL)''',
+                                    values(%s, %%s, current_timestamp, %%s, NULL)'''
+                         % self.last_id('ratings'),
                          (self.username, message))
             safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                                    values(%s,%s,currval('comments_id_seq'),%s,current_timestamp,%s)''',
+                                    values(%%s, %%s, %s, %%s, current_timestamp, %%s)'''
+                         % self.last_id('comments'),
                          (name, version, self.username, 'add_rating %r' % message))
 
     def copy_rating(self, name, fromversion, toversion):
@@ -1067,11 +1078,11 @@ class Store:
         if cid:
             cid = cid[0]
             safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
-                     select currval('ratings_id_seq'), user_name, date, message, in_reply_to
-                     from comments where id=%s''', (cid,))
+                     select %s, user_name, date, message, in_reply_to
+                     from comments where id=%%s''' % self.last_id('ratings'), (cid,))
             safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s, %s, currval('comments_id_seq'), %s, current_timestamp, %s)''', (name, toversion,
-                     self.username, 'copied %s' % cid))
+                     values(%%s, %%s, %s, %%s, current_timestamp, %%s)''' % self.last_id('comments'),
+                     (name, toversion, self.username, 'copied %s' % cid))
 
             safe_execute(cursor, '''select message from comments
                      where id=%s''', (cid,))
@@ -1119,8 +1130,8 @@ class Store:
         safe_execute(cursor, '''insert into comments(rating, user_name, date, message, in_reply_to)
                      values(%s,%s,current_timestamp,%s,%s)''', (rating, self.username, comment, msg))
         safe_execute(cursor, '''insert into comments_journal(name, version, id, submitted_by, date, action)
-                     values(%s,%s,currval('comments_id_seq'),%s,current_timestamp,%s)''', (name, version, self.username,
-                     'add %s %r' % (msg, comment)))
+                     values(%%s, %%s, %s, %%s, current_timestamp, %%s)''' % self.last_id('comments'),
+                     (name, version, self.username, 'add %s %r' % (msg, comment)))
         return name, version
 
     def remove_comment(self, msg):
@@ -1833,10 +1844,11 @@ class Store:
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
                                    session['mac_key']))
+        safe_execute(cursor, 'select %s' % self.last_id('openid_sessions'))
+        session_id = cursor.fetchone()[0]
         for t in stypes:
             safe_execute(cursor, '''insert into openid_stypes(id, stype)
-                                    values(currval('openid_sessions_id_seq'),%s)''',
-                         (t,))
+                                    values(%s, %s)''', (session_id, t))
         return stypes, url, session['assoc_handle']
 
     def get_session_for_endpoint(self, claimed, stypes, endpoint):
@@ -1863,11 +1875,12 @@ class Store:
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
                                    session['mac_key']))
+        safe_execute(cursor, 'select %s' % self.last_id('openid_sessions'))
+        session_id = cursor.fetchone()[0]
         # store stypes as well, so we can remember whether claimed is an OP ID or a user ID
         for t in stypes:
             safe_execute(cursor, '''insert into openid_stypes(id, stype)
-                                    values(currval('openid_sessions_id_seq'),%s)''',
-                         (t,))
+                                    values(%s, %s)''', (session_id, t))
         return session['assoc_handle']
 
     def get_session_by_handle(self, assoc_handle):
