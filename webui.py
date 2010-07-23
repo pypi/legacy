@@ -2478,7 +2478,9 @@ class WebUI:
             info['admin'] = self.config.adminemail
             self.send_email(info['email'], rego_message%info)
             response = 'Registration OK'
-            message = 'You should receive a confirmation email shortly.'
+            message = ('You should receive a confirmation email to %s shortly. '
+                       'To complete the registration process, visit the link '
+                       'indicated in the email.') % info['email']
 
         else:
             # update details
