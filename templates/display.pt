@@ -238,7 +238,7 @@
       <input type="hidden" name=":action" value="rate"/>
       <input type="hidden" name="name" tal:attributes="value data/name"/>
       <input type="hidden" name="version" tal:attributes="value data/version"/>
-      <input type="submit" name="remove" value="Remove your vote" />
+      <input type="submit" name="remove" value="Remove your rating" />
     </form>
   </div>
   <div tal:condition="not:data/has_rated">
@@ -262,14 +262,14 @@
          <!--XXX trick TAL into not minimizing tag-->
          <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
       </td></tr></table>
-      <input type="submit" name="rate" value="Vote"/>
+      <input type="submit" name="rate" value="Rate"/>
     </form>
     <form tal:condition="data/latest_rating" tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
       <input type="hidden" name=":action" value="rate"/>
       <input type="hidden" name="name" tal:attributes="value data/name"/>
       <input type="hidden" name="version" tal:attributes="value data/version"/>
       <input type="hidden" name="fromversion" tal:attributes="value data/latest_rating"/>
-      <input type="submit" name="copy" tal:attributes="value string:Copy your vote from release ${data/latest_rating}"/>
+      <input type="submit" name="copy" tal:attributes="value string:Copy your rating from release ${data/latest_rating}"/>
     </form>
   </div>
 </div>
