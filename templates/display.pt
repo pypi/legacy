@@ -98,7 +98,7 @@
 
  <li tal:condition="data/docs | nothing">
   <strong>Documentation:</strong>
-  <a tal:attributes="href data/docs" tal:content="string:${data/name} documentation" />
+  <a tal:attributes="href data/docs" tal:content="string:${data/name} package documentation" />
  </li>
 
 <!-- The <th> elements below are a terrible terrible hack for setuptools -->
