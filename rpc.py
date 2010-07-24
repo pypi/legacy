@@ -85,6 +85,9 @@ def release_data(store, package_name, version):
     classifiers = [r[0] for r in store.get_release_classifiers(package_name,
         version)]
     info['classifiers' ] = classifiers
+    info['package_url'] = 'http://pypi.python.org/pypi/%s' % package_name
+    info['release_url'] = 'http://pypi.python.org/pypi/%s/%s' % (package_name,
+        version)
     return info
 package_data = release_data     # "deprecated"
 
