@@ -5,6 +5,7 @@ import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
+import json
 
 try:
     import psycopg2
@@ -531,6 +532,9 @@ class WebUI:
         else:
             action = 'home'
 
+        if self.form.get('version') in ('doap', 'json'):
+            action, self.form['version'] = self.form['version'], None
+
         # make sure the user has permission
         if action in ('submit', ):
             if not self.authenticated:
@@ -544,7 +548,8 @@ class WebUI:
         display register_form user_form forgotten_password_form user
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
-        rate comment addcomment delcomment clear_auth addkey delkey lasthour'''.split():
+        rate comment addcomment delcomment clear_auth addkey delkey lasthour
+        json'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -958,32 +963,11 @@ class WebUI:
 
         self.role_form()
 
-    def _get_pkg_info(self, name, version):
-        # get the appropriate package info from the database
-        if name is None:
-            try:
-                name = self.form['name']
-            except KeyError:
-                raise NotFound, 'no package name supplied'
-        if version is None:
-            if self.form.has_key('version'):
-                version = self.form['version']
-            else:
-                l = self.store.get_latest_release(name, hidden=False)
-                try:
-                    version = l[-1][1]
-                except IndexError:
-                    raise NotFound, 'no releases'
-        return self.store.get_package(name, version), name, version
-
     def doap(self, name=None, version=None):
         '''Return DOAP rendering of a package.
         '''
-        info, name, version = self._get_pkg_info(name, version)
-        if not info:
-            return self.fail('No such package / version',
-                heading='%s %s'%(name, version),
-                content="I can't find the package / version you're requesting")
+        info, latest_version = self._load_release_info(name, version)
+        name = info['name']
 
         root = cElementTree.Element('rdf:RDF', {
             'xmlns:rdf': "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -1051,6 +1035,26 @@ class WebUI:
             'attachment; filename=%s'%filename)
         self.handler.end_headers()
         self.wfile.write(s.getvalue())
+
+    def json(self, name=None, version=None):
+        '''Return DOAP rendering of a package.
+        '''
+        info, latest_version = self._load_release_info(name, version)
+        name, version = info['name'], info['version']
+        d = {
+            'info': rpc.release_data(self.store, name, version),
+            'urls': rpc.release_urls(self.store, name, version),
+        }
+        for url in d['urls']:
+            url['upload_time'] = url['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
+        self.handler.send_response(200, "OK")
+        self.handler.set_content_type('application/json; charset="UTF-8"')
+        filename = '%s-%s.xml'%(name.encode('ascii', 'replace'),
+            version.encode('ascii', 'replace'))
+        self.handler.send_header('Content-Disposition',
+            'attachment; filename=%s'%filename)
+        self.handler.end_headers()
+        self.wfile.write(json.dumps(d))
 
     def display_pkginfo(self, name=None, version=None):
         '''Reconstruct and send a PKG-INFO metadata file.
@@ -1145,9 +1149,13 @@ class WebUI:
     def quote_plus(self, data):
         return urllib.quote_plus(data)
 
-    def display(self, name=None, version=None, ok_message=None,
-            error_message=None):
-        ''' Print up an entry
+    def _load_release_info(self, name, version):
+        '''Determine the information about a release of the named package.
+
+        If version is specified then we return that version and also determine
+        what the latest version of the package is.
+
+        If the version is None then we return the latest version.
         '''
         # get the appropriate package info from the database
         if name is None:
@@ -1156,9 +1164,9 @@ class WebUI:
             if name is None or isinstance(name, list):
                 self.fail("Which package do you want to display?")
 
-        using_latest=False
+        using_latest = False
         if version is None:
-            if self.form.has_key('version'):
+            if self.form.get('version'):
                 version = self.form['version']
             else:
                 l = self.store.get_package_releases(name, hidden=False)
@@ -1168,7 +1176,7 @@ class WebUI:
                 try:
                     version = l[-1][1]
                 except IndexError:
-                    using_latest=True
+                    using_latest = True
                     version = "(latest release)"
 
         if not using_latest:
@@ -1184,15 +1192,19 @@ class WebUI:
         else:
              latest_version = None
 
-        if latest_version==version:
-            using_latest=True
-
         info = self.store.get_package(name, version)
         if not info:
             raise NotFound
-#            return self.fail('No such package / version',
-#                heading='%s %s'%(name, version),
-#                content="I can't find the package / version you're requesting")
+        return info, latest_version        
+
+    def display(self, name=None, version=None, ok_message=None,
+            error_message=None):
+        ''' Print up an entry
+        '''
+        info, latest_version = self._load_release_info(name, version)
+        name = info['name']
+        version = info['version']
+        using_latest = latest_version==version
 
 # RJ: disabled cheesecake because the (strange) errors were getting annoying
 #        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
@@ -1245,7 +1257,8 @@ class WebUI:
                 url = url,
                 id = c['trove_id']))
 
-        latest_version_url = self.config.url+'/'+name+'/'+latest_version
+        latest_version_url = '%s/%s/%s' % (self.config.url, name,
+                                           latest_version)
 
         # Compute rating data
         has_rated = self.loggedin and self.store.has_rating(name, version)
