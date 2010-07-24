@@ -51,7 +51,7 @@
       comments   file/comment_text;
       pkg_type   python:app.dist_file_types_d[file['packagetype']];
       py_version file/python_version;
-      uploaded   python:file.upload_time.strftime('%Y-%m-%d');
+      uploaded   python:file['upload_time'].strftime('%Y-%m-%d');
       size       python:app.pretty_size(file['size']);
       downloads  file/downloads;
       md5_url    string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest};
