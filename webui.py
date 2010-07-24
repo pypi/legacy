@@ -53,7 +53,7 @@ class RedirectTemporary(Exception): # 307
 class FormError(Exception):
     pass
 
-class MultipleReleases(object):
+class MultipleReleases(Exception):
     def __init__(self, releases):
         self.releases = releases
 
