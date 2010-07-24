@@ -82,7 +82,7 @@
 </tal:block>
 </tr>
 
-<tr><td id="last" colspan="5"></td></tr>
+<tr><td id="last" colspan="6"></td></tr>
   </table>
 
 <ul class="nodot">
