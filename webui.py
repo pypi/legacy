@@ -1175,7 +1175,7 @@ class WebUI:
             else:
                 l = self.store.get_package_releases(name, hidden=False)
                 if len(l) > 1:
-                    raise MultipleResults(releases=l)
+                    raise MultipleReleases(releases=l)
                 l = self.store.get_latest_release(name, hidden=False)
                 try:
                     version = l[-1][1]
