@@ -1273,13 +1273,17 @@ class WebUI:
             return [ cgi.escape(x['specifier']) for x in l]
 
         categories = []
+        is_py3k = False
         for c in self.store.get_release_classifiers(name, version):
             path = str2path(c['classifier'])
+            pathstr = path2str(path)
+            if pathstr.startswith('Programming Language :: Python :: 3'):
+                is_py3k = True
             url = "%s?:action=browse&c=%s" % (self.url_path, c['trove_id'])
             categories.append(dict(
                 name = c['classifier'],
                 path = path,
-                pathstr = path2str(path),
+                pathstr = pathstr,
                 url = url,
                 id = c['trove_id']))
 
@@ -1367,6 +1371,7 @@ class WebUI:
                             tally_ratings=tally,
                             comments=comments,
                             categories=categories,
+                            is_py3k=is_py3k,
                             roles=roles,
                             newline_to_br=newline_to_br,
                             usinglatest=using_latest,

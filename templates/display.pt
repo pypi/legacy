@@ -19,7 +19,6 @@
 </metal:fill>
 
 <metal:fill fill-slot="body">
-
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
 <p tal:condition="not:data/usinglatest">

@@ -28,7 +28,14 @@
     <body>
       <!--  Logo  -->
       <h1 id="logoheader">
-        <a accesskey="1" href="http://www.python.org" id="logolink"><img tal:attributes="src string:${app/config/pydotorg}images/python-logo.gif" alt="homepage" border="0" id="logo" /></a>
+       <a accesskey="1" href="http://www.python.org" id="logolink">
+        <tal:x condition="python:data.get('is_py3k')">
+          <img src="http://pypi.python.org/python-3.png" />
+        </tal:x>
+        <tal:x condition="python:not data.get('is_py3k')">
+          <img tal:attributes="src string:${app/config/pydotorg}images/python-logo.gif" alt="homepage" border="0" id="logo" />
+        </tal:x>
+       </a>
       </h1>
       <!--  Skip to Navigation  -->
       <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img tal:attributes="src string:${app/config/pydotorg}images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
@@ -63,7 +70,7 @@
                 <tal:for-nav repeat="link app/navlinks_html">
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
-		<li><a href="/pypi?:action=browse&amp;c=533&amp;show=all">Python 3 packages</a></li>
+		<li><a href="/pypi?:action=browse&amp;c=533&amp;c=534&amp;c=535&amp;c=538&amp;show=all">Python 3 packages</a></li>
 
                 <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">Tutorial</a></li>
 
@@ -177,8 +184,7 @@
 
 
             <div class="section">
-
-              <h1 tal:content="data/title"></h1>
+              <h1><tal:x replace="data/title" /></h1>
 
               <metal:slot define-slot="body">
 

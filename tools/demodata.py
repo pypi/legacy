@@ -51,7 +51,7 @@ for version in ('0.1', '0.2', '0.3', '0.4'):
             '_pypi_hidden':version!='0.4'
             })
 
-st.add_file('spam', '1.0', 'THIS IS SOME CONTENT', '1234', 'text/plain',
+st.add_file('spam', '1.0', 'THIS IS SOME CONTENT', '1234', 'sdist',
             'any', '', 'demo.txt', None)
 
 st.commit()
