@@ -21,7 +21,7 @@
 <metal:fill fill-slot="body">
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
-<p tal:condition="python:len(data['release']['description'])>500 and data['files']">
+<p tal:condition="python:len(data['release'].get('description', ''))>500 and data['files']">
     <a href="#downloads">Downloads &darr;</a>
 </p>
 
