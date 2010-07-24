@@ -6,9 +6,9 @@ files_dir = /MacDev/svn.python.org/pypi-pep345/files
 docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
 
 [webui]
-mailhost = mail.commonground.com.au
-adminemail = richard@commonground.com.au
-replyto = richard@commonground.com.au
+mailhost = mail.python.org
+adminemail = richard@python.org
+replyto = richard@python.org
 url =  http://localhost:8000/pypi
 pydotorg = http://www.python.org/
 
