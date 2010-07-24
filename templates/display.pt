@@ -21,6 +21,10 @@
 <metal:fill fill-slot="body">
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
+<p tal:condition="python:len(data['release']['description'])>500 and data['files']">
+    <a href="#downloads">Downloads &darr;</a>
+</p>
+
 <p tal:condition="not:data/usinglatest">
 <strong>Latest Version: </strong><a tal:attributes="href data/latestversionurl" title="Latest Version URL">
 <span tal:content="data/latestversion" />
@@ -32,8 +36,8 @@
 
 <tal:element replace="structure data/release/description_html" />
 
-<table tal:define="files python:app.store.list_files(data['name'], data['version'])"
-       tal:condition="files" class="list" style="margin-bottom: 10px;">
+<a name="downloads">&nbsp;</a>
+<table tal:condition="data/files" class="list" style="margin-bottom: 10px;">
 <tr>
   <th>File</th>
   <th>Type</th>
@@ -43,8 +47,7 @@
   <th style="text-align: right;"># downloads</th>
 </tr>
 
-<tr tal:repeat="file python:app.store.list_files(data['name'], data['version'])"
-    tal:attributes="class repeat/file/parity">
+<tr tal:repeat="file data/files" tal:attributes="class repeat/file/parity">
 <tal:block tal:define="
       name       file/filename;
       url        python:app.store.gen_file_url(file['python_version'], data['name'], file['filename']);

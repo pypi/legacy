@@ -31,7 +31,7 @@ for version in ('0.8', '0.9', '1.0'):
             'homepage':'http://spam.python.test/',
             'license':'GPL',
             'summary':'The spam package',
-            'description':'Does anybody want to provide real data here?',
+            'description': 'spam '*500,
             'classifiers':["Development Status :: 6 - Mature",
                            "Programming Language :: Python :: 2"],
             '_pypi_hidden':False

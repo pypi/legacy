@@ -1362,6 +1362,8 @@ class WebUI:
             if os.path.exists(os.path.join(*path)):
                 docs = '/'.join(['http://packages.python.org', name] + sub)
 
+        files = self.store.list_files(name, version)
+
         self.write_template('display.pt',
                             name=name, version=version, release=release,
                             description=release.get('summary') or name,
@@ -1372,6 +1374,7 @@ class WebUI:
                             obsoletes=values('obsoletes'),
                             has_rated=has_rated,
                             latest_rating=latest_rating,
+                            files=files,
                             docs=docs,
                             sum_ratings=total,
                             nr_ratings=len(ratings),
