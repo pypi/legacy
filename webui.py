@@ -18,6 +18,11 @@ try:
 except ImportError:
     from xml.etree import cElementTree
 
+# Importing M2Crypto patches urllib; don't let them do that
+orig = urllib.URLopener.open_https.im_func
+from M2Crypto import EVP, DSA
+urllib.URLopener.open_https = orig
+
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp

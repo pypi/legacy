@@ -12,6 +12,7 @@ these packages located at PyPI:
 - zope.i18nmessageid
 - psycopg2 (for testing, sqlite3 might be sufficient)
 - docutils
+- M2Crypto
 - distutils2
 
 Quick development setup
@@ -32,7 +33,7 @@ virtualenv installed::
     $ virtualenv --no-site-packages --distribute .
     $ bin/easy_install cElementTree zope.interface zope.pagetemplate
     $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
-    $ bin/easy_install docutils
+    $ bin/easy_install docutils M2Crypto
 
 Then you can launch the server using the pypi.wsgi script::
 
