@@ -53,6 +53,10 @@ class RedirectTemporary(Exception): # 307
 class FormError(Exception):
     pass
 
+class MultipleReleases(object):
+    def __init__(self, releases):
+        self.releases = releases
+
 __version__ = '1.1'
 
 # email sent to user indicating how they should complete their registration
@@ -1171,7 +1175,7 @@ class WebUI:
             else:
                 l = self.store.get_package_releases(name, hidden=False)
                 if len(l) > 1:
-                    return self.index(releases=l)
+                    raise MultipleResults(releases=l)
                 l = self.store.get_latest_release(name, hidden=False)
                 try:
                     version = l[-1][1]
@@ -1201,7 +1205,11 @@ class WebUI:
             error_message=None):
         ''' Print up an entry
         '''
-        info, latest_version = self._load_release_info(name, version)
+        try:
+            info, latest_version = self._load_release_info(name, version)
+        except MultipleReleases, e:
+            return self.index(releases=e.releases)
+
         name = info['name']
         version = info['version']
         using_latest = latest_version==version
