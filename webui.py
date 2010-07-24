@@ -1356,6 +1356,12 @@ class WebUI:
             return result
         comments = "".join(render_comments(hcomments, True))
 
+        docs = ''
+        for sub in [[], ['html']]:
+            path = [self.config.database_docs_dir, name] + sub + ['index.html']
+            if os.path.exists(os.path.join(path)):
+                docs = '/'.join(['http://packages.python.org', name] + sub)
+
         self.write_template('display.pt',
                             name=name, version=version, release=release,
                             description=release.get('summary') or name,
@@ -1366,6 +1372,7 @@ class WebUI:
                             obsoletes=values('obsoletes'),
                             has_rated=has_rated,
                             latest_rating=latest_rating,
+                            docs=docs,
                             sum_ratings=total,
                             nr_ratings=len(ratings),
                             tally_ratings=tally,

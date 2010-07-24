@@ -96,6 +96,11 @@
   <span tal:content="data/release/maintainer" />
  </li>
 
+ <li tal:condition="data/docs | nothing">
+  <strong>Documentation:</strong>
+  <a tal:attributes="href data/docs" tal:content="data/docs" />
+ </li>
+
 <!-- The <th> elements below are a terrible terrible hack for setuptools -->
  <li tal:condition="data/release/home_page | nothing">
   <strong>Home Page:</strong>
