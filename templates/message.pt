@@ -5,5 +5,8 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
     <p tal:condition="data/message" tal:content="data/message"></p>
+    <p tal:condition="exists:data/url">
+      <a tal:attributes="href data/url" tal:content="data/url_text"></a>
+    </p>
   </metal:fill>
 </html>

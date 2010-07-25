@@ -2505,11 +2505,25 @@ class WebUI:
             # finish off rego
             if self.store.get_otk(info['otk']):
                 response = 'Error: One Time Key invalid'
-            else:
+            elif self.form.has_key('agree_shown'):
+                # user has posted the form with the usage agreement
+                if not self.form.has_key('agree'):
+                    self.fail('You need to confirm the usage agreement.',
+                              heading='User registration')
+                    return
                 # OK, delete the key
                 self.store.delete_otk(info['otk'])
-                response = 'Registration complete'
-
+                self.write_template('message.pt', title='Registration complete',
+                                    message='You are now registered.',
+                                    url='%s?:action=login' % self.url_path,
+                                    url_text='Proceed to login')
+                return
+            else:
+                # user has clicked the link in the email -- show agreement form
+                user = self.store.get_user_by_otk(info['otk'])
+                self.write_template('confirm.pt', title='Confirm registration',
+                                    otk=info['otk'], user=user)
+                return
         elif self.username is None:
             for param in 'name email'.split():
                 if not info.has_key(param):
@@ -2562,10 +2576,6 @@ class WebUI:
             if self.store.has_user(name):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
-                return
-            if not self.form.has_key('agree'):
-                self.fail('You need to confirm the usage agreement.',
-                          heading='User registration')
                 return
             olduser = self.store.get_user_by_email(info['email'])
             if olduser:
