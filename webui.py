@@ -1047,7 +1047,7 @@ class WebUI:
         self.wfile.write(s.getvalue())
 
     def json(self, name=None, version=None):
-        '''Return DOAP rendering of a package.
+        '''Return JSON rendering of a package.
         '''
         try:
             info, latest_version = self._load_release_info(name, version)
@@ -1067,7 +1067,12 @@ class WebUI:
         self.handler.send_header('Content-Disposition',
             'attachment; filename=%s'%filename)
         self.handler.end_headers()
-        self.wfile.write(json.dumps(d))
+        # write the JSONP extra crap if necessary
+        s = json.dumps(d)
+        callback = self.form.get('callback')
+        if callback:
+            s = '%s(%s)' % (callback, s)
+        self.wfile.write(s)
 
     def _get_pkg_info(self, name, version):
         # get the appropriate package info from the database
