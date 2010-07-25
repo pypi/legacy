@@ -7,7 +7,7 @@ from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
 try:
     import json
-except:
+except ImportError:
     import simplejson as json    
 try:
     import psycopg2
