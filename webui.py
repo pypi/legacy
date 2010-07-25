@@ -2374,7 +2374,8 @@ class WebUI:
             raise FormError, 'Error: top-level "index.html" missing in the zipfile'
 
         # Assume the file is valid; remove any previous data
-        path = os.path.join(self.config.database_docs_dir, name, "")
+        path = os.path.join(self.config.database_docs_dir,
+                            name.encode('utf8'), "")
         if os.path.exists(path):
             shutil.rmtree(path)
         os.mkdir(path)
