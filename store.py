@@ -1489,7 +1489,7 @@ class Store:
         '''Find a user by its otk.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select user from rego_otk where otk=%s", (otk, ))
+        safe_execute(cursor, "select name from rego_otk where otk=%s", (otk, ))
         res = cursor.fetchone()
         if res is None:
             return ''
