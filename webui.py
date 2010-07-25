@@ -970,7 +970,11 @@ class WebUI:
     def doap(self, name=None, version=None):
         '''Return DOAP rendering of a package.
         '''
-        info, latest_version = self._load_release_info(name, version)
+        try:
+            info, latest_version = self._load_release_info(name, version)
+        except MultipleReleases, e:
+            return self.index(releases=e.releases)
+
         name = info['name']
 
         root = cElementTree.Element('rdf:RDF', {
@@ -1043,7 +1047,10 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return DOAP rendering of a package.
         '''
-        info, latest_version = self._load_release_info(name, version)
+        try:
+            info, latest_version = self._load_release_info(name, version)
+        except MultipleReleases, e:
+            return self.index(releases=e.releases)
         name, version = info['name'], info['version']
         d = {
             'info': rpc.release_data(self.store, name, version),
