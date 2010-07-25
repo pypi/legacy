@@ -1358,7 +1358,7 @@ class WebUI:
 
         docs = ''
         for sub in [[], ['html']]:
-            path = [self.config.database_docs_dir, name] + sub + ['index.html']
+            path = [self.config.database_docs_dir, name.encode('utf8')] + sub + ['index.html']
             if os.path.exists(os.path.join(*path)):
                 docs = '/'.join(['http://packages.python.org', name] + sub)
 
