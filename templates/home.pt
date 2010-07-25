@@ -39,8 +39,8 @@ tree of packages</a></li>
 register to submit</a>)</li>
 </ul>
 
-<p>There now is an <a href="http://10tons.tummy.com/pypi/">RPM repository</a>
-that provides RPMs for most of the packages available here on PyPI.</p>
+<p>PyPI now provides a <a href="/mirrors">Mirror infrastructure</a> to allow
+users to continue downloading file even if pypi.python.org is unavailable.</p>
 
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>

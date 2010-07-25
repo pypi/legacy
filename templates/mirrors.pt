@@ -6,29 +6,22 @@
       <metal:fill fill-slot="body">
 
  <p>The PyPI repository provides alternative locations that stores the packages.
- A mirror ring is available at this hostname : <b>mirrors.pypi.python.org</b></p>
-
- <p>If you want to register a new mirror, send an email
- to the catalog-SIG mailing list and provide:</p>
+ This service is primarily intended to be used by automated download tools
+ (such as setuptools or pip); ask your tool vendor to make use of this infratructure.
+ </p>
+ <p>You can also manually point these tools to mirrors, or use them in the
+ web browser, by using one of these host names instead of pypi.python.org:</p>
  <ul>
-  <li>The IP of your mirror.</li>
-  <li>The PyPI account name of the maintainer.</li>
+ <li><a href="http://b.pypi.python.org/">b.pypi.python.org</a></li>
+ <li><a href="http://c.pypi.python.org/">c.pypi.python.org</a></li>
+ <li><a href="http://d.pypi.python.org/">d.pypi.python.org</a></li>
  </ul>
 
- <p>The registering is done manually by the PyPI administrator.
- To become a mirror, you need to strictly follow the protocol
- described here:</p>
+ <p>More mirrors may get added over time; you can use the DNS CNAME record
+ last.pypi.python.org to find out which mirror is last in alphabetical order.</p>
 
- <a href="http://www.python.org/dev/peps/pep-0381">http://www.python.org/dev/peps/pep-0381</a>
+ <p>The mirroring protocol is defined in <a href="http://www.python.org/dev/peps/pep-0381">http://www.python.org/dev/peps/pep-0381</a></p>
 
- <p>Notice that the mirror maintainer must provide a permanent IP.</p>
-
- <h2>Current mirror list</h2>
- <ul>
-   <li tal:repeat="mirror app/store/list_mirrors">
-      <tal:block tal:replace="python:mirror[0]"/>
-   </li>
- </ul>
  </metal:fill>
 </html>
 
