@@ -5,8 +5,10 @@ import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import DistributionMetadata
-import json
-
+try:
+    import json
+except:
+    import simplejson as json    
 try:
     import psycopg2
     OperationalError = psycopg2.OperationalError
