@@ -935,6 +935,11 @@ class WebUI:
         user_name = self.form['user_name']
         role_name = self.form['role_name']
 
+        # make sure only admins and owners can add roles
+        if not (self.store.has_role('Admin', package_name) or
+                self.store.has_role('Owner', package_name)):
+            raise Unauthorised
+
         # further vali:dation
         if role_name not in ('Owner', 'Maintainer'):
             raise FormError, 'role_name not Owner or Maintainer'
