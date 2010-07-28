@@ -73,7 +73,7 @@ def rename_package(store, old, new):
     if store.has_package(new):
         raise ValueError, new+' exists'
     store.rename_package(old, new)
-    
+    print "Please give www-data permissions to all files of", new
 
 def add_mirror(store, root, user):
     ''' Add a mirror to the mirrors list
