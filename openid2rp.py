@@ -146,7 +146,10 @@ class OpenIDParser(htmllib.HTMLParser):
 
     def do_link(self, attrs):
         attrs = dict(attrs)
-        self.links[attrs['rel']] = attrs['href']
+        try:
+            self.links[attrs['rel']] = attrs['href']
+        except KeyError:
+            pass
 
     def do_meta(self, attrs):
         attrs = dict(attrs)
@@ -457,7 +460,7 @@ class NotAuthenticated(Exception):
 
 def _prepare_response(response):
     if isinstance(response, str):
-        return cgi.parse_qs(response)
+        return cgi.parse_qs(response, keep_blank_values=True)
     # backwards compatibility: allow caller to pass parse_qs result
     # already
     pass
