@@ -528,9 +528,9 @@ class Store:
             # assume that home page and download URL are unescaped
             any_releases = True
             if home_page and home_page != 'UNKNOWN':
-                result.append((cgi.escape(home_page), 'homepage', version + ' home_page'))
+                result.append((home_page, 'homepage', version + ' home_page'))
             if download_url and download_url != 'UNKNOWN':
-                result.append((cgi.escape(download_url), 'download', version + ' download_url'))
+                result.append((download_url, 'download', version + ' download_url'))
         if not any_releases:
             return None
 
@@ -1600,9 +1600,8 @@ class Store:
         '''Generate the URL for a given file download.'''
         if not prefix:
             prefix = self.config.files_url
-        return cgi.escape(os.path.join(prefix, pyversion,
-                                       name[0], name, filename),
-                          quote=True)
+        return os.path.join(prefix, pyversion,
+                                       name[0], name, filename)
 
     def gen_file_path(self, pyversion, name, filename):
         '''Generate the path to the file on disk.'''
