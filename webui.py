@@ -612,7 +612,8 @@ class WebUI:
             html.append("<body>\n")
             for name,stable_version in self.store.get_packages():
                 qname = urllib.quote(name.encode("utf-8"))
-                html.append("<a href='%s/'>%s</a><br/>\n" % (qname,name))
+                ename = cgi.escape(name)
+                html.append("<a href='%s/'>%s</a><br/>\n" % (qname,ename))
             html.append("</body></html>")
             html = ''.join(html).encode('utf-8')
             self.handler.send_response(200, 'OK')
