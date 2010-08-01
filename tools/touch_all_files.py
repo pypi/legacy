@@ -33,4 +33,4 @@ if __name__ == '__main__':
             os.makedirs(dir)
         if not os.path.exists(path):
             print "Creating file %s" % path
-            open(path, "a")
+            open(path, "a").write('Contents of '+path+'\n')

@@ -28,7 +28,7 @@ urllib.URLopener.open_https = orig
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
-import MailingLogger, openid2rp
+import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 
 esc = cgi.escape
@@ -555,7 +555,7 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         rate comment addcomment delcomment clear_auth addkey delkey lasthour
-        json'''.split():
+        json gae_file'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -2422,6 +2422,15 @@ class WebUI:
         self.store.log_docs(name, version)
         self.store.changed()
         raise Redirect("http://packages.python.org/%s/" % name)
+
+    #
+    # Reverse download for Google AppEngine
+    #
+    def gae_file(self):
+        host = self.form['host']
+        secret = self.form['secret']
+        gae.transfer(host, secret, self.config.database_files_dir)
+        self.handler.send_response(204, 'Initiated')
 
     #
     # classifiers listing
