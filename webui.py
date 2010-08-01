@@ -2431,6 +2431,7 @@ class WebUI:
         secret = self.form['secret']
         gae.transfer(host, secret, self.config.database_files_dir)
         self.handler.send_response(204, 'Initiated')
+        self.handler.end_headers()
 
     #
     # classifiers listing
