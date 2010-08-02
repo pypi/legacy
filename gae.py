@@ -37,10 +37,15 @@ def doit(host, secret, srcdir):
     while boundary in data:
         boundary = binascii.hexlify(os.urandom(10))
     body = POST % locals()
-    c = httplib.HTTPConnection(host)
+    if ':' in host:
+        host, port = host.split(':')
+    else:
+        port = 80
+    c = httplib.HTTPConnection(host, port)
     c.request('POST', session,
               headers = {'Content-type':'multipart/form-data; boundary='+boundary,
-                         'Content-length':str(len(body))},
+                         'Content-length':str(len(body)),
+                         'Host':host},
               body=body)
     resp = c.getresponse()
     data = resp.read()
@@ -48,6 +53,6 @@ def doit(host, secret, srcdir):
     c.close()
 
 def transfer(host, secret, srcdir):
+    secret = secret.encode('ascii')
     t = threading.Thread(target=doit, args=(host, secret, srcdir))
     t.start()
-
