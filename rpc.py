@@ -76,6 +76,8 @@ package_urls = release_urls     # "deprecated"
 
 def release_data(store, package_name, version):
     info = store.get_package(package_name, version).as_dict()
+    if not info:
+        return {}
     del info['description_html']
     for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
                 'obsoletes_dist', 'project_url', 'provides_dist',
