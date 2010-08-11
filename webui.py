@@ -985,7 +985,7 @@ class WebUI:
             except KeyError:
                 raise NotFound, 'no package name supplied'
         if version is None:
-            if self.form.has_key('version'):
+            if self.form.get('version'):
                 version = self.form['version']
             else:
                 l = self.store.get_latest_release(name, hidden=False)
