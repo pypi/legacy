@@ -995,7 +995,7 @@ class WebUI:
                     raise NotFound, 'no releases'
         info = self.store.get_package(name, version)
         if not info:
-            raise NotFound
+            raise NotFound, 'invalid name/version'
         return info, name, version
 
     def doap(self, name=None, version=None):
