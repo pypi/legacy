@@ -977,15 +977,28 @@ class WebUI:
 
         self.role_form()
 
+    def _get_latest_pkg_info(self, name, version):
+        # get the appropriate package info from the database
+        if name is None:
+            try:
+                name = self.form['name']
+            except KeyError:
+                raise NotFound, 'no package name supplied'
+        if version is None:
+            if self.form.has_key('version'):
+                version = self.form['version']
+            else:
+                l = self.store.get_latest_release(name, hidden=False)
+                try:
+                    version = l[-1][1]
+                except IndexError:
+                    raise NotFound, 'no releases'
+        return self.store.get_package(name, version), name, version
+
     def doap(self, name=None, version=None):
         '''Return DOAP rendering of a package.
         '''
-        try:
-            info, latest_version = self._load_release_info(name, version)
-        except MultipleReleases, e:
-            return self.index(releases=e.releases)
-
-        name = info['name']
+        info, name, version = self._get_latest_pkg_info(name, version)
 
         root = cElementTree.Element('rdf:RDF', {
             'xmlns:rdf': "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -1057,11 +1070,7 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return JSON rendering of a package.
         '''
-        try:
-            info, latest_version = self._load_release_info(name, version)
-        except MultipleReleases, e:
-            return self.index(releases=e.releases)
-        name, version = info['name'], info['version']
+        info, name, version = self._get_latest_pkg_info(name, version)
         d = {
             'info': rpc.release_data(self.store, name, version),
             'urls': rpc.release_urls(self.store, name, version),
@@ -1082,30 +1091,12 @@ class WebUI:
             s = '%s(%s)' % (callback, s)
         self.wfile.write(s)
 
-    def _get_pkg_info(self, name, version):
-        # get the appropriate package info from the database
-        if name is None:
-            try:
-                name = self.form['name']
-            except KeyError:
-                raise NotFound, 'no package name supplied'
-        if version is None:
-            if self.form.has_key('version'):
-                version = self.form['version']
-            else:
-                l = self.store.get_latest_release(name, hidden=False)
-                try:
-                    version = l[-1][1]
-                except IndexError:
-                    raise NotFound, 'no releases'
-        return self.store.get_package(name, version), name, version
-
     def display_pkginfo(self, name=None, version=None):
         '''Reconstruct and send a PKG-INFO metadata file.
         '''
         # XXX tarek need to add 1.2 support here
         #
-        info, name, version = self._get_pkg_info(name, version)
+        info, name, version = self._get_latest_pkg_info(name, version)
         if not info:
             return self.fail('No such package / version',
                 heading='%s %s'%(name, version),
