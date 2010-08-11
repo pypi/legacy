@@ -993,7 +993,10 @@ class WebUI:
                     version = l[-1][1]
                 except IndexError:
                     raise NotFound, 'no releases'
-        return self.store.get_package(name, version), name, version
+        info = self.store.get_package(name, version)
+        if not info:
+            raise NotFound
+        return info, name, version
 
     def doap(self, name=None, version=None):
         '''Return DOAP rendering of a package.
