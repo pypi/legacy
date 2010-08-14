@@ -4,6 +4,10 @@ import re
 import time
 from cStringIO import StringIO
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
+from collections import defaultdict
+
+# local imports
+from store import dependency
 
 class RequestHandler(SimpleXMLRPCDispatcher):
     """A request dispatcher for the PyPI XML-RPC API."""
@@ -29,7 +33,8 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         webui_obj.handler.send_header('Content-type', 'text/xml')
         webui_obj.handler.send_header('charset', 'UTF-8' );
         webui_obj.handler.end_headers()
-        data = webui_obj.handler.rfile.read()
+        length = int(webui_obj.env['CONTENT_LENGTH'])
+        data = webui_obj.handler.rfile.read(length)
         # This should be thread-safe, as the store is really a singleton
         self.store = webui_obj.store
         response = self._marshaled_dispatch(data)
@@ -80,11 +85,10 @@ def release_data(store, package_name, version):
         return {}
     info = info.as_dict()
     del info['description_html']
-    for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
-                'obsoletes_dist', 'project_url', 'provides_dist',
-                'requires_external'):
-        rows = store.get_release_relationships(package_name, version, col)
-        info[col] = [row['specifier'] for row in rows]
+    dependencies = defaultdict(list)
+    for kind, specifier in store.get_release_dependencies(package_name, version):
+        dependencies[dependency.by_val[kind]].append(specifier)
+    info.update(dependencies)
     classifiers = [r[0] for r in store.get_release_classifiers(package_name,
         version)]
     info['classifiers' ] = classifiers

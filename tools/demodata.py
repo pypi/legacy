@@ -48,6 +48,7 @@ for version in ('0.1', '0.2', '0.3', '0.4'):
             'description':'Does anybody want to provide real data here?',
             'classifiers':["Development Status :: 3 - Alpha",
                            "Programming Language :: Python :: 3"],
+            'requires_dist':['spam'],
             '_pypi_hidden':version!='0.4'
             })
 

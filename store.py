@@ -2,6 +2,7 @@
 '''
 import sys, os, re, time, hashlib, random, types, math, stat, errno
 import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
+from collections import defaultdict
 try:
     import psycopg2
 except ImportError:
@@ -32,6 +33,24 @@ dist_file_types = [
     ('bdist_dmg',        'OS X Disk Image'),
 ]
 dist_file_types_d = dict(dist_file_types)
+
+# This could have been done with Postgres ENUMs, however
+# a) they are not extensible, and
+# b) they are not supported in other databases
+class dependency:
+    requires = 1
+    provides = 2
+    obsoletes = 3
+    requires_dist = 4
+    provides_dist = 5
+    obsoletes_dist = 6
+    requires_external = 7
+    project_url = 8
+    by_val = {}
+for k,v in dependency.__dict__.items():
+    if not isinstance(v, int):
+        continue
+    dependency.by_val[v] = k
 
 keep_conn = False
 connection = None
@@ -257,7 +276,7 @@ class Store:
 
         # now see if we're inserting or updating a release
         message = None
-        relationships = {}
+        relationships = defaultdict(set)
         old_cifiers = []
         html = None
         if self.has_release(name, version):
@@ -295,16 +314,17 @@ class Store:
                 old.append('classifiers')
 
             # get old classifiers list
-            for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
-                        'provides_dist', 'obsoletes_dist',
-                        'requires_external', 'project_url'):
-                relationships[col] = self.get_release_relationships(name,
-                    version, col)
-                relationships[col].sort()
-                new_val = info.get(col, [])
-                new_val.sort()
-                if info.has_key(col) and relationships[col] != new_val:
-                    old.append(col)
+            for kind, specifier in self.get_release_dependencies(name, version):
+                relationships[kind].add(specifier)
+            for nkind, skind in dependency.by_val.items():
+                # numerical kinds in relationships; string kinds in info
+                try:
+                    new_val = set(info[skind])
+                except KeyError:
+                    # value not provided
+                    continue
+                if relationships[skind] != new_val:
+                    old.append(skind)
 
             # no update when nothing changes
             if not old:
@@ -385,17 +405,15 @@ class Store:
                     (name, version, trove_id))
 
         # handle relationship specifiers
-        for col in ('requires', 'provides', 'obsoletes', 'requires_dist',
-                    'provides_dist', 'obsoletes_dist',
-                    'requires_external', 'project_url'):
-            if not info.has_key(col) or relationships.get(col, []) == info[col]:
+        for nkind, skind in dependency.by_val.items():
+            if not info.has_key(skind) or relationships[nkind] == set(info[skind]):
                 continue
-            safe_execute(cursor, '''delete from release_%s where name=%%s
-                and version=%%s'''%col, (name, version))
-            for specifier in info[col]:
-                safe_execute(cursor, '''insert into release_%s (name, version,
-                    specifier) values (%%s, %%s, %%s)'''%col, (name,
-                    version, specifier))
+            safe_execute(cursor, '''delete from release_dependencies where name=%s
+                and version=%s and kind=%s''', (name, version, nkind))
+            for specifier in info[skind]:
+                safe_execute(cursor, '''insert into release_dependencies (name, version,
+                    kind, specifier) values (%s, %s, %s, %s)''', (name,
+                    version, nkind, specifier))
 
         return message
 
@@ -667,9 +685,18 @@ class Store:
             "requires", "provides" or "obsoletes".
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_%s where
-            name=%%s and version=%%s'''%relationship, (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies where
+            name=%s and version=%s and kind=%s''', (name, version, 
+                                                    getattr(dependency, relationship)))
         return Result(None, cursor.fetchall(), self._Release_Relationships)
+
+    _Release_Dependencies = FastResultRow('kind! specifier')
+    def get_release_dependencies(self, name, version):
+        '''Fetch all release dependencies of a release.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select kind, specifier from release_dependencies
+           where name=%s and version=%s''', (name, version))
+        return Result(None, cursor.fetchall(), self._Release_Dependencies)
 
     _Package_Roles = FastResultRow('role_name user_name')
     def get_package_roles(self, name):
@@ -703,8 +730,9 @@ class Store:
 
     def get_package_requires_dist(self, name, version):
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_requires_dist
-            where name=%s and version=%s ''', (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies
+            where name=%s and version=%s and kind=%s''', (name, version,
+                                                          dependency.requires_dist))
         packages = []
         for package in cursor.fetchall():
             pack = {'name': package[0],
@@ -714,8 +742,9 @@ class Store:
 
     def get_package_provides_dist(self, name, version):
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_provides_dist
-            where name=%s and version=%s ''', (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies
+            where name=%s and version=%s and kind=%s''', (name, version,
+                                                          dependency.provides_dist))
         packages = []
         for package in cursor.fetchall():
             pack = {'name': package[0],
@@ -725,8 +754,9 @@ class Store:
 
     def get_package_obsoletes_dist(self, name, version):
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_obsoletes_dist
-            where name=%s and version=%s ''', (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies
+            where name=%s and version=%s and kind=%s''', (name, version,
+                                                          dependency.obsoletes_dist))
         packages = []
         for package in cursor.fetchall():
             pack = {'name': package[0],
@@ -736,14 +766,16 @@ class Store:
 
     def get_package_requires_external(self, name, version):
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_requires_external
-            where name=%s and version=%s ''', (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies
+            where name=%s and version=%s and kind=%s''', (name, version,
+                                                          dependency.requires_external))
         return [package[0] for package in cursor.fetchall()]
 
     def get_package_project_url(self, name, version):
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select specifier from release_project_url
-            where name=%s and version=%s ''', (name, version))
+        safe_execute(cursor, '''select specifier from release_dependencies
+            where name=%s and version=%s and kind=%s''', (name, version,
+                                                          dependency.project_url))
         project_urls = []
         for project in cursor.fetchall():
             project_urls.append(project[0].split(','))
@@ -969,10 +1001,7 @@ class Store:
                 file['filename']))
 
         # delete ancillary table entries
-        for tab in ('files', 'provides', 'requires', 'obsoletes',
-                'classifiers', 'requires_dist', 'provides_dist',
-                'obsoletes_dist', 'requires_external',
-                'project_url'):
+        for tab in ('files', 'dependencies', 'classifiers'):
             safe_execute(cursor, '''delete from release_%s where
                 name=%%s and version=%%s'''%tab, (name, version))
         safe_execute(cursor, 'delete from description_urls where name=%s and version=%s',
@@ -998,10 +1027,7 @@ class Store:
                     file['filename']))
 
         # delete ancillary table entries
-        for tab in ('files', 'provides', 'requires', 'obsoletes',
-                'classifiers', 'requires_dist', 'provides_dist',
-                'obsoletes_dist', 'requires_external',
-                'project_url'):
+        for tab in ('files', 'dependencies', 'classifiers'):
             safe_execute(cursor, 'delete from release_%s where name=%%s'%tab,
                 (name, ))
 

@@ -157,94 +157,18 @@ CREATE INDEX rel_class_version_id_idx ON release_classifiers(version);
 CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
 CREATE INDEX rel_class_name_version_idx ON release_classifiers(name, version);
 
--- Table structure for table: release_provides
-CREATE TABLE release_provides (
+-- Release dependencies
+-- See store.py for the valid kind values
+CREATE TABLE release_dependencies (
    name TEXT,
    version TEXT,
+   kind INTEGER,
    specifier TEXT,
    FOREIGN KEY (name, version) REFERENCES releases (name, version)  ON UPDATE CASCADE
 );
-CREATE INDEX rel_prov_name_idx ON release_provides(name);
-CREATE INDEX rel_prov_version_id_idx ON release_provides(version);
-CREATE INDEX rel_prov_name_version_idx ON release_provides (name,version);
-
-
--- Table structure for table: release_requires
-CREATE TABLE release_requires (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_req_name_idx ON release_requires(name);
-CREATE INDEX rel_req_version_id_idx ON release_requires(version);
-CREATE INDEX rel_req_name_version_idx ON release_requires(name,version);
-
--- Table structure for table: release_obsoletes
-CREATE TABLE release_obsoletes (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_obs_name_idx ON release_obsoletes(name);
-CREATE INDEX rel_obs_version_id_idx ON release_obsoletes(version);
-CREATE INDEX rel_obs_name_version_idx ON release_obsoletes (name,version);
-
--- Table structure for table: release_requires_external
-CREATE TABLE release_requires_external (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_req_ext_name_idx ON release_requires_external(name);
-CREATE INDEX rel_req_ext_version_id_idx ON release_requires_external(version);
-CREATE INDEX rel_req_ext_name_version_idx ON release_requires_external(name,version);
-
--- Table structure for table: release_requires_dist
-CREATE TABLE release_requires_dist (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_req_dist_name_idx ON release_requires_dist(name);
-CREATE INDEX rel_req_dist_version_id_idx ON release_requires_dist(version);
-CREATE INDEX rel_req_dist_name_version_idx ON release_requires_dist(name,version);
-
--- Table structure for table: release_provides_dist
-CREATE TABLE release_provides_dist (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_prov_dist_name_idx ON release_provides_dist(name);
-CREATE INDEX rel_prov_dist_version_id_idx ON release_provides_dist(version);
-CREATE INDEX rel_prov_dist_name_version_idx ON release_provides_dist(name,version);
-
--- Table structure for table: release_obsoletes_dist
-CREATE TABLE release_obsoletes_dist (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_obs_dist_name_idx ON release_obsoletes_dist(name);
-CREATE INDEX rel_obs_dist_version_id_idx ON release_obsoletes_dist(version);
-CREATE INDEX rel_obs_dist_name_version_idx ON release_obsoletes_dist(name,version);
-
--- Table structure for table: release_project_url
-CREATE TABLE release_project_url (
-   name TEXT,
-   version TEXT,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX rel_proj_url_name_idx ON release_project_url(name);
-CREATE INDEX rel_proj_url_version_id_idx ON release_project_url(version);
-CREATE INDEX rel_proj_url_name_version_idx ON release_project_url(name,version);
+CREATE INDEX rel_dep_name_idx ON release_dependencies(name);
+CREATE INDEX rel_dep_name_version_idx ON release_dependencies(name, version);
+CREATE INDEX rel_dep_name_version_kind_idx ON release_dependencies(name, version, kind);
 
 -- Table structure for table: package_files
 -- python version is only first two digits
