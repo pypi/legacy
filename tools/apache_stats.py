@@ -8,6 +8,8 @@ import socket
 
 from apache_reader import ApacheLogReader
 
+# dictionary key structure: filename, user_agent, package_name
+
 class LocalStats(object):
     """Base class that writes the log file
     """
@@ -116,7 +118,7 @@ class LocalStats(object):
     def read_stats_dict(self, stats_file):
         res = {}
         for r in self.read_stats(stats_file):
-            key = (r['packagename'], r['filename'], r['useragent'])
+            key = (r['filename'], r['useragent'], r['packagename'])
             value = r['count']
             res[key] = value
         return res
