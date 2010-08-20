@@ -57,9 +57,9 @@ def main():
     host = 'b'
     while True:
         integrate_remote(sys.argv[1], host)
-        host = chr(ord(host)+1)
         if host == last:
             break
+        host = chr(ord(host)+1)
 
 main()
         
