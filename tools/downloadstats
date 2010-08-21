@@ -4,7 +4,7 @@
 import sys, os, csv
 import apache_reader, apache_stats
 
-statsdir = '/data/pypi/local-stats/'
+statsdir = '/data/www/pypi/local-stats/'
 
 days = set()
 records = []
