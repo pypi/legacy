@@ -14,7 +14,7 @@ def integrate(config, data):
     dbpass = c.get('database', 'password')
     dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass)
     cursor = dbconn.cursor()
-    for (package, filename, browser), count in data.items():
+    for (filename, browser, package), count in data.items():
         cursor.execute('update release_files set downloads=downloads+%s where filename=%s',
                        (count, filename))
     dbconn.commit()
