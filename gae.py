@@ -6,32 +6,31 @@ import urllib2, httplib, threading, os, binascii, urlparse
 
 POST="""\
 --%(boundary)s
-Content-Disposition: form-data; name=secret
+Content-Disposition: form-data; name="secret"
 
 %(secret)s
 --%(boundary)s
-Content-Disposition: form-data; name=path
+Content-Disposition: form-data; name="path"
 
 %(path)s
 --%(boundary)s
-Content-Disposition: form-data; name=file; filename=data.bin
+Content-Disposition: form-data; name="file"; filename="%(path)s"
+Content-Type: application/octet-stream
 
 %(data)s
+--%(boundary)s
 """
-POST = "\r\n".join(POST.splitlines())
+POST = "\r\n".join(POST.splitlines())+"\r\n"
 
-# XXX Not sure how to report errors
 def doit(host, secret, srcdir):
     x = urllib2.urlopen('http://%s/mkupload/%s' % (host, secret))
     if x.code != 200:
-        #print "mkupload failed (%s)" % r.code
         return
     path,url = x.read().splitlines()
     host, session = urlparse.urlsplit(url)[1:3]
     try:
         data = open(srcdir+"/"+path).read()
     except IOError, e:
-        #print "Read of %s failed:%s"%(path,str(e))
         return
     boundary = ""
     while boundary in data:
