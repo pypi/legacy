@@ -53,8 +53,7 @@ def main():
     else:
         raise ValueError, "Could not properly resolve last mirror name"
     last = last.split('.')[0]
-    integrate_remote(None, 'a', False)
-    host = 'b'
+    host = 'a'
     while True:
         integrate_remote(sys.argv[1], host)
         if host == last:
