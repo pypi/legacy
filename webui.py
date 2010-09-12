@@ -2546,7 +2546,7 @@ class WebUI:
                 # Recheck OpenID response
                 qs = {}
                 for key, value in self.form.items():
-                    qs[key] = [value]
+                    qs[key] = [value.encode('utf-8')]
                 session = self.store.get_session_by_handle(self.form['openid.assoc_handle'])
                 if not session:
                     raise FormError, "Invalid session"
