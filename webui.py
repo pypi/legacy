@@ -610,12 +610,12 @@ class WebUI:
             html = []
             html.append("<html><head><title>Simple Index</title></head>")
             html.append("<body>\n")
-            for name,stable_version in self.store.get_packages():
-                qname = urllib.quote(name.encode("utf-8"))
+            for name in self.store.get_packages_utf8():
+                qname = urllib.quote(name)
                 ename = cgi.escape(name)
                 html.append("<a href='%s/'>%s</a><br/>\n" % (qname,ename))
             html.append("</body></html>")
-            html = ''.join(html).encode('utf-8')
+            html = ''.join(html)
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.end_headers()

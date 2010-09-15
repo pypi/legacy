@@ -586,6 +586,13 @@ class Store:
         safe_execute(cursor, 'select name,stable_version from packages order by name')
         return Result(None, cursor.fetchall(), self._Packages)
 
+    def get_packages_utf8(self):
+        '''Fetch the complete list of package names, UTF-8 encoded
+        '''
+        cursor = self.get_cursor()
+        cursor.execute('select name from packages order by name')
+        return [p[0] for p in cursor.fetchall()]
+
     _Journal = FastResultRow('action submitted_date! submitted_by submitted_from')
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
