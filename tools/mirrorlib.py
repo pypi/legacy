@@ -120,15 +120,16 @@ def _newest(mirrors):
 def find_mirror(start_with='a',
                 good_response_time = 1,
                 good_age = 30*60,
-                max_wait = 5):
-    '''find_mirror(start_with, good_response_time, good_age, max_wait) -> name, IP, response_time, last_modified
+                slow_mirrors_wait = 5):
+    '''find_mirror(start_with, good_response_time, good_age, slow_mirrors_wait) -> name, IP, response_time, last_modified
     Find a PyPI mirror matching given criteria.
     start_with indicates the first mirror that should be considered (defaults to 'a').
     good_response_time is the maximum response time which lets this algorithm look no further;
     likewise, good_age is the maximum age acceptable to the caller.
-    If this procedure goes on for longer than max_wait (default 5s), return even if
+    If this procedure goes on for longer than slow_mirrors_wait (default 5s), return even if
     not all mirrors have been responding.
-    If no matching mirror can be found, the newest one that did response is returned.'''
+    If no matching mirror can be found, the newest one that did response is returned.
+    If no mirror can be found at all, ValueError is raised'''
     started = time.time()
     good_mirrors = []
     pending_mirrors = {} # socket:mirror
@@ -144,7 +145,7 @@ def find_mirror(start_with='a',
                 good_mirrors.append(m)
 
     while pending_mirrors:
-        if time.time() > started+max_wait and good_mirrors:
+        if time.time() > started+slow_mirrors_wait and good_mirrors:
             # if we have looked for 5s for a mirror, and we already have one
             # return the newest one
             _close(pending)
