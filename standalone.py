@@ -9,7 +9,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header('Content-Type', content_type)
 
     def run(self):
-        for scriptname in ('/mirrors', '/simple', '/pypi', '/serversig'):
+        for scriptname in ('/mirrors', '/simple', '/pypi', '/serversig', '/daytime'):
             if self.path.startswith(scriptname):
                 rest = self.path[len(scriptname):]
                 break

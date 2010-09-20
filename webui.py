@@ -458,6 +458,8 @@ class WebUI:
             return self.run_simple_sign()
         if script_name == '/mirrors':
             return self.mirrors()
+        if script_name == '/daytime':
+            return self.daytime()
         # see if the user has provided a username/password
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
         if auth:
@@ -2748,6 +2750,16 @@ class WebUI:
         '''
         options = {'title': 'PyPI mirrors'}
         self.write_template('mirrors.pt', **options)
+
+    def daytime(self):
+        # Mirrors are supposed to provide /last-modified,
+        # but it doesn't make sense to do so for the master server
+        '''display the current server time.
+        '''
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/plain')
+        self.handler.end_headers()
+        self.wfile.write(time.strftime("%Y%m%dT%H:%M:%S\n", time.gmtime(time.time())))
 
     def openid(self):
         self.write_template('openid.pt', title='OpenID Login')
