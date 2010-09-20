@@ -14,8 +14,11 @@ def _mirror_list(first):
     last = socket.gethostbyname_ex('last.pypi.python.org')
     cur_index = ord(first)-ord_a
     cur = first+'.pypi.python.org'
-    while last[0] != cur:
-        yield cur, socket.gethostbyname(cur)
+    while True:
+        for family, _, _, _, sockaddr in socket.getaddrinfo(cur, 0, 0, socket.SOCK_STREAM):
+            yield cur, family, sockaddr
+        if last[0] == cur:
+            break
         cur_index += 1
         if cur_index < 26:
             # a..z
@@ -27,7 +30,6 @@ def _mirror_list(first):
             cur = divmod(cur_index, 26)
             cur = chr(ord_a-1+cur[0])+chr(ord_a+cur[1])
         cur += '.pypi.python.org'
-    yield last[0], last[2][0]
 
 class _Mirror:
     # status values:
@@ -35,10 +37,11 @@ class _Mirror:
     # 1: wants to recv
     # 2: completed, ok
     # 3: completed, failed
-    def __init__(self, name, ip):
+    def __init__(self, name, family, ip):
         self.name = name
+        self.family = family
         self.ip = ip
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(family, socket.SOCK_STREAM)
         self.socket.setblocking(0)
         self.started = time.time()
         try:
@@ -78,7 +81,7 @@ class _Mirror:
         self.status = failed()
 
     def results(self):
-        return self.name, self.ip, self.response_time, self.last_modified
+        return self.name, self.family, self.ip, self.response_time, self.last_modified
 
 def _select(mirrors):
     # perform select call on mirrors dictionary
@@ -121,7 +124,9 @@ def find_mirror(start_with='a',
                 good_response_time = 1,
                 good_age = 30*60,
                 slow_mirrors_wait = 5):
-    '''find_mirror(start_with, good_response_time, good_age, slow_mirrors_wait) -> name, IP, response_time, last_modified
+    '''find_mirror(start_with, good_response_time, good_age, slow_mirrors_wait) 
+       -> name, family, IP, response_time, last_modified
+
     Find a PyPI mirror matching given criteria.
     start_with indicates the first mirror that should be considered (defaults to 'a').
     good_response_time is the maximum response time which lets this algorithm look no further;
@@ -134,8 +139,8 @@ def find_mirror(start_with='a',
     good_mirrors = []
     pending_mirrors = {} # socket:mirror
     good_last_modified = datetime.datetime.utcnow()-datetime.timedelta(seconds=good_age)
-    for host, ip in _mirror_list(start_with):
-        m = _Mirror(host, ip)
+    for host, family, ip in _mirror_list(start_with):
+        m = _Mirror(host, family, ip)
         pending_mirrors[m.socket] = m
         for m in _select(pending_mirrors):
             if m.response_time < good_response_time and m.last_modified > good_last_modified:
