@@ -53,9 +53,15 @@ class _Mirror:
         self.status = 0
 
     def write(self):
-        self.socket.send('GET /last-modified HTTP/1.0\r\n'
+        url = 'last-modified'
+        if self.name == 'a.pypi.python.org':
+            # the master server doesn't provide last-modified,
+            # as that would be pointless. Instead, /daytime can be
+            # used as an indication of currency and responsiveness.
+            url = 'daytime'
+        self.socket.send('GET /%s HTTP/1.0\r\n'
                          'Host: %s\r\n'
-                         '\r\n' % self.name)
+                         '\r\n' % (url, self.name))
         self.status = 1
     
     def read(self):
