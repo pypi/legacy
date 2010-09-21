@@ -2257,7 +2257,7 @@ class WebUI:
             filetype = self.form['filetype']
             if filetype == 'sdist':
                 self.form['pyversion'] = 'source'
-        if content is None or filetype is None:
+        if not content or not filetype:
             raise FormError, 'Both content and filetype are required'
 
         md5_digest = self.form['md5_digest']
