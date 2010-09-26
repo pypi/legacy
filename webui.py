@@ -62,7 +62,7 @@ class MultipleReleases(Exception):
 __version__ = '1.1'
 
 # email sent to user indicating how they should complete their registration
-rego_message = '''Subject: Complete your Cheese Shop registration
+rego_message = '''Subject: Complete your PyPI registration
 From: %(admin)s
 To: %(email)s
 
@@ -74,7 +74,7 @@ index, please visit the following URL:
 '''
 
 # password change request email
-password_change_message = '''Subject: Cheese Shop password change request
+password_change_message = '''Subject: PyPI password change request
 From: %(admin)s
 To: %(email)s
 
@@ -89,7 +89,7 @@ You should then receive another email with the new password.
 '''
 
 # password reset email - indicates what the password is now
-password_message = '''Subject: Cheese Shop password has been reset
+password_message = '''Subject: PyPI password has been reset
 From: %(admin)s
 To: %(email)s
 
@@ -386,7 +386,7 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
-    def fail(self, message, title="Python Cheese Shop", code=400,
+    def fail(self, message, title="Python Package Index", code=400,
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
         '''
