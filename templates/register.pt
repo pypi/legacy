@@ -5,6 +5,12 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
 
+    <p tal:condition="not:data/openid_fields">
+    This form allows "traditional" registration (using a password).
+    Users who want to register with their OpenID (e.g. Google,
+    myOpenID or Launchpad account) should follow one of the links
+    to the right.
+    </p>
     <form tal:attributes="action app/url_path" method="POST">
       <input type="hidden" name=":action" value="user" />
       <input type="hidden" name="name" tal:condition="not:data/new_user"
