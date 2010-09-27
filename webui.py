@@ -61,6 +61,11 @@ class MultipleReleases(Exception):
 
 __version__ = '1.1'
 
+providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
+             ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
+             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
+             )
+
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
 From: %(admin)s
@@ -97,12 +102,18 @@ Your login is: %(name)s
 Your password is now: %(password)s
 '''
 
+_prov = '<p>You may also login or register using <a href="%(url_path)s?:action=openid">OpenID</a>'
+for title, favicon, login in providers:
+    _prov += '''
+    <a href="%s"><img src="%s" title="%s"/></a>
+    ''' %  (login, favicon, title)
+_prov += "</p>"
 unauth_message = '''
 <p>If you are a new user, <a href="%(url_path)s?:action=register_form">please
 register</a>.</p>
 <p>If you have forgotten your password, you can have it
 <a href="%(url_path)s?:action=forgotten_password_form">reset for you</a>.</p>
-'''
+''' + _prov
 
 comment_message = '''Subject: New comment on %(package)s
 From: PyPI operators <%(admin)s>
@@ -131,11 +142,6 @@ You can read all comments on %(url)s.
 '''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
-             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
-             )
 
 class Provider:
     def __init__(self, name, favicon, url):
