@@ -626,6 +626,7 @@ class WebUI:
             html = ''.join(html)
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
+            self.handler.send_header('Content-Length', str(len(html)))
             self.handler.end_headers()
             self.wfile.write(html)
             return
@@ -638,6 +639,7 @@ class WebUI:
             html = self.simple_body(path)
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
+            self.handler.send_header('Content-Length', str(len(html)))
             self.handler.end_headers()
             self.wfile.write(html)
             return
