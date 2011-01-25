@@ -127,10 +127,10 @@ def merge_user(store, old, new):
 
 if __name__ == '__main__':
     config = config.Config('/data/pypi/config.ini')
-    store = store.Store(config)
-    store.open()
+    st = store.Store(config)
+    st.open()
     command = sys.argv[1]
-    args = (store, ) + tuple(sys.argv[2:])
+    args = (st, ) + tuple(sys.argv[2:])
     try:
         if command == 'password':
             set_password(*args)
@@ -157,7 +157,7 @@ if __name__ == '__main__':
             merge_user(*args)
         else:
             print "unknown command '%s'!"%command
-        store.changed()
+        st.changed()
     finally:
-        store.close()
+        st.close()
 
