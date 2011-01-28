@@ -252,7 +252,6 @@ class WebUI:
         self.config = handler.config
         self.wfile = handler.wfile
         self.env = env
-        random.seed(int(time.time())%256)
         self.nav_current = None
         self.privkey = None
         self.username = None
