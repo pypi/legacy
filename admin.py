@@ -1,5 +1,6 @@
 
 import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, shutil
+import zipfile, gzip, tarfile
 #sys.path.append('/usr/local/pypi/lib')
 
 import store, config
@@ -125,6 +126,33 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
+def nuke_nested_lists(store):
+    c = store.get_cursor()
+    c.execute("""select name, version, summary from releases
+        where summary like '%nested lists%'""")
+    hits = {}
+    for name, version, summary in c.fetchall():
+        for f in store.list_files(name, version):
+            path = store.gen_file_path(f['python_version'], name, f['filename'])
+            if path.endswith('.zip'):
+                z = zipfile.ZipFile(path)
+                for i in z.infolist():
+                    if not i.filename.endswith('.py'): continue
+                    if 'def print_lol' in z.read(i.filename):
+                        hits[name] = summary
+            elif path.endswith('.tar.gz'):
+                z = gzip.GzipFile(path)
+                t = tarfile.TarFile(fileobj=z)
+                for i in t.getmembers():
+                    if not i.name.endswith('.py'): continue
+                    f = t.extractfile(i.name)
+                    if 'def print_lol' in f.read():
+                        hits[name] = summary
+    for name in hits:
+        store.remove_package(name)
+        print '%s: %s' % (name, hits[name])
+    print 'removed %d packages' % len(hits)
+
 if __name__ == '__main__':
     config = config.Config('/data/pypi/config.ini')
     st = store.Store(config)
@@ -155,6 +183,8 @@ if __name__ == '__main__':
             send_comments(*args)
         elif command == 'mergeuser':
             merge_user(*args)
+        elif command == 'nuke_nested_lists':
+            nuke_nested_lists(*args)
         else:
             print "unknown command '%s'!"%command
         st.changed()
