@@ -274,7 +274,7 @@ CREATE TABLE comments_journal(
   submitted_by TEXT REFERENCES users ON DELETE CASCADE,
   date TIMESTAMP,
   action TEXT,
-  FOREIGN KEY (name, version) REFERENCES releases (name, version) ON DELETE CASCADE
+  FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 commit;
