@@ -525,6 +525,8 @@ class WebUI:
         path = self.env.get('PATH_INFO', '')
         if self.form.has_key(':action'):
             action = self.form[':action']
+            if isinstance(action, list):
+                raise RuntimeError("Multiple actions: %r" % action)
         elif path:
             # Split into path items, drop leading slash
             try:
