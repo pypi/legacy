@@ -468,7 +468,7 @@ class WebUI:
         # see if the user has provided a username/password
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
         if auth:
-            authtype, auth = auth.split()
+            authtype, auth = auth.split(None, 1) # OAuth has many more parameters
             if authtype.lower() == 'basic':
                 try:
                     un, pw = base64.decodestring(auth).split(':')
