@@ -19,7 +19,7 @@ available Roles are defined as:
         </p>
 <p> </p>
 
-<form method="POST">
+<form tal:attributes="action app/url_path" method="POST">
 <input type="hidden" name=":action" value="role" />
 <table class="form">
 <tr><th>User Name:</th>
