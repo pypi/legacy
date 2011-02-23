@@ -81,7 +81,7 @@
      <p>Your OpenIDs:</p>
      <ul>
        <li tal:repeat="curid data/openids"><span tal:replace="curid/id"/>
-       <form method="POST">
+       <form tal:attributes="action app/url_path" method="POST">
         <input type="hidden" name=":action" value="dropid"/>
         <input type="hidden" name="openid" tal:attributes="value curid/id"/>
         <input type="submit" value="Drop this ID"/>
