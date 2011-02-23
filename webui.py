@@ -258,11 +258,15 @@ class WebUI:
         self.authenticated = False # was a password or a valid cookie passed?
         self.loggedin = False      # was a valid cookie sent?
         self.usercookie = None
+        self.failed = None # error message if initialization already produced a failure
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
             fs = cgi.FieldStorage(fp=handler.rfile, environ=env)
-            self.form = decode_form(fs)
+            try:
+                self.form = decode_form(fs)
+            except UnicodeDecodeError:
+                self.failed = "Form data is not correctly encoded in UTF-8"
         else:
             self.form = None
 
@@ -296,6 +300,10 @@ class WebUI:
         ''' Run the request, handling all uncaught errors and finishing off
             cleanly.
         '''
+        if self.failed:
+            # failed during initialization
+            self.fail(self.failed)
+            return
         self.store = store.Store(self.config)
         try:
             try:
