@@ -30,7 +30,7 @@
       <h1 id="logoheader">
        <a accesskey="1" href="http://www.python.org" id="logolink">
         <tal:x condition="python:data.get('is_py3k')">
-          <img src="http://pypi.python.org/python-3.png" alt="homepage" border="0" id="logo" />
+          <img src="/python-3.png" alt="homepage" border="0" id="logo" />
         </tal:x>
         <tal:x condition="python:not data.get('is_py3k')">
           <img tal:attributes="src string:${app/config/pydotorg}images/python-logo.gif" alt="homepage" border="0" id="logo" />
