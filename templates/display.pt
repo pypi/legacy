@@ -21,8 +21,13 @@
 <metal:fill fill-slot="body">
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
-<p tal:condition="python:len(data['release'].get('description', ''))>500 and data['files']">
-    <a href="#downloads">Downloads &darr;</a>
+<p tal:define="
+  cond1 python:len(data['release'].get('description',''))>500 and data['files'];
+  cond2 data/docs | nothing"
+  tal:condition="python:cond1 or cond2">
+ <a tal:condition="cond1" href="#downloads">Downloads &darr;</a>
+   <tal:block tal:condition="python:cond1 and cond2"> | </tal:block>
+   <a tal:condition="cond2" tal:attributes="href data/docs">Package Documentation</a>
 </p>
 
 <p tal:condition="not:data/usinglatest">
