@@ -42,15 +42,18 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if host != self.client_address[0]:
             env['REMOTE_HOST'] = host
         env['REMOTE_ADDR'] = self.client_address[0]
-        authorization = self.headers.getheader("authorization")
+        if self.ssh_user:
+            # ignore authorization headers if this is a SSH client
+            authorization = None
+            env['SSH_USER'] = self.ssh_user
+        else:
+            authorization = self.headers.getheader("authorization")
         if authorization:
             env['HTTP_CGI_AUTHORIZATION'] = authorization
             authorization = authorization.split()
             if len(authorization) == 2:
                 import base64, binascii
                 env['AUTH_TYPE'] = authorization[0]
-        if self.ssh_user:
-            env['SSH_USER'] = self.ssh_user
         if self.headers.typeheader is None:
             env['CONTENT_TYPE'] = self.headers.type
         else:
