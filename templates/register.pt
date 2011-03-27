@@ -93,7 +93,7 @@
     <p tal:condition="not:data/new_user">Claim OpenID, either from one of these providers:
      <tal:block tal:repeat="prov data/providers">
       <a tal:attributes="href prov/claim">
-       <img tal:attributes="src prov/favicon; title prov/title"/>
+       <img tal:attributes="src prov/favicon; title prov/title; alt prov/title"/>
       </a>
      </tal:block>
     or enter your ID explicitly:

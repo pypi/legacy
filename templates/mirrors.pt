@@ -5,9 +5,9 @@
       metal:use-macro="standard_template/macros/page">
       <metal:fill fill-slot="body">
 
- <p>The PyPI repository provides alternative locations that stores the packages.
+ <p>The PyPI repository provides alternative locations that store the packages.
  This service is primarily intended to be used by automated download tools
- (such as setuptools or pip); ask your tool vendor to make use of this infratructure.
+ (such as setuptools or pip); ask your tool vendor to make use of this infrastructure.
  </p>
  <p>You can also manually point these tools to mirrors, or use them in the
  web browser, by using one of these host names instead of pypi.python.org:</p>

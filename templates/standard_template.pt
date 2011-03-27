@@ -22,7 +22,7 @@
 
        <metal:slot define-slot="head" />
 
-       <style type="text/css" rel="stylesheet">
+       <style type="text/css">
        </style>
     </head>
     <body>
@@ -129,7 +129,7 @@
 		    <li>Use <a tal:attributes="href string:${app/url_path}?:action=openid">OpenID</a>
                       <tal:block tal:repeat="prov data/providers">
 			<a tal:attributes="href prov/login">
-                       <img tal:attributes="src prov/favicon; title prov/title"/>
+                       <img tal:attributes="src prov/favicon; title prov/title; alt prov/title"/>
 			</a>
                       </tal:block>
                     </li>
