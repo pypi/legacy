@@ -1527,9 +1527,7 @@ class WebUI:
             scores[k[0]] = v[0]
 
         if len(l) == 1:
-            self.form['name'] = l[0][-1]['name']
-            self.form['version'] = l[0][-1]['version']
-            return self.display()
+            raise RedirectTemporary, "%s/%s/%s" % (self.config.url,l[0][-1]['name'],l[0][-1]['version'])
 
         # sort and pull out just the record
         l.sort()
