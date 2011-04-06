@@ -572,7 +572,7 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         rate comment addcomment delcomment clear_auth addkey delkey lasthour
-        json gae_file'''.split():
+        json gae_file about'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -675,6 +675,9 @@ class WebUI:
 
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='PyPI')
+
+    def about(self, nav_current='home'):
+        self.write_template('about.pt', title='About PyPI')
 
     def rss(self):
         """Dump the last N days' updates as an RSS feed.
