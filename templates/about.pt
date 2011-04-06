@@ -17,19 +17,18 @@ Here you'll find a Python package to suit almost any need.
 </p>
 
 <p>
-The project was started in 2002 by Richard Jones,
+The project was started in 2002,
 and has since grown to include the contributions of over a dozen Python
 programmers, <span tal:content="app/store/count_packages" /> packages
 and millions of downloads.
 </p>
 
 <p>
-The Python Package Index (PyPI) is hosted by the Python Software Foundation (who run the python.org systems) but the project is community-run. Currently there's two maintainers, Richard and Martin von Löwis.
+The Python Package Index (PyPI) is hosted by the Python Software Foundation (who run the python.org systems) but the project is community-run. Currently there's two maintainers, Richard Jones and Martin von Löwis.
 </p>
 
 <p>
-The index itself is written in Python but pre-dates modern Python web frameworks.
-
+The index itself is written in Python but pre-dates modern Python web frameworks (<a href="http://wiki.python.org/moin/CheeseShopDev">more detail</a>).
 </p>
 
 <p>
