@@ -24,7 +24,6 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(updated_releases)
         self.register_function(changelog)
         self.register_function(post_cheesecake_for_release)
-        self.register_function(ratings)
         self.register_introspection_functions()
         self.register_multicall_functions()
 
@@ -119,17 +118,5 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
 
     store.save_cheesecake_score(name, version, score_data)
     store.commit()
-
-def ratings(store, name, version, since):
-    ratings, comments = store.all_ratings(name, version, since)
-    for i, r in enumerate(ratings):
-        r = list(r)
-        r[3] = int(time.mktime(r[3].timetuple()))
-        ratings[i] = tuple(r)
-    for i, c in enumerate(comments):
-        c = list(c)
-        c[5] = int(time.mktime(c[5].timetuple()))
-        comments[i] = c
-    return ratings, comments
 
 handle_request = RequestHandler()

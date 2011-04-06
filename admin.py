@@ -97,15 +97,6 @@ def delete_old_docs(config, store):
            print "Deleting", path
            shutil.rmtree(path)
 
-def send_comments(store):
-    '''Send out comments to package owners. Normally, this will
-    be done automatically, but the very first comments had not been sent.'''
-    import webui
-    c = store.get_cursor()
-    c.execute("select name, version, user_name, message from ratings where message!=''")
-    for package, version, author, comment in c.fetchall():
-        webui.comment_email(store, package, version, author, comment)
-
 def merge_user(store, old, new):
     c = store.get_cursor()
     if not store.get_user(old):

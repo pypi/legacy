@@ -115,32 +115,6 @@ register</a>.</p>
 <a href="%(url_path)s?:action=forgotten_password_form">reset for you</a>.</p>
 ''' + _prov
 
-comment_message = '''Subject: New comment on %(package)s
-From: PyPI operators <%(admin)s>
-To: %(email)s
-Reply-To: %(replyto)s
-
-[REPLIES TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
-%(author)s has made the following comment on your package:
-
-%(comment)s
-
-You can read all comments on %(url)s.
-'''
-
-rating_message = '''Subject: New rating on %(package)s
-From: PyPI operators <%(admin)s>
-To: %(email)s
-Reply-To: %(replyto)s
-
-[REPLIES TO THIS MESSAGE WILL NOT GO TO THE COMMENTER]
-%(author)s has rated your package as %(rating)s/5.  Comment (optional):
-
-%(comment)s
-
-You can read all comments on %(url)s.
-'''
-
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 class Provider:
@@ -168,31 +142,6 @@ if cache_templates:
             return t
 else:
     PyPiPageTemplate = _PyPiPageTemplate
-
-def comment_email(store, package, version, author, comment, rating, add_recipients):
-    emails = set()
-    recipients = [r['user_name'] for r in store.get_package_roles(package)] + add_recipients
-    for r in recipients:
-        email = store.get_user(r)['email']
-        if email:
-            emails.add(email)
-    info = {
-        'package': package,
-        'admin': store.config.adminemail,
-        'replyto': store.config.replyto,
-        'author': author,
-        'email': ','.join(emails),
-        'comment': comment,
-        'url': '%s/%s/%s' % (store.config.url, package, version),
-        'rating': rating,
-        }
-    smtp = smtplib.SMTP(store.config.mailhost)
-    if rating is None:
-        message = comment_message % info
-    else:
-        message = rating_message % info
-    smtp.sendmail(store.config.adminemail, list(emails), message)
-
 
 class FileUpload:
     pass
@@ -571,8 +520,7 @@ class WebUI:
         display register_form user_form forgotten_password_form user
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
-        rate comment addcomment delcomment clear_auth addkey delkey lasthour
-        json gae_file about'''.split():
+        clear_auth addkey delkey lasthour json gae_file about'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -1328,71 +1276,12 @@ class WebUI:
         latest_version_url = '%s/%s/%s' % (self.config.url, name,
                                            latest_version)
 
-        # Compute rating data
-        has_rated = self.loggedin and self.store.has_rating(name, version)
-        latest_rating = self.loggedin and self.store.latest_rating(name)
-        ratings, comments = self.store.get_ratings(name, version)
-        total = 0.0
-        hcomments = [] # as a hierarchy
-        parent_comments = {}
-        tally = [0]*6
-        rating_by_id = {}
-        for r in ratings:
-            rating_by_id[r['id']] = r
-            total += r['rating']
-            tally[r['rating']] += 1
-
         # New metadata
         requires_dist = self.store.get_package_requires_dist(name, version)
         provides_dist = self.store.get_package_provides_dist(name, version)
         obsoletes_dist = self.store.get_package_obsoletes_dist(name, version)
         project_url = self.store.get_package_project_url(name, version)
         requires_external = self.store.get_package_requires_external(name, version)
-
-        for c in comments:
-            add = c, []
-            parent_comments[c['id']] = add[1]
-            if c['in_reply_to']:
-                parent_comments[c['in_reply_to']].append(add)
-            else:
-                hcomments.append(add)
-
-        def render_comments(comments, toplevel):
-            if not comments:
-                return []
-            result = ["<ul>\n"]
-            for c,children in comments:
-                message = cgi.escape(c['message'])
-                message = '<br />'.join(message.split('\r\n'))
-                date = c['date'].strftime("%Y-%m-%d")
-                if not self.loggedin:
-                    reply = ''
-                elif self.username != c['user']:
-                    reply = " <a href='%s?:action=comment&msg=%d'>Reply</a>" % (self.url_path, c['id'])
-                elif toplevel:
-                    reply = ''
-                else:
-                    if children:
-                        msg = "Remove (including followups)"
-                    else:
-                        msg = "Remove"
-                    reply = " <a href='%s?:action=delcomment&msg=%d&name=%s&version=%s'>%s</a>" % (self.url_path, c['id'], name, version, msg)
-                if toplevel:
-                    rating = rating_by_id[c['rating']]['rating']
-                    if rating == 1:
-                        rating = ', 1 point'
-                    else:
-                        rating = ', %s points' % rating
-                else:
-                    rating = ''
-                result.append("<li class=\"comment\"><b>%s</b> (%s%s):<br/>%s %s" %
-                              (c['user'], date, rating, message, reply))
-                if children:
-                    result.extend(render_comments(children, False))
-                result.append("</li>\n")
-            result.append("</ul>\n")
-            return result
-        comments = "".join(render_comments(hcomments, True))
 
         docs = ''
         for sub in [[], ['html']]:
@@ -1410,14 +1299,8 @@ class WebUI:
                             requires=values('requires'),
                             provides=values('provides'),
                             obsoletes=values('obsoletes'),
-                            has_rated=has_rated,
-                            latest_rating=latest_rating,
                             files=files,
                             docs=docs,
-                            sum_ratings=total,
-                            nr_ratings=len(ratings),
-                            tally_ratings=tally,
-                            comments=comments,
                             categories=categories,
                             is_py3k=is_py3k,
                             roles=roles,
@@ -1958,10 +1841,6 @@ class WebUI:
             value = self.form.has_key('autohide')
             self.store.set_package_autohide(name, value)
 
-        if self.form.has_key('submit_comments'):
-            value = self.form.has_key('comments')
-            self.store.set_package_comments(name, value)
-
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -1989,103 +1868,7 @@ class WebUI:
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
                             autohide=self.store.get_package_autohide(name),
-                            comments=self.store.get_package_comments(name),
             title="Package '%s' Editing"%name)
-
-    def rate(self):
-        '''Add or delete a rating.'''
-        if not self.loggedin:
-            raise Unauthorised, "You need to login to rate"
-
-        name = self.form.get('name', '')
-        version = self.form.get('version', '')
-
-        if self.store.has_role('Owner', name) or self.store.has_role('Maintainer', name):
-            raise Forbidden, "You cannot rate your own packages"
-
-        if not name or not version:
-            raise FormError, 'name and version required'
-
-        if self.form.has_key('remove'):
-            if not self.store.has_rating(name, version):
-                raise Forbidden, "You did not rate that release"
-            self.store.remove_rating(name, version)
-            return self.display()
-
-        if self.form.has_key('copy'):
-            if self.store.has_rating(name, version):
-                raise Forbidden, "You have already rated this release"
-            if not self.form.has_key('fromversion'):
-                raise FormError, "fromversion missing"
-            comment = self.store.copy_rating(name, self.form['fromversion'], version)
-            if comment:
-                comment_email(self.store, name, version, self.username, comment,
-                              None, [])
-            return self.display()
-        if self.form.has_key('rate'):
-            if self.store.has_rating(name, version):
-                raise Forbidden, "You have already rated this release"
-            if not self.form.has_key('rating'):
-                raise FormError, "rating not provided"
-            message = self.form.get('comment', '').strip()
-            if message and not self.store.get_package_comments(name):
-                raise FormError, "package does not allow comments"
-            rating = self.form['rating']
-            self.store.add_rating(name, version, rating, message)
-            comment_email(self.store, name, version, self.username, message,
-                          rating, [])
-            return self.display()
-
-        raise FormError, "Bad button"
-
-    def comment(self):
-        'Ask for a follow-up comment'
-        if not self.form.has_key('msg'):
-            raise FormError
-        comment = self.store.get_comment(self.form['msg'])
-        self.write_template('comment.pt', title='Reply to comment',
-                            comment=comment)
-
-    def addcomment(self):
-        'Post a follow-up comment'
-        if not self.authenticated:
-            raise Unauthorised, "You need to be identified to post a comment"
-        if not self.form.has_key('msg') or not self.form.has_key('comment'):
-            raise FormError
-        msg = self.form['msg']
-        comment = self.form['comment']
-        orig = self.store.get_comment(msg)
-        if not orig:
-            raise FormError, "Invalid message"
-        if orig['user'] == self.username:
-            raise FormError, "You cannot respond to your own comments"
-        comment = comment.strip()
-        if not comment:
-            raise FormError, "You must fill in a comment"
-
-        name, version = self.store.add_comment(msg, comment)
-        comment_email(self.store, name, version, self.username, comment,
-                      None, [orig['user']])
-
-        return self.display(name=name, version=version)
-
-
-    def delcomment(self):
-        if not self.authenticated:
-            raise Unauthorised, \
-                "You must be identified to delete a comment"
-
-        if not self.form.has_key('msg'):
-            raise FormError
-
-        msg = self.form['msg']
-        comment = self.store.get_comment(msg)
-        if not comment:
-            raise FormError, "Invalid comment ID"
-        if comment['user'] != self.username or not comment['in_reply_to']:
-            raise FormError, "You cannot delete this comment" + comment['user']
-        self.store.remove_comment(comment['id'])
-        return self.display()
 
     def remove_pkg(self):
         ''' Remove a release or a whole package from the db.

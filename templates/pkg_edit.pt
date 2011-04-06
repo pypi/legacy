@@ -83,12 +83,6 @@ uncheck the button below</p>
   <input tal:condition="not:data/autohide" type="checkbox" name="autohide">Auto-hide old releases</input>
   <input type="submit" name="submit_autohide" value="Change" />
   <br/>
-  <input tal:condition="data/comments" type="checkbox" name="comments"
-         checked="checked">Allow comments on releases</input>
-  <input tal:condition="not:data/comments" type="checkbox" name="comments">Allow comments on releases</input>
-  <input type="submit" name="submit_comments" value="Change" />
-  <tal:block tal:condition="python:app.store.has_package_comments(data['name'])">
-  (commenters will be notified about this change)</tal:block>
 </form>
 
 <p>You can now host documentation at

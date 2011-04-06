@@ -244,72 +244,7 @@
 
 </ul>
 
-<div tal:condition="python:app.loggedin and not (app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))">
-  <div tal:condition="data/has_rated">
-    <form tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
-      <input type="hidden" name=":action" value="rate"/>
-      <input type="hidden" name="name" tal:attributes="value data/name"/>
-      <input type="hidden" name="version" tal:attributes="value data/version"/>
-      <input type="submit" name="remove" value="Remove your rating" />
-    </form>
-  </div>
-  <div tal:condition="not:data/has_rated">
-    <form tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
-      <input type="hidden" name=":action" value="rate"/>
-      <input type="hidden" name="name" tal:attributes="value data/name"/>
-      <input type="hidden" name="version" tal:attributes="value data/version"/>
-      <table>
-      <tr>
-      <td>Rate this release: 0</td>
-      <td><input type="radio" name="rating" value="0"/></td>
-      <td><input type="radio" name="rating" value="1"/></td>
-      <td><input type="radio" name="rating" value="2"/></td>
-      <td><input type="radio" name="rating" value="3"/></td>
-      <td><input type="radio" name="rating" value="4"/></td>
-      <td><input type="radio" name="rating" value="5"/></td>
-      <td>5 (best)</td>
-      </tr>
-      </table>
-      <table tal:condition="python:app.store.get_package_comments(data['name'])"><tr><td>Review: (<em>Please use the package's bug reporting channels <br/>(trackers, mailing lists) for bug reports and requests for help</em>)</td><td>
-         <!--XXX trick TAL into not minimizing tag-->
-         <textarea name="comment" rows="5" cols="40" wrap="soft"> </textarea>
-      </td></tr></table>
-      <input type="submit" name="rate" value="Rate"/>
-    </form>
-    <form tal:condition="data/latest_rating" tal:attributes="action string:${app/url_path}/${data/name}/${data/version}" method="POST">
-      <input type="hidden" name=":action" value="rate"/>
-      <input type="hidden" name="name" tal:attributes="value data/name"/>
-      <input type="hidden" name="version" tal:attributes="value data/version"/>
-      <input type="hidden" name="fromversion" tal:attributes="value data/latest_rating"/>
-      <input type="submit" name="copy" tal:attributes="value string:Copy your rating from release ${data/latest_rating}"/>
-    </form>
-  </div>
-</div>
-<div tal:condition="not:app/loggedin">
- <p><em>Log in to rate this package.</em></p>
-</div>
-
-<div tal:condition="data/nr_ratings">
-       Package rating (<span tal:replace="data/nr_ratings"/> vote<tal:block tal:condition="python:data['nr_ratings'] != 1">s</tal:block>): 
-       <span tal:replace="python:float(data['sum_ratings'])/data['nr_ratings']"/>
-
-  <ul>
-   <tal:block  tal:repeat="i python:range(6)">
-   <li tal:condition="python:data['tally_ratings'][i]">
-    <span tal:replace="i"/> point<tal:block tal:condition="python:i != 1">s</tal:block>:
-    <span tal:replace="python:data['tally_ratings'][i]"/> vote<tal:block tal:condition="python:data['tally_ratings'][i] != 1">s</tal:block>
-   </li>
-   </tal:block>
-  </ul>
-  <p>Ratings range from 0 to 5 (best).</p>
-</div>
-
-<div tal:condition="python:not app.store.get_package_comments(data['name'])">The package owner has disabled commenting on this package.</div>
-
-<div tal:condition="python:app.store.get_package_comments(data['name']) and data['comments']">
-<b>Package Comments:</b>
-<span tal:replace="structure data/comments"/>
-</div>
+<em>The rating feature has been removed. See <a href="http://mail.python.org/pipermail/catalog-sig/2011-April/thread.html">catalog-sig</a> for the discussion of this removal.</em>
 
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or
   app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))" class="history">
