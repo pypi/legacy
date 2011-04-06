@@ -25,19 +25,16 @@ and millions of downloads.
 
 <p>
 The Python Package Index (PyPI) is hosted by the Python Software Foundation (who run the python.org systems) but the project is community-run. Currently there's two maintainers, Richard Jones and Martin von Löwis.
-</p>
-
-<p>
-The index itself is written in Python but pre-dates modern Python web frameworks (<a href="http://wiki.python.org/moin/CheeseShopDev">more detail</a>).
-</p>
-
-<p>
 To contact the admins, please 
 use the
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>
 or
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
 links.
+</p>
+
+<p>
+The index itself is written in Python but pre-dates modern Python web frameworks (<a href="http://wiki.python.org/moin/CheeseShopDev">more detail</a>).
 </p>
 
 <p>To submit a package use
