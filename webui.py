@@ -610,7 +610,7 @@ class WebUI:
             self.handler.send_response(200, 'OK')
             if accept_encoding == 'gzip':
                 stream = cStringIO.StringIO()
-                # level 6 is supposedly what the gzip command line tool uses by default
+                # level 6 is what the gzip command line tool uses by default
                 f = gzip.GzipFile(mode='wb', fileobj=stream, compresslevel=6)
                 f.write(html)
                 f.close()
@@ -629,6 +629,14 @@ class WebUI:
         if '/' not in path:
             html = self.simple_body(path)
             self.handler.send_response(200, 'OK')
+            if accept_encoding == 'gzip':
+                stream = cStringIO.StringIO()
+                # level 6 is what the gzip command line tool uses by default
+                f = gzip.GzipFile(mode='wb', fileobj=stream, compresslevel=6)
+                f.write(html)
+                f.close()
+                html = stream.getvalue()
+                self.handler.send_header('Content-encoding', 'gzip')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
             self.handler.end_headers()
