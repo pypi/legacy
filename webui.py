@@ -1,5 +1,5 @@
 # system imports
-import sys, os, urllib, cStringIO, traceback, cgi, binascii
+import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -567,10 +567,36 @@ class WebUI:
         html = ''.join(html)
         return html
 
+    def get_accept_encoding(self, supported):
+        accept_encoding = self.env.get('HTTP_ACCEPT_ENCODING')
+        if not accept_encoding:
+            return None
+        accept_encoding = accept_encoding.split(',')
+        result = {}
+        for s in accept_encoding:
+            s = s.split(';') # gzip;q=0.6
+            if len(s) == 1:
+                result[s[0].strip()] = 1.0
+            else:
+                result[s[0].strip()] = float(s[1])
+        best_prio = 0
+        best_enc = None
+        for enc in supported:
+            if enc in result:
+                prio = result[enc]
+            elif '*' in result:
+                prio = result[enc]
+            else:
+                prio = 0
+            if prio > best_prio:
+                best_prio, best_enc = prio, enc
+        return best_enc
+
     def run_simple(self):
         path = self.env.get('PATH_INFO')
         if not path:
             raise Redirect, self.config.simple_script+'/'
+        accept_encoding = self.get_accept_encoding(('identity', 'gzip'))
         if path=='/':
             html = []
             html.append("<html><head><title>Simple Index</title></head>")
@@ -582,6 +608,14 @@ class WebUI:
             html.append("</body></html>")
             html = ''.join(html)
             self.handler.send_response(200, 'OK')
+            if accept_encoding == 'gzip':
+                stream = cStringIO.StringIO()
+                # level 6 is supposedly what the gzip command line tool uses by default
+                f = gzip.GzipFile(mode='wb', fileobj=stream, compresslevel=6)
+                f.write(html)
+                f.close()
+                html = stream.getvalue()
+                self.handler.send_header('Content-encoding', 'gzip')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
             self.handler.end_headers()

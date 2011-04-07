@@ -77,6 +77,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         co = filter(None, self.headers.getheaders('cookie'))
         if co:
             env['HTTP_COOKIE'] = ', '.join(co)
+        ac = self.headers.getheader('accept-encoding')
+        if ac:
+            env['HTTP_ACCEPT_ENCODING'] = ac
 
         webui.WebUI(self, env).run()
     do_GET = do_POST = run
