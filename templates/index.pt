@@ -12,7 +12,7 @@
 <table class="list" tal:condition="data/matches">
 <tr>
  <th>Package</th>
- <th tal:condition="exists:data/scores"><u title="Occurrence of search term weighted by field (name, summary, keywords, description, author, maintainer)">Score</u></th>
+ <th tal:condition="exists:data/scores"><u title="Occurrence of search term weighted by field (name, summary, keywords, description, author, maintainer)">Weight*</u></th>
  <th>Description</th>
 </tr>
 
@@ -30,6 +30,9 @@
  <td id="last" colspan="3"></td>
 </tr>
 </table>
+
+<p tal:condition="exists:data/scores">*: occurrence of search term weighted by
+field (name, summary, keywords, description, author, maintainer)</p>
 
 </metal:slot>
 </html>
