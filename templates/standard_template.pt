@@ -11,7 +11,6 @@
       <title tal:content="string:Python Package Index : ${data/title}" />
       <meta tal:attributes="content data/keywords" />
       <meta tal:attributes="content data/description" />
-       <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
        <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
@@ -19,6 +18,9 @@
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
        <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
+
+       <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
+       <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
 
        <metal:slot define-slot="head" />
 

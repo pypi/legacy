@@ -279,4 +279,8 @@ margin:12px;
 margin-top:3px;
 }
 
-
+#document-navigation ul
+{
+  /* bit too squeezy with the default large padding */
+  margin: 0px;
+}
