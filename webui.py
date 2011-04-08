@@ -664,7 +664,7 @@ class WebUI:
         self.wfile.write(sig)
 
     def home(self, nav_current='home'):
-        self.write_template('home.pt', title='PyPI')
+        self.write_template('home.pt', title='PyPI - the Python Package Index')
 
     def about(self, nav_current='home'):
         self.write_template('about.pt', title='About PyPI')
@@ -1096,8 +1096,8 @@ class WebUI:
         self.handler.set_content_type('application/json; charset="UTF-8"')
         filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
             version.encode('ascii', 'replace'))
-        self.handler.send_header('Content-Disposition',
-            'attachment; filename=%s'%filename)
+#        self.handler.send_header('Content-Disposition',
+#            'attachment; filename=%s'%filename)
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d)

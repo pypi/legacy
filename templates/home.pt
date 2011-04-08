@@ -9,7 +9,7 @@
 programming language. There are currently
 <strong tal:content="app/store/count_packages">12343</strong>
 packages here.
-<br>
+<br />
 To contact the PyPI admins, please use the
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>
 or
@@ -17,7 +17,7 @@ or
 links.
 </p>
 
-<br clear="right">
+<br clear="right" />
 
 <div id="document-navigation" style="width: 30%; float: left; display: inline;">
 <b>Get Packages</b>
@@ -67,7 +67,7 @@ Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastruct
 </p>
 </div>
 
-<br clear="both">
+<br clear="both" />
 
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
