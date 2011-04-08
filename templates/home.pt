@@ -7,40 +7,67 @@
 <metal:fill fill-slot="body">
 <p>The Python Package Index is a repository of software for the Python
 programming language. There are currently
-<strong tal:content="app/store/count_packages" />
-packages here. To contact the PyPI admins, please 
-use the
+<strong tal:content="app/store/count_packages">12343</strong>
+packages here.
+<br>
+To contact the PyPI admins, please use the
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">Get help</a>
 or
 <a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Bug reports</a>
 links.
 </p>
 
-<p>To submit a package use
-"<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"
-and to use a package from this index either
-"<a href="http://pip.openplans.org/">pip</a> install <i>package</i>"
-or download, unpack and "python setup.py install" it.</p>
+<br clear="right">
 
-          <form tal:attributes="action app/url_path" id="searchform"
-                method="get" name="searchform">
-            <input type="hidden" name=":action" value="search" />
-            <div id="search">
-              <input class="input-text" id="term" name="term" />
-              <input class="input-button" type="submit" name="submit"
-                     value="search" id="submit" />
-            </div>
-          </form>
-<ul>
-<li><a tal:attributes="href python:app.link_action('browse')">Browse the
-tree of packages</a></li>
-<li><a tal:attributes="href python:app.link_action('submit_form')">Submit package information</a> 
-(note that you must <a tal:attributes="href python:app.link_action('register_form')">
-register to submit</a>)</li>
-</ul>
+<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<b>Get Packages</b>
+<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+To use a package from this index either
+"<a href="http://www.pip-installer.org/en/latest/installing.html" class="vt-p">pip</a> install <i>package</i>"
+or download, unpack and "python setup.py install" it.
+<a href="http://pypi.python.org/pypi?%3Aaction=browse" class="vt-p">Browse the
+tree of all packages</a>. Or just search using the box above.
+</p>
 
-<p>PyPI now provides a <a href="/mirrors">Mirror infrastructure</a> to allow
-users to continue downloading file even if pypi.python.org is unavailable.</p>
+<!--
+  <form id="searchform" method="get" name="searchform" action="./files/page.html"
+        style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+    <input type="hidden" name=":action" value="search">
+    <div id="search">
+      <input class="input-text" id="term" name="term" style="width: 70%">
+      <input class="input-button" type="submit" name="submit" value="search" id="submit">
+    </div>
+  </form>
+-->
+</div>
+
+<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<b>Package Authors</b>
+<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+To submit a package use
+"<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>".
+The index also hosts documentation. You may also submit a package using
+<a href="/pypi/pypissh">SSH</a> or a
+<a href="http://pypi.python.org/pypi?%3Aaction=submit_form" class="vt-p">web form</a>.
+You must <a href="http://pypi.python.org/pypi?%3Aaction=register_form" class="vt-p">
+login to submit</a>.
+</p>
+</div>
+
+<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<b>Infrastructure</b>
+<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+To interoperate with the index
+use the
+<a href="http://wiki.python.org/moin/PyPiJson">JSON</a>,
+<a href="http://wiki.python.org/moin/PyPiXmlRpc">XML-RPC</a> or
+<a href="http://www.python.org/dev/peps/pep-0301/">HTTP</a>
+interfaces.
+Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastructure</a> to to download even if the primary site is unavailable.
+</p>
+</div>
+
+<br clear="both">
 
 <table class="list">
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>

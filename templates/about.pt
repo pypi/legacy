@@ -37,12 +37,20 @@ links.
 The index itself is written in Python but pre-dates modern Python web frameworks (<a href="http://wiki.python.org/moin/CheeseShopDev">more detail</a>).
 </p>
 
-<p>To submit a package use
+<p>
+To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial">python setup.py upload</a>"
 and to use a package from this index either
 "<a href="http://pip.openplans.org/">pip</a> install <i>package</i>"
 or download, unpack and "python setup.py install" it.
 </p>
+
+<p>
+Security: GPG and SSH ... XXX details?
+</p>
+
+<p>You can access the data in PyPI from a program using either the per-package
+JSON data or the XML-RPC interface.</p>
 
 <p>PyPI now provides a <a href="/mirrors">Mirror infrastructure</a> to allow
 users to continue downloading file even if pypi.python.org is unavailable.</p>
