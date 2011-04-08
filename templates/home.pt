@@ -21,7 +21,7 @@ links.
 
 <div id="document-navigation" style="margin-left: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Get Packages</b>
-<p>
+<p style="margin-bottom: 0px">
 To use a package from this index either
 "<a href="http://www.pip-installer.org/en/latest/installing.html" class="vt-p">pip</a> install <i>package</i>"
 or download, unpack and "python setup.py install" it.
@@ -43,7 +43,7 @@ tree of all packages</a>. Or just search using the box above.
 
 <div id="document-navigation" style="width: 30%; float: left; display: inline; padding: 4px;">
 <b>Package Authors</b>
-<p>
+<p style="margin-bottom: 0px">
 To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>".
 The index also hosts documentation. You may also submit a package using
@@ -56,7 +56,7 @@ login to submit</a>.
 
 <div id="document-navigation" style="margin-right: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Infrastructure</b>
-<p>
+<p style="margin-bottom: 0px">
 To interoperate with the index
 use the
 <a href="http://wiki.python.org/moin/PyPiJson">JSON</a>,
