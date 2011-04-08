@@ -19,9 +19,9 @@ links.
 
 <br clear="right" />
 
-<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<div id="document-navigation" style="margin-left: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Get Packages</b>
-<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+<p>
 To use a package from this index either
 "<a href="http://www.pip-installer.org/en/latest/installing.html" class="vt-p">pip</a> install <i>package</i>"
 or download, unpack and "python setup.py install" it.
@@ -41,9 +41,9 @@ tree of all packages</a>. Or just search using the box above.
 -->
 </div>
 
-<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<div id="document-navigation" style="width: 30%; float: left; display: inline; padding: 4px;">
 <b>Package Authors</b>
-<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+<p>
 To submit a package use
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>".
 The index also hosts documentation. You may also submit a package using
@@ -54,9 +54,9 @@ login to submit</a>.
 </p>
 </div>
 
-<div id="document-navigation" style="width: 30%; float: left; display: inline;">
+<div id="document-navigation" style="margin-right: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Infrastructure</b>
-<p style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
+<p>
 To interoperate with the index
 use the
 <a href="http://wiki.python.org/moin/PyPiJson">JSON</a>,
