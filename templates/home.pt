@@ -63,7 +63,7 @@ use the
 <a href="http://wiki.python.org/moin/PyPiXmlRpc">XML-RPC</a> or
 <a href="http://www.python.org/dev/peps/pep-0301/">HTTP</a>
 interfaces.
-Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastructure</a> to to download even if the primary site is unavailable.
+Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastructure</a> to download even if the primary site is unavailable.
 </p>
 </div>
 
