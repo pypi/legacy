@@ -24,9 +24,10 @@ links.
 <p style="margin-bottom: 0px">
 To use a package from this index either
 "<a href="http://www.pip-installer.org/en/latest/installing.html" class="vt-p">pip</a> install <i>package</i>"
+(<a href="http://www.pip-installer.org/en/latest/installing.html">get pip</a>)
 or download, unpack and "python setup.py install" it.
-<a href="http://pypi.python.org/pypi?%3Aaction=browse" class="vt-p">Browse the
-tree of all packages</a>. Or just search using the box above.
+<a href="http://pypi.python.org/pypi?%3Aaction=browse" class="vt-p">Browse all packages</a>
+or use the search box above.
 </p>
 
 <!--
@@ -45,12 +46,13 @@ tree of all packages</a>. Or just search using the box above.
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
 To submit a package use
-"<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>".
-The index also hosts documentation. You may also submit a package using
-<a href="/pypi/pypissh">SSH</a> or a
+"<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>"
+(full <a href="http://wiki.python.org/moin/CheeseShopTutorial">tutorial</a>).
+The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts documentation</a>.
+You may submit packages using
+<a href="/pypi/pypissh">SSH</a> or the
 <a href="http://pypi.python.org/pypi?%3Aaction=submit_form" class="vt-p">web form</a>.
-You must <a href="http://pypi.python.org/pypi?%3Aaction=register_form" class="vt-p">
-login to submit</a>.
+You must <a href="http://pypi.python.org/pypi?%3Aaction=register_form" class="vt-p">register</a>.
 </p>
 </div>
 
