@@ -260,9 +260,5 @@
  </tr>
 </table>
 
-<b>Status of Python 3 support</b><br/>
-<iframe tal:attributes="src
-string:http://py3ksupport.appspot.com/pypi/${data/name}" width="800" height="500"/>
-
 </metal:fill>
 </html>
