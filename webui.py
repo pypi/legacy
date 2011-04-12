@@ -577,8 +577,11 @@ class WebUI:
             s = s.split(';') # gzip;q=0.6
             if len(s) == 1:
                 result[s[0].strip()] = 1.0
+            elif s[1].startswith('q='):
+                result[s[0].strip()] = float(s[1][2:])
             else:
-                result[s[0].strip()] = float(s[1])
+                # not the correct format
+                result[s[0].strip()] = 1.0
         best_prio = 0
         best_enc = None
         for enc in supported:
