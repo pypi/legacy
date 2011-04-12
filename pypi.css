@@ -279,8 +279,20 @@ margin:12px;
 margin-top:3px;
 }
 
-#document-navigation ul
-{
+#document-navigation ul {
   /* bit too squeezy with the default large padding */
   margin: 0px;
+}
+
+#document-navigation a {
+  /* bit too squeezy with the default large padding */
+  border-bottom: none;
+}
+
+#document-navigation a:link {
+  text-decoration: underline;
+}
+
+#document-navigation a:visited {
+  text-decoration: underline;
 }
