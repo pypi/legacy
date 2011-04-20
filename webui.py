@@ -1097,13 +1097,14 @@ class WebUI:
             url['upload_time'] = url['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('application/json; charset="UTF-8"')
-        filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
-            version.encode('ascii', 'replace'))
-#        self.handler.send_header('Content-Disposition',
-#            'attachment; filename=%s'%filename)
+        #filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
+        #    version.encode('ascii', 'replace'))
+        #self.handler.send_header('Content-Disposition', 
+        #    'attachment; filename=%s'%filename)
+        self.handler.send_header('Content-Disposition', 'inline')
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
-        s = json.dumps(d)
+        s = json.dumps(d, indent=4)
         callback = self.form.get('callback')
         if callback:
             s = '%s(%s)' % (callback, s)

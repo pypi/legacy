@@ -15,6 +15,7 @@ pydotorg = http://www.python.org/
 simple_script = /simple
 files_url = http://localhost/pypi_files
 rss_file = /tmp/pypi_rss.xml
+packages_rss_file = /tmp/pypi_packages_rss.xml
 debug_mode = yes
 cheesecake_password = secret
 privkey = privkey
