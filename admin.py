@@ -97,6 +97,34 @@ def delete_old_docs(config, store):
            print "Deleting", path
            shutil.rmtree(path)
 
+def keyrotate(config, store):
+    '''Rotate server key'''
+    key_dir = config.key_dir
+    prefixes = (os.path.join(key_dir, 'privkey'), os.path.join(key_dir,'pubkey'))
+    def rename_if_exists(oldsuffix, newsuffix):
+        for p in prefixes:
+            if os.path.exists(p+oldsuffix):
+                os.rename(p+oldsuffix, p+newsuffix)
+    # 1. generate new new key
+    os.system('openssl dsaparam -out /tmp/param 2048')
+    os.system('openssl gendsa -out %s/privkey.newnew /tmp/param' % key_dir)
+    os.system('openssl dsa -in %s/privkey.newnew -pubout -out %s/pubkey.newnew' % (key_dir, key_dir))
+    os.unlink('/tmp/param')
+    # 2. delete old old key
+    for p in prefixes:
+        if os.path.exists(p+'.old'):
+            os.unlink(p+'.old')
+    # 3. rotate current key -> old key
+    rename_if_exists('', '.old')
+    # 4. rotate new key -> current key
+    rename_if_exists('.new', '')
+    # 5. rotate new new key -> new key
+    rename_if_exists('.newnew', '.new')
+    # 6. restart web server
+    os.system('/usr/sbin/apache2ctl graceful')
+    # 7. log rotation
+    store.log_keyrotate()
+
 def merge_user(store, old, new):
     c = store.get_cursor()
     if not store.get_user(old):
@@ -176,6 +204,8 @@ if __name__ == '__main__':
             merge_user(*args)
         elif command == 'nuke_nested_lists':
             nuke_nested_lists(*args)
+        elif command == 'keyrotate':
+            keyrotate(config, *args)
         else:
             print "unknown command '%s'!"%command
         st.changed()

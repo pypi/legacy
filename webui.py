@@ -656,7 +656,7 @@ class WebUI:
             raise NotFound, path
         html = self.simple_body(path)
         if not self.privkey:
-            self.privkey = DSA.load_key(self.config.privkey)
+            self.privkey = DSA.load_key(os.path.join(self.config.privkey, 'privkey'))
         md = EVP.MessageDigest('sha1')
         md.update(html)
         digest = md.final()

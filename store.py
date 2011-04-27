@@ -1815,6 +1815,16 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'delete from openids where id=%s', (openid,))
 
+    def log_keyrotate(self):
+        cursor = self.get_cursor()
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+            ('', '', 'keyrotate ', date,
+            None, None))
+
+
     #
     # Handle the underlying database
     #

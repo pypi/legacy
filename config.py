@@ -32,7 +32,7 @@ class Config:
         self.rss_file = c.get('webui', 'rss_file')
         self.debug_mode = c.get('webui', 'debug_mode')
         self.cheesecake_password = c.get('webui', 'cheesecake_password')
-        self.privkey = c.get('webui', 'privkey')
+        self.key_dir = c.get('webui', 'key_dir')
         self.simple_sign_script = c.get('webui', 'simple_sign_script')
         if c.has_option('webui', 'sshkeys_update'):
             self.sshkeys_update = c.get('webui', 'sshkeys_update')

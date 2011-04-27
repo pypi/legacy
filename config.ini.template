@@ -18,7 +18,7 @@ rss_file = /tmp/pypi_rss.xml
 packages_rss_file = /tmp/pypi_packages_rss.xml
 debug_mode = yes
 cheesecake_password = secret
-privkey = privkey
+key_dir = .
 simple_sign_script = /serversig
 
 [logging]
