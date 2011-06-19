@@ -273,22 +273,29 @@ def resolve_xri(xri, proxy='xri.net'):
     Return canonical ID, services, op endpoint, op local;
     return None if an error occurred'''
     xri = urllib.quote(xri, safe='=@*!+()')
-    conn = httplib.HTTPConnection(proxy)
-    try:
-        conn.connect()
-    except:
-        # DNS or TCP error
-        return None
-    conn.putrequest("GET", '/'+xri+'?_xrd_r=application/xrds+xml')
-    conn.endheaders()
-
-    res = conn.getresponse()
-    data = res.read()
-    conn.close()
-
-    doc = ElementTree.fromstring(data)
-    res = _extract_services(doc)
-    if res is None:
+    # Ask explicitly for the specific service types, to
+    # avoid having to identify the correct XRD element in
+    # case the identifier is hierarchical
+    for stype in ('http://specs.openid.net/auth/2.0/signon',
+                  'http://openid.net/signon/1.0'):
+        conn = httplib.HTTPConnection(proxy)
+        try:
+            conn.connect()
+        except:
+            # DNS or TCP error
+            return None
+        conn.putrequest("GET", '/'+xri+'?_xrd_r=application/xrd+xml'
+                        +'&_xrd_t='+stype)
+        conn.putheader('Connection', 'Keep-Alive')
+        conn.endheaders()
+        res = conn.getresponse()
+        data = res.read()
+        doc = ElementTree.fromstring(data)
+        res = _extract_services(doc)
+        conn.close()
+        if res is not None:
+            break
+    else:
         # No OpenID service found
         return None
     services, op_endpoint, op_local = res
