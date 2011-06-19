@@ -862,8 +862,15 @@ class WebUI:
             # OpenID with explicit ID
             kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
             if kind == 'xri':
-                return self.fail('xri resolution is not supported.')
-            res = openid2rp.discover(claimed_id)
+                res = openid2rp.resolve_xri(claimed_id)
+                if res:
+                    # A.5: XRI resolution requires to use canonical ID
+                    # Original claimed ID may be preserved for display
+                    # purposes
+                    claimed_id = res[0]
+                    res = res[1:]
+            else:
+                res = openid2rp.discover(claimed)
             if not res:
                 return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
             stypes, op_endpoint, op_local = res
