@@ -870,7 +870,7 @@ class WebUI:
                     claimed_id = res[0]
                     res = res[1:]
             else:
-                res = openid2rp.discover(claimed)
+                res = openid2rp.discover(claimed_id)
             if not res:
                 return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
             stypes, op_endpoint, op_local = res
