@@ -8,7 +8,7 @@
       <META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" tal:condition="data/norobots"/>
       <meta content="text/html; charset=utf-8" http-equiv="content-type" />
       <base tal:attributes="href data/FULL_PATH_INFO"/>
-      <title tal:content="string:Python Package Index : ${data/title}" />
+      <title tal:content="string:${data/title} : Python Package Index" />
       <meta tal:attributes="content data/keywords" />
       <meta tal:attributes="content data/description" />
        <link rel="alternate" type="application/rss+xml" title="RSS: 30 latest updates" href="http://www.python.org/pypi?:action=rss"/>
