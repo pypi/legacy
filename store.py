@@ -842,12 +842,12 @@ class Store:
         return Result(None, cursor.fetchall(), self._Changelog)
 
     def changed_packages(self, since):
-        "Fetch names of packages changed 'since'"
+        "Fetch list of names of packages changed 'since'"
         assert isinstance(since, int)
         cursor = self.get_cursor()
         safe_execute(cursor, 'select distinct(name) from journals where submitted_date > %s',
                      (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
-        return cursor.fetchall()
+        return [r[0] for r in cursor.fetchall()]
 
     def changelog_last_hour(self):
         return self.changelog(int(time.time())-3600)
