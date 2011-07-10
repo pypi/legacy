@@ -23,6 +23,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(search)
         self.register_function(updated_releases)
         self.register_function(changelog)
+        self.register_function(changed_packages)
         self.register_function(post_cheesecake_for_release)
         self.register_introspection_functions()
         self.register_multicall_functions()
@@ -111,6 +112,9 @@ def changelog(store, since):
              int(time.mktime(row['submitted_date'].timetuple())),
              row['action'])
              for row in result]
+
+def changed_packages(store, since):
+    return store.changed_packages(since)
 
 def post_cheesecake_for_release(store, name, version, score_data, password):
     if password != store.config.cheesecake_password:
