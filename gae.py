@@ -31,7 +31,14 @@ def doit(host, secret, srcdir):
     try:
         data = open(srcdir+"/"+path).read()
     except IOError, e:
-        return
+        if errno == errno.ENOENT:
+            # file has been deleted
+            session += '&deleted=1'
+            data = ''
+        else:
+            # some other problem with file. GAE will request transfer
+            # again
+            return
     boundary = ""
     while boundary in data:
         boundary = binascii.hexlify(os.urandom(10))
