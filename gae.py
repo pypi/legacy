@@ -2,7 +2,7 @@
 # GAE GETs an action gae_file, giving GAE host and a secret
 # PyPI GETs /mkupload/secret, learning path and upload session
 # PyPI POSTs to upload session
-import urllib2, httplib, threading, os, binascii, urlparse
+import urllib2, httplib, threading, os, binascii, urlparse, errno
 
 POST="""\
 --%(boundary)s
@@ -13,6 +13,10 @@ Content-Disposition: form-data; name="secret"
 Content-Disposition: form-data; name="path"
 
 %(path)s
+--%(boundary)s
+Content-Disposition: form-data; name="%(presence)s"
+
+1
 --%(boundary)s
 Content-Disposition: form-data; name="file"; filename="%(path)s"
 Content-Type: application/octet-stream
@@ -30,10 +34,11 @@ def doit(host, secret, srcdir):
     host, session = urlparse.urlsplit(url)[1:3]
     try:
         data = open(srcdir+"/"+path).read()
+        presence = "present"
     except IOError, e:
-        if errno == errno.ENOENT:
+        if e.errno == errno.ENOENT:
             # file has been deleted
-            session += '&deleted=1'
+            presence = "deleted"
             data = ''
         else:
             # some other problem with file. GAE will request transfer
