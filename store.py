@@ -846,7 +846,7 @@ class Store:
         assert isinstance(since, int)
         cursor = self.get_cursor()
         safe_execute(cursor, 'select distinct(name) from journals where submitted_date > %s',
-                     (time.gmtime(since),))
+                     (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
         return cursor.fetchall()
 
     def changelog_last_hour(self):
