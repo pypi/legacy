@@ -145,7 +145,7 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
-def nuke_nested_lists(store):
+def nuke_nested_lists(store, confirm):
     c = store.get_cursor()
     c.execute("""select name, version, summary from releases
         where summary like '%nested lists%'""")
@@ -168,9 +168,13 @@ def nuke_nested_lists(store):
                     if 'def print_lol' in f.read():
                         hits[name] = summary
     for name in hits:
-        store.remove_package(name)
+        if confirm:
+            store.remove_package(name)
         print '%s: %s' % (name, hits[name])
-    print 'removed %d packages' % len(hits)
+    if confirm:
+        print 'removed %d packages' % len(hits)
+    else:
+        print 'WOULD HAVE removed %d packages' % len(hits)
 
 if __name__ == '__main__':
     config = config.Config('/data/pypi/config.ini')
