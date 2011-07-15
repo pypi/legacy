@@ -145,7 +145,7 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
-def nuke_nested_lists(store, confirm):
+def nuke_nested_lists(store, confirm=False):
     c = store.get_cursor()
     c.execute("""select name, version, summary from releases
         where summary like '%nested lists%'""")
