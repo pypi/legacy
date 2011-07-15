@@ -588,7 +588,7 @@ class WebUI:
             if enc in result:
                 prio = result[enc]
             elif '*' in result:
-                prio = result[enc]
+                prio = result['*']
             else:
                 prio = 0
             if prio > best_prio:
