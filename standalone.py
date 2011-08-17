@@ -9,6 +9,10 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header('Content-Type', content_type)
 
     def run(self):
+        if self.path == '/':
+            self.send_response(301)
+            self.send_header('Location', '/pypi')
+            return
         for scriptname in ('/mirrors', '/simple', '/pypi', '/serversig', '/daytime'):
             if self.path.startswith(scriptname):
                 rest = self.path[len(scriptname):]
