@@ -5,11 +5,21 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
 
-    <p tal:condition="not:data/openid_fields">
+    <p tal:condition="python:not data['openid_fields'] and data['new_user']">
     This form allows "traditional" registration (using a password).
     Users who want to register with their OpenID (e.g. Google,
     myOpenID or Launchpad account) should follow one of the links
     to the right.
+    </p>
+    <p tal:condition="not:data/new_user">
+    This form allows to modify your PyPI account information, and to delete your account.
+    <form tal:attributes="action app/url_path" method="POST"
+          tal:condition="not:data/owns_packages">
+        <input type="hidden" name=":action" value="delete_user" />
+	<input type="submit" value="Delete account"/>
+    </form>
+    <tal:block tal:condition="data/owns_packages">You cannot delete your account since you
+    are still listed as owner of some packages.</tal:block>
     </p>
     <form tal:attributes="action app/url_path" method="POST">
       <input type="hidden" name=":action" value="user" />
