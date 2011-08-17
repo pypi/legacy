@@ -1398,18 +1398,44 @@ class Store:
         return res[0]
 
     _User_Packages = FastResultRow('package_name')
-    def user_packages(self, user):
+    def user_packages(self, user, only_owner=False):
         ''' Retrieve package info for all packages of a user
         '''
         cursor = self.get_cursor()
+        owner_sql = ''
+        if only_owner:
+            owner_sql = "and roles.role_name='Owner'"
         sql = '''select distinct(package_name),lower(package_name) from roles
                  where roles.user_name=%s and package_name is not NULL
+                 ''' + owner_sql + '''
                  order by lower(package_name)'''
         safe_execute(cursor, sql, (user,))
         res = cursor.fetchall()
         if res is None:
             res = []
         return Result(None, res, self._User_Packages)
+
+    def delete_user(self, user):
+        '''Delete a user. Return None.'''
+        cursor = self.get_cursor()
+        # delete all maintainer roles
+        safe_execute(cursor,
+                     '''delete from roles where role_name='Maintainer'
+                        and user_name=%s''',
+                     (user,))
+        # point all journal entries to the "deleted user"
+        safe_execute(cursor,
+                     '''update journals set name='deleted user' where name=%s''',
+                     (user,))
+        # delete all cookies
+        safe_execute(cursor,
+                     '''delete from cookies where name=%s''',
+                     (user,))       
+        # every other reference should either be cascading, 
+        # or it's a bug to break it
+
+        # delete user account itself
+        safe_execute(cursor, 'delete from users where name=%s', (user,))
 
     #
     # Trove

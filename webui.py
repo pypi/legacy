@@ -520,7 +520,7 @@ class WebUI:
         display register_form user_form forgotten_password_form user
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
-        clear_auth addkey delkey lasthour json gae_file about'''.split():
+        clear_auth addkey delkey lasthour json gae_file about delete_user'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -2314,6 +2314,7 @@ class WebUI:
         if self.username:
             user = self.store.get_user(self.username)
             info['new_user'] = False
+            info['owns_packages'] = bool(self.store.user_packages(self.username, True))
             info['name'] = user['name']
             info['email'] = user['email']
             info['action'] = 'Update details'
@@ -2571,6 +2572,31 @@ class WebUI:
             self.write_template("password_reset.pt", title="Request password reset",
                 retry=True)
 
+    def delete_user(self):
+        if not self.authenticated:
+            raise Unauthorised
+        if self.form.has_key('submit_ok'):
+            # ok, do it
+            self.store.delete_user(self.username)
+            self.authenticated = self.loggedin = False
+            self.username = self.usercookie = None
+            return self.home()
+        elif self.form.has_key('submit_cancel'):
+            self.ok_message='Deletion cancelled'
+            return self.home()
+        else:
+            message = '''You are about to delete the %s account<br />
+                This action <em>cannot be undone</em>!<br />
+                Are you <strong>sure</strong>?'''%self.username
+
+            fields = [
+                {'name': ':action', 'value': 'delete_user'},
+            ]
+            return self.write_template('dialog.pt', message=message,
+                title='Confirm account deletion', fields=fields)
+
+            
+        
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
         '''
