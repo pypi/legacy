@@ -244,8 +244,6 @@
 
 </ul>
 
-<em>The rating feature has been removed. See <a href="http://mail.python.org/pipermail/catalog-sig/2011-April/thread.html">catalog-sig</a> for the discussion of this removal.</em>
-
 <table tal:condition="python:app.loggedin and (app.store.has_role('Admin') or
   app.store.has_role('Maintainer', data['name']) or app.store.has_role('Owner', data['name']))" class="history">
  <tr><th colspan="4" class="header">Journal</th></tr>
