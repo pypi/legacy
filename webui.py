@@ -390,7 +390,7 @@ class WebUI:
         ('list_classifiers', 'List trove classifiers'),
         ('index', 'List packages'),
         ('rss', 'RSS (latest 40 updates)'),
-        ('package_rss', 'RSS (newest 40 packages)'),
+        ('packages_rss', 'RSS (newest 40 packages)'),
         ('role_form', 'Admin'),
     )
     def navlinks_html(self):
