@@ -1,0 +1,2 @@
+ALTER TABLE openids DROP CONSTRAINT openids_name_fkey;
+ALTER TABLE openids ADD CONSTRAINT openids_name_fkey FOREIGN KEY (name) REFERENCES users ON DELETE CASCADE;

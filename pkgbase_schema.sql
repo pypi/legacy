@@ -13,7 +13,7 @@ CREATE INDEX users_email_idx ON users(email);
 
 CREATE TABLE openids (
    id TEXT PRIMARY KEY,
-   name TEXT REFERENCES users
+   name TEXT REFERENCES users ON DELETE CASCADE
 );
 
 CREATE TABLE openid_sessions (
