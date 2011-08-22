@@ -884,12 +884,13 @@ class Store:
         # Postgres will only do that if the number of expected results
         # is "small".
         statement = '''
-             select j.name, j.version, j.submitted_date, r.summary
-             from (select name,version,submitted_date from journals
-             where version is not null and action='create'
-             order by submitted_date desc %s) j, releases r
-             where  j.name=r.name and j.version=r.version
-             and not r._pypi_hidden order by j.submitted_date desc'''
+            select j.name, r.version, j.submitted_date, r.summary
+              from (select name,version,submitted_date from journals
+                     where action='create' order by submitted_date desc %s) j,
+                   releases r
+             where j.name=r.name and r.version is not NULL
+               and not r._pypi_hidden
+             order by j.submitted_date desc'''
         #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
         result = Result(None, self.get_unique(cursor.fetchall())[:num],

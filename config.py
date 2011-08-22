@@ -30,6 +30,7 @@ class Config:
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')
+        self.packages_rss_file = c.get('webui', 'packages_rss_file')
         self.debug_mode = c.get('webui', 'debug_mode')
         self.cheesecake_password = c.get('webui', 'cheesecake_password')
         self.key_dir = c.get('webui', 'key_dir')

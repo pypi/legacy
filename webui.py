@@ -389,7 +389,8 @@ class WebUI:
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
         ('index', 'List packages'),
-        ('rss', 'RSS (last 40 updates)'),
+        ('rss', 'RSS (latest 40 updates)'),
+        ('package_rss', 'RSS (newest 40 packages)'),
         ('role_form', 'Admin'),
     )
     def navlinks_html(self):
@@ -520,7 +521,8 @@ class WebUI:
         display register_form user_form forgotten_password_form user
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
-        clear_auth addkey delkey lasthour json gae_file about delete_user'''.split():
+        clear_auth addkey delkey lasthour json gae_file about delete_user
+        rss_regen'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -677,7 +679,7 @@ class WebUI:
         """
         # determine whether the rss file is up to date
         if not os.path.exists(self.config.rss_file):
-            self.rss_regen(self.config.rss_file)
+            self.rss_regen()
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
@@ -685,21 +687,48 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(open(self.config.rss_file).read())
 
-    def rss_regen(self, rss_file=None):
-        if rss_file is None:
-            rss_file = self.config.rss_file
+    def packages_rss(self):
+        """Dump the last N days' updates as an RSS feed.
+        """
+        # determine whether the rss file is up to date
+        if not os.path.exists(self.config.packages_rss_file):
+            self.rss_regen()
+
+        # TODO: throw in a last-modified header too?
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/xml; charset=utf-8')
+        self.handler.end_headers()
+        self.wfile.write(open(self.config.packages_rss_file).read())
+
+    def rss_regen(self):
         context = {}
         context['app'] = self
 
+        # generate the releases RSS
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         template = PyPiPageTemplate('rss.xml', template_dir)
         content = template(**context)
-
-        f = open(rss_file, 'w')
+        f = open(self.config.rss_file, 'w')
         try:
             f.write(content.encode('utf-8'))
         finally:
             f.close()
+
+        # generate the packages RSS
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        template = PyPiPageTemplate('packages-rss.xml', template_dir)
+        content = template(**context)
+        f = open(self.config.packages_rss_file, 'w')
+        try:
+            f.write(content.encode('utf-8'))
+        finally:
+            f.close()
+
+        # just for making this all OK
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/plain')
+        self.handler.end_headers()
+        self.wfile.write('OK')
 
     def lasthour(self):
         self.write_template('rss1hour.xml', **{'content-type':'text/xml; charset=utf-8'})

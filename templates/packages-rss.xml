@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91"
+     xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:metal="http://xml.zope.org/namespaces/metal">
+ <channel>
+  <title>PyPI Newest Packages</title>
+  <link tal:content="string:${app/url_machine}${app/url_path}" />
+  <description>Newest packages registered at the Python Package Index</description>
+  <language>en</language>
+
+  <item tal:repeat="release app/store/latest_packages">
+    <title tal:content="string:${release/name} ${release/version}" />
+    <link tal:content="python:'http://pypi.python.org%s'%app.packageURL(
+        release['name'], release['version'])" />
+    <description tal:content="release/summary" />
+    <pubDate tal:content="python:release['submitted_date'].strftime('%d %b %Y %H:%M:%S GMT')" />
+   </item>
+  </channel>
+</rss>
