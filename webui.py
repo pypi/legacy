@@ -2234,7 +2234,13 @@ class WebUI:
         if not self.form.has_key('content'):
             raise FormError, "No file uploaded"
 
-        data = self.form['content'].value
+        try:
+            data = self.form['content'].value
+        except AttributeError:
+            # error trying to get the .value *probably* means we didn't get
+            # a file uploaded in the content element
+            raise FormError, "No file uploaded"
+
         if len(data) > 10*1024*1024:
             raise FormError, "Documentation zip file is too large"
         data = cStringIO.StringIO(data)
