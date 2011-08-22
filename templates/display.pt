@@ -133,29 +133,28 @@
  <li tal:condition="data/release/license | nothing">
   <strong>License:</strong>
   <tal:block define="hasnl python:'\n' in data['release']['license']">
-  <pre tal:condition="hasnl" tal:content="structure data/release/license" />
+  <pre tal:condition="hasnl" tal:content="data/release/license" />
   <span tal:condition="not:hasnl" tal:content="data/release/license" />
   </tal:block>
  </li>
 
  <li tal:condition="data/release/platform | nothing">
   <strong>Platform:</strong>
-  <span tal:content="structure
-  python:data['release']['platform'].replace('\n', ', ')" />
+  <span tal:content="python:data['release']['platform'].replace('\n', ', ')" />
  </li>
 
 <!-- TODO: add link to products in follow dependencies... -->
  <li tal:condition="data/requires | nothing">
   <strong>Requires</strong>
-  <tal:element replace="structure python:', '.join(data['requires'])" />
+  <tal:element replace="python:', '.join(data['requires'])" />
  </li>
  <li tal:condition="data/provides | nothing">
   <strong>Provides</strong>
-  <tal:element replace="structure python:', '.join(data['provides'])" />
+  <tal:element replace="python:', '.join(data['provides'])" />
  </li>
  <li tal:condition="data/obsoletes | nothing">
   <strong>Obsoletes</strong>
-  <tal:element replace="structure python:', '.join(data['obsoletes'])" />
+  <tal:element replace="python:', '.join(data['obsoletes'])" />
  </li>
 
  <li tal:condition="data/categories | nothing">
