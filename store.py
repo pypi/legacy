@@ -705,6 +705,21 @@ class Store:
            where name=%s and version=%s''', (name, version))
         return Result(None, cursor.fetchall(), self._Release_Dependencies)
 
+    def get_release_downloads(self, name, version):
+        '''Fetch current download count for a release.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select filename, downloads from release_files where
+           name=%s and version=%s''', (name, version))
+        return cursor.fetchall()
+        
+    _Package_Roles = FastResultRow('role_name package_name')
+    def get_user_packages(self, name):
+        '''Fetch all packages and roles associated to user.'''
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''select role_name, package_name from roles where
+           user_name=%s''', (name,))
+        return Result(None, cursor.fetchall(), self._Package_Roles)
+    
     _Package_Roles = FastResultRow('role_name user_name')
     def get_package_roles(self, name):
         ''' Fetch the list of Roles for the package.

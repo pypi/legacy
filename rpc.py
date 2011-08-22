@@ -25,6 +25,9 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(changelog)
         self.register_function(changed_packages)
         self.register_function(post_cheesecake_for_release)
+        self.register_function(release_downloads)
+        self.register_function(package_roles)
+        self.register_function(user_packages)
         self.register_introspection_functions()
         self.register_multicall_functions()
 
@@ -51,6 +54,20 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         if len(call_list) > 100:
             raise Fault, "multicall too large"
         return SimpleXMLRPCDispatcher.system_multicall(self, call_list)
+
+def release_downloads(store, package_name, version):
+    '''Return download count for given release.'''
+    return store.get_release_downloads(package_name, version)
+
+def package_roles(store, package_name):
+    '''Return associated users and package roles.'''
+    result = store.get_package_roles(package_name)
+    return [tuple(fields.values())for fields in result]
+
+def user_packages(store, user):
+    '''Return associated packages for user.'''
+    result = store.get_user_packages(user)
+    return [tuple(fields.values()) for fields in result]
 
 def list_packages(store):
     result = store.get_packages()
