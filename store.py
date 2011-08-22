@@ -1441,12 +1441,12 @@ class Store:
                      (user,))
         # point all journal entries to the "deleted user"
         safe_execute(cursor,
-                     '''update journals set name='deleted user' where name=%s''',
+                     '''update journals set submitted_by='deleted user' where submitted_by=%s''',
                      (user,))
         # delete all cookies
         safe_execute(cursor,
                      '''delete from cookies where name=%s''',
-                     (user,))       
+                     (user,))
         # every other reference should either be cascading, 
         # or it's a bug to break it
 
