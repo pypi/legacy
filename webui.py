@@ -1063,6 +1063,8 @@ class WebUI:
             write_element(pelem, person, 'foaf:name')
             email = info[person+'_email']
             if email and email != 'UNKNOWN':
+                # sha1 requires ascii not unicode
+                if isinstance(email, unicode): email = email.encode('utf8')
                 obj = hashlib.sha1(email)
                 email = binascii.b2a_hex(obj.digest())
                 elem = SE(pelem, 'foaf:mbox_sha1sum')
