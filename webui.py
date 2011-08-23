@@ -947,8 +947,6 @@ class WebUI:
             if not (self.store.has_role('Admin', package_name) or
                     self.store.has_role('Owner', package_name)):
                 raise Unauthorised
-            if self.form['CSRFToken'] != self.store.get_token(self.username):
-                raise FormError, "Form Failure; reset form submission"
             package = '''
 <tr><th>Package Name:</th>
     <td><input type="text" readonly name="package_name" value="%s"></td>
