@@ -85,6 +85,7 @@ CREATE TABLE packages (
    name TEXT PRIMARY KEY,
    stable_version TEXT,
    normalized_name TEXT,
+   bugtrack_url TEXT,
    autohide BOOLEAN DEFAULT TRUE,
    comments BOOLEAN DEFAULT TRUE
 );

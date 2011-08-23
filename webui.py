@@ -1301,9 +1301,10 @@ class WebUI:
         columns = ('name version author author_email maintainer '
                    'maintainer_email home_page requires_python download_url '
                    'summary license description description_html keywords '
-                   'platform').split()
+                   'platform bugtrack_url').split()
 
         release = {'description_html': ''}
+	bugtrack_url =''
         for column in columns:
             value = info[column]
             if not info[column]: continue
@@ -1326,6 +1327,9 @@ class WebUI:
             elif column.startswith('cheesecake_'):
                 column = column[:-3]
                 value = self.store.get_cheesecake_index(int(value))
+	    elif column == 'bugtrack_url':
+		bugtrack_url = value 
+            value = info[column]
             release[column] = value
 
         roles = {}
@@ -1392,6 +1396,7 @@ class WebUI:
                             obsoletes_dist=obsoletes_dist,
                             requires_external=requires_external,
                             project_url=project_url,
+			    bugtrack_url = bugtrack_url,
                             requires_python=release.get('requires_python', ''))
 
     def index(self, nav_current='index', releases=None):
@@ -1536,7 +1541,7 @@ class WebUI:
         w = content.write
 
         # display all the properties
-        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_hidden'.split():
+        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_hidden bugtrack_url'.split():
             # get the existing entry
             if self.form.has_key(property):
                 value = self.form[property]

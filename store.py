@@ -250,8 +250,18 @@ class Store:
         # see if we're inserting or updating a package
         if not self.has_package(name):
             # insert the new package entry
-            sql = 'insert into packages (name, normalized_name) values (%s, %s)'
-            safe_execute(cursor, sql, (name, normalize_package_name(name)))
+            cols = 'name, normalized_name'
+            vals = '%s, %s'
+            args = (name, normalize_package_name(name))
+
+            # if a bugtracker url is provided then insert it too
+	    if 'bugtrack_url' in info:
+                cols += ', bugtrack_url'
+                vals += ', %s'
+                args += (info['bugtrack_url'], )
+
+            sql = 'insert into packages (%s) values (%s)' % (cols, vals)
+            safe_execute(cursor, sql, args)
 
             # journal entry
             safe_execute(cursor, '''insert into journals (name, version, action,
@@ -285,7 +295,7 @@ class Store:
 
             # handle the special vars that most likely won't have been
             # submitted
-            for k in ('_pypi_ordering', '_pypi_hidden'):
+            for k in ('_pypi_ordering', '_pypi_hidden', 'bugtrack_url'):
                 if not info.has_key(k):
                     info[k] = existing[k]
 
@@ -306,6 +316,14 @@ class Store:
                     cols.append(k)
                     vals.append(info[k])
             vals.extend([name, version])
+
+	    # pull out the bugtrack_url and put it in the packages table
+            # instead
+	    if 'bugtrack_url' in cols:
+                sql = 'update packages set bugtrack_url=%s where name=%s'
+                safe_execute(cursor, sql, (info['bugtrack_url'], name))
+		del vals[cols.index('bugtrack_url')]
+		cols.remove('bugtrack_url')
 
             # get old classifiers list
             old_cifiers = self.get_release_classifiers(name, version)
@@ -507,9 +525,9 @@ class Store:
 
     _Package = FastResultRow('''name stable_version version author author_email
             maintainer maintainer_email home_page license summary description
-            description_html keywords platform requires_python download_url
-            _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
-            cheesecake_documentation_id! cheesecake_code_kwalitee_id!''')
+            description_html keywords platform requires_python download_url 
+            _pypi_ordering! _pypi_hidden! cheesecake_installability_id! 
+            cheesecake_documentation_id! cheesecake_code_kwalitee_id! bugtrack_url!''')
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -520,10 +538,10 @@ class Store:
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, description_html, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
-                  _pypi_hidden,
+                  _pypi_hidden, 
                   cheesecake_installability_id,
                   cheesecake_documentation_id,
-                  cheesecake_code_kwalitee_id
+                  cheesecake_code_kwalitee_id, bugtrack_url
                  from packages, releases
                  where packages.name=%s and version=%s
                   and packages.name = releases.name'''

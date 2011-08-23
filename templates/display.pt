@@ -117,6 +117,14 @@
          tal:content="data/release/home_page" />
  </li>
 
+
+ <li tal:condition="data/bugtrack_url | nothing">
+  <strong>Bug Tracker:</strong>
+  <a tal:attributes="href python:data['bugtrack_url']"
+	  tal:content="structure
+	  python:data['bugtrack_url'].replace('\n', ', ')"/>
+ </li>
+
  <li tal:condition="data/release/download_url | nothing">
   <strong>Download URL:</strong>
   <!-- <th>Download URL -->
