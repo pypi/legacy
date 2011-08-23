@@ -338,7 +338,7 @@ class WebUI:
         content = template(**context)
 
         # dynamic insertion of CSRF token into FORMs
-        if '"POST"' in content and filename != 'pkg_edit.pt':
+        if '"POST"' in content and self.authenticated:
             token = '<input type="hidden" name="CSRFToken" value="%s">' % (
                     self.store.get_token(self.username),)
             temp = content.split('\n')
