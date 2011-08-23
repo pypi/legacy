@@ -724,12 +724,6 @@ class WebUI:
         finally:
             f.close()
 
-        # just for making this all OK
-        self.handler.send_response(200, 'OK')
-        self.handler.set_content_type('text/plain')
-        self.handler.end_headers()
-        self.wfile.write('OK')
-
     def lasthour(self):
         self.write_template('rss1hour.xml', **{'content-type':'text/xml; charset=utf-8'})
 
