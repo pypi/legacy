@@ -885,11 +885,14 @@ class Store:
         # is "small".
         statement = '''
             select j.name, r.version, j.submitted_date, r.summary
-              from (select name,version,submitted_date from journals
-                     where action='create' order by submitted_date desc %s) j,
-                   releases r
-             where j.name=r.name and r.version is not NULL
+              from releases r
+                   JOIN (SELECT name, max(submitted_Date) submitted_date
+                         FROM  journals GROUP BY name) j ON j.name = r.name
+             where r.version is not NULL
                and not r._pypi_hidden
+               and r.name in (SELECT name FROM journals
+                              WHERE  action='create'
+                              ORDER BY submitted_date DESC %s)
              order by j.submitted_date desc'''
         #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
