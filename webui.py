@@ -2269,14 +2269,13 @@ class WebUI:
 
     #
     # Documentation Upload
+    # can't perform CSRF test as this might be invoked by a tool
     #
     def doc_upload(self):
         # make sure the user is identified
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
 
         # figure the package name and version
         name = version = None
@@ -2365,15 +2364,13 @@ class WebUI:
         self.wfile.write(c + '\n')
 
     #
-    # User handling code (registration, password changing
+    # User handling code (registration, password changing)
     #
     def user_form(self):
         ''' Make the user authenticate before viewing the "register" form.
         '''
         if not self.authenticated:
             raise Unauthorised, 'You must authenticate'
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
         self.register_form()
 
     def register_form(self, openid_fields = (), username='', email='', openid=''):
