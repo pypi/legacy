@@ -1801,7 +1801,12 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'select cookie from cookies where name=%s',
                 (username,))
-        cookie = cursor.fetchall()[0][0]
+        try:
+            cookie = cursor.fetchall()[0][0]
+        except IndexError:
+            # no cookie, make one
+            cookie = ''.join(random.choice(alphanum) for i in range(10))
+
         # create random data 
         rand = [random.choice(alphanum) for i in range(12)]
         rand.append(str(int(time.time())))
