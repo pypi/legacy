@@ -16,6 +16,9 @@ from xml.parsers import expat
 from distutils.version import LooseVersion
 import trove, openid2rp
 from mini_pkg_resources import safe_name
+# csrf modules
+import hmac
+from base64 import b64encode
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -1777,6 +1780,44 @@ class Store:
     def delete_cookie(self, cookie):
         cursor = self.get_cursor()
         safe_execute(cursor, 'delete from cookies where cookie=%s', (cookie,))
+
+    # CSRF Protection
+    
+    def get_token(self, username):
+        '''Return csrf current token for user.'''
+        cursor = self.get_cursor()
+        sql = '''select token from csrf_tokens where name=%s
+                 and end_date > NOW()'''
+        safe_execute(cursor, sql, (username,))
+        token = cursor.fetchall()
+        if not token:
+            return self.create_token(username)
+        return token[0][0]
+    
+    def create_token(self, username):
+        '''Create and return a new csrf token for user.'''
+        alphanum = string.ascii_letters + string.digits
+        # dependency on cookie existence
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select cookie from cookies where name=%s',
+                (username,))
+        cookie = cursor.fetchall()[0][0]
+        # create random data 
+        rand = [random.choice(alphanum) for i in range(12)]
+        rand.append(str(int(time.time())))
+        rand.append(cookie)
+        random.shuffle(rand)
+        rand = hmac.new(''.join(random.choice(alphanum) for i in range(16)),
+                ''.join(rand),digestmod=hashlib.sha1).hexdigest()
+        rand = b64encode(rand)
+
+        # we may have a current entry which is out of date, delete
+        safe_execute(cursor, 'delete from csrf_tokens where name=%s', (username,))
+        sql = '''insert into csrf_tokens values(%s, %s,
+                 NOW()+interval \'15 minutes\')'''
+        safe_execute(cursor, sql, (username, rand)) 
+
+        return rand
 
     # OpenID
 

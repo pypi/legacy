@@ -278,4 +278,12 @@ CREATE TABLE comments_journal(
   FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
 );
 
+CREATE TABLE csrf_tokens (
+  name     text REFERENCES users(name) ON DELETE CASCADE,
+  token    text,
+  end_date timestamp without time zone,
+  PRIMARY KEY(name)
+);
+
+
 commit;

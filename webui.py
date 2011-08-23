@@ -337,6 +337,27 @@ class WebUI:
         template = PyPiPageTemplate(filename, template_dir)
         content = template(**context)
 
+        # dynamic insertion of CSRF token into FORMs
+        if '"POST"' in content and filename != 'pkg_edit.pt':
+            token = '<input type="hidden" name="CSRFToken" value="%s">' % (
+                    self.store.get_token(self.username),)
+            temp = content.split('\n')
+            edit = ((i, l) for i, l in enumerate(content.split('\n')) if
+                    '"POST"' in l)
+            try:
+                for index, line in edit:
+                    while not line.endswith('>'):
+                        index += 1
+                        line = temp[index]
+                    # count spaces to align entry nicely
+                    spaces = len(line.lstrip()) - len(line)
+                    temp[index] = "\n".join((line, ' ' * spaces + token)) 
+                content = '\n'.join(temp)
+            except IndexError:
+                # this should not happen with correct HTML syntax
+                # the try is 'just in case someone does something stupid'
+                pass
+
         self.handler.send_response(200, 'OK')
         if 'content-type' in options:
             self.handler.set_content_type(options['content-type'])
@@ -512,6 +533,8 @@ class WebUI:
         if action in ('submit', ):
             if not self.authenticated:
                 raise Unauthorised
+            if self.form['CSRFToken'] != self.store.get_token(self.username):
+                raise FormError, "Form Failure; reset form submission"
             if self.store.get_otk(self.username):
                 raise Unauthorised, "Incomplete registration; check your email"
 
@@ -910,6 +933,7 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised
         self.usercookie = self.store.create_cookie(self.username)
+        self.store.get_token(self.username)
         self.loggedin = 1
         self.home()
 
@@ -923,6 +947,8 @@ class WebUI:
             if not (self.store.has_role('Admin', package_name) or
                     self.store.has_role('Owner', package_name)):
                 raise Unauthorised
+            if self.form['CSRFToken'] != self.store.get_token(self.username):
+                raise FormError, "Form Failure; reset form submission"
             package = '''
 <tr><th>Package Name:</th>
     <td><input type="text" readonly name="package_name" value="%s"></td>
@@ -1517,6 +1543,7 @@ class WebUI:
             # Authenticated, but not logged in - auto-login
             self.loggedin = True
             self.usercookie = self.store.create_cookie(self.username)
+            token = self.store.get_token(self.username)
 
         # are we editing a specific entry?
         info = {}
@@ -1588,6 +1615,9 @@ class WebUI:
                 label = "Download URL"
             elif property == '_pypi_hidden':
                 label = "Hidden"
+            elif property == 'CSRFToken':
+                field = '<input type="hidden" name="CSRFToken" value="%s">' % (
+                        token,)
             else:
                 req = ''
             w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label,
@@ -1641,6 +1671,9 @@ class WebUI:
         if not self.form.has_key('pkginfo'):
             raise FormError, \
                 "You must supply the PKG-INFO file"
+
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         # get the data
         pkginfo = self.form['pkginfo']
@@ -1743,6 +1776,9 @@ class WebUI:
             self.validate_metadata(data)
         except ValueError, message:
             raise FormError, message
+            
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         name = data['name']
         version = data['version']
@@ -1963,6 +1999,8 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         # vars
         name = self.form['name']
@@ -2092,6 +2130,8 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         # Verify protocol version
         if self.form.has_key('protocol_version'):
@@ -2244,6 +2284,8 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         # figure the package name and version
         name = version = None
@@ -2339,6 +2381,8 @@ class WebUI:
         '''
         if not self.authenticated:
             raise Unauthorised, 'You must authenticate'
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
         self.register_form()
 
     def register_form(self, openid_fields = (), username='', email='', openid=''):
@@ -2524,6 +2568,8 @@ class WebUI:
 
         if "key" not in self.form:
             raise FormError, "missing key"
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
 
         key = self.form['key'].splitlines()
         for line in key[1:]:
@@ -2542,6 +2588,8 @@ class WebUI:
             raise Unauthorised
         if "id" not in self.form:
             raise FormError, "missing parameter"
+        if self.form['CSRFToken'] != self.store.get_token(self.username):
+            raise FormError, "Form Failure; reset form submission"
         try:
             id = int(self.form["id"])
         except:
@@ -2779,6 +2827,7 @@ class WebUI:
             self.username = user['name']
             self.loggedin = self.authenticated = True
             self.usercookie = self.store.create_cookie(self.username)
+            self.store.get_token(self.username)
             return self.home()
         # Fill openid response fields into register form as hidden fields
         del qs[':action']
