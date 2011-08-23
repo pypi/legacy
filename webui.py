@@ -1008,6 +1008,8 @@ class WebUI:
                 self.store.has_role('Owner', package_name)):
             raise Unauthorised
 
+        self.csrf_check()
+
         # further vali:dation
         if role_name not in ('Owner', 'Maintainer'):
             raise FormError, 'role_name not Owner or Maintainer'
@@ -1656,6 +1658,13 @@ class WebUI:
             title='Submitting package information',
             fields=content.getvalue().decode('utf8'))
 
+    def csrf_check(self):
+        '''Check that the required CSRF token is present in the form
+        submission.
+        '''
+        if self.form.get('CSRFToken') != self.store.get_token(self.username):
+            self.FormError, "Form Failure; reset form submission"
+
     def submit_pkg_info(self):
         ''' Handle the submission of distro metadata as a PKG-INFO file.
         '''
@@ -1668,8 +1677,7 @@ class WebUI:
             raise FormError, \
                 "You must supply the PKG-INFO file"
 
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
+        self.csrf_check()
 
         # get the data
         pkginfo = self.form['pkginfo']
@@ -1937,6 +1945,8 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
+        self.csrf_check()
+
         name = self.form['name']
 
         if self.form.has_key('submit_remove'):
@@ -1992,8 +2002,8 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
+
+        self.csrf_check()
 
         # vars
         name = self.form['name']
@@ -2123,6 +2133,9 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+
+        # can't perform CSRF check as this is invoked by tools
+        #self.csrf_check()
 
         # Verify protocol version
         if self.form.has_key('protocol_version'):
@@ -2269,13 +2282,15 @@ class WebUI:
 
     #
     # Documentation Upload
-    # can't perform CSRF test as this might be invoked by a tool
     #
     def doc_upload(self):
         # make sure the user is identified
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
+
+        # can't perform CSRF check as this is invoked by tools
+        #self.csrf_check()
 
         # figure the package name and version
         name = version = None
@@ -2531,6 +2546,8 @@ class WebUI:
                        'indicated in the email.') % info['email']
 
         else:
+            self.csrf_check()
+
             # update details
             user = self.store.get_user(self.username)
             password = info.get('password', '').strip()
@@ -2556,8 +2573,8 @@ class WebUI:
 
         if "key" not in self.form:
             raise FormError, "missing key"
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
+
+        self.csrf_check()
 
         key = self.form['key'].splitlines()
         for line in key[1:]:
@@ -2574,10 +2591,12 @@ class WebUI:
     def delkey(self):
         if not self.authenticated:
             raise Unauthorised
+
         if "id" not in self.form:
             raise FormError, "missing parameter"
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
+
+        self.csrf_check()
+
         try:
             id = int(self.form["id"])
         except:
@@ -2647,7 +2666,9 @@ class WebUI:
     def delete_user(self):
         if not self.authenticated:
             raise Unauthorised
+
         if self.form.has_key('submit_ok'):
+            self.csrf_check()
             # ok, do it
             self.store.delete_user(self.username)
             self.authenticated = self.loggedin = False
@@ -2667,8 +2688,6 @@ class WebUI:
             return self.write_template('dialog.pt', message=message,
                 title='Confirm account deletion', fields=fields)
 
-            
-        
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
         '''
@@ -2898,3 +2917,4 @@ class WebUI:
         stdout = p.communicate()[0]
         if p.returncode != 0:
             raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
+
