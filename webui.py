@@ -1776,9 +1776,6 @@ class WebUI:
             self.validate_metadata(data)
         except ValueError, message:
             raise FormError, message
-            
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
 
         name = data['name']
         version = data['version']
@@ -2130,8 +2127,6 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
-        if self.form['CSRFToken'] != self.store.get_token(self.username):
-            raise FormError, "Form Failure; reset form submission"
 
         # Verify protocol version
         if self.form.has_key('protocol_version'):
