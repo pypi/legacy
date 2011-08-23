@@ -533,8 +533,6 @@ class WebUI:
         if action in ('submit', ):
             if not self.authenticated:
                 raise Unauthorised
-            if self.form['CSRFToken'] != self.store.get_token(self.username):
-                raise FormError, "Form Failure; reset form submission"
             if self.store.get_otk(self.username):
                 raise Unauthorised, "Incomplete registration; check your email"
 
