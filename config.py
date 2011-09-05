@@ -26,7 +26,6 @@ class Config:
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
-        self.openid_url = c.get('webui', 'openid_url')
         self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')
