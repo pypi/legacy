@@ -1694,7 +1694,7 @@ class WebUI:
         submission.
         '''
         if self.form.get('CSRFToken') != self.store.get_token(self.username):
-            self.FormError, "Form Failure; reset form submission"
+            raise FormError, "Form Failure; reset form submission"
 
     def submit_pkg_info(self):
         ''' Handle the submission of distro metadata as a PKG-INFO file.
