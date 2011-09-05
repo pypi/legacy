@@ -218,8 +218,8 @@ class WebUI:
         self.loggedin = False      # was a valid cookie sent?
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
-        self.op_endpoint = "%s?:action=openid_endpoint" % (self.config.url,)
-        self.oid_server = OpenIDServer.Server(FileOpenIDStore(OPENID_FILESTORE), op_endpoint=self.op_endpoint)
+        op_endpoint = "%s?:action=openid_endpoint" % (self.config.url,)
+        self.oid_server = OpenIDServer.Server(FileOpenIDStore(OPENID_FILESTORE), op_endpoint=op_endpoint)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -463,13 +463,6 @@ class WebUI:
             return self.mirrors()
         if script_name == '/daytime':
             return self.daytime()
-        if script_name == '/id':
-            action = 'openid_discovery'
-        elif script_name.startswith('/id/'):
-            # the username argument is ignored...
-            action = 'openid_user'
-        else:
-            action = ''
 
         # see if the user has provided a username/password
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
@@ -529,10 +522,7 @@ class WebUI:
 
         # now handle the request
         path = self.env.get('PATH_INFO', '')
-        if action:
-            # we've already been set an action
-            pass
-        elif self.form.has_key(':action'):
+        if self.form.has_key(':action'):
             action = self.form[':action']
             if isinstance(action, list):
                 raise RuntimeError("Multiple actions: %r" % action)
@@ -1976,7 +1966,8 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
-        self.csrf_check()
+        # this is used to render the form as well as edit it... UGH
+        #self.csrf_check()
 
         name = self.form['name']
 
@@ -3050,6 +3041,7 @@ class WebUI:
             raise OpenIDError, "OpenID request must be a POST"
         
         from openid.message import Message
+        del self.form[':action']
         message = Message.fromPostArgs(self.form)
         orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
         
@@ -3092,7 +3084,8 @@ class WebUI:
             return False
         if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
             return False
-        username = urlparse.urlparse(identity).path.split('/')[-1]
+        qs = urlparse.urlparse(identity).query
+        username = urlparse.parse_qs(qs).get("username",[None])[0]
         if username != self.username:
             # identity is not owned by user so decline the request
             False
@@ -3101,7 +3094,7 @@ class WebUI:
 
     def openid_user_url(self):
         if self.authenticated:
-            return "%s/%s" % (self.config.openid_url, self.username)
+            return "%s?:action=openid_user&username=%s" % (self.config.url, self.username)
         else:
             return None
-        
+
