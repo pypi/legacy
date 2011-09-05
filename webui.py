@@ -3086,11 +3086,14 @@ class WebUI:
             return False
         qs = urlparse.urlparse(identity).query
         username = urlparse.parse_qs(qs).get("username",[None])[0]
-        if username != self.username:
-            # identity is not owned by user so decline the request
-            False
-
-        return self.store.check_openid_trustedroot(self.username, orequest.trust_root)
+        if username == self.username:
+            if self.store.check_openid_trustedroot(self.username, orequest.trust_root):
+                return True
+            else:
+                return False
+        # identity is not owned by user so decline the request
+        answer = orequest.answer(False)
+        self.openid_response(answer)
 
     def openid_user_url(self):
         if self.authenticated:
