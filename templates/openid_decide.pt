@@ -6,8 +6,8 @@
   <metal:fill fill-slot="body">
   
       <form tal:attributes="action data/url_path" method="POST">
-        <p>The site <span tal:replace="data/trust_root" /> is asking for confirmation that 
-        <span tal:replace="data/pending_id"/> is your identity id.</p>
+        <p>The site <b tal:content="data/trust_root" /> is asking for confirmation that 
+        <b tal:content="data/pending_id"/> is your identity.</p>
         <input type="submit" name="allow" value="Allow"/>
         <input type="submit" name="allow_always" value="Allow Always"/>
         <input type="submit" name="no_thanks" value="No Thanks"/>
