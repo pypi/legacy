@@ -463,6 +463,14 @@ class WebUI:
             return self.mirrors()
         if script_name == '/daytime':
             return self.daytime()
+        if script_name == '/id':
+            action = 'openid_discovery'
+        elif script_name.startswith('/id/'):
+            # the username argument is ignored...
+            action = 'openid_user'
+        else:
+            action = ''
+
         # see if the user has provided a username/password
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
         if auth:
@@ -521,6 +529,9 @@ class WebUI:
 
         # now handle the request
         path = self.env.get('PATH_INFO', '')
+        if action:
+            # we've already been set an action
+            pass
         if self.form.has_key(':action'):
             action = self.form[':action']
             if isinstance(action, list):
