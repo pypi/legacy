@@ -532,7 +532,7 @@ class WebUI:
         if action:
             # we've already been set an action
             pass
-        if self.form.has_key(':action'):
+        elif self.form.has_key(':action'):
             action = self.form[':action']
             if isinstance(action, list):
                 raise RuntimeError("Multiple actions: %r" % action)
@@ -3051,12 +3051,10 @@ class WebUI:
         orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
         
         if self.form.has_key('allow'):
-            answer = orequest.answer(True,
-                                     identity=self.openid_user_url())
+            answer = orequest.answer(True, identity=self.openid_user_url())
             return self.openid_response(answer)
         elif self.form.has_key('allow_always'):
-            answer = orequest.answer(True,
-                                     identity=self.openid_user_url())
+            answer = orequest.answer(True, identity=self.openid_user_url())
             self.store.set_openid_trustedroot(self.username, orequest.trust_root)
             self.store.commit()
             return self.openid_response(answer)
@@ -3100,8 +3098,7 @@ class WebUI:
 
     def openid_user_url(self):
         if self.authenticated:
-            return "%s?:action=openid_user&username=%s" % (self.config.url,
-                                                           self.username)
+            return "%s/%s" % (self.config.openid_url, self.username)
         else:
             return None
         
