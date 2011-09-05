@@ -3000,7 +3000,6 @@ class WebUI:
         else:
             raise OpenIDError, "Unknown mode: %s" % orequest.mode
                 
-
     def openid_decide_page(self, orequest):
         """
         The page that asks the user if they really want to trust this trust_root
@@ -3082,16 +3081,12 @@ class WebUI:
         if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
             return False
         qs = urlparse.urlparse(identity).query
-        if urlparse.parse_qs(qs).get("username",[None])[0] == self.username:
-            if self.store.check_openid_trustedroot(self.username,
-                                                   orequest.trust_root):
-                return True
-            else:
-                return False
-        # identity is not owned by user so decline the request
-        answer = orequest.answer(False)
-        self.openid_response(answer)
-    
+        if urlparse.parse_qs(qs).get("username",[None])[0] != self.username:
+            # identity is not owned by user so decline the request
+            False
+
+        return self.store.check_openid_trustedroot(self.username, orequest.trust_root)
+
     def openid_user_url(self):
         if self.authenticated:
             return "%s?:action=openid_user&username=%s" % (self.config.url,
