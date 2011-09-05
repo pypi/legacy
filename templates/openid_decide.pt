@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+  
+      <form tal:attributes="action data/url_path" method="POST">
+        <p>The site <span tal:replace="data/trust_root" /> is asking for confirmation that 
+        <span tal:replace="data/pending_id"/> is your identity id.</p>
+        <input type="submit" name="allow" value="Allow"/>
+        <input type="submit" name="allow_always" value="Allow Always"/>
+        <input type="submit" name="no_thanks" value="No Thanks"/>
+        <div tal:repeat="item python:data['orequest'].items()" tal:omit-tag="">
+            <input type="hidden" tal:attributes="name python:item[0];value python:item[1]"/>
+        </div>
+      </form>
+      
+  </metal:fill>
+</html>

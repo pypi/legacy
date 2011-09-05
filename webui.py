@@ -26,6 +26,12 @@ orig = urllib.URLopener.open_https.im_func
 from M2Crypto import EVP, DSA
 urllib.URLopener.open_https = orig
 
+# OpenId provider imports
+OPENID_FILESTORE = '/tmp/openid-filestore' 
+
+from openid.store.filestore import FileOpenIDStore
+from openid.server import server as OpenIDServer
+
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
@@ -50,9 +56,13 @@ class Forbidden(Exception):
     pass
 class Redirect(Exception):
     pass
+class RedirectFound(Exception):# 302
+    pass
 class RedirectTemporary(Exception): # 307
     pass
 class FormError(Exception):
+    pass
+class OpenIDError(Exception):
     pass
 
 class MultipleReleases(Exception):
@@ -208,6 +218,8 @@ class WebUI:
         self.loggedin = False      # was a valid cookie sent?
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
+        self.op_endpoint = "%s?:action=openid_endpoint" % (self.config.url,)
+        self.oid_server = OpenIDServer.Server(FileOpenIDStore(OPENID_FILESTORE), op_endpoint=self.op_endpoint)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -275,6 +287,10 @@ class WebUI:
                 self.handler.send_response(301, 'Moved Permanently')
                 self.handler.send_header('Location', e.args[0])
                 self.handler.end_headers()
+            except RedirectFound, e:
+                self.handler.send_response(302, 'Found')
+                self.handler.send_header('Location', e.args[0])
+                self.handler.end_headers()
             except RedirectTemporary, e:
                 # ask browser not to cache this redirect
                 self.handler.send_response(307, 'Temporary Redirect')
@@ -283,6 +299,9 @@ class WebUI:
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
+            except OpenIDError, message:
+                message = str(message)
+                self.fail(message, code=400, heading='Error processing OpenID request')
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
@@ -543,7 +562,8 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
-        rss_regen'''.split():
+        rss_regen openid_discovery openid_endpoint openid_decide_post 
+        openid_user'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -1328,7 +1348,7 @@ class WebUI:
                    'platform bugtrack_url').split()
 
         release = {'description_html': ''}
-	bugtrack_url =''
+        bugtrack_url =''
         for column in columns:
             value = info[column]
             if not info[column]: continue
@@ -1351,8 +1371,8 @@ class WebUI:
             elif column.startswith('cheesecake_'):
                 column = column[:-3]
                 value = self.store.get_cheesecake_index(int(value))
-	    elif column == 'bugtrack_url':
-		bugtrack_url = value 
+            elif column == 'bugtrack_url':
+                bugtrack_url = value 
             value = info[column]
             release[column] = value
 
@@ -2918,3 +2938,164 @@ class WebUI:
         if p.returncode != 0:
             raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
 
+    def openid_discovery(self):
+        """Return an XRDS document containing an OpenID provider endpoint URL."""
+        payload = '''<xrds:XRDS
+                xmlns:xrds="xri://$xrds"
+                xmlns="xri://$xrd*($v*2.0)">
+                <XRD>
+                    <Service priority="0">
+                      <Type>http://specs.openid.net/auth/2.0/server</Type>
+                      <Type>http://specs.openid.net/auth/2.0/signon</Type>
+                      <URI>%s</URI>
+                    </Service>
+                </XRD>
+            </xrds:XRDS>
+        ''' % (self.config.url+'?:action=openid_endpoint')
+        self.handler.send_response(200)
+        self.handler.send_header("Content-type", 'application/xrds+xml')
+        self.handler.send_header("Content-length", str(len(payload)))
+        self.handler.end_headers()
+        self.handler.wfile.write(payload)
+
+    def openid_user(self):
+        """Return an XRDS document containing an OpenID provider endpoint URL."""
+        payload = '''<xrds:XRDS
+                xmlns:xrds="xri://$xrds"
+                xmlns="xri://$xrd*($v*2.0)">
+                <XRD>
+                    <Service priority="0">
+                      <Type>http://specs.openid.net/auth/2.0/signon</Type>
+                      <URI>%s</URI>
+                    </Service>
+                </XRD>
+            </xrds:XRDS>
+        ''' % (self.config.url+'?:action=openid_endpoint')
+        self.handler.send_response(200)
+        self.handler.send_header("Content-type", 'application/xrds+xml')
+        self.handler.send_header("Content-length", str(len(payload)))
+        self.handler.end_headers()
+        self.handler.wfile.write(payload)
+    
+    def openid_endpoint(self):
+        """Handle OpenID requests"""
+        orequest = self.oid_server.decodeRequest(self.form)
+        if not orequest or orequest is None:
+            payload='''This is an OpenID server'''
+            self.handler.send_response(200)
+            self.handler.send_header("Content-type", 'text/plain')
+            self.handler.send_header("Content-length", str(len(payload)))
+            self.handler.end_headers()
+            self.handler.wfile.write(payload)
+            return
+        if orequest.mode in ['checkid_immediate', 'checkid_setup']:
+            if self.openid_is_authorized(orequest):
+                return self.openid_response(orequest.answer(True))
+            elif orequest.immediate:
+                return self.openid_response(orequest.answer(False))
+            else:
+                self.openid_decide_page(orequest)
+        elif orequest.mode in ['associate', 'check_authentication']:
+            self.openid_response(self.oid_server.handleRequest(orequest))
+        else:
+            raise OpenIDError, "Unknown mode: %s" % orequest.mode
+                
+
+    def openid_decide_page(self, orequest):
+        """
+        The page that asks the user if they really want to trust this trust_root
+        If they are NOT logged intp PyPI, show the landing page so the user
+        understands why it has failed and they need to login to PyPI before
+        attempting again. This is done rather than presenting PyPI login page
+        to reduce chance of phishing.
+        """
+        if not self.authenticated:
+            self.write_template('openid_notloggedin.pt',
+                                title="OpenId landing page")
+            return
+        
+        if orequest.identity == "http://specs.openid.net/auth/2.0/identifier_select":
+            pending_id = self.openid_user_url()
+        else:
+            pending_id = orequest.identity
+            
+        orequest_args=orequest.message.toPostArgs()
+        del orequest_args[':action']
+        # They are logged in - ask if they want to trust this root
+        self.write_template('openid_decide.pt', title="Trust this site?",
+                            url_path="%s/?:action=openid_decide_post" % self.config.url,
+                            orequest=orequest_args,
+                            mode=orequest.mode,
+                            identity=self.username,
+                            return_to=orequest.return_to,
+                            trust_root=orequest.trust_root,
+                            pending_id = pending_id)
+        
+    def openid_decide_post(self):
+        """Handle POST request from decide form"""
+        if self.env['REQUEST_METHOD'] != "POST":
+            raise OpenIDError, "OpenID request must be a POST"
+        
+        from openid.message import Message
+        message = Message.fromPostArgs(self.form)
+        orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
+        
+        if self.form.has_key('allow'):
+            answer = orequest.answer(True,
+                                     identity=self.openid_user_url())
+            return self.openid_response(answer)
+        elif self.form.has_key('allow_always'):
+            answer = orequest.answer(True,
+                                     identity=self.openid_user_url())
+            self.store.set_openid_trustedroot(self.username, orequest.trust_root)
+            self.store.commit()
+            return self.openid_response(answer)
+        elif self.form.has_key('no_thanks'):
+            answer = orequest.answer(False)
+            return self.openid_response(answer)
+        else:
+            raise OpenIDError, "OpenID post request failure"
+        
+    def openid_response(self, oresponse):
+        """Convert a webresponse from the OpenID library into a
+        WebUI http response"""
+        webresponse = self.oid_server.encodeResponse(oresponse)
+        if webresponse.code == 301:
+            raise Redirect, str(webresponse.headers['location'])
+        elif webresponse.code == 302:
+            raise RedirectFound, str(webresponse.headers['location'])
+            
+        self.handler.send_response(webresponse.code)
+        for key, value in webresponse.headers.items():
+            self.handler.send_header(key, str(value))
+        self.handler.end_headers()
+        self.handler.wfile.write(webresponse.body)
+ 
+    def openid_is_authorized(self, orequest):
+        """
+        This should check that they own the given identity,
+        and that the trust_root is in their whitelist of trusted sites.
+        """
+        identity = orequest.identity
+        if not self.authenticated:
+            return False
+        if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
+            return False
+        qs = urlparse.urlparse(identity).query
+        if urlparse.parse_qs(qs).get("username",[None])[0] == self.username:
+            if self.store.check_openid_trustedroot(self.username,
+                                                   orequest.trust_root):
+                return True
+            else:
+                return False
+        # identity is not owned by user so decline the request
+        answer = orequest.answer(False)
+        self.openid_response(answer)
+    
+    def openid_user_url(self):
+        if self.authenticated:
+            return "%s?:action=openid_user&username=%s" % (self.config.url,
+                                                           self.username)
+        else:
+            return None
+        
