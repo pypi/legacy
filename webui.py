@@ -2949,6 +2949,9 @@ class WebUI:
         if p.returncode != 0:
             raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
 
+    #
+    # OpenID Provider
+    #
     def openid_discovery(self):
         """Return an XRDS document containing an OpenID provider endpoint URL."""
         payload = '''<xrds:XRDS
@@ -3089,8 +3092,8 @@ class WebUI:
             return False
         if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
             return False
-        qs = urlparse.urlparse(identity).query
-        if urlparse.parse_qs(qs).get("username",[None])[0] != self.username:
+        username = urlparse.urlparse(identity).path.split('/')[-1]
+        if username != self.username:
             # identity is not owned by user so decline the request
             False
 
