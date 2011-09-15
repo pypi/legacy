@@ -13,7 +13,8 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Location', '/pypi')
             return
-        for scriptname in ('/mirrors', '/simple', '/pypi', '/serversig', '/daytime'):
+        for scriptname in ('/mirrors', '/simple', '/pypi',
+                           '/serversig', '/daytime', '/id'):
             if self.path.startswith(scriptname):
                 rest = self.path[len(scriptname):]
                 break
@@ -119,7 +120,7 @@ def main():
         elif opt in ('-p', '--port'):
             port = int(val)
     if port:
-        httpd = BaseHTTPServer.HTTPServer(('',8000), RequestHandler)
+        httpd = BaseHTTPServer.HTTPServer(('',port), RequestHandler)
         httpd.serve_forever()
     else:
         StdinoutHandler(remote_user)

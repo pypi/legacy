@@ -1,4 +1,5 @@
 import ConfigParser
+from urlparse import urlsplit, urlunsplit
 
 class Config:
     ''' Read in the config and set up the vars with the correct type.
@@ -26,6 +27,7 @@ class Config:
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
+        self.scheme_host = urlunsplit(urlsplit(self.url)[:2]+('','',''))
         self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')

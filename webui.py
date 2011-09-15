@@ -463,6 +463,8 @@ class WebUI:
             return self.mirrors()
         if script_name == '/daytime':
             return self.daytime()
+        if script_name == '/id':
+            return self.run_id()
 
         # see if the user has provided a username/password
         auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
@@ -563,8 +565,7 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
-        rss_regen openid_discovery openid_endpoint openid_decide_post 
-        openid_user'''.split():
+        rss_regen openid_endpoint openid_decide_post'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -709,6 +710,13 @@ class WebUI:
         self.handler.set_content_type('application/octet-stream')
         self.handler.end_headers()
         self.wfile.write(sig)
+
+    def run_id(self):
+        path = self.env.get('PATH_INFO')
+        if not path:
+            return self.openid_discovery()
+        else:
+            return self.openid_user(path)
 
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='PyPI - the Python Package Index')
@@ -2963,7 +2971,7 @@ class WebUI:
         self.handler.end_headers()
         self.handler.wfile.write(payload)
 
-    def openid_user(self):
+    def openid_user(self, user):
         """Return an XRDS document containing an OpenID provider endpoint URL."""
         payload = '''<xrds:XRDS
                 xmlns:xrds="xri://$xrds"
@@ -3015,7 +3023,7 @@ class WebUI:
         """
         if not self.authenticated:
             self.write_template('openid_notloggedin.pt',
-                                title="OpenId landing page")
+                                title="OpenID login attempt")
             return
         
         if orequest.identity == "http://specs.openid.net/auth/2.0/identifier_select":
@@ -3084,8 +3092,10 @@ class WebUI:
             return False
         if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
             return False
-        qs = urlparse.urlparse(identity).query
-        username = urlparse.parse_qs(qs).get("username",[None])[0]
+        id_prefix = self.config.scheme_host + "/id/"
+        if not identity.startswith(id_prefix):
+            return False
+        username = identity[len(id_prefix):]
         if username == self.username:
             if self.store.check_openid_trustedroot(self.username, orequest.trust_root):
                 return True
@@ -3097,7 +3107,7 @@ class WebUI:
 
     def openid_user_url(self):
         if self.authenticated:
-            return "%s?:action=openid_user&username=%s" % (self.config.url, self.username)
+            return "%s/id/%s" % (self.config.scheme_host, self.username)
         else:
             return None
 
