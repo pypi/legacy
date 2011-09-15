@@ -5,7 +5,12 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
   
-        <p>You need to login to this site before trying OpenId authentication again.</p>
+        <p>If you want to use your PyPI credentials to log into
+        another site, you need to log into PyPI first. If logging
+        into some other site ever brings up a PyPI password window,
+        it probably is a phishing attempt; don't enter your password.
+        If you follow the login link to the right, make sure it really
+        belongs to the Python Package Index.</p>
       
   </metal:fill>
 </html>
