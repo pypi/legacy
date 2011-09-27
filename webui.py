@@ -1391,7 +1391,7 @@ class WebUI:
 
         def values(col):
             l = self.store.get_release_relationships(name, version, col)
-            return [ cgi.escape(x['specifier']) for x in l]
+            return [x['specifier'] for x in l]
 
         categories = []
         is_py3k = False
