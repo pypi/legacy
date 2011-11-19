@@ -1906,7 +1906,7 @@ class Store:
         # store it
         sql = '''insert into openid_sessions
                  (url, assoc_handle, expires, mac_key)
-                 values (%s, %s, %s, %s, %s)'''
+                 values (%s, %s, %s, %s)'''
         safe_execute(cursor, sql, (endpoint,
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
