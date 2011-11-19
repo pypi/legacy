@@ -2765,7 +2765,7 @@ class WebUI:
             if not op_local:
                 op_local = claimed_id
             try:
-                assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
             except ValueError, e:
                 return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
