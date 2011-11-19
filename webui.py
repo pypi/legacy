@@ -2526,7 +2526,7 @@ class WebUI:
                 except Exception, e:
                     return self.fail('OpenID response has been tampered with:'+repr(e))
                 if 'response_nonce' in signed:
-                    nonce = qs['response_nonce'][0]
+                    nonce = qs['openid.response_nonce'][0]
             else:
                 claimed_id = None
                 if not info.has_key('confirm') or info['password'] <> info['confirm']:
