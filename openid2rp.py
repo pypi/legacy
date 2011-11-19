@@ -628,6 +628,10 @@ def authenticate(session, response):
 
     return signed
 
+# td.total_seconds only works in 2.7
+def _total_seconds(td):
+    return td.days*24*3600 + td.seconds
+
 def verify(response, discovery_cache, find_association, nonce_seen):
     response = _prepare_response(response)
     if 'openid.ns' in response:
@@ -682,7 +686,7 @@ def verify(response, discovery_cache, find_association, nonce_seen):
     if 'openid.response_nonce' in response:
         nonce = response['openid.response_nonce'][0]
         timestamp = parse_nonce(nonce)
-        if (datetime.datetime.utcnow() - timestamp).total_seconds() > 10:
+        if _total_seconds(datetime.datetime.utcnow() - timestamp) > 10:
             # allow for at most 10s transmission time and time shift
             raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
         if nonce_seen(nonce):
