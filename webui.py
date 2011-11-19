@@ -947,10 +947,11 @@ class WebUI:
             if not res:
                 return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
             stypes, op_endpoint, op_local = res
+            self.store.store_discovered(claimed_id, stypes, op_endpoint, op_local)
             if not op_local:
                 op_local = claimed_id
             try:
-                assoc_handle = self.store.get_session_for_endpoint(claimed_id, stypes, op_endpoint)
+                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
             except ValueError, e:
                 return self.fail('Cannot establish OpenID session: ' + str(e))
             return_to = self.config.url+'?:action=openid_return'
@@ -2505,6 +2506,7 @@ class WebUI:
                                     otk=info['otk'], user=user)
                 return
         elif self.username is None:
+            nonce = None
             for param in 'name email'.split():
                 if not info.has_key(param):
                     raise FormError, '%s is required'%param
@@ -2517,33 +2519,16 @@ class WebUI:
                 qs = {}
                 for key, value in self.form.items():
                     qs[key] = [value.encode('utf-8')]
-                session = self.store.get_session_by_handle(self.form['openid.assoc_handle'])
-                if not session:
-                    raise FormError, "Invalid session"
-                provider, url, stypes, session = session
                 try:
-                    signed = openid2rp.authenticate(session, qs)
+                    signed, claimed_id = openid2rp.verify(qs, self.store.discovered,
+                                                          self.store.find_association,
+                                                          self.store.check_nonce)
                 except Exception, e:
                     return self.fail('OpenID response has been tampered with:'+repr(e))
-                if not openid2rp.is_op_endpoint(stypes):
-                    claimed_id = provider
-                elif 'claimed_id' in signed:
-                    claimed_id = qs['openid.claimed_id'][0]
-                    # Need to perform discovery to verify claimed ID is really managed by provider
-                    discovered = openid2rp.discover(claimed_id)
-                    if not discovered or discovered[1] != url:
-                        return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
-                else:
-                    return self.fail('Claimed ID got lost. Please report this as a bug.')
-                if self.store.get_user_by_openid(claimed_id):
-                    return self.fail('OpenID already associated with a different account')
                 if 'response_nonce' in signed:
-                    nonce = qs['openid.response_nonce'][0]
-                else:
-                    # OpenID 1.1
-                    nonce = None
+                    nonce = qs['response_nonce'][0]
             else:
-                claimed_id = nonce = None
+                claimed_id = None
                 if not info.has_key('confirm') or info['password'] <> info['confirm']:
                     self.fail("password and confirm don't match", heading='Users')
                     return
@@ -2813,37 +2798,19 @@ class WebUI:
             return self.fail('OpenID login failed: '+qs['openid.error'][0])
         if mode != 'id_res':
             return self.fail('OpenID login failed')
-        session = self.store.get_session_by_handle(qs['openid.assoc_handle'][0])
-        if not session:
-            return self.fail('invalid session')
-        provider, url, stypes, session = session
         try:
-            signed = openid2rp.authenticate(session, qs)
+            signed, claimed_id = openid2rp.verify(qs, self.store.discovered,
+                                                  self.store.find_association,
+                                                  self.store.check_nonce)
         except Exception, e:
             return self.fail('Login failed:'+repr(e))
-        # the claimed ID in the response can't be trusted for signon requests,
-        # as the user may have changed it when getting redirected.
-        # For a signon login, the database has stored the claimed id in the
-        # provider field of the session table.
-        # XXX as the assoc_handle may not be signed, the return_to url should
-        # contain a nonce for 1.1 providers
-        if not openid2rp.is_op_endpoint(stypes):
-            claimed_id = provider
-        elif 'claimed_id' in signed:
-            claimed_id = qs['openid.claimed_id'][0]
-            # Need to perform discovery to verify claimed ID is really managed by provider
-            discovered = openid2rp.discover(claimed_id)
-            if not discovered or discovered[1] != url:
-                return self.fail('Provider %s cannot make assertions about ID %s' % (url, claimed_id))
-        else:
-            return self.fail('Claimed ID got lost. Please report this as a bug.')
+
         if 'response_nonce' in signed:
             nonce = qs['openid.response_nonce'][0]
         else:
             # OpenID 1.1
             nonce = None
-            if 'openid.ns' in qs and qs['openid.ns'][0] == 'http://specs.openid.net/auth/2.0':
-                return self.fail('OpenID 2.0 provider failed to protect against replay attacks')
+
         user = self.store.get_user_by_openid(claimed_id)
         # Three cases: logged-in user claimed some ID,
         # new login, or registration

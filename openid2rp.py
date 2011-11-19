@@ -6,7 +6,7 @@
 # This library implements OpenID Authentication 2.0,
 # in the role of a relying party
 
-import urlparse, urllib, httplib, time, cgi, htmllib, formatter
+import urlparse, urllib, httplib, time, cgi, HTMLParser
 import cStringIO, base64, hmac, hashlib, datetime, re, random
 import itertools, cPickle, sys
 
@@ -26,9 +26,51 @@ except ImportError:
 if sys.version_info < (3,):
     def b(s):
         return s
+    # Convert byte to integer
+    b2i = ord
+    def bytes_from_ints(L):
+        return ''.join([chr(i) for i in L])
 else:
     def b(s):
-        return s.encode('ascii')
+        return s.encode('latin-1')
+    def b2i(char):
+        # 3.x: bytes are already sequences of integers
+        return char
+    bytes_from_ints = bytes
+
+class NotAuthenticated(Exception):
+    CONNECTION_REFUSED = 1
+    DIRECT_VERIFICATION_FAILED = 2
+    CANCELLED = 3
+    UNSUPPORTED_VERSION = 4
+    UNEXPECTED_MODE = 5
+    CLAIMED_ID_MISSING = 6
+    DISCOVERY_FAILED = 7
+    INCONSISTENT_IDS = 8
+    REPLAY_ATTACK = 9
+    MISSING_NONCE = 10
+    msgs = {
+        CONNECTION_REFUSED : 'OP refuses connection with status %d',
+        DIRECT_VERIFICATION_FAILED : 'OP doesn\'t assert that the signature of the verification request is valid',
+        CANCELLED : 'OP did not authenticate user (cancelled)',
+        UNSUPPORTED_VERSION : 'Unsupported OpenID version',
+        UNEXPECTED_MODE : 'Unexpected mode %s',
+        CLAIMED_ID_MISSING : 'Cannot determine claimed ID',
+        DISCOVERY_FAILED : 'Claimed ID %s cannot be rediscovered',
+        INCONSISTENT_IDS : 'Discovered and asserted endpoints differ',
+        REPLAY_ATTACK : 'Replay attack detected',
+        MISSING_NONCE : 'Nonce missing in OpenID 2 response',
+        }
+
+    def __init__(self, errno, *args):
+        msg = self.msgs[errno]
+        if args:
+            msg %= args
+        self.errno = errno
+        Exception.__init__(self, msg, errno, *args)
+
+    def __str__(self):
+        return self.args[0]
 
 def normalize_uri(uri):
     """Normalize an uri according to OpenID section 7.2. Return a pair
@@ -138,24 +180,24 @@ def parse_response(s):
         res[k] = v
     return res
 
-class OpenIDParser(htmllib.HTMLParser):
+class OpenIDParser(HTMLParser.HTMLParser):
     def __init__(self):
-        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        HTMLParser.HTMLParser.__init__(self)
         self.links = {}
         self.xrds_location=None
 
-    def do_link(self, attrs):
-        attrs = dict(attrs)
-        try:
-            self.links[attrs['rel']] = attrs['href']
-        except KeyError:
-            pass
-
-    def do_meta(self, attrs):
-        attrs = dict(attrs)
-        # Yadis 6.2.5 option 1: meta tag
-        if attrs.get('http-equiv','').lower() == 'x-xrds-location':
-            self.xrds_location = attrs['content']
+    def handle_starttag(self, tag, attrs):
+        if tag == 'link':
+            attrs = dict(attrs)
+            try:
+                self.links[attrs['rel']] = attrs['href']
+            except KeyError:
+                pass
+        elif tag == 'meta':
+            attrs = dict(attrs)
+            # Yadis 6.2.5 option 1: meta tag
+            if attrs.get('http-equiv','').lower() == 'x-xrds-location':
+                self.xrds_location = attrs['content']
 
 def _extract_services(doc):
     for svc in doc.findall(".//{xri://$xrd*($v*2.0)}Service"):
@@ -241,7 +283,7 @@ def discover(url):
 
     if content_type in ('text/html', 'application/xhtml+xml'):
         parser = OpenIDParser()
-        parser.feed(data)
+        parser.feed(data.decode('latin-1'))
         parser.close()
         # Yadis 6.2.5 option 1: meta tag
         if parser.xrds_location:
@@ -331,13 +373,13 @@ def btwoc(l):
     res = cPickle.dumps(l, 2)
     # Pickle result: proto 2, long1 (integer < 256 bytes)
     # number of bytes, little-endian integer, stop
-    assert res[:3] == '\x80\x02\x8a' 
+    assert res[:3] == b('\x80\x02\x8a')
     # btwoc ought to produce the shortest representation in two's
     # complement. Fortunately, pickle already does that.
-    return res[3+ord(res[3]):3:-1]
+    return res[3+b2i(res[3]):3:-1]
 
-def unbtwoc(b):
-    return cPickle.loads('\x80\x02\x8a'+chr(len(b))+b[::-1]+'.')
+def unbtwoc(B):
+    return cPickle.loads(b('\x80\x02\x8a')+bytes_from_ints([len(B)])+B[::-1]+(b'.'))
 
 # Appendix B; DH default prime
 dh_prime = """
@@ -351,8 +393,8 @@ dh_prime = long("".join(dh_prime.split()), 16)
 def string_xor(s1, s2):
     res = []
     for c1, c2 in itertools.izip(s1, s2):
-        res.append(chr(ord(c1) ^ ord(c2)))
-    return ''.join(res)
+        res.append(b2i(c1) ^ b2i(c2))
+    return bytes_from_ints(res)
 
 def associate(services, url):
     '''Create an association (OpenID section 8) between RP and OP.
@@ -378,25 +420,25 @@ def associate(services, url):
         if data['openid.session_type'] == "no-encryption":
             data['openid.session_type'] = ''
         del data['openid.ns']
-    res = urllib.urlopen(url, urllib.urlencode(data))
+    res = urllib.urlopen(url, b(urllib.urlencode(data)))
     if res.getcode() != 200:
         raise ValueError, "OpenID provider refuses connection with status %d" % res.getcode()
     data = parse_response(res.read())
     if 'error' in data:
         raise ValueError, "associate failed: "+data['error']
     if url.startswith('http:'):
-        enc_mac_key = data.get('enc_mac_key')
+        enc_mac_key = b(data.get('enc_mac_key'))
         if not enc_mac_key:
             raise ValueError, "Provider protocol error: not using DH-SHA1"
-        enc_mac_key = base64.b64decode(data['enc_mac_key'])
-        dh_server_public = unbtwoc(base64.b64decode(data['dh_server_public']))
+        enc_mac_key = base64.b64decode(enc_mac_key)
+        dh_server_public = unbtwoc(base64.b64decode(b(data['dh_server_public'])))
         # shared secret: sha1(2^(server_priv*priv) mod prime) xor enc_mac_key
         shared_secret = btwoc(pow(dh_server_public, priv, dh_prime))
         shared_secret = hashlib.sha1(shared_secret).digest()
         if len(shared_secret) != len(enc_mac_key):
             raise ValueError, "incorrect DH key size"
         # Fake mac_key result
-        data['mac_key'] = base64.b64encode(string_xor(enc_mac_key, shared_secret))
+        data['mac_key'] = b(base64.b64encode(string_xor(enc_mac_key, shared_secret)))
     return data
 
 class _AX:
@@ -471,10 +513,15 @@ def request_authentication(services, url, assoc_handle, return_to,
         if sreg_opt:
             data['openid.sreg.optional'] =  sreg11['openid.sreg11.optional'] =','.join(sreg_opt)
     if is_compat_1x(services):
+        # OpenID 1.1 does not communicate claimed_ids. Put them into the return URL
+        return_to += '&' if '?' in return_to else '?'
+        return_to += '&openid1=' + urllib.quote(claimed)
+        data['openid.return_to'] = return_to
         del data['openid.ns']
         del data['openid.claimed_id']
         del data['openid.realm']
-        data['openid.trust_root'] = return_to
+        trust_root = urlparse.urlparse(return_to)[:3] + (None,None,None)
+        data['openid.trust_root'] = urlparse.urlunparse(trust_root)
     ax_req, ax_opt = ax
     if "http://openid.net/srv/ax/1.0" in services and (ax_req or ax_opt):
         data.update({
@@ -497,8 +544,20 @@ def request_authentication(services, url, assoc_handle, return_to,
     else:
         return url+"?"+urllib.urlencode(data)
 
-class NotAuthenticated(Exception):
-    pass
+# 11.4.2 Verifying Directly with the OpenID Provider
+def verify_signature_directly(op_endpoint, response):
+    '''Request that the OP verify the signature via Direct Verification'''
+
+    request = [('openid.mode', 'check_authentication')]
+    # Exact copies of all fields from the authentication response, except for
+    # "openid.mode"
+    request.extend((k, v) for k, (v,) in response.items() if 'openid.mode' != k)
+    res = urllib.urlopen(op_endpoint, urllib.urlencode(request))
+    if 200 != res.getcode():
+        raise NotAuthenticated(NotAuthenticated.CONNECTION_REFUSED, res.getcode())
+    response = parse_response(res.read())
+    if 'true' != response['is_valid']:
+        raise NotAuthenticated(NotAuthenticated.DIRECT_VERIFICATION_FAILED)
 
 def _prepare_response(response):
     if isinstance(response, str):
@@ -529,7 +588,7 @@ def authenticate(session, response):
     if session['assoc_handle'] != response['openid.assoc_handle'][0]:
         raise ValueError('incorrect session')
     if response['openid.mode'][0] == 'cancel':
-        raise NotAuthenticated('provider did not authenticate user (cancelled)')
+        raise NotAuthenticated(NotAuthenticated.CANCELLED)
     if response['openid.mode'][0] != 'id_res':
         raise ValueError('invalid openid.mode')
     if  'openid.identity' not in response:
@@ -547,7 +606,7 @@ def authenticate(session, response):
         query.append(value)
     query = b('').join(query)
 
-    mac_key = base64.decodestring(b(session['mac_key']))
+    mac_key = base64.decodestring(session['mac_key'])
     transmitted_sig = base64.decodestring(b(response['openid.sig'][0]))
     computed_sig = hmac.new(mac_key, query, hashlib.sha1).digest()
 
@@ -568,6 +627,69 @@ def authenticate(session, response):
             raise ValueError, "Critical field missing in signature"
 
     return signed
+
+def verify(response, discovery_cache, find_association, nonce_seen):
+    response = _prepare_response(response)
+    if 'openid.ns' in response:
+        ns = response['openid.ns'][0]
+        if ns != 'http://specs.openid.net/auth/2.0':
+            raise NotAuthenticated(NotAuthenticate.UNSUPPORTED_VERSION)
+    else:
+        ns = None
+    mode = response['openid.mode'][0]
+    if mode == 'cancel':
+        raise NotAuthenticated(NotAuthenticated.CANCELLED)
+    if mode != 'id_res':
+        raise NotAuthenticated(NotAuthenticated.UNEXPECTED_MODE, mode)
+    # Establish claimed ID
+    if 'openid.claimed_id' in response:
+        claimed_id = response['openid.claimed_id'][0]
+        # 11.2. Drop Fragment from claimed_id
+        fragment = claimed_id.find('#')
+        if fragment != -1:
+            claimed_id = claimed_id[:fragment]
+    elif 'openid1' in response:
+        claimed_id = response['openid1'][0]
+    else:
+        raise NotAuthenticated(NotAuthenticated.CLAIMED_ID_MISSING)
+    discovered = discovery_cache(claimed_id)
+    if not discovered:
+        discovered = discover(claimed_id)
+        if not discovered:
+            raise NotAuthenticated(NotAuthenticated.DISCOVERY_FAILED, claimed_id)
+    services, op_endpoint, op_local = discovered
+    # For a provider-allocated claimed_id, there will be no op_local ID,
+    # and there is no point checking it.
+    if op_local and op_local != response['openid.identity'][0]:
+        raise NotAuthenticated('Discovered and asserted local identifiers differ')
+    # For OpenID 1.1, op_endpoint may not be included in the response
+    if ('openid.op_endpoint' in response and
+        op_endpoint != response['openid.op_endpoint'][0]):
+        raise NotAuthenticated(NotAuthenticated.INCONSISTENT_IDS)
+    # XXX verify protocol version, verify claimed_id wrt. original request,
+    # verify return_to URL
+    
+    # verify the signature
+    assoc_handle = response['openid.assoc_handle'][0]
+    session = find_association(assoc_handle)
+    if session:
+        signed = authenticate(session, response)
+    else:
+        verify_signature_directly(op_endpoint, response)
+        signed = response['openid.signed'][0].split(',')
+
+    # Check the nonce. OpenID 1.1 doesn't have them
+    if 'openid.response_nonce' in response:
+        nonce = response['openid.response_nonce'][0]
+        timestamp = parse_nonce(nonce)
+        if (datetime.datetime.utcnow() - timestamp).total_seconds() > 10:
+            # allow for at most 10s transmission time and time shift
+            raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
+        if nonce_seen(nonce):
+            raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
+    elif ns:
+        raise NotAuthenticated(NotAuthenticated.MISSING_NONCE)
+    return signed, claimed_id
 
 def parse_nonce(nonce):
     '''Extract a datetime.datetime stamp from the nonce'''

@@ -3,6 +3,7 @@
 import sys, os, re, time, hashlib, random, types, math, stat, errno
 import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
 from collections import defaultdict
+import cPickle as pickle
 try:
     import psycopg2
 except ImportError:
@@ -198,6 +199,12 @@ def safe_execute(cursor, sql, params=None):
         else:
             safe_params.append(param)
     return cursor.execute(sql, safe_params)
+
+def binary(cursor, bytes):
+    if isinstance(cursor, sqlite3_cursor):
+        # XXX is this correct?
+        return bytes
+    return psycopg2.Binary(bytes)
 
 class StorageError(Exception):
     pass
@@ -1826,50 +1833,69 @@ class Store:
 
     # OpenID
 
+    def store_discovered(self, url, services, op_endpoint, op_local):
+        cursor = self.get_cursor()
+        sql = '''delete from openid_discovered where url = %s'''
+        safe_execute(cursor, sql, (url,))
+        services = binary(cursor, pickle.dumps(services, pickle.HIGHEST_PROTOCOL))
+        sql = '''insert into openid_discovered(created, url, services, op_endpoint, op_local)
+        values(%s, %s, %s, %s, %s)'''
+        now = datetime.datetime.now()
+        safe_execute(cursor, sql, (now, url, services, op_endpoint, op_local))
+
+    def discovered(self, url):
+        cursor = self.get_cursor()
+        sql = '''select services, op_endpoint, op_local from openid_discovered where url=%s'''
+        safe_execute(cursor, sql, (url,))
+        result = cursor.fetchall()
+        if result:
+            services, endpoint, local = result[0]
+            services = pickle.loads(str(services))
+            return services, endpoint, local
+        else:
+            return None
+
     def get_provider_session(self, provider):
         cursor = self.get_cursor()
+        # discover service URL, possibly from cache
+        res = self.discovered(provider[2])
+        if not res:
+            res = openid2rp.discover(provider[2])
+            assert res
+            self.store_discovered(provider[2], *res)
+        stypes, url, op_local = res
         # Check for existing session
-        sql = '''select id,url, assoc_handle from openid_sessions
-                 where provider=%s and expires>current_timestamp'''
-        safe_execute(cursor, sql, (provider[0],))
+        sql = '''select assoc_handle from openid_sessions
+                 where url=%s and expires>current_timestamp'''
+        safe_execute(cursor, sql, (url,))
         sessions = cursor.fetchall()
         if sessions:
-            id, url, assoc_handle = sessions[0]
-            safe_execute(cursor, 'select stype from openid_stypes where id=%s',
-                         (id,))
-            stypes = [t[0] for t in cursor.fetchall()]
+            assoc_handle = sessions[0][0]
             return stypes, url, assoc_handle
 
         # start from scratch:
-        # discover service URL
-        stypes, url, op_local = openid2rp.discover(provider[2])
         # associate session
         now = datetime.datetime.now()
         session = openid2rp.associate(stypes, url)
         # store it
         sql = '''insert into openid_sessions
-                 (provider, url, assoc_handle, expires, mac_key)
-                 values (%s, %s, %s, %s, %s)'''
-        safe_execute(cursor, sql, (provider[0], url,
+                 (url, assoc_handle, expires, mac_key)
+                 values (%s, %s, %s, %s)'''
+        safe_execute(cursor, sql, (url,
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
                                    session['mac_key']))
-        safe_execute(cursor, 'select %s' % self.last_id('openid_sessions'))
-        session_id = cursor.fetchone()[0]
-        for t in stypes:
-            safe_execute(cursor, '''insert into openid_stypes(id, stype)
-                                    values(%s, %s)''', (session_id, t))
         return stypes, url, session['assoc_handle']
 
-    def get_session_for_endpoint(self, claimed, stypes, endpoint):
+    def get_session_for_endpoint(self, endpoint, stypes):
         '''Return the assoc_handle for the a claimed ID/endpoint pair;
         create a new session if necessary. Discovery is supposed to be
         done by the caller.'''
         cursor = self.get_cursor()
         # Check for existing session
         sql = '''select assoc_handle from openid_sessions
-                 where provider=%s and url=%s and expires>current_timestamp'''
-        safe_execute(cursor, sql, (claimed, endpoint,))
+                 where url=%s and expires>current_timestamp'''
+        safe_execute(cursor, sql, (endpoint,))
         sessions = cursor.fetchall()
         if sessions:
             return sessions[0][0]
@@ -1879,34 +1905,26 @@ class Store:
         session = openid2rp.associate(stypes, endpoint)
         # store it
         sql = '''insert into openid_sessions
-                 (provider, url, assoc_handle, expires, mac_key)
+                 (url, assoc_handle, expires, mac_key)
                  values (%s, %s, %s, %s, %s)'''
-        safe_execute(cursor, sql, (claimed, endpoint,
+        safe_execute(cursor, sql, (endpoint,
                                    session['assoc_handle'],
                                    now+datetime.timedelta(0,int(session['expires_in'])),
                                    session['mac_key']))
         safe_execute(cursor, 'select %s' % self.last_id('openid_sessions'))
         session_id = cursor.fetchone()[0]
-        # store stypes as well, so we can remember whether claimed is an OP ID or a user ID
-        for t in stypes:
-            safe_execute(cursor, '''insert into openid_stypes(id, stype)
-                                    values(%s, %s)''', (session_id, t))
         return session['assoc_handle']
 
-    def get_session_by_handle(self, assoc_handle):
+    def find_association(self, assoc_handle):
         cursor = self.get_cursor()
-        sql = 'select id, provider, url, mac_key from openid_sessions where assoc_handle=%s'
+        sql ='select mac_key from openid_sessions where assoc_handle=%s'
         safe_execute(cursor, sql, (assoc_handle,))
         sessions = cursor.fetchall()
         if sessions:
-            id, provider, url, mac_key = sessions[0]
-            safe_execute(cursor, 'select stype from openid_stypes where id=%s',
-                         (id,))
-            stypes = [t[0] for t in cursor.fetchall()]
-            return provider, url, stypes, {'assoc_handle':assoc_handle, 'mac_key':mac_key}
+            return {'assoc_handle':assoc_handle, 'mac_key':sessions[0][0]}
         return None
 
-    def duplicate_nonce(self, nonce):
+    def duplicate_nonce(self, nonce, checkonly = False):
         '''Return true if we might have seen this nonce before.'''
         stamp = openid2rp.parse_nonce(nonce)
         utc = calendar.timegm(stamp.utctimetuple())
@@ -1919,9 +1937,13 @@ class Store:
                      (nonce,))
         if cursor.fetchone():
             return True
-        safe_execute(cursor, '''insert into openid_nonces(created, nonce)
-                                values(%s,%s)''', (stamp, nonce))
+        if not checkonly:
+            safe_execute(cursor, '''insert into openid_nonces(created, nonce)
+            values(%s,%s)''', (stamp, nonce))
         return False
+
+    def check_nonce(self, nonce):
+        return self.duplicate_nonce(nonce, checkonly=True)
 
     def associate_openid(self, username, openid):
         cursor = self.get_cursor()

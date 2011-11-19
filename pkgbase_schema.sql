@@ -16,6 +16,14 @@ CREATE TABLE openids (
    name TEXT REFERENCES users ON DELETE CASCADE
 );
 
+CREATE TABLE openid_discovered (
+    created TIMESTAMP,
+    url TEXT PRIMARY KEY,
+    services BYTEA,
+    op_endpoint TEXT,
+    op_local TEXT
+);
+
 CREATE TABLE openid_sessions (
    id SERIAL PRIMARY KEY,
    provider TEXT,
