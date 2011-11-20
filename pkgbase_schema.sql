@@ -293,4 +293,25 @@ CREATE TABLE openid_whitelist
   CONSTRAINT openid_whitelist__pkey PRIMARY KEY (name, trust_root)
 );
 
+-- tables for the python-openid library, using default table names
+CREATE TABLE oid_nonces
+(
+   server_url VARCHAR(2047) NOT NULL,
+   timestamp INTEGER NOT NULL,
+   salt CHAR(40) NOT NULL,
+   PRIMARY KEY (server_url, timestamp, salt)
+);
+
+CREATE TABLE oid_associations
+(
+   server_url VARCHAR(2047) NOT NULL,
+   handle VARCHAR(255) NOT NULL,
+   secret BYTEA NOT NULL,
+   issued INTEGER NOT NULL,
+   lifetime INTEGER NOT NULL,
+   assoc_type VARCHAR(64) NOT NULL,
+   PRIMARY KEY (server_url, handle),
+   CONSTRAINT secret_length_constraint CHECK (LENGTH(secret) <= 128)
+);
+
 commit;

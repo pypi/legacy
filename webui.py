@@ -29,7 +29,6 @@ urllib.URLopener.open_https = orig
 # OpenId provider imports
 OPENID_FILESTORE = '/tmp/openid-filestore' 
 
-from openid.store.filestore import FileOpenIDStore
 from openid.server import server as OpenIDServer
 
 # local imports
@@ -218,8 +217,6 @@ class WebUI:
         self.loggedin = False      # was a valid cookie sent?
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
-        op_endpoint = "%s?:action=openid_endpoint" % (self.config.url,)
-        self.oid_server = OpenIDServer.Server(FileOpenIDStore(OPENID_FILESTORE), op_endpoint=op_endpoint)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -269,6 +266,8 @@ class WebUI:
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
+                op_endpoint = "%s?:action=openid_endpoint" % (self.config.url,)
+                self.oid_server = OpenIDServer.Server(self.store.oid_store(), op_endpoint=op_endpoint)
                 self.inner_run()
             except NotFound, err:
                 self.fail('Not Found (%s)' % err, code=404)

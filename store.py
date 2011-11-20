@@ -20,6 +20,7 @@ from mini_pkg_resources import safe_name
 # csrf modules
 import hmac
 from base64 import b64encode
+import openid.store.sqlstore
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -2018,6 +2019,11 @@ class Store:
             self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
+
+    def oid_store(self):
+        if self.config.database_driver == 'sqlite3':
+            return openid.store.sqlstore.SQLiteStore(self._conn)
+        return openid.store.sqlstore.PostgreSQLStore(self._conn)
 
     def force_close(self):
         '''Force closure of the current persistent connection.
