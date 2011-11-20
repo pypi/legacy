@@ -2970,7 +2970,8 @@ class WebUI:
             return
         if orequest.mode in ['checkid_immediate', 'checkid_setup']:
             if self.openid_is_authorized(orequest):
-                return self.openid_response(orequest.answer(True))
+                answer = orequest.answer(True, identity=self.openid_user_url())
+                return self.openid_response(answer)
             elif orequest.immediate:
                 return self.openid_response(orequest.answer(False))
             else:
@@ -3058,7 +3059,7 @@ class WebUI:
         if not self.authenticated:
             return False
         if identity == 'http://specs.openid.net/auth/2.0/identifier_select':
-            return False
+            identity = self.openid_user_url()
         id_prefix = self.config.scheme_host + "/id/"
         if not identity.startswith(id_prefix):
             return False
@@ -3069,8 +3070,7 @@ class WebUI:
             else:
                 return False
         # identity is not owned by user so decline the request
-        answer = orequest.answer(False)
-        self.openid_response(answer)
+        return False
 
     def openid_user_url(self):
         if self.authenticated:
