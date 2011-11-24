@@ -533,6 +533,7 @@ class WebUI:
                 items = path.decode('utf-8').split('/')[1:]
             except UnicodeError:
                 raise NotFound(path + " is not UTF-8 encoded")
+            action = None
             if path == '/':
                 self.form['name'] = ''
                 action = 'index'
@@ -544,6 +545,8 @@ class WebUI:
                 action = 'display'
             if len(items) == 3 and items[2]:
                 action = self.form[':action'] = items[2]
+            if not action:
+                raise NotFound
         else:
             action = 'home'
 
