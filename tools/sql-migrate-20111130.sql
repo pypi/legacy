@@ -8,5 +8,17 @@ alter table roles add foreign key (user_name) references users (name) on update 
 end;
 begin;
 alter table cookies drop constraint cookies_name_fkey;
-alter table cookies add foreign key (name) references users (name) on update cascade;
+alter table cookies add foreign key (name) references users (name) on update cascade on delete cascade;
+end;
+begin;
+alter table openids drop constraint openids_name_fkey;
+alter table openids add foreign key (name) references users (name) on update cascade on delete cascade;
+end;
+begin;
+alter table sshkeys drop constraint sshkeys_name_fkey;
+alter table sshkeys add foreign key (name) references users (name) on update cascade on delete cascade;
+end;
+begin;
+alter table csrf_tokens drop constraint csrf_tokens_name_fkey;
+alter table csrf_tokens add foreign key (name) references users (name) on update cascade on delete cascade;
 end;
