@@ -13,7 +13,7 @@ CREATE INDEX users_email_idx ON users(email);
 
 CREATE TABLE openids (
    id TEXT PRIMARY KEY,
-   name TEXT REFERENCES users ON DELETE CASCADE
+   name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE openid_discovered (
@@ -41,20 +41,21 @@ CREATE INDEX openid_nonces_nonce ON openid_nonces(nonce);
 
 CREATE TABLE cookies (
     cookie text PRIMARY KEY,
-    name text references users,
+    name text references users ON UPDATE CASCADE ON DELETE CASCADE,
     last_seen timestamp
 );
 CREATE INDEX cookies_last_seen ON cookies(last_seen);
 
 CREATE TABLE sshkeys(
    id SERIAL PRIMARY KEY,
-   name TEXT REFERENCES users ON DELETE CASCADE,
+   name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
    key TEXT
 );
 CREATE INDEX sshkeys_name ON sshkeys(name);
 
 -- Table structure for table: rego_otk
 CREATE TABLE rego_otk (
+   -- not cascading: rego_otk will have to expire to allow user name changes
    name TEXT REFERENCES users,
    otk TEXT UNIQUE,
    date TIMESTAMP );
@@ -67,7 +68,8 @@ CREATE TABLE journals (
    version TEXT,
    action TEXT,
    submitted_date TIMESTAMP,
-   submitted_by TEXT REFERENCES users,
+   -- no cascaded delete: need to check whether journal has useful information
+   submitted_by TEXT REFERENCES users ON UPDATE CASCADED,
    submitted_from TEXT
 );
 CREATE INDEX journals_name_idx ON journals(name);
@@ -219,7 +221,8 @@ CREATE INDEX description_urls_name_version_idx ON description_urls(name, version
 -- Note: roles are Maintainer, Admin, Owner
 CREATE TABLE roles (
    role_name TEXT,
-   user_name TEXT REFERENCES users,
+   -- no cascaded delete: user needs to drop all roles explicitly
+   user_name TEXT REFERENCES users ON UPDATE CASCADE,
    package_name TEXT REFERENCES packages ON UPDATE CASCADE
 );
 CREATE INDEX roles_pack_name_idx ON roles(package_name);
@@ -279,7 +282,7 @@ CREATE TABLE comments_journal(
 );
 
 CREATE TABLE csrf_tokens (
-  name     text REFERENCES users(name) ON DELETE CASCADE,
+  name     text REFERENCES users(name) ON UPDATE CASCADE ON DELETE CASCADE,
   token    text,
   end_date timestamp without time zone,
   PRIMARY KEY(name)
