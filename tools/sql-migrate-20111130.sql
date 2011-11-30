@@ -6,3 +6,7 @@ begin;
 alter table roles drop constraint "$1";
 alter table roles add foreign key (user_name) references users (name) on update cascade;
 end;
+begin;
+alter table cookies drop constraint cookies_name_fkey;
+alter table cookies add foreign key (name) references users (name) on update cascade;
+end;
