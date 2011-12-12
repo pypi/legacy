@@ -705,6 +705,15 @@ class Store:
             ' order by classifier')
         return Result(None, cursor.fetchall(), self._Classifiers)
 
+    _ClassifierID = FastResultRow('classifier id')
+    def get_classifier_ids(self, classifiers):
+        '''Map list of classifiers to classifier IDs'''
+        cursor = self.get_cursor()
+        placeholders = ','.join(['%s'] * len(classifiers))
+        safe_execute(cursor, 'select classifier, id from trove_classifiers '
+           'where classifier in (%s)' % placeholders, classifiers)
+        return dict(cursor.fetchall())
+
     _Release_Classifiers = FastResultRow('classifier trove_id!')
     def get_release_classifiers(self, name, version):
         ''' Fetch the list of classifiers for the release.

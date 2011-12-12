@@ -21,6 +21,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(release_data)
         self.register_function(release_data, name='package_data') # Deprecated
         self.register_function(search)
+        self.register_function(browse)
         self.register_function(updated_releases)
         self.register_function(changelog)
         self.register_function(changed_packages)
@@ -118,6 +119,19 @@ package_data = release_data     # "deprecated"
 def search(store, spec, operator='and'):
     spec['_pypi_hidden'] = 'FALSE'
     return [row.as_dict() for row in store.query_packages(spec, operator)]
+
+def browse(store, categories):
+    if not isinstance(categories, list):
+        raise TypeError, "Parameter categories must be a list"
+    classifier_ids = store.get_classifier_ids(categories)
+    print classifier_ids
+    if len(classifier_ids) != len(categories):
+        for c in categories:
+            if c not in classifier_ids:
+                raise ValueError, 'Unknown category "%s"' % c
+    ids = classifier_ids.values()
+    packages, tally = store.browse(ids)
+    return [(name, version) for name, version, desc in packages]
 
 def updated_releases(store, since):
     result = store.updated_releases(since)
