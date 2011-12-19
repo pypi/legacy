@@ -8,7 +8,7 @@ from distutils2.metadata import DistributionMetadata
 try:
     import json
 except ImportError:
-    import simplejson as json    
+    import simplejson as json
 try:
     import psycopg2
     OperationalError = psycopg2.OperationalError
@@ -27,7 +27,7 @@ from M2Crypto import EVP, DSA
 urllib.URLopener.open_https = orig
 
 # OpenId provider imports
-OPENID_FILESTORE = '/tmp/openid-filestore' 
+OPENID_FILESTORE = '/tmp/openid-filestore'
 
 from openid.server import server as OpenIDServer
 
@@ -369,7 +369,7 @@ class WebUI:
                         line = temp[index]
                     # count spaces to align entry nicely
                     spaces = len(line.lstrip()) - len(line)
-                    temp[index] = "\n".join((line, ' ' * spaces + token)) 
+                    temp[index] = "\n".join((line, ' ' * spaces + token))
                 content = '\n'.join(temp)
             except IndexError:
                 # this should not happen with correct HTML syntax
@@ -1091,7 +1091,7 @@ class WebUI:
             else:
                 l = self.store.get_latest_release(name, hidden=False)
                 try:
-                    version = l[-1][1]
+                    version = l[0][1]
                 except IndexError:
                     raise NotFound, 'no releases'
         info = self.store.get_package(name, version)
@@ -1187,7 +1187,7 @@ class WebUI:
         self.handler.set_content_type('application/json; charset="UTF-8"')
         #filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
         #    version.encode('ascii', 'replace'))
-        #self.handler.send_header('Content-Disposition', 
+        #self.handler.send_header('Content-Disposition',
         #    'attachment; filename=%s'%filename)
         self.handler.send_header('Content-Disposition', 'inline')
         self.handler.end_headers()
@@ -1337,7 +1337,7 @@ class WebUI:
         info = self.store.get_package(name, version)
         if not info:
             raise NotFound
-        return info, latest_version        
+        return info, latest_version
 
     def display(self, name=None, version=None, ok_message=None,
             error_message=None):
@@ -1384,7 +1384,7 @@ class WebUI:
                 column = column[:-3]
                 value = self.store.get_cheesecake_index(int(value))
             elif column == 'bugtrack_url':
-                bugtrack_url = value 
+                bugtrack_url = value
             value = info[column]
             release[column] = value
 
@@ -2958,7 +2958,7 @@ class WebUI:
         self.handler.send_header("Content-length", str(len(payload)))
         self.handler.end_headers()
         self.handler.wfile.write(payload)
-    
+
     def openid_endpoint(self):
         """Handle OpenID requests"""
         orequest = self.oid_server.decodeRequest(self.form)
@@ -2982,7 +2982,7 @@ class WebUI:
             self.openid_response(self.oid_server.handleRequest(orequest))
         else:
             raise OpenIDError, "Unknown mode: %s" % orequest.mode
-                
+
     def openid_decide_page(self, orequest):
         """
         The page that asks the user if they really want to trust this trust_root
@@ -2995,12 +2995,12 @@ class WebUI:
             self.write_template('openid_notloggedin.pt',
                                 title="OpenID login attempt")
             return
-        
+
         if orequest.identity == "http://specs.openid.net/auth/2.0/identifier_select":
             pending_id = self.openid_user_url()
         else:
             pending_id = orequest.identity
-            
+
         orequest_args=orequest.message.toPostArgs()
         del orequest_args[':action']
         # They are logged in - ask if they want to trust this root
@@ -3012,17 +3012,17 @@ class WebUI:
                             return_to=orequest.return_to,
                             trust_root=orequest.trust_root,
                             pending_id = pending_id)
-        
+
     def openid_decide_post(self):
         """Handle POST request from decide form"""
         if self.env['REQUEST_METHOD'] != "POST":
             raise OpenIDError, "OpenID request must be a POST"
-        
+
         from openid.message import Message
         del self.form[':action']
         message = Message.fromPostArgs(self.form)
         orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
-        
+
         if self.form.has_key('allow'):
             answer = orequest.answer(True, identity=self.openid_user_url())
             return self.openid_response(answer)
@@ -3036,7 +3036,7 @@ class WebUI:
             return self.openid_response(answer)
         else:
             raise OpenIDError, "OpenID post request failure"
-        
+
     def openid_response(self, oresponse):
         """Convert a webresponse from the OpenID library into a
         WebUI http response"""
@@ -3045,13 +3045,13 @@ class WebUI:
             raise Redirect, str(webresponse.headers['location'])
         elif webresponse.code == 302:
             raise RedirectFound, str(webresponse.headers['location'])
-            
+
         self.handler.send_response(webresponse.code)
         for key, value in webresponse.headers.items():
             self.handler.send_header(key, str(value))
         self.handler.end_headers()
         self.handler.wfile.write(webresponse.body)
- 
+
     def openid_is_authorized(self, orequest):
         """
         This should check that they own the given identity,
