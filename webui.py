@@ -567,7 +567,7 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
-        rss_regen openid_endpoint openid_decide_post'''.split():
+        rss_regen openid_endpoint openid_decide_post packages_rss'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
