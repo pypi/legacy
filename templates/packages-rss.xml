@@ -10,7 +10,7 @@
   <language>en</language>
 
   <item tal:repeat="release app/store/latest_packages">
-    <title tal:content="${release/name} added to PyPI" />
+    <title tal:content="string:${release/name} added to PyPI" />
     <link tal:content="python:'http://pypi.python.org%s'%app.packageURL(release['name'], None)" />
     <guid tal:content="python:'http://pypi.python.org%s'%app.packageURL(release['name'], None)" />
     <description tal:content="release/summary" />
