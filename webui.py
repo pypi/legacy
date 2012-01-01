@@ -333,7 +333,7 @@ class WebUI:
     error_message = None
     ok_message = None
 
-    def write_template(self, filename, **options):
+    def write_template(self, filename, headers={}, **options):
         context = {}
         options.setdefault('norobots', False)
         options.setdefault('keywords', 'python programming language object'
@@ -384,6 +384,8 @@ class WebUI:
         if self.usercookie:
             self.handler.send_header('Set-Cookie',
                                      'pypi='+self.usercookie+';path='+self.url_path)
+        for k,v in headers.items():
+            self.handler.send_header(k, v)
         self.handler.end_headers()
         self.wfile.write(content.encode('utf-8'))
 
@@ -721,7 +723,8 @@ class WebUI:
             return self.openid_user(path)
 
     def home(self, nav_current='home'):
-        self.write_template('home.pt', title='PyPI - the Python Package Index')
+        self.write_template('home.pt', title='PyPI - the Python Package Index',
+                            headers={'X-XRDS-Location':self.url_machine+'/id'})
 
     def about(self, nav_current='home'):
         self.write_template('about.pt', title='About PyPI')
