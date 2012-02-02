@@ -73,18 +73,18 @@
                 <tal:for-nav repeat="link app/navlinks_html">
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
-		<li><a href="/pypi?:action=browse&amp;c=533&amp;show=all">Python 3 packages</a></li>
+		<li><a href="/pypi?:action=browse&amp;c=533&amp;show=all">Python 3 Packages</a></li>
 
                 <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">PyPI Tutorial</a></li>
 
                 <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">PyPI
-                support</a></li>
+                Support</a></li>
                 <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">PyPI
-                Bug reports</a></li>
-                <li><a href="http://www.python.org/sigs/catalog-sig/">PyPI discussion</a></li>
+                Bug Reports</a></li>
+                <li><a href="http://www.python.org/sigs/catalog-sig/">PyPI Discussion</a></li>
                 <li><a
                 href="http://wiki.python.org/moin/CheeseShopDev">PyPI
-                Developer info</a></li>
+                Developer Info</a></li>
               </ul>
 
             </li>
