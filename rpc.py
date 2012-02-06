@@ -113,6 +113,7 @@ def release_data(store, package_name, version):
     info['package_url'] = 'http://pypi.python.org/pypi/%s' % package_name
     info['release_url'] = 'http://pypi.python.org/pypi/%s/%s' % (package_name,
         version)
+    info['docs_url'] = store.docs_url(package_name)
     return info
 package_data = release_data     # "deprecated"
 

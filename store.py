@@ -536,8 +536,8 @@ class Store:
 
     _Package = FastResultRow('''name stable_version version author author_email
             maintainer maintainer_email home_page license summary description
-            description_html keywords platform requires_python download_url 
-            _pypi_ordering! _pypi_hidden! cheesecake_installability_id! 
+            description_html keywords platform requires_python download_url
+            _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
             cheesecake_documentation_id! cheesecake_code_kwalitee_id! bugtrack_url!''')
     def get_package(self, name, version):
         ''' Retrieve info about the package from the database.
@@ -549,7 +549,7 @@ class Store:
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, description_html, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
-                  _pypi_hidden, 
+                  _pypi_hidden,
                   cheesecake_installability_id,
                   cheesecake_documentation_id,
                   cheesecake_code_kwalitee_id, bugtrack_url
@@ -731,7 +731,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         safe_execute(cursor, '''select specifier from release_dependencies where
-            name=%s and version=%s and kind=%s''', (name, version, 
+            name=%s and version=%s and kind=%s''', (name, version,
                                                     getattr(dependency, relationship)))
         return Result(None, cursor.fetchall(), self._Release_Relationships)
 
@@ -749,7 +749,7 @@ class Store:
         safe_execute(cursor, '''select filename, downloads from release_files where
            name=%s and version=%s''', (name, version))
         return cursor.fetchall()
-        
+
     _Package_Roles = FastResultRow('role_name package_name')
     def get_user_packages(self, name):
         '''Fetch all packages and roles associated to user.'''
@@ -757,7 +757,7 @@ class Store:
         safe_execute(cursor, '''select role_name, package_name from roles where
            user_name=%s''', (name,))
         return Result(None, cursor.fetchall(), self._Package_Roles)
-    
+
     _Package_Roles = FastResultRow('role_name user_name')
     def get_package_roles(self, name):
         ''' Fetch the list of Roles for the package.
@@ -1488,7 +1488,7 @@ class Store:
         safe_execute(cursor,
                      '''delete from cookies where name=%s''',
                      (user,))
-        # every other reference should either be cascading, 
+        # every other reference should either be cascading,
         # or it's a bug to break it
 
         # delete user account itself
@@ -1723,6 +1723,18 @@ class Store:
                                               self.username,
                                               self.userip))
 
+    def docs_url(self, name):
+        '''Determine the local (packages.python.org) documentation URL, if any.
+
+        Returns the URL or '' if there are no docs.
+        '''
+        for sub in [[], ['html']]:
+            path = [self.config.database_docs_dir,
+                name.encode('utf8')] + sub + ['index.html']
+            if os.path.exists(os.path.join(*path)):
+                return '/'.join(['http://packages.python.org', name] + sub)
+        return ''
+
     def update_upload_times(self):
         cursor = self.get_cursor()
         safe_execute(cursor,
@@ -1799,7 +1811,7 @@ class Store:
         safe_execute(cursor, 'delete from cookies where cookie=%s', (cookie,))
 
     # CSRF Protection
-    
+
     def get_token(self, username):
         '''Return csrf current token for user.'''
         cursor = self.get_cursor()
@@ -1810,7 +1822,7 @@ class Store:
         if not token:
             return self.create_token(username)
         return token[0][0]
-    
+
     def create_token(self, username):
         '''Create and return a new csrf token for user.'''
         alphanum = string.ascii_letters + string.digits
@@ -1824,7 +1836,7 @@ class Store:
             # no cookie, make one
             cookie = ''.join(random.choice(alphanum) for i in range(10))
 
-        # create random data 
+        # create random data
         rand = [random.choice(alphanum) for i in range(12)]
         rand.append(str(int(time.time())))
         rand.append(cookie)
@@ -1837,7 +1849,7 @@ class Store:
         safe_execute(cursor, 'delete from csrf_tokens where name=%s', (username,))
         sql = '''insert into csrf_tokens values(%s, %s,
                  NOW()+interval \'15 minutes\')'''
-        safe_execute(cursor, sql, (username, rand)) 
+        safe_execute(cursor, sql, (username, rand))
 
         return rand
 
@@ -1974,7 +1986,7 @@ class Store:
             safe_execute(cursor, '''insert into openid_whitelist(
                      name, trust_root, created) values(%s,%s,%s)''',
                      (username, trusted_root, now))
-    
+
     def check_openid_trustedroot(self, username, trusted_root):
         """Check trusted_root is in user's whitelist"""
         cursor = self.get_cursor()
@@ -1985,7 +1997,7 @@ class Store:
             return True
         else:
             return False
-    
+
     def log_keyrotate(self):
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())

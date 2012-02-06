@@ -1424,12 +1424,7 @@ class WebUI:
         project_url = self.store.get_package_project_url(name, version)
         requires_external = self.store.get_package_requires_external(name, version)
 
-        docs = ''
-        for sub in [[], ['html']]:
-            path = [self.config.database_docs_dir, name.encode('utf8')] + sub + ['index.html']
-            if os.path.exists(os.path.join(*path)):
-                docs = '/'.join(['http://packages.python.org', name] + sub)
-
+        docs = self.store.docs_url(name)
         files = self.store.list_files(name, version)
 
         self.write_template('display.pt',
