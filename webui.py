@@ -2196,15 +2196,19 @@ class WebUI:
                 "You are not allowed to edit '%s' package information"%name
 
         # verify the release exists
-        if not self.store.has_release(name, version):
+        if self.store.has_release(name, version):
+            release_metadata = self.store.get_package(name, version)
+            has_description = release_metadata['description']
+        else:
             # auto-register the release...
-            data = self.form_metadata()
+            release_metadata = self.form_metadata()
+            has_description = release_metadata.get('description')
             try:
-                self.validate_metadata(data)
+                self.validate_metadata(release_metadata)
             except ValueError, message:
                 raise FormError, message
-            data['_pypi_hidden'] = False
-            self.store.store_package(name, version, data)
+            release_metadata['_pypi_hidden'] = False
+            self.store.store_package(name, version, release_metadata)
             self.store.changed()
 
         # verify we have enough information
@@ -2285,6 +2289,15 @@ class WebUI:
         # Check whether signature is ASCII-armored
         if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
             raise FormError, "signature is not ASCII-armored"
+
+        # Determine whether we could use a README to fill out a missing
+        # description
+        if not has_description:
+            desc_text, desc_html = extractPackageReadme(content,
+                filename, filetype)
+            if desc_text:
+                self.store.set_description(name, version, desc_text, desc_html,
+                    from_readme=True)
 
         # digest content
         m = hashlib.md5()

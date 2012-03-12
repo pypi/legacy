@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, time, hashlib, random, types, math, stat, errno
-import logging, cStringIO, string, datetime, calendar, binascii, urllib2, cgi
+import logging, string, datetime, calendar, binascii, urllib2, cgi
 from collections import defaultdict
 import cPickle as pickle
 try:
@@ -17,6 +17,7 @@ from xml.parsers import expat
 from distutils.version import LooseVersion
 import trove, openid2rp
 from mini_pkg_resources import safe_name
+from description_utils import processDescription
 # csrf modules
 import hmac
 from base64 import b64encode
@@ -777,6 +778,14 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
+
+    def set_description(self, name, version, desc_text, desc_html,
+            from_readme=False):
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''update releases set description=%s,
+            description_html=%s, description_from_readme=%s where name=%s
+            and version=%s''', [desc_text, desc_html, from_readme, name,
+            version])
 
     def _get_package_url(self, name):
         name = name.split()[0]
@@ -2113,53 +2122,6 @@ class Store:
                 # ignore all other errors
             except Exception:
                 pass
-
-def processDescription(source, output_encoding='unicode'):
-    """Given an source string, returns an HTML fragment as a string.
-
-    The return value is the contents of the <body> tag.
-
-    Parameters:
-
-    - `source`: A multi-line text string; required.
-    - `output_encoding`: The desired encoding of the output.  If a Unicode
-      string is desired, use the default value of "unicode" .
-    """
-    from docutils.core import publish_parts
-    from docutils.readers.python.moduleparser import trim_docstring
-    # Dedent all lines of `source`.
-    source = trim_docstring(source)
-
-    settings_overrides={
-        'raw_enabled': 0,  # no raw HTML code
-        'file_insertion_enabled': 0,  # no file/URL access
-        'halt_level': 2,  # at warnings or errors, raise an exception
-        'report_level': 5,  # never report problems with the reST code
-        }
-
-    # capture publishing errors, they go to stderr
-    old_stderr = sys.stderr
-    sys.stderr = s = cStringIO.StringIO()
-    parts = None
-    try:
-        # Convert reStructuredText to HTML using Docutils.
-        parts = publish_parts(source=source, writer_name='html',
-                              settings_overrides=settings_overrides)
-    except:
-        pass
-
-    sys.stderr = old_stderr
-
-    # original text if publishing errors occur
-    if parts is None or len(s.getvalue()) > 0:
-        output = "".join('<PRE>\n' + cgi.escape(source) + '</PRE>')
-    else:
-        output = parts['body']
-
-    if output_encoding != 'unicode':
-        output = output.encode(output_encoding)
-
-    return output
 
 def xmlescape(url):
     '''Make sure a URL is valid XML'''

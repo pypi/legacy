@@ -119,6 +119,7 @@ CREATE TABLE releases (
    summary TEXT,
    description TEXT,
    description_html TEXT,
+   description_from_readme BOOLEAN,
    keywords TEXT,
    platform TEXT,
    download_url TEXT,
