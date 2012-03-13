@@ -6,7 +6,7 @@ import cStringIO, webui, store, config
 
 store.keep_conn = True
 
-CONFIG_FILE = 'config.ini'
+CONFIG_FILE = os.path.join(prefix, 'config.ini')
 
 class Request:
 
