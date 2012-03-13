@@ -53,6 +53,7 @@ def application(environ, start_response):
     r = Request(environ, start_response)
     webui.WebUI(r, environ).run()
     return [r.wfile.getvalue()]
+#application=debug
 
 if __name__ == '__main__':
     # very simple wsgi server so we can play locally
