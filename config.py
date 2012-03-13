@@ -47,6 +47,8 @@ class Config:
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
+        self.sentry_dsn = c.get('sentry', 'dsn')
+
     def make_https(self):
         if self.url.startswith("http:"):
             self.url = "https"+self.url[4:]

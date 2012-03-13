@@ -31,6 +31,9 @@ OPENID_FILESTORE = '/tmp/openid-filestore'
 
 from openid.server import server as OpenIDServer
 
+# Raven for error reporting
+import raven
+
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
@@ -210,6 +213,7 @@ class WebUI:
         self.handler = handler
         self.config = handler.config
         self.wfile = handler.wfile
+        self.sentry_client = raven.Client(self.config.sentry_dsn)
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -313,10 +317,17 @@ class WebUI:
                     code=500, heading='Database connection failed')
             except:
                 exc, value, tb = sys.exc_info()
-                if ('connection limit exceeded for non-superusers'
-                        not in str(value)):
-                    logging.exception('Internal Error\n----\n%s\n----\n'%(
-                        '\n'.join(['%s: %s'%x for x in self.env.items()])))
+
+                # attempt to send all the exceptions to Raven
+                try:
+                    self.sentry_client.captureException()
+                except Exception:
+                    # sentry broke so just email the exception like old times
+                    if ('connection limit exceeded for non-superusers'
+                            not in str(value)):
+                        logging.exception('Internal Error\n----\n%s\n----\n'%(
+                            '\n'.join(['%s: %s'%x for x in self.env.items()])))
+
                 if self.config.debug_mode == 'yes':
                     s = cStringIO.StringIO()
                     traceback.print_exc(None, s)
@@ -570,7 +581,8 @@ class WebUI:
         password_reset role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
-        rss_regen openid_endpoint openid_decide_post packages_rss'''.split():
+        rss_regen openid_endpoint openid_decide_post packages_rss
+        exception'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -584,6 +596,9 @@ class WebUI:
 
     def debug(self):
         self.fail('Debug info', code=200, content=str(self.env))
+
+    def exception(self):
+        FAIL
 
     def xmlrpc(self):
         rpc.handle_request(self)
