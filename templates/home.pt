@@ -23,7 +23,7 @@ links.
 <b>Get Packages</b>
 <p style="margin-bottom: 0px">
 To use a package from this index either
-"<a href="http://www.pip-installer.org/en/latest/installing.html" class="vt-p">pip</a> install <i>package</i>"
+"<a href="http://www.pip-installer.org/en/latest/installing.html">pip</a> install <i>package</i>"
 (<a href="http://www.pip-installer.org/en/latest/installing.html">get pip</a>)
 or download, unpack and "python setup.py install" it.
 <a href="http://pypi.python.org/pypi?%3Aaction=browse" class="vt-p">Browse all packages</a>
