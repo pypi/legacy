@@ -4,6 +4,7 @@ import tarfile
 import gzip
 import bz2
 import StringIO
+import cgi
 
 from docutils.core import publish_parts
 
