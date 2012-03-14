@@ -5,8 +5,12 @@ import gzip
 import bz2
 import StringIO
 import cgi
+import urlparse
 
-from docutils.core import publish_parts
+from docutils import io, readers
+from docutils.core import publish_doctree, Publisher
+from docutils.writers import get_writer_class
+from docutils.transforms import TransformError, Transform
 
 
 def trim_docstring(text):
@@ -39,6 +43,9 @@ def trim_docstring(text):
     # Return a single string:
     return '\n'.join(trimmed)
 
+ALLOWED_SCHEMES = '''file ftp gopher hdl http https imap mailto mms news nntp
+prospero rsync rtsp rtspu sftp shttp sip sips snews svn svn+ssh telnet
+wais'''.split()
 
 def processDescription(source, output_encoding='unicode'):
     """Given an source string, returns an HTML fragment as a string.
@@ -65,10 +72,35 @@ def processDescription(source, output_encoding='unicode'):
     old_stderr = sys.stderr
     sys.stderr = s = StringIO.StringIO()
     parts = None
+
     try:
         # Convert reStructuredText to HTML using Docutils.
-        parts = publish_parts(source=source, writer_name='html',
-                              settings_overrides=settings_overrides)
+        document = publish_doctree(source=source,
+            settings_overrides=settings_overrides)
+
+        for node in document.traverse():
+            if node.tagname == '#text':
+                continue
+            if node.hasattr('refuri'):
+                uri = node['refuri']
+            elif node.hasattr('uri'):
+                uri = node['uri']
+            else:
+                continue
+            o = urlparse.urlparse(uri)
+            if o.scheme not in ALLOWED_SCHEMES:
+                raise TransformError('link scheme not allowed')
+
+        # now turn the transformed document into HTML
+        reader = readers.doctree.Reader(parser_name='null')
+        pub = Publisher(reader, source=io.DocTreeInput(document),
+            destination_class=io.StringOutput)
+        pub.set_writer('html')
+        pub.process_programmatic_settings(None, settings_overrides, None)
+        pub.set_destination(None, None)
+        pub.publish()
+        parts = pub.writer.parts
+
     except:
         pass
 
@@ -151,7 +183,6 @@ def extractPackageReadme(content, filename, filetype):
                 ext = 'txt'
             if name.upper() != 'README':
                 continue
-            print 'FOUND', filename
             # grab the content and parse if it's something we might understand,
             # based on the file extension
             text = tar.extractfile(entry).read()
@@ -163,7 +194,7 @@ def extractPackageReadme(content, filename, filetype):
 
 if __name__ == '__main__':
     fname ='../parse/dist/parse-1.4.1.tar.gz'
-    fname ='../parse/dist/parse-1.4.1.zip'
-    fname ='../parse/dist/parse-1.4.1.tar.bz2'
+#    fname ='../parse/dist/parse-1.4.1.zip'
+#    fname ='../parse/dist/parse-1.4.1.tar.bz2'
     text, html = extractPackageReadme(open(fname).read(), fname, 'sdist')
 
