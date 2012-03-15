@@ -2172,7 +2172,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
         for row in cursor.fetchall():
             return True
         sql = '''insert into oauth_nonce (timestamp, consumer, token, nonce)
-            values (%s, %s, %s)'''
+            values (%s, %s, %s, %s)'''
         safe_execute(cursor, sql, (timestamp, oauth_consumer.key, token, nonce))
         return False
 
