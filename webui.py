@@ -3143,7 +3143,7 @@ class WebUI:
     def oauth_request_token(self):
         s = self._oauth_server()
         r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION'],
+            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_request_token(r)
         return str(token)
@@ -3151,7 +3151,7 @@ class WebUI:
     def oauth_access_token(self):
         s = self._oauth_server()
         r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION'],
+            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_access_token(r)
         return str(token)
