@@ -2123,6 +2123,135 @@ class Store:
             except Exception:
                 pass
 
+def generate_random(length, chars = string.letters + string.digits):
+    return ''.join([random.choice(chars) for n in range(length)])
+
+class OAuthDataStore(oauth.OAuthDataStore):
+    '''Manages an OAuth data store over the Store.
+    '''
+    def __init__(self, store):
+        self.store = store
+
+    def lookup_consumer(self, key):
+        cursor = self.store.get_cursor()
+        sql = 'select secret from oauth_consumers where consumer = %s'
+        safe_execute(cursor, sql, (key,))
+        for row in cursor.fetchall():
+            return oauth.OAuthConsumer(key, row[0])
+
+    def lookup_token(self, token_type, token_token):
+        '''Look up the given token in either the oauth_request_tokens or
+        oauth_access_tokens table.
+        '''
+        cursor = self.store.get_cursor()
+        sql = 'select secret from oauth_%s_tokens where token = %%s'%token_type
+        safe_execute(cursor, sql, (token_token,))
+        for row in cursor.fetchall():
+            return oauth.OAuthToken(token_token, row[0])
+
+    def lookup_nonce(self, timestamp, oauth_token, nonce):
+        '''Check that the indicated timestamp + token + nonce haven't been seen
+        before.
+
+        Return True if it has. Store the information if it hasn't.
+        '''
+        cursor = self.store.get_cursor()
+        sql = '''select * from oauth_nonce where
+            date_created=%s and token = %s and nonce = %s'''
+        safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+        for row in cursor.fetchall():
+            return True
+        sql = 'insert into oauth_nonce (datex, token, nonce) values (%s, %s, %s)'
+        safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+        return False
+
+    def fetch_request_token(self, oauth_consumer):
+        '''When it says "fetch" it really means "create".
+
+        oauth_consumer is an OAuthConsumer instance
+
+        Create a token in the oauth_request_tokens table.
+        '''
+        # generate some randomish token / secret combo
+        token = generate_random(32)
+        secret = generate_random(64)
+
+        # generate the token in the db
+        sql = '''insert into oauth_request_tokens (token, secret, consumer,
+            date_created) values (%s, %s, %s, now())'''
+        safe_execute(self.store.get_cursor(), sql, (token, secret, oauth_consumer.key))
+        return oauth.OAuthToken(token, secret)
+
+    def authorize_request_token(self, oauth_token, user):
+        '''Fill in the user id in the indicated request token.
+
+        oauth_token is just a string
+        user is an account number, hopefully...
+        '''
+        sql = 'update oauth_request_tokens set account = %s where token = %s'
+        safe_execute(self.store.get_cursor(), sql, (user, oauth_token))
+        # XXX note: no return value. Spec says to return OAuthToken but it's
+        # not used and I'd have to do a separate SELECT so I just don't see the
+        # point.
+
+    def fetch_access_token(self, oauth_consumer, oauth_token):
+        '''When it says "fetch" it really means "create".
+
+        oauth_consumer is an OAuthConsumer instance
+        oauth_token is an OAuthToken instance representing the request token
+
+        Create a token in the oauth_access_tokens table.
+        '''
+        # find user in the oauth_request_tokens table
+        cursor = self.store.get_cursor()
+        sql = '''select user from oauth_request_tokens
+            where consumer = %s and token = %s'''
+        safe_execute(cursor, sql, (oauth_consumer.key, oauth_token.key))
+        for row in cursor.fetchall():
+            user = row[0]
+            break
+        else:
+            raise ValueError('request token consumer=%r, token=%r not found'%(
+                oauth_consumer.key, oauth_token.token))
+
+        # check that there's not already an access token for this consumer / user
+        sql = '''select token from oauth_access_tokens
+            where consumer = %s and user = %s'''
+        safe_execute(cursor, sql, (oauth_consumer.key, user))
+        for row in cursor.fetchall():
+            # return the existing token
+            return self.lookup_token('access', row[0])
+
+        # generate some randomish token / secret combo
+        token = generate_random(32)
+        secret = generate_random(64)
+
+        # generate the token in the db
+        sql = '''insert into oauth_access_tokens
+            (token, secret, consumer, account, date_created, last_modified)
+            values (%s, %s, %s, %s, now(), now())'''
+        safe_execute(cursor, sql, (token, secret, oauth_consumer.key, account))
+        return oauth.OAuthToken(token, secret)
+
+    def _get_account(self, token):
+        '''Given an access token, determine the user associated with it.
+        '''
+        sql = 'select user from oauth_access_tokens where token = %s'
+        safe_execute(self.store.get_cursor(), sql, (token.key, ))
+        for row in cursor.fetchall():
+            return row[0]
+        raise ValueError('token %r not valid (or too valid)'%token.key)
+
+    def _get_consumer_description(self, request_token=None):
+        if request_token is not None:
+            sql = '''select description from oauth_consumers, oauth_request_tokens
+                where oauth_consumers.consumer = oauth_request_tokens.consumer
+                and token = %s'''
+            safe_execute(self.store.get_cursor(), sql, (request_token, ))
+            for row in cursor.fetchall():
+                return row[0]
+        raise ValueError('token lookup failed')
+
 def xmlescape(url):
     '''Make sure a URL is valid XML'''
     p = expat.ParserCreate()

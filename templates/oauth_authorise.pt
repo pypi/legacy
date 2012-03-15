@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+  
+      <form method="POST">
+        <p>The site <b tal:content="data/description" /> is asking for permission to
+        manipulate your account on this site.</p>
+        <p>Granting it permission will allow the site to register new
+        packages, upload new files and upload new documentation on your
+        behalf.</p>
+        <input type="submit" name="ok" value="Allow Access"/>
+        <input type="submit" name="cancel" value="Deny Access"/>
+        <input type="hidden" name="oauth_token" tal:attributes="value data/oauth_token"/>
+        <input type="hidden" name="oauth_callback" tal:attributes="value data/oauth_callback"/>
+      </form>
+      
+  </metal:fill>
+</html>

@@ -39,6 +39,7 @@ import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 from description_utils import extractPackageReadme
+import oauth
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
@@ -530,6 +531,10 @@ class WebUI:
         # Commit all user-related changes made up to here
         if self.username:
             self.store.commit()
+
+        # Now we have a username try running OAuth if necessary
+        if script_name == '/oauth':
+            return self.run_oauth()
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -3110,4 +3115,101 @@ class WebUI:
             return "%s/id/%s" % (self.config.scheme_host, self.username)
         else:
             return None
+
+    #
+    # OAuth
+    #
+    def run_oauth(self):
+        if self.env.get('HTTPS') != 'on':
+            raise NotFound('HTTPS must be used to access this URL')
+
+        path = self.env.get('PATH_INFO')
+
+        if path == 'request_token':
+            return self.oauth_request_token()
+        elif path == 'access_token':
+            return self.oauth_access_token()
+        elif path == 'authorise':
+            return self.oauth_authorise()
+        else:
+            raise NotFound()
+
+    def _oauth_server(self):
+        data_store = store.OAuthDataStore(self.store)
+        o = oauth.OAuthSignatureMethod_HMAC_SHA1()
+        signature_methods = {o.get_name(): o}
+        return oauth.OAuthServer(data_store, signature_methods)
+
+    def oauth_request_token(self):
+        s = self._oauth_server()
+        r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
+            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION'],
+            self.form)
+        token = s.fetch_request_token(r)
+        return str(token)
+
+    def oauth_access_token(self):
+        s = self._oauth_server()
+        r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
+            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION'],
+            self.form)
+        token = s.fetch_access_token(r)
+        return str(token)
+
+    def oauth_authorise(self):
+        if 'oauth_token' not in self.form:
+            raise FormRequest('oauth_token and oauth_callback are required')
+
+        oauth_token = self.form['oauth_token']
+        oauth_callback = self.form['oauth_callback']
+
+        ok = self.form.get('ok')
+        cancel = self.form.get('cancel')
+
+        if not ok and not cancel:
+            description = s._get_consumer_description(request_token=oauth_token)
+            return self.write_template('oauth_authorise.pt',
+                title='PyPI - the Python Package Index',
+                oauth_token=oauth_token,
+                oauth_callback=oauth_callback,
+                description=description)
+
+        if '%3A' in oauth_callback:
+            oauth_callback = urllib.unquote(oauth_callback)
+
+        if not ok:
+            raise RedirectTemporary(oauth_callback)
+
+        # register the user agains the request token
+        s = self._oauth_server()
+        s.authorize_token(oauth_token, self.username)
+
+        # commit all changes now
+        self.store.commit()
+
+        url = oauth_callback + '?oauth_token=%s'%oauth_token
+        raise RedirectTemporary(url)
+
+    def _parse_request(self):
+        '''Read OAuth access request information from the request.
+
+        Return the consumer (OAuthConsumer instance), the access token
+        (OAuthToken instance), the parameters (may include non-OAuth parameters
+        accompanying the request) and the user account number authorized by the
+        access token.
+        '''
+        s = self._oauth_server()
+        r = oauth.OAuthRequest(self.env['REQUEST_METHOD'],
+            self.env['REQUEST_URI'], self.form)
+        consumer, token, params = s.verify_request(r)
+        account = s._get_account(token)
+        return consumer, token, params, account
+
+    def test_access(self):
+        '''A resource that is protected so access without an access token is
+        disallowed.
+        '''
+        consumer, token, params, account = self.parse_request()
+        return 'Access allowed for %s (ps. I got file=%s, size=%s)'%(account,
+            params['file'], params['size'])
 
