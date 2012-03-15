@@ -22,7 +22,7 @@ from description_utils import processDescription
 import hmac
 from base64 import b64encode
 import openid.store.sqlstore
-from oauth import oauth
+import oauth
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
