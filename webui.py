@@ -3131,18 +3131,23 @@ class WebUI:
             raise NotFound('HTTPS must be used to access this URL')
 
         path = self.env.get('PATH_INFO')
-        uri = self.config.url.replace('/pypi', self.env['REQUEST_URI'])
 
         if path == '/request_token':
-            self.oauth_request_token(uri)
+            self.oauth_request_token()
         elif path == '/access_token':
-            self.oauth_access_token(uri)
+            self.oauth_access_token()
         elif path == '/authorise':
-            self.oauth_authorise(uri)
+            self.oauth_authorise()
         elif path == '/test':
-            self.oauth_test_access(uri)
+            self.oauth_test_access()
         else:
             raise NotFound()
+
+    def _oauth_request(self):
+        uri = self.config.url.replace('/pypi', self.env['REQUEST_URI'])
+        return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
+            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
+            self.form)
 
     def _oauth_server(self):
         data_store = store.OAuthDataStore(self.store)
@@ -3150,25 +3155,21 @@ class WebUI:
         signature_methods = {o.get_name(): o}
         return oauth.OAuthServer(data_store, signature_methods)
 
-    def oauth_request_token(self, uri):
+    def oauth_request_token(self):
         s = self._oauth_server()
-        r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
-            self.form)
+        r = self._oauth_request()
         token = s.fetch_request_token(r)
         self.store.commit()
         self.write_plain(str(token))
 
-    def oauth_access_token(self, uri):
+    def oauth_access_token(self):
         s = self._oauth_server()
-        r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
-            self.form)
+        r = self._oauth_request()
         token = s.fetch_access_token(r)
         self.store.commit()
         self.write_plain(str(token))
 
-    def oauth_authorise(self, uri):
+    def oauth_authorise(self):
         if 'oauth_token' not in self.form:
             raise FormRequest('oauth_token and oauth_callback are required')
 
@@ -3214,7 +3215,7 @@ class WebUI:
         access token.
         '''
         s = self._oauth_server()
-        r = oauth.OAuthRequest(self.env['REQUEST_METHOD'], uri, self.form)
+        r = self._oauth_request()
         consumer, token, params = s.verify_request(r)
         user = s._get_user(token)
         return consumer, token, params, user
