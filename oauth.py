@@ -40,6 +40,9 @@ class OAuthError(RuntimeError):
     """Generic exception class."""
     def __init__(self, message='OAuth error occured.'):
         self.message = message
+    def __str__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.message)
+
 
 def build_authenticate_header(realm=''):
     """Optional WWW-Authenticate header (401 error)"""
