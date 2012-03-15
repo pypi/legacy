@@ -11,8 +11,10 @@
       <title tal:content="string:${data/title} : Python Package Index" />
       <meta tal:attributes="content data/keywords" />
       <meta tal:attributes="content data/description" />
-       <link rel="alternate" type="application/rss+xml" title="RSS: 40 latest updates" href="http://pypi.python.org/pypi?:action=rss"/>
-       <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages" href="http://pypi.python.org/pypi?:action=packages_rss"/>
+       <link rel="alternate" type="application/rss+xml" title="RSS: 40 latest updates"
+            tal:attributes="href string:${app/config/url}?:action=rss"/>
+       <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages" 
+            tal:attributes="href string:${app/config/url}?:action=packages_rss"/>
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
        <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
