@@ -3156,8 +3156,7 @@ class WebUI:
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_request_token(r)
-        assert token.key
-        assert token.secret
+        self.store.commit()
         self.write_plain(str(token))
 
     def oauth_access_token(self, uri):
@@ -3166,8 +3165,7 @@ class WebUI:
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_access_token(r)
-        assert token.key
-        assert token.secret
+        self.store.commit()
         self.write_plain(str(token))
 
     def oauth_authorise(self, uri):
