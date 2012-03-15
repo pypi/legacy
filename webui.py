@@ -3183,7 +3183,7 @@ class WebUI:
         s = self._oauth_server()
 
         if not ok and not cancel:
-            description = s._get_consumer_description(request_token=oauth_token)
+            description = s.data_store._get_consumer_description(request_token=oauth_token)
             return self.write_template('oauth_authorise.pt',
                 title='PyPI - the Python Package Index',
                 oauth_token=oauth_token,
