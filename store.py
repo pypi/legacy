@@ -2262,7 +2262,8 @@ class OAuthDataStore(oauth.OAuthDataStore):
             sql = '''select description from oauth_consumers, oauth_request_tokens
                 where oauth_consumers.consumer = oauth_request_tokens.consumer
                 and token = %s'''
-            safe_execute(self.store.get_cursor(), sql, (request_token, ))
+            cursor = self.store.get_cursor()
+            safe_execute(cursor, sql, (request_token, ))
             for row in cursor.fetchall():
                 return row[0]
         raise ValueError('token lookup failed')
