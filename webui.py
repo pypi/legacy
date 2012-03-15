@@ -3131,15 +3131,16 @@ class WebUI:
             raise NotFound('HTTPS must be used to access this URL')
 
         path = self.env.get('PATH_INFO')
+        uri = self.config.url.replace('/pypi', self.env['REQUEST_URI'])
 
         if path == '/request_token':
-            self.oauth_request_token()
+            self.oauth_request_token(uri)
         elif path == '/access_token':
-            self.oauth_access_token()
+            self.oauth_access_token(uri)
         elif path == '/authorise':
-            self.oauth_authorise()
+            self.oauth_authorise(uri)
         elif path == '/test':
-            self.oauth_test_access()
+            self.oauth_test_access(uri)
 
         raise NotFound()
 
@@ -3149,23 +3150,23 @@ class WebUI:
         signature_methods = {o.get_name(): o}
         return oauth.OAuthServer(data_store, signature_methods)
 
-    def oauth_request_token(self):
+    def oauth_request_token(self, uri):
         s = self._oauth_server()
         r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
+            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_request_token(r)
         self.write_plain(str(token))
 
-    def oauth_access_token(self):
+    def oauth_access_token(self, uri):
         s = self._oauth_server()
         r = oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
+            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_access_token(r)
         self.write_plain(str(token))
 
-    def oauth_authorise(self):
+    def oauth_authorise(self, uri):
         if 'oauth_token' not in self.form:
             raise FormRequest('oauth_token and oauth_callback are required')
 
@@ -3208,8 +3209,7 @@ class WebUI:
         access token.
         '''
         s = self._oauth_server()
-        r = oauth.OAuthRequest(self.env['REQUEST_METHOD'],
-            self.env['REQUEST_URI'], self.form)
+        r = oauth.OAuthRequest(self.env['REQUEST_METHOD'], uri, self.form)
         consumer, token, params = s.verify_request(r)
         account = s._get_account(token)
         return consumer, token, params, account
@@ -3218,7 +3218,7 @@ class WebUI:
         '''A resource that is protected so access without an access token is
         disallowed.
         '''
-        consumer, token, params, account = self.parse_request()
+        consumer, token, params, account = self._parse_request()
         return 'Access allowed for %s (ps. I got file=%s, size=%s)'%(account,
             params['file'], params['size'])
 
