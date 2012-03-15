@@ -2158,13 +2158,20 @@ class OAuthDataStore(oauth.OAuthDataStore):
         Return True if it has. Store the information if it hasn't.
         '''
         cursor = self.store.get_cursor()
-        sql = '''select * from oauth_nonce where
-            date_created=%s and token = %s and nonce = %s'''
-        safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+        if oauth_token is None:
+            sql = '''select * from oauth_nonce where
+                date_created=%s and token is NULL and nonce=%s'''
+            safe_execute(cursor, sql, (timestamp, nonce))
+            token = None
+        else:
+            sql = '''select * from oauth_nonce where
+                date_created=%s and token=%s and nonce=%s'''
+            safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+            token = oauth_token.key
         for row in cursor.fetchall():
             return True
         sql = 'insert into oauth_nonce (datex, token, nonce) values (%s, %s, %s)'
-        safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+        safe_execute(cursor, sql, (timestamp, token, nonce))
         return False
 
     def fetch_request_token(self, oauth_consumer):

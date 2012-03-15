@@ -3138,6 +3138,8 @@ class WebUI:
             self.oauth_access_token()
         elif path == '/authorise':
             self.oauth_authorise()
+        elif path == '/test':
+            self.oauth_test_access()
 
         raise NotFound()
 
@@ -3212,7 +3214,7 @@ class WebUI:
         account = s._get_account(token)
         return consumer, token, params, account
 
-    def test_access(self):
+    def oauth_test_access(self):
         '''A resource that is protected so access without an access token is
         disallowed.
         '''

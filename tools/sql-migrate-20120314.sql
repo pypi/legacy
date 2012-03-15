@@ -29,7 +29,6 @@ CREATE TABLE oauth_access_tokens (
 CREATE TABLE oauth_nonce (
       date_created          date not null,
       nonce                 varchar2(32) not null,
-      token                 varchar2(32) not null,
-      UNIQUE(date_created, nonce, token)
+      token                 varchar2(32)
 );
 
