@@ -2253,7 +2253,8 @@ class OAuthDataStore(oauth.OAuthDataStore):
         '''Given an access token, determine the user associated with it.
         '''
         sql = 'select user from oauth_access_tokens where token = %s'
-        safe_execute(self.store.get_cursor(), sql, (token.key, ))
+        cursor = self.store.get_cursor()
+        safe_execute(cursor, sql, (token.key, ))
         for row in cursor.fetchall():
             return row[0]
         raise ValueError('token %r not valid (or too valid)'%token.key)
