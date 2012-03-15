@@ -1867,11 +1867,13 @@ class WebUI:
         # return a display of the package
         self.display(ok_message=message)
 
-    def form_metadata(self):
+    def form_metadata(self, submitted_data=None):
         ''' Extract metadata from the form.
         '''
+        if submitted_data is None:
+            submitted_data = self.form
         data = {}
-        for k in self.form.keys():
+        for k in submitted_data:
             if k.startswith(':'): continue
             v = self.form[k]
             if k == '_pypi_hidden':
@@ -3138,6 +3140,12 @@ class WebUI:
             self.oauth_access_token()
         elif path == '/authorise':
             self.oauth_authorise()
+        elif path == '/add_release':
+            self.oauth_add_release()
+        elif path == '/upload':
+            self.oauth_upload()
+        elif path == '/docupload':
+            self.oauth_docupload()
         elif path == '/test':
             self.oauth_test_access()
         else:
@@ -3227,6 +3235,61 @@ class WebUI:
     def oauth_test_access(self):
         '''A resource that is protected so access without an access token is
         disallowed.
+        '''
+        consumer, token, params, user = self._parse_request()
+        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
+        self.write_plain(message)
+
+    def oauth_add_release(self):
+        '''Add a new release.
+
+        Returns "OK" if all is well otherwise .. who knows (TODO this needs to
+        be clarified and cleaned up).
+        '''
+        consumer, token, params, user = self._parse_request()
+
+        # pull the package information out of the form submission
+        data = self.form_metadata(params)
+
+        # validate the data
+        self.validate_metadata(data)
+
+        name = data['name']
+        version = data['version']
+
+        # make sure the user has permission to do stuff
+        has_package = self.store.has_package(name)
+        if has_package and not (
+                self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to store '%s' package information"%name
+
+        if not has_package:
+            names = self.store.find_package(name)
+            if names:
+                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
+
+        # make sure the _pypi_hidden flag is set
+        if not data.has_key('_pypi_hidden'):
+            data['_pypi_hidden'] = False
+
+        # save off the data
+        message = self.store.store_package(name, version, data)
+        self.store.changed()
+
+        return 'OK'
+
+    def oauth_upload(self):
+        '''Upload a file for a package release.
+        '''
+        consumer, token, params, user = self._parse_request()
+        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
+        self.write_plain(message)
+
+    def oauth_docupload(self):
+        '''Upload a documentation bundle.
         '''
         consumer, token, params, user = self._parse_request()
         message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)

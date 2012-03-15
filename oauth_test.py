@@ -133,27 +133,37 @@ def example_init():
     print 'secret: %s' % str(token.secret)
     pause()
 
-def example_access():
+def example_test(access_token):
     # test config
     CONSUMER_KEY = 'sekrit'
     CONSUMER_SECRET = '123'
     RESOURCE_URL = 'https://testpypi.python.org/oauth/test'
-
-    ACCESS_KEY = 'AJLks8p4zezH2ud9R7OQy98eRLXf8zut'
-    ACCESS_SECRET = 'vSXBEWk5kn6wvVGivILPyBmtRitDvJq0cVcmBDk57eX2XCENvp2da3ou7v09TxrL'
-    access_token = oauth.OAuthToken(ACCESS_KEY, ACCESS_SECRET)
-
     # access some protected resources
     print '* Access protected resources ...'
     client = SimpleOAuthClient(CONSUMER_KEY, CONSUMER_SECRET, access_token)
     params = client.access_resource(RESOURCE_URL, {'param_one': 'test'})
     print 'non-oauth parameters: %s' % params
 
+def example_release(access_token, **params):
+    # test config
+    CONSUMER_KEY = 'sekrit'
+    CONSUMER_SECRET = '123'
+    RESOURCE_URL = 'https://testpypi.python.org/oauth/add_release'
+    # access some protected resources
+    print '* Access protected resources ...'
+    client = SimpleOAuthClient(CONSUMER_KEY, CONSUMER_SECRET, access_token)
+    params = client.access_resource(RESOURCE_URL, params)
+    print 'non-oauth parameters: %s' % params
+
 
 if __name__ == '__main__':
-    # for testing you will want to run example_init() and work through that
+    # For testing you will want to run example_init() and work through that
     # until you get an access token. Then replace ACCESS_KEY and ACCESS_SECRET
-    # in example_access() with the key and secret you were assigned.
+    # with the key and secret you were assigned.
     #example_init()
-    example_access()
+    ACCESS_KEY = 'AJLks8p4zezH2ud9R7OQy98eRLXf8zut'
+    ACCESS_SECRET = 'vSXBEWk5kn6wvVGivILPyBmtRitDvJq0cVcmBDk57eX2XCENvp2da3ou7v09TxrL'
+    access_token = oauth.OAuthToken(ACCESS_KEY, ACCESS_SECRET)
+    example_access(access_token)
+    example_release(access_token, name='spam', version='2.0')
 
