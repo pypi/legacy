@@ -3182,8 +3182,10 @@ class WebUI:
 
         if not ok and not cancel:
             description = s.data_store._get_consumer_description(request_token=oauth_token)
+            action_url = self.config.url.replace('/pypi', '/oauth/authorise')
             return self.write_template('oauth_authorise.pt',
                 title='PyPI - the Python Package Index',
+                action_url=action_url,
                 oauth_token=oauth_token,
                 oauth_callback=oauth_callback,
                 description=description)

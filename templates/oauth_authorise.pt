@@ -5,7 +5,7 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
   
-      <form method="POST">
+      <form tal:attributes="action data/action_url" method="POST">
         <p>The site <b tal:content="data/description" /> is asking for permission to
         manipulate your account on this site.</p>
         <p>Granting it permission will allow the site to register new
