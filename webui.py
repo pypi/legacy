@@ -3225,5 +3225,6 @@ class WebUI:
         disallowed.
         '''
         consumer, token, params, user = self._parse_request()
-        return 'Access allowed for %s (ps. I got params=%r)'%(user, params)
+        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
+        self.write_plain(message)
 
