@@ -3127,20 +3127,19 @@ class WebUI:
     # OAuth
     #
     def run_oauth(self):
-        self.write_plain(str(self.env))
         if self.env.get('HTTPS') != 'on':
             raise NotFound('HTTPS must be used to access this URL')
 
         path = self.env.get('PATH_INFO')
 
-        if path == 'request_token':
-            return self.oauth_request_token()
-        elif path == 'access_token':
-            return self.oauth_access_token()
-        elif path == 'authorise':
-            return self.oauth_authorise()
-        else:
-            raise NotFound()
+        if path == '/request_token':
+            self.oauth_request_token()
+        elif path == '/access_token':
+            self.oauth_access_token()
+        elif path == '/authorise':
+            self.oauth_authorise()
+
+        raise NotFound()
 
     def _oauth_server(self):
         data_store = store.OAuthDataStore(self.store)
