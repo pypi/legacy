@@ -3180,6 +3180,8 @@ class WebUI:
         ok = self.form.get('ok')
         cancel = self.form.get('cancel')
 
+        s = self._oauth_server()
+
         if not ok and not cancel:
             description = s._get_consumer_description(request_token=oauth_token)
             return self.write_template('oauth_authorise.pt',
@@ -3195,7 +3197,6 @@ class WebUI:
             raise RedirectTemporary(oauth_callback)
 
         # register the user agains the request token
-        s = self._oauth_server()
         s.authorize_token(oauth_token, self.username)
 
         # commit all changes now
