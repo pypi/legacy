@@ -403,7 +403,7 @@ class WebUI:
             self.handler.set_content_type('text/html; charset=utf-8')
         if self.usercookie:
             self.handler.send_header('Set-Cookie',
-                                     'pypi='+self.usercookie+';path='+self.url_path)
+                'pypi=%s;path=%s/' % (self.usercookie, self.url_machine))
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
@@ -3144,7 +3144,7 @@ class WebUI:
             raise NotFound()
 
     def _oauth_request(self):
-        uri = self.config.url.replace('/pypi', self.env['REQUEST_URI'])
+        uri = self.url_machine + self.env['REQUEST_URI']
         return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
@@ -3187,7 +3187,7 @@ class WebUI:
 
         if not ok and not cancel:
             description = s.data_store._get_consumer_description(request_token=oauth_token)
-            action_url = self.config.url.replace('/pypi', '/oauth/authorise')
+            action_url = self.url_machine + '/oauth/authorise'
             return self.write_template('oauth_authorise.pt',
                 title='PyPI - the Python Package Index',
                 action_url=action_url,
