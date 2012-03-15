@@ -2207,11 +2207,11 @@ class OAuthDataStore(oauth.OAuthDataStore):
         # not used and I'd have to do a separate SELECT so I just don't see the
         # point.
 
-    def fetch_access_token(self, oauth_consumer, oauth_token):
+    def fetch_access_token(self, oauth_consumer, request_key):
         '''When it says "fetch" it really means "create".
 
         oauth_consumer is an OAuthConsumer instance
-        oauth_token is an OAuthToken instance representing the request token
+        request_key is the request token's key
 
         Create a token in the oauth_access_tokens table.
         '''
@@ -2219,13 +2219,13 @@ class OAuthDataStore(oauth.OAuthDataStore):
         cursor = self.store.get_cursor()
         sql = '''select user from oauth_request_tokens
             where consumer = %s and token = %s'''
-        safe_execute(cursor, sql, (oauth_consumer.key, oauth_token.key))
+        safe_execute(cursor, sql, (oauth_consumer.key, request_key))
         for row in cursor.fetchall():
             user = row[0]
             break
         else:
-            raise ValueError('request token consumer=%r, token=%r not found'%(
-                oauth_consumer.key, oauth_token.token))
+            raise ValueError('request token consumer=%r, request=%r not found'%(
+                oauth_consumer.key, request_key))
 
         # check that there's not already an access token for this consumer / user
         sql = '''select token from oauth_access_tokens
