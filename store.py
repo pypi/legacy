@@ -2245,7 +2245,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
             (token, secret, consumer, account, date_created, last_modified)
             values (%s, %s, %s, %s, %s, %s)'''
         now = datetime.datetime.now()
-        safe_execute(cursor, sql, (token, secret, oauth_consumer.key, account,
+        safe_execute(cursor, sql, (token, secret, oauth_consumer.key, user,
             now, now))
         return oauth.OAuthToken(token, secret)
 
