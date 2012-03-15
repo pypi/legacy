@@ -3283,7 +3283,7 @@ class WebUI:
         message = self.store.store_package(name, version, data)
         self.store.changed()
 
-        return 'OK'
+        self.write_plain('OK')
 
     def oauth_upload(self):
         '''Upload a file for a package release.

@@ -165,5 +165,6 @@ if __name__ == '__main__':
     ACCESS_SECRET = 'vSXBEWk5kn6wvVGivILPyBmtRitDvJq0cVcmBDk57eX2XCENvp2da3ou7v09TxrL'
     access_token = oauth.OAuthToken(ACCESS_KEY, ACCESS_SECRET)
     example_test(access_token)
-    example_release(access_token, name='spam', version='2.0')
+    example_release(access_token, name='spam', version='3.0', summary='Spam via OAuth',
+        description='This package was registered **VIA OAUTH**!')
 
