@@ -2176,7 +2176,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
         safe_execute(cursor, sql, (timestamp, oauth_consumer.key, token, nonce))
         return False
 
-    def fetch_request_token(self, oauth_consumer):
+    def fetch_request_token(self, oauth_consumer, callback):
         '''When it says "fetch" it really means "create".
 
         oauth_consumer is an OAuthConsumer instance
@@ -2189,10 +2189,10 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
         # generate the token in the db
         sql = '''insert into oauth_request_tokens (token, secret, consumer,
-            date_created) values (%s, %s, %s, %s)'''
+            callback, date_created) values (%s, %s, %s, %s, %s)'''
         now = datetime.datetime.now()
         safe_execute(self.store.get_cursor(), sql, (token, secret,
-            oauth_consumer.key, now))
+            oauth_consumer.key, callback, now))
         return oauth.OAuthToken(token, secret)
 
     def authorize_request_token(self, oauth_token, user):
