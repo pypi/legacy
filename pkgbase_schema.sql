@@ -347,7 +347,8 @@ CREATE TABLE oauth_access_tokens (
 );
 
 CREATE TABLE oauth_nonce (
-      date_created          date not null,
+      timestamp             integer not null,
+      consumer              varchar2(32) not null,
       nonce                 varchar2(32) not null,
       token                 varchar2(32)
 );

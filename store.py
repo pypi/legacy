@@ -2151,8 +2151,8 @@ class OAuthDataStore(oauth.OAuthDataStore):
         for row in cursor.fetchall():
             return oauth.OAuthToken(token_token, row[0])
 
-    def lookup_nonce(self, timestamp, oauth_token, nonce):
-        '''Check that the indicated timestamp + token + nonce haven't been seen
+    def lookup_nonce(self, oauth_consumer, oauth_token, nonce, timestamp):
+        '''Check that the indicated timestamp + consumer + token + nonce haven't been seen
         before.
 
         Return True if it has. Store the information if it hasn't.
@@ -2160,18 +2160,20 @@ class OAuthDataStore(oauth.OAuthDataStore):
         cursor = self.store.get_cursor()
         if oauth_token is None:
             sql = '''select * from oauth_nonce where
-                date_created=%s and token is NULL and nonce=%s'''
-            safe_execute(cursor, sql, (timestamp, nonce))
+                timestamp=%s and consumer=%s and token is NULL and nonce=%s'''
+            safe_execute(cursor, sql, (timestamp, oauth_consumer.key, nonce))
             token = None
         else:
             sql = '''select * from oauth_nonce where
-                date_created=%s and token=%s and nonce=%s'''
-            safe_execute(cursor, sql, (timestamp, oauth_token.key, nonce))
+                timestamp=%s and consumer=%s and token=%s and nonce=%s'''
+            safe_execute(cursor, sql, (timestamp, oauth_consumer.key,
+                oauth_token.key, nonce))
             token = oauth_token.key
         for row in cursor.fetchall():
             return True
-        sql = 'insert into oauth_nonce (datex, token, nonce) values (%s, %s, %s)'
-        safe_execute(cursor, sql, (timestamp, token, nonce))
+        sql = '''insert into oauth_nonce (timestamp, consumer, token, nonce)
+            values (%s, %s, %s)'''
+        safe_execute(cursor, sql, (timestamp, oauth_consumer.key, token, nonce))
         return False
 
     def fetch_request_token(self, oauth_consumer):
