@@ -1825,8 +1825,9 @@ class Store:
         '''Return csrf current token for user.'''
         cursor = self.get_cursor()
         sql = '''select token from csrf_tokens where name=%s
-                 and end_date > NOW()'''
-        safe_execute(cursor, sql, (username,))
+                 and end_date > %s'''
+        now = datetime.datetime.now()
+        safe_execute(cursor, sql, (username, now))
         token = cursor.fetchall()
         if not token:
             return self.create_token(username)
@@ -1856,9 +1857,9 @@ class Store:
 
         # we may have a current entry which is out of date, delete
         safe_execute(cursor, 'delete from csrf_tokens where name=%s', (username,))
-        sql = '''insert into csrf_tokens values(%s, %s,
-                 NOW()+interval \'15 minutes\')'''
-        safe_execute(cursor, sql, (username, rand))
+        target = datetime.datetime.now() + datetime.timedelta(minutes=15)
+        sql = 'insert into csrf_tokens values(%s, %s, %s)'
+        safe_execute(cursor, sql, (username, rand, target))
 
         return rand
 
