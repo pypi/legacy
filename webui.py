@@ -39,7 +39,7 @@ import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 from description_utils import extractPackageReadme
-import oauth
+from oauth import oauth
 
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
