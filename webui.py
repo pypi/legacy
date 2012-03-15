@@ -1822,7 +1822,7 @@ class WebUI:
         self.form['version'] = data['version']
         self.display(ok_message=message)
 
-    def submit(self):
+    def submit(self, parameters=None, response=True):
         ''' Handle the submission of distro metadata.
         '''
         # make sure the user is identified
@@ -1830,8 +1830,11 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to store package information"
 
+        if parameters is None:
+            parameters = self.form
+
         # pull the package information out of the form submission
-        data = self.form_metadata()
+        data = self.form_metadata(parameters)
 
         # validate the data
         try:
@@ -1864,8 +1867,9 @@ class WebUI:
         message = self.store.store_package(name, version, data)
         self.store.changed()
 
-        # return a display of the package
-        self.display(ok_message=message)
+        if response:
+            # return a display of the package
+            self.display(ok_message=message)
 
     def form_metadata(self, submitted_data=None):
         ''' Extract metadata from the form.
@@ -2189,18 +2193,21 @@ class WebUI:
         self.wfile.write(digest)
 
     CURRENT_UPLOAD_PROTOCOL = "1"
-    def file_upload(self, response=True):
+    def file_upload(self, response=True, parameters=None):
         # make sure the user is identified
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
+        if parameters is None:
+            parameters = self.form
+
         # can't perform CSRF check as this is invoked by tools
         #self.csrf_check()
 
         # Verify protocol version
-        if self.form.has_key('protocol_version'):
-            protocol_version = self.form['protocol_version']
+        if parameters.has_key('protocol_version'):
+            protocol_version = parameters['protocol_version']
         else:
             protocol_version = self.CURRENT_UPLOAD_PROTOCOL
 
@@ -2211,10 +2218,10 @@ class WebUI:
 
         # figure the package name and version
         name = version = None
-        if self.form.has_key('name'):
-            name = self.form['name']
-        if self.form.has_key('version'):
-            version = self.form['version']
+        if parameters.has_key('name'):
+            name = parameters['name']
+        if parameters.has_key('version'):
+            version = parameters['version']
         if not name or not version:
             raise FormError, 'Name and version are required'
 
@@ -2231,7 +2238,7 @@ class WebUI:
             description = release_metadata['description']
         else:
             # auto-register the release...
-            release_metadata = self.form_metadata()
+            release_metadata = self.form_metadata(parameters)
             description = release_metadata.get('description')
             try:
                 self.validate_metadata(release_metadata)
@@ -2248,22 +2255,22 @@ class WebUI:
         # verify we have enough information
         pyversion = 'source'
         content = filetype = md5_digest = comment = None
-        if self.form.has_key('content'):
-            content = self.form['content']
-        if self.form.has_key('filetype'):
-            filetype = self.form['filetype']
+        if parameters.has_key('content'):
+            content = parameters['content']
+        if parameters.has_key('filetype'):
+            filetype = parameters['filetype']
             if filetype == 'sdist':
-                self.form['pyversion'] = 'source'
+                parameters['pyversion'] = 'source'
         if not content or not filetype:
             raise FormError, 'Both content and filetype are required'
 
-        md5_digest = self.form['md5_digest']
+        md5_digest = parameters['md5_digest']
 
-        comment = self.form['comment']
+        comment = parameters['comment']
 
         # python version?
-        if self.form['pyversion']:
-            pyversion = self.form['pyversion']
+        if parameters.get('pyversion', ''):
+            pyversion = parameters['pyversion']
         elif filetype not in (None, 'sdist'):
             raise FormError, 'Python version is required for binary distribution uploads'
 
@@ -2299,8 +2306,8 @@ class WebUI:
         # grab content
         content = content.value
 
-        if self.form.has_key('gpg_signature'):
-            signature = self.form['gpg_signature']
+        if parameters.has_key('gpg_signature'):
+            signature = parameters['gpg_signature']
             try:
                 # If the signature is present, it may come
                 # as an empty string, or as a file upload
@@ -3251,45 +3258,14 @@ class WebUI:
         be clarified and cleaned up).
         '''
         consumer, token, params, user = self._parse_request()
-
-        # pull the package information out of the form submission
-        data = self.form_metadata(params)
-
-        # validate the data
-        self.validate_metadata(data)
-
-        name = data['name']
-        version = data['version']
-
-        # make sure the user has permission to do stuff
-        has_package = self.store.has_package(name)
-        if has_package and not (
-                self.store.has_role('Owner', name) or
-                self.store.has_role('Admin', name) or
-                self.store.has_role('Maintainer', name)):
-            raise Forbidden, \
-                "You are not allowed to store '%s' package information"%name
-
-        if not has_package:
-            names = self.store.find_package(name)
-            if names:
-                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
-
-        # make sure the _pypi_hidden flag is set
-        if not data.has_key('_pypi_hidden'):
-            data['_pypi_hidden'] = False
-
-        # save off the data
-        message = self.store.store_package(name, version, data)
-        self.store.changed()
-
+        self.submit(params, False)
         self.write_plain('OK')
 
     def oauth_upload(self):
         '''Upload a file for a package release.
         '''
         consumer, token, params, user = self._parse_request()
-        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
+        self.file_upload(False, params)
         self.write_plain(message)
 
     def oauth_docupload(self):

@@ -155,6 +155,16 @@ def example_release(access_token, **params):
     params = client.access_resource(RESOURCE_URL, params)
     print 'non-oauth parameters: %s' % params
 
+def example_upload(access_token, **params):
+    # test config
+    CONSUMER_KEY = 'sekrit'
+    CONSUMER_SECRET = '123'
+    RESOURCE_URL = 'https://testpypi.python.org/oauth/add_release'
+    # access some protected resources
+    print '* Access protected resources ...'
+    client = SimpleOAuthClient(CONSUMER_KEY, CONSUMER_SECRET, access_token)
+    params = client.access_resource(RESOURCE_URL, params, 'POST')
+    print 'non-oauth parameters: %s' % params
 
 if __name__ == '__main__':
     # For testing you will want to run example_init() and work through that
@@ -166,5 +176,13 @@ if __name__ == '__main__':
     access_token = oauth.OAuthToken(ACCESS_KEY, ACCESS_SECRET)
     example_test(access_token)
     example_release(access_token, name='spam', version='3.0', summary='Spam via OAuth',
-        description='This package was registered **VIA OAUTH**!')
+        description='This package was registered via OAuth.')
+
+    upload = FileUpload(content, filename...)
+    m = hashlib.md5()
+    m.update(content)
+    digest = m.hexdigest()
+    example_upload(access_token, name='spam', version='3.0', summary='Spam via OAuth',
+        description='This package was registered via OAuth.', content=upload,
+        filetype='sdist', md5_digest=digest, comment='via oauth')
 
