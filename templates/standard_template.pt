@@ -23,7 +23,7 @@
        <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
 
        <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
-       <link rel="stylesheet" tal:attributes="href string:${app/config/pydotorg}css/pypi.css" type="text/css"/>
+       <link rel="stylesheet" href="/css/pypi.css" type="text/css"/>
 
        <metal:slot define-slot="head" />
 
