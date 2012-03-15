@@ -4,6 +4,7 @@ CREATE TABLE oauth_consumers (
       consumer              varchar2(32) primary key,
       secret                varchar2(64) not null,
       date_created          date not null,
+      created_by TEXT REFERENCES users ON UPDATE CASCADE,
       last_modified         date not null,
       description           varchar2(255) not null
 );
