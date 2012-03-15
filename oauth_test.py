@@ -164,6 +164,6 @@ if __name__ == '__main__':
     ACCESS_KEY = 'AJLks8p4zezH2ud9R7OQy98eRLXf8zut'
     ACCESS_SECRET = 'vSXBEWk5kn6wvVGivILPyBmtRitDvJq0cVcmBDk57eX2XCENvp2da3ou7v09TxrL'
     access_token = oauth.OAuthToken(ACCESS_KEY, ACCESS_SECRET)
-    example_access(access_token)
+    example_test(access_token)
     example_release(access_token, name='spam', version='2.0')
 

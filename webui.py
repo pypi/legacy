@@ -3230,6 +3230,10 @@ class WebUI:
         r = self._oauth_request()
         consumer, token, params = s.verify_request(r)
         user = s.data_store._get_user(token)
+        # recognise the user as accessing during this request
+        self.username = user
+        self.store.set_user(user, self.env['REMOTE_ADDR'], False)
+        self.authenticated = True
         return consumer, token, params, user
 
     def oauth_test_access(self):
