@@ -2190,9 +2190,9 @@ class OAuthDataStore(oauth.OAuthDataStore):
         '''Fill in the user id in the indicated request token.
 
         oauth_token is just a string
-        user is an account number, hopefully...
+        user is the username of the account to associate with
         '''
-        sql = 'update oauth_request_tokens set account = %s where token = %s'
+        sql = 'update oauth_request_tokens set user=%s where token=%s'
         safe_execute(self.store.get_cursor(), sql, (user, oauth_token))
         # XXX note: no return value. Spec says to return OAuthToken but it's
         # not used and I'd have to do a separate SELECT so I just don't see the
