@@ -2178,8 +2178,10 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
         # generate the token in the db
         sql = '''insert into oauth_request_tokens (token, secret, consumer,
-            date_created) values (%s, %s, %s, now())'''
-        safe_execute(self.store.get_cursor(), sql, (token, secret, oauth_consumer.key))
+            date_created) values (%s, %s, %s, %s)'''
+        now = datetime.datetime.now()
+        safe_execute(self.store.get_cursor(), sql, (token, secret,
+            oauth_consumer.key, now))
         return oauth.OAuthToken(token, secret)
 
     def authorize_request_token(self, oauth_token, user):
@@ -2229,8 +2231,10 @@ class OAuthDataStore(oauth.OAuthDataStore):
         # generate the token in the db
         sql = '''insert into oauth_access_tokens
             (token, secret, consumer, account, date_created, last_modified)
-            values (%s, %s, %s, %s, now(), now())'''
-        safe_execute(cursor, sql, (token, secret, oauth_consumer.key, account))
+            values (%s, %s, %s, %s, %s, %s)'''
+        now = datetime.datetime.now()
+        safe_execute(cursor, sql, (token, secret, oauth_consumer.key, account,
+            now, now))
         return oauth.OAuthToken(token, secret)
 
     def _get_account(self, token):
