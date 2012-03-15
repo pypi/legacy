@@ -2207,11 +2207,12 @@ class OAuthDataStore(oauth.OAuthDataStore):
         # not used and I'd have to do a separate SELECT so I just don't see the
         # point.
 
-    def fetch_access_token(self, oauth_consumer, oauth_token):
+    def fetch_access_token(self, oauth_consumer, oauth_token, oauth_verifier):
         '''When it says "fetch" it really means "create".
 
         oauth_consumer is an OAuthConsumer instance
         oauth_token is an OAuthToken instance representing the request token
+        oauth_verifier is ignored
 
         Create a token in the oauth_access_tokens table.
         '''
