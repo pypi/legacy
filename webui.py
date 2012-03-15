@@ -3224,6 +3224,5 @@ class WebUI:
         disallowed.
         '''
         consumer, token, params, user = self._parse_request()
-        return 'Access allowed for %s (ps. I got file=%s, size=%s)'%(user,
-            params['file'], params['size'])
+        return 'Access allowed for %s (ps. I got params=%r)'%(user, params)
 
