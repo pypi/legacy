@@ -3141,8 +3141,8 @@ class WebUI:
             self.oauth_authorise(uri)
         elif path == '/test':
             self.oauth_test_access(uri)
-
-        raise NotFound()
+        else:
+            raise NotFound()
 
     def _oauth_server(self):
         data_store = store.OAuthDataStore(self.store)
@@ -3156,6 +3156,8 @@ class WebUI:
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_request_token(r)
+        assert token.key
+        assert token.secret
         self.write_plain(str(token))
 
     def oauth_access_token(self, uri):
@@ -3164,6 +3166,8 @@ class WebUI:
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_access_token(r)
+        assert token.key
+        assert token.secret
         self.write_plain(str(token))
 
     def oauth_authorise(self, uri):
