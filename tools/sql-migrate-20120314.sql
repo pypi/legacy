@@ -13,6 +13,7 @@ CREATE TABLE oauth_request_tokens (
       token                 varchar2(32) primary key,
       secret                varchar2(64) not null,
       consumer              varchar2(32) not null,
+      callback              text,
       date_created          date not null,
       user TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
 );
