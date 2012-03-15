@@ -3172,6 +3172,10 @@ class WebUI:
     def oauth_authorise(self):
         if 'oauth_token' not in self.form:
             raise FormRequest('oauth_token and oauth_callback are required')
+        if not self.authenticated:
+            self.write_template('oauth_notloggedin.pt',
+                title="OAuth authorisation attempt")
+            return
 
         oauth_token = self.form['oauth_token']
         oauth_callback = self.form['oauth_callback']
@@ -3197,7 +3201,7 @@ class WebUI:
         if not ok:
             raise RedirectTemporary(oauth_callback)
 
-        # register the user agains the request token
+        # register the user against the request token
         s.authorize_token(oauth_token, self.username)
 
         # commit all changes now
