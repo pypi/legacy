@@ -52,7 +52,7 @@ class Config:
     def make_https(self):
         if self.url.startswith("http:"):
             self.url = "https"+self.url[4:]
-            self.pydotorg = '/'
+            self.pydotorg = self.orig_pydotorg.replace('http://', 'https://')
 
     def make_http(self):
         if self.url.startswith("https:"):
