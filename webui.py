@@ -346,6 +346,13 @@ class WebUI:
     error_message = None
     ok_message = None
 
+    def write_plain(self, payload):
+        self.handler.send_response(200)
+        self.handler.send_header("Content-type", 'text/plain')
+        self.handler.send_header("Content-length", str(len(payload)))
+        self.handler.end_headers()
+        self.handler.wfile.write(payload)
+
     def write_template(self, filename, headers={}, **options):
         context = {}
         options.setdefault('norobots', False)
@@ -739,9 +746,9 @@ class WebUI:
     def run_id(self):
         path = self.env.get('PATH_INFO')
         if not path:
-            return self.openid_discovery()
+            self.openid_discovery()
         else:
-            return self.openid_user(path)
+            self.openid_user(path)
 
     def home(self, nav_current='home'):
         self.write_template('home.pt', title='PyPI - the Python Package Index',
@@ -3120,6 +3127,7 @@ class WebUI:
     # OAuth
     #
     def run_oauth(self):
+        self.write_plain(str(self.env))
         if self.env.get('HTTPS') != 'on':
             raise NotFound('HTTPS must be used to access this URL')
 
@@ -3146,7 +3154,7 @@ class WebUI:
             self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_request_token(r)
-        return str(token)
+        self.write_plain(str(token))
 
     def oauth_access_token(self):
         s = self._oauth_server()
@@ -3154,7 +3162,7 @@ class WebUI:
             self.env['REQUEST_URI'], dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
         token = s.fetch_access_token(r)
-        return str(token)
+        self.write_plain(str(token))
 
     def oauth_authorise(self):
         if 'oauth_token' not in self.form:
