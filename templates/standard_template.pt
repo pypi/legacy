@@ -32,8 +32,8 @@
     </head>
     <body>
      <tal:x tal:condition="python:'testpypi' in app.config.url">
-      <img src="/testing-site.png" style="position: absolute; top: 0; left: 0; border: 0;" alt="Testing Site" />
-      <img src="/testing-site-right.png" style="position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
+      <img src="/testing-site.png" style="z-index: 100; position: absolute; top: 0; left: 0; border: 0;" alt="Testing Site" />
+      <img src="/testing-site-right.png" style="z-index: 100; position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
      </tal:x>
     
       <!--  Logo  -->
