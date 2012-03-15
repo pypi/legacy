@@ -2242,14 +2242,14 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
         # generate the token in the db
         sql = '''insert into oauth_access_tokens
-            (token, secret, consumer, account, date_created, last_modified)
+            (token, secret, consumer, user, date_created, last_modified)
             values (%s, %s, %s, %s, %s, %s)'''
         now = datetime.datetime.now()
         safe_execute(cursor, sql, (token, secret, oauth_consumer.key, user,
             now, now))
         return oauth.OAuthToken(token, secret)
 
-    def _get_account(self, token):
+    def _get_user(self, token):
         '''Given an access token, determine the user associated with it.
         '''
         sql = 'select user from oauth_access_tokens where token = %s'

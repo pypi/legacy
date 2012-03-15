@@ -3216,14 +3216,14 @@ class WebUI:
         s = self._oauth_server()
         r = oauth.OAuthRequest(self.env['REQUEST_METHOD'], uri, self.form)
         consumer, token, params = s.verify_request(r)
-        account = s._get_account(token)
-        return consumer, token, params, account
+        user = s._get_user(token)
+        return consumer, token, params, user
 
     def oauth_test_access(self):
         '''A resource that is protected so access without an access token is
         disallowed.
         '''
-        consumer, token, params, account = self._parse_request()
-        return 'Access allowed for %s (ps. I got file=%s, size=%s)'%(account,
+        consumer, token, params, user = self._parse_request()
+        return 'Access allowed for %s (ps. I got file=%s, size=%s)'%(user,
             params['file'], params['size'])
 
