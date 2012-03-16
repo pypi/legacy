@@ -931,8 +931,9 @@ class Store:
         # table to find the description and whether the package is hidden.
         # Postgres will only do that if the number of expected results
         # is "small".
+
         statement = '''
-            select j.name, r.version, j.submitted_date, r.summary
+            select j.name, r.version, j.submitted_date%s, r.summary
               from releases r
                    JOIN (SELECT name, max(submitted_Date) submitted_date
                          FROM  journals GROUP BY name) j ON j.name = r.name
@@ -940,18 +941,24 @@ class Store:
                and not r._pypi_hidden
                and r.name in (SELECT name FROM journals
                               WHERE  action='create'
-                              ORDER BY submitted_date DESC %s)
+                              ORDER BY submitted_date DESC %%s)
              order by j.submitted_date desc'''
+
+        if self.config.database_driver == 'sqlite3':
+            statement = statement % ' as "sd [timestamp]"'
+        else:
+            statement = statement % ''
+
         #print ' '.join((statement % limit).split())
         safe_execute(cursor, statement % limit)
         result = Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Releases)
+                self._Latest_Packages)
         if len(result) == num:
             return result
         # try again without limit
         safe_execute(cursor, statement % '')
         return Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Releases)
+                self._Latest_Packages)
 
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
     def latest_releases(self, num=40):
@@ -2046,7 +2053,7 @@ class Store:
                 return self.open()
         elif self.config.database_driver == 'sqlite3':
             self._conn = connection = sqlite3.connect(self.config.database_name,
-                                                      detect_types=sqlite3.PARSE_DECLTYPES)
+                detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         else:
             self._conn = connection = psycopg2.connect(**cd)
 

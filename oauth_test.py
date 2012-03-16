@@ -178,11 +178,11 @@ if __name__ == '__main__':
     example_release(access_token, name='spam', version='3.0', summary='Spam via OAuth',
         description='This package was registered via OAuth.')
 
-    upload = FileUpload(content, filename...)
-    m = hashlib.md5()
-    m.update(content)
-    digest = m.hexdigest()
-    example_upload(access_token, name='spam', version='3.0', summary='Spam via OAuth',
-        description='This package was registered via OAuth.', content=upload,
-        filetype='sdist', md5_digest=digest, comment='via oauth')
+    #upload = FileUpload(content, filename...)
+    #m = hashlib.md5()
+    #m.update(content)
+    #digest = m.hexdigest()
+    #example_upload(access_token, name='spam', version='3.0', summary='Spam via OAuth',
+        #description='This package was registered via OAuth.', content=upload,
+        #filetype='sdist', md5_digest=digest, comment='via oauth')
 
