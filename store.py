@@ -2208,7 +2208,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
         oauth_token is just a string
         user is the username of the account to associate with
         '''
-        sql = 'update oauth_request_tokens set user=%s where token=%s'
+        sql = 'update oauth_request_tokens set user_name=%s where token=%s'
         safe_execute(self.store.get_cursor(), sql, (user, oauth_token))
         # XXX note: no return value. Spec says to return OAuthToken but it's
         # not used and I'd have to do a separate SELECT so I just don't see the
@@ -2225,7 +2225,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
         '''
         # find user in the oauth_request_tokens table
         cursor = self.store.get_cursor()
-        sql = '''select user from oauth_request_tokens
+        sql = '''select user_name from oauth_request_tokens
             where consumer = %s and token = %s'''
         safe_execute(cursor, sql, (oauth_consumer.key, oauth_token.key))
         for row in cursor.fetchall():
@@ -2237,7 +2237,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
         # check that there's not already an access token for this consumer / user
         sql = '''select token from oauth_access_tokens
-            where consumer = %s and user = %s'''
+            where consumer = %s and user_name = %s'''
         safe_execute(cursor, sql, (oauth_consumer.key, user))
         for row in cursor.fetchall():
             # return the existing token
@@ -2249,7 +2249,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
         # generate the token in the db
         sql = '''insert into oauth_access_tokens
-            (token, secret, consumer, user, date_created, last_modified)
+            (token, secret, consumer, user_name, date_created, last_modified)
             values (%s, %s, %s, %s, %s, %s)'''
         now = datetime.datetime.now()
         safe_execute(cursor, sql, (token, secret, oauth_consumer.key, user,
@@ -2259,7 +2259,7 @@ class OAuthDataStore(oauth.OAuthDataStore):
     def _get_user(self, token):
         '''Given an access token, determine the user associated with it.
         '''
-        sql = 'select user from oauth_access_tokens where token = %s'
+        sql = 'select user_name from oauth_access_tokens where token = %s'
         cursor = self.store.get_cursor()
         safe_execute(cursor, sql, (token.key, ))
         for row in cursor.fetchall():

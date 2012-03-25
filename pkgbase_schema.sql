@@ -335,7 +335,7 @@ CREATE TABLE oauth_request_tokens (
       consumer              varchar(32) not null,
       callback              text,
       date_created          date not null,
-      user TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
+      user_name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE oauth_access_tokens (
@@ -344,7 +344,7 @@ CREATE TABLE oauth_access_tokens (
       consumer              varchar(32) not null,
       date_created          date not null,
       last_modified         date not null,
-      user TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
+      user_name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE oauth_nonce (
