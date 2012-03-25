@@ -32,3 +32,13 @@ folder = mirrors
 local-stats = local-stats
 global-stats = global-stats
 
+[sentry]
+dsn = 
+
+[uwsgi]
+wsgi-file = pypi.wsgi
+socket = /tmp/pypi.sock
+harakiri = 60
+master = 1
+post-buffering = 8192
+chmod-socket = 666
