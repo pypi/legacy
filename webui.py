@@ -4,7 +4,7 @@ import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 try:
     import json
 except ImportError:
@@ -1937,7 +1937,7 @@ class WebUI:
         # loading the metadata into
         # a DistributionMetadata instance
         # so we can use its check() method
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         for key, value in data.items():
             metadata[key] = value
         metadata['Metadata-Version'] = '1.2'
