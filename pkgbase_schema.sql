@@ -69,7 +69,7 @@ CREATE TABLE journals (
    action TEXT,
    submitted_date TIMESTAMP,
    -- no cascaded delete: need to check whether journal has useful information
-   submitted_by TEXT REFERENCES users ON UPDATE CASCADED,
+   submitted_by TEXT REFERENCES users ON UPDATE CASCADE,
    submitted_from TEXT
 );
 CREATE INDEX journals_name_idx ON journals(name);
