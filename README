@@ -14,6 +14,8 @@ these packages located at PyPI:
 - docutils
 - M2Crypto
 - distutils2
+- python-openid
+- raven
 
 Quick development setup
 -----------------------
@@ -33,7 +35,7 @@ virtualenv installed::
     $ virtualenv --no-site-packages --distribute .
     $ bin/easy_install cElementTree zope.interface zope.pagetemplate
     $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
-    $ bin/easy_install docutils M2Crypto
+    $ bin/easy_install docutils M2Crypto python-openid raven
 
 Then you can launch the server using the pypi.wsgi script::
 
