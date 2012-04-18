@@ -151,6 +151,9 @@ def nuke_nested_lists(store, confirm=False):
         where summary like '%nested lists%'""")
     hits = {}
     for name, version, summary in c.fetchall():
+        if "printer of nested lists" in summary:
+            hits[name] = summary
+            continue
         for f in store.list_files(name, version):
             path = store.gen_file_path(f['python_version'], name, f['filename'])
             if path.endswith('.zip'):
