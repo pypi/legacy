@@ -5,6 +5,8 @@ import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
+from xml.etree import cElementTree
+
 try:
     import json
 except ImportError:
@@ -15,11 +17,6 @@ try:
 except ImportError:
     class OperationalError(Exception):
         pass
-
-try:
-    import cElementTree
-except ImportError:
-    from xml.etree import cElementTree
 
 # Importing M2Crypto patches urllib; don't let them do that
 orig = urllib.URLopener.open_https.im_func
