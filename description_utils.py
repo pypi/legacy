@@ -185,7 +185,12 @@ def extractPackageReadme(content, filename, filetype):
                 continue
             # grab the content and parse if it's something we might understand,
             # based on the file extension
-            text = tar.extractfile(entry).read()
+            try:
+                text = tar.extractfile(entry).read()
+            except:
+                # issue 3521663: extraction may fail if entry is a symlink to
+                # a non-existing file
+                continue
             if ext in ('txt', 'rst', 'md'):
                 html = processDescription(text)
             return text, html
