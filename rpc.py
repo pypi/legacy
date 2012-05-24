@@ -47,8 +47,9 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             # report as a fault to caller rather than propogating up to generic
             # exception handler
             response = xmlrpclib.dumps(
-                xmlrpclib.Fault(1, repr(e), encoding=self.encoding,
-                    allow_none=self.allow_none,
+                xmlrpclib.Fault(1, repr(e)),
+                encoding=self.encoding,
+                allow_none=self.allow_none
             )
         else:
             # errors here are handled by _marshaled_dispatch
