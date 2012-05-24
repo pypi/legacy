@@ -24,7 +24,7 @@ links.
 <p style="margin-bottom: 0px">
 Just learning the ropes or trying things out? Why not use our new <b>test</b> PyPI server at
 <a href="http://testpypi.python.org/pypi">http://testpypi.python.org/pypi</a>.
-Use the "-r" option to "setup.py upload" or the "-i" option for pip.
+Use the "-r" option to "setup.py upload" or the "-i" option for "pip install".
 </p>
 </div>
 
