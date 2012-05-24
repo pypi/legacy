@@ -19,6 +19,17 @@ links.
 
 <br clear="right" />
 
+<div id="document-navigation" style="margin-left: 0px; width: 90%; float: left; display: inline; padding: 4px;">
+<b>NEW: Test PyPI Server</b>
+<p style="margin-bottom: 0px">
+Just learning the ropes and trying things out? Why not use our new <b>test</b> PyPI server at
+<a href="http://testpypi.python.org/pypi">http://testpypi.python.org/pypi</a>.
+Use the "-r" option to "setup.py upload" or the "-i" option for pip.
+</p>
+</div>
+
+<br clear="both" />
+
 <div id="document-navigation" style="margin-left: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Get Packages</b>
 <p style="margin-bottom: 0px">
