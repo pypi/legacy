@@ -1,3 +1,4 @@
+import sys
 import xmlrpclib
 import traceback
 import re
@@ -35,14 +36,25 @@ class RequestHandler(SimpleXMLRPCDispatcher):
     def __call__(self, webui_obj):
         webui_obj.handler.send_response(200, 'OK')
         webui_obj.handler.send_header('Content-type', 'text/xml')
-        webui_obj.handler.send_header('charset', 'UTF-8' );
+        webui_obj.handler.send_header('charset', 'UTF-8' )
         webui_obj.handler.end_headers()
-        length = int(webui_obj.env['CONTENT_LENGTH'])
-        data = webui_obj.handler.rfile.read(length)
-        # This should be thread-safe, as the store is really a singleton
-        self.store = webui_obj.store
-        response = self._marshaled_dispatch(data)
-        response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
+        try:
+            length = int(webui_obj.env['CONTENT_LENGTH'])
+            data = webui_obj.handler.rfile.read(length)
+            # This should be thread-safe, as the store is really a singleton
+            self.store = webui_obj.store
+        except Exception, e:
+            # report as a fault to caller rather than propogating up to generic
+            # exception handler
+            response = xmlrpclib.dumps(
+                xmlrpclib.Fault(1, repr(e), encoding=self.encoding,
+                    allow_none=self.allow_none,
+            )
+        else:
+            # errors here are handled by _marshaled_dispatch
+            response = self._marshaled_dispatch(data)
+            # remove non-printable ASCII control codes from the response
+            response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
         webui_obj.handler.wfile.write(response)
 
     def _dispatch(self, method, params):
