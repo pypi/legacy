@@ -2108,6 +2108,8 @@ class WebUI:
         else:
             message = '''You are about to remove %s<br />
                 This action <em>cannot be undone</em>!<br />
+                <br>
+                Consider that removing this file may break people's system builds.<br />
                 Are you <strong>sure</strong>?'''%desc
 
             fields = [
