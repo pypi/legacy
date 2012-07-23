@@ -65,6 +65,8 @@ class FormError(Exception):
     pass
 class OpenIDError(Exception):
     pass
+class OAuthError(Exception):
+    pass
 
 class MultipleReleases(Exception):
     def __init__(self, releases):
@@ -184,6 +186,8 @@ def transmute(field):
 
 def decode_form(form):
     d = {}
+    if not form:
+        return d
     for k in form.keys():
         v = form[k]
         if isinstance(v, list):
@@ -304,6 +308,9 @@ class WebUI:
             except OpenIDError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing OpenID request')
+            except OAuthError, message:
+                message = str(message)
+                self.fail(message, code=400, heading='Error processing OAuth request')
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
@@ -3137,6 +3144,8 @@ class WebUI:
     def run_oauth(self):
         if self.env.get('HTTPS') != 'on':
             raise NotFound('HTTPS must be used to access this URL')
+        if self.env.get('REQUEST_METHOD') != 'GET':
+            raise OAuthError('PyPI OAuth requires GET requests')
 
         path = self.env.get('PATH_INFO')
 
@@ -3159,6 +3168,8 @@ class WebUI:
 
     def _oauth_request(self):
         uri = self.url_machine + self.env['REQUEST_URI']
+        if not self.env.get('HTTP_AUTHORIZATION'):
+            raise OAuthError('PyPI OAuth requires header authorization')
         return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
             uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
             self.form)
@@ -3185,7 +3196,7 @@ class WebUI:
 
     def oauth_authorise(self):
         if 'oauth_token' not in self.form:
-            raise FormRequest('oauth_token and oauth_callback are required')
+            raise FormError('oauth_token and oauth_callback are required')
         if not self.authenticated:
             self.write_template('oauth_notloggedin.pt',
                 title="OAuth authorisation attempt")

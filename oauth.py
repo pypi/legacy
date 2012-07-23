@@ -52,7 +52,7 @@ def build_authenticate_header(realm=''):
 
 def escape(s):
     """Escape a URL including any /."""
-    return urllib.quote(s, safe='~&')
+    return urllib.quote(s, safe='~')
 
 def _utf8_str(s):
     """Convert unicode to utf-8."""
