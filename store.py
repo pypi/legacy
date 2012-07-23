@@ -268,7 +268,7 @@ class Store:
             args = (name, normalize_package_name(name))
 
             # if a bugtracker url is provided then insert it too
-	    if 'bugtrack_url' in info:
+            if 'bugtrack_url' in info:
                 cols += ', bugtrack_url'
                 vals += ', %s'
                 args += (info['bugtrack_url'], )
@@ -330,13 +330,13 @@ class Store:
                     vals.append(info[k])
             vals.extend([name, version])
 
-	    # pull out the bugtrack_url and put it in the packages table
+            # pull out the bugtrack_url and put it in the packages table
             # instead
-	    if 'bugtrack_url' in cols:
+            if 'bugtrack_url' in cols:
                 sql = 'update packages set bugtrack_url=%s where name=%s'
                 safe_execute(cursor, sql, (info['bugtrack_url'], name))
-		del vals[cols.index('bugtrack_url')]
-		cols.remove('bugtrack_url')
+                del vals[cols.index('bugtrack_url')]
+                cols.remove('bugtrack_url')
 
             # get old classifiers list
             old_cifiers = self.get_release_classifiers(name, version)
