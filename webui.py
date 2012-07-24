@@ -3144,8 +3144,6 @@ class WebUI:
     def run_oauth(self):
         if self.env.get('HTTPS') != 'on':
             raise NotFound('HTTPS must be used to access this URL')
-        if self.env.get('REQUEST_METHOD') != 'GET':
-            raise OAuthError('PyPI OAuth requires GET requests')
 
         path = self.env.get('PATH_INFO')
 
