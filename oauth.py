@@ -214,10 +214,22 @@ class OAuthRequest(object):
                     auth_header += ', %s="%s"' % (k, escape(str(v)))
         return {'Authorization': auth_header}
 
+    def escaped_parameters(self, params=None):
+        if params is None:
+            params = self.parameters
+        p = []
+        for k,v in params.items():
+            if isinstance(v, list):
+                for v in v:
+                    p.append((escape(_utf8_str(k)),
+                        escape(_utf8_str(v))))
+            else:
+                p.append((escape(_utf8_str(k)), escape(_utf8_str(v))))
+        return p
+
     def to_postdata(self):
         """Serialize as post data for a POST request."""
-        return '&'.join(['%s=%s' % (escape(str(k)), escape(str(v))) \
-            for k, v in self.parameters.iteritems()])
+        return '&'.join('%s=%s' % e for e in self.escaped_parameters())
 
     def to_url(self):
         """Serialize as a URL for a GET request."""
@@ -232,8 +244,7 @@ class OAuthRequest(object):
         except:
             pass
         # Escape key values before sorting.
-        key_values = [(escape(_utf8_str(k)), escape(_utf8_str(v))) \
-            for k,v in params.items()]
+        key_values = self.escaped_parameters(params)
         # Sort lexicographically, first after key, then after value.
         key_values.sort()
         # Combine key value pairs into a string.
