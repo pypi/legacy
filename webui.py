@@ -3168,9 +3168,12 @@ class WebUI:
         uri = self.url_machine + self.env['REQUEST_URI']
         if not self.env.get('HTTP_AUTHORIZATION'):
             raise OAuthError('PyPI OAuth requires header authorization')
+        params = dict(self.form)
+        # don't use file upload in signature
+        if 'content' in params:
+            del params['content']
         return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']),
-            self.form)
+            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']), params)
 
     def _oauth_server(self):
         data_store = store.OAuthDataStore(self.store)
