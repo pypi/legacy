@@ -2220,7 +2220,8 @@ class WebUI:
         if protocol_version!=self.CURRENT_UPLOAD_PROTOCOL:
             # If a new protocol version is added, backward compatibility
             # with old distutils upload commands needs to be preserved
-            raise NotImplementedError, "Unsupported file upload protocol"
+            raise NotImplementedError("Unsupported file upload protocol (%r)" %
+                protocol_version)
 
         # figure the package name and version
         name = version = None
@@ -3276,7 +3277,7 @@ class WebUI:
         '''Upload a file for a package release.
         '''
         consumer, token, params, user = self._parse_request()
-        self.file_upload(False, params)
+        self.file_upload(False)
         self.write_plain(message)
 
     def oauth_docupload(self):
