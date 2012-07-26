@@ -3277,7 +3277,7 @@ class WebUI:
         '''
         consumer, token, params, user = self._parse_request()
         self.file_upload(False)
-        self.write_plain(message)
+        self.write_plain('OK')
 
     def oauth_docupload(self):
         '''Upload a documentation bundle.
