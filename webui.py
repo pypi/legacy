@@ -2271,9 +2271,8 @@ class WebUI:
         if not content or not filetype:
             raise FormError, 'Both content and filetype are required'
 
-        md5_digest = parameters['md5_digest']
-
-        comment = parameters['comment']
+        md5_digest = parameters.get('md5_digest', '')
+        comment = parameters.get('comment', '')
 
         # python version?
         if parameters.get('pyversion', ''):
