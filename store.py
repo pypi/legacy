@@ -38,6 +38,7 @@ dist_file_types = [
     ('bdist_msi',        'MS Windows MSI installer'),
     ('bdist_egg',        'Python Egg'),
     ('bdist_dmg',        'OS X Disk Image'),
+    ('bdist_wheel',      'Python Wheel'),
 ]
 dist_file_types_d = dict(dist_file_types)
 
