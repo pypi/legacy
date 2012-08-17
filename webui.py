@@ -2017,6 +2017,7 @@ class WebUI:
         #self.csrf_check()
 
         name = self.form['name']
+        editing = self.env['REQUEST_METHOD'] == "POST"
 
         if self.form.has_key('submit_remove'):
             return self.remove_pkg()
@@ -2053,8 +2054,9 @@ class WebUI:
                 info['summary'] = self.form[key]
 
         # update the database
-        for version, info in reldict.items():
-            self.store.store_package(name, version, info)
+        if editing:
+            for version, info in reldict.items():
+                self.store.store_package(name, version, info)
             self.store.changed()
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
