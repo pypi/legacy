@@ -215,7 +215,9 @@ class WebUI:
         self.handler = handler
         self.config = handler.config
         self.wfile = handler.wfile
-        self.sentry_client = raven.Client(self.config.sentry_dsn)
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+            self.sentry_client = raven.Client(self.config.sentry_dsn)
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -325,7 +327,8 @@ class WebUI:
 
                 # attempt to send all the exceptions to Raven
                 try:
-                    self.sentry_client.captureException()
+                    if self.sentry_client:
+                        self.sentry_client.captureException()
                 except Exception:
                     # sentry broke so just email the exception like old times
                     if ('connection limit exceeded for non-superusers'
