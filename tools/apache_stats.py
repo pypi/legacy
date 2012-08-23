@@ -109,6 +109,10 @@ class LocalStats(object):
             stats_file = self._get_file_obj(stats_file, 'r', ext)
         reader = csv.reader(stats_file)
         for line in reader:
+            # work around user agents with commas
+            while len(line) > 4:
+                line[2] += ',' + line[3]
+                del line[3]
             yield {'packagename': line[0],
                    'filename': line[1],
                    'useragent': line[2],
