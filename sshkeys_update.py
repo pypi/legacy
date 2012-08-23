@@ -10,7 +10,7 @@ lines = []
 for name, key in cursor.fetchall():
     lines.append('command="%s -r %s",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty %s\n' %
                  (standalone_py, name, key))
-f = open('.ssh/authorized_keys', 'wb')
+f = open(os.path.expanduser('~submit/.ssh/authorized_keys'), 'wb')
 f.write(''.join(lines))
 f.close()
 s.rollback()

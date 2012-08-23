@@ -44,7 +44,7 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
-safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi)$', re.I)
+safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
 safe_username = re.compile(r'^[A-Za-z0-9._]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
@@ -215,7 +215,9 @@ class WebUI:
         self.handler = handler
         self.config = handler.config
         self.wfile = handler.wfile
-        self.sentry_client = raven.Client(self.config.sentry_dsn)
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+            self.sentry_client = raven.Client(self.config.sentry_dsn)
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -325,7 +327,8 @@ class WebUI:
 
                 # attempt to send all the exceptions to Raven
                 try:
-                    self.sentry_client.captureException()
+                    if self.sentry_client:
+                        self.sentry_client.captureException()
                 except Exception:
                     # sentry broke so just email the exception like old times
                     if ('connection limit exceeded for non-superusers'
@@ -2017,6 +2020,7 @@ class WebUI:
         #self.csrf_check()
 
         name = self.form['name']
+        editing = self.env['REQUEST_METHOD'] == "POST"
 
         if self.form.has_key('submit_remove'):
             return self.remove_pkg()
@@ -2053,8 +2057,9 @@ class WebUI:
                 info['summary'] = self.form[key]
 
         # update the database
-        for version, info in reldict.items():
-            self.store.store_package(name, version, info)
+        if editing:
+            for version, info in reldict.items():
+                self.store.store_package(name, version, info)
             self.store.changed()
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
