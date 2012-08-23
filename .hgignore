@@ -1,0 +1,7 @@
+syntax: glob
+**.pyc
+config.ini
+uwsgi-logd.conf
+sshkeys_update
+privkey*
+pubkey*

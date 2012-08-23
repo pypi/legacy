@@ -2043,6 +2043,8 @@ class Store:
         cd = dict(database=self.config.database_name, user=self.config.database_user)
         if self.config.database_pw:
             cd['password'] = self.config.database_pw
+        if self.config.database_host:
+            cd['host'] = self.config.database_host
         if keep_conn and connection:
             self._conn = connection
             # Rollback any uncommitted earlier change
