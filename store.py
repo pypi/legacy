@@ -2055,6 +2055,8 @@ class Store:
         elif self.config.database_driver == 'sqlite3':
             self._conn = connection = sqlite3.connect(self.config.database_name,
                 detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
+            # we store encoded strings in the db, not unicode objects
+            self._conn.text_factory = str
         else:
             self._conn = connection = psycopg2.connect(**cd)
 
