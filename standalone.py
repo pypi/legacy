@@ -2,7 +2,7 @@
 import config, webui, BaseHTTPServer, urllib, sys, getopt, os
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    config = config.Config("config.ini")
+    config = config.Config(os.path.dirname(__file__)+"/config.ini")
     ssh_user = None
 
     def set_content_type(self, content_type):
