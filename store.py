@@ -2235,6 +2235,11 @@ class OAuthDataStore(oauth.OAuthDataStore):
             raise ValueError('request token consumer=%r, token=%r not found'%(
                 oauth_consumer.key, oauth_token.token))
 
+        # sanity check - if the user_name is None then the request token has
+        # NOT been authorised
+        if user is None:
+            return None
+
         # check that there's not already an access token for this consumer / user
         sql = '''select token from oauth_access_tokens
             where consumer = %s and user_name = %s'''

@@ -3192,6 +3192,8 @@ class WebUI:
         s = self._oauth_server()
         r = self._oauth_request()
         token = s.fetch_access_token(r)
+        if token is None:
+            raise OAuthError('Request Token not authorised')
         self.store.commit()
         self.write_plain(str(token))
 
