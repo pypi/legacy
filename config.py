@@ -17,6 +17,10 @@ class Config:
             self.database_pw = c.get('database', 'password')
         else:
             self.database_pw = None
+        if c.has_option('database', 'host'):
+            self.database_host = c.get('database', 'host')
+        else:
+            self.database_host = None
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):
