@@ -465,8 +465,7 @@ class Store:
         safe_execute(cursor,
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
-
-        all_versions = cursor.fetchall()
+        all_versions = list(cursor.fetchall())
 
         l = []
         o = {}
@@ -477,6 +476,7 @@ class Store:
                 version = suggest_normalized_version(version)
                 assert version is not None
                 l.append(NormalizedVersion(version))
+            # add in the new version if there is one
             if new_version is not None:
                 version = suggest_normalized_version(new_version)
                 assert version is not None
