@@ -466,48 +466,51 @@ class Store:
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
         all_versions = list(cursor.fetchall())
+        all_versions.append((new_version, None))
 
-        l = []
-        o = {}
-#        try:
-#            # attempt to order using the PEP 386 implementation
-#            for version, ordering in all_versions:
-#                version = suggest_normalized_version(version)
-#                assert version is not None
-#                o[version] = ordering
-#                l.append(NormalizedVersion(version))
-#            # add in the new version if there is one
-#            if new_version is not None:
-#                version = suggest_normalized_version(new_version)
-#                assert version is not None
-#                l.append(NormalizedVersion(version))
-#                # just in case we did modify the new_version we need to update
-#                # it for later comparison
-#                new_version = version
-#        except Exception:
-#            # fall back on the old distutils LooseVersion
-#            l = []
-#            o = {}
-        if 1:
+        versions = []
+        current_ordering = {}
+        norm_to_orig = {}
+        try:
+            # attempt to order using the PEP 386 implementation
             for version, ordering in all_versions:
-                o[version] = ordering
-                l.append(LooseVersion(version))
-            if new_version is not None:
-                l.append(LooseVersion(new_version))
+                # fix up the 8% of PyPI versions that aren't PEP 386-strict
+                norm_version = suggest_normalized_version(version)
 
-        l.sort()
-        n = len(l)
+                # give up if we can't even do that
+                assert norm_version is not None
+
+                norm_to_orig[norm_version] = version
+                current_ordering[norm_version] = ordering
+                versions.append(NormalizedVersion(norm_version))
+
+                # just in case we did modify the new_version we need to update
+                # it for later comparison
+                if version == new_version:
+                    new_version = norm_version
+        except Exception:
+            # fall back on the old distutils LooseVersion
+            versions = []
+            current_ordering = {}
+            for version, ordering in all_versions:
+                norm_to_orig[version] = version
+                current_ordering[version] = ordering
+                versions.append(LooseVersion(version))
+
+        versions.sort()
+        n = len(versions)
 
         # most packages won't need to renumber if we give them 100 releases
         max = 10 ** min(math.ceil(math.log10(n)), 2)
 
         # figure the ordering values for the releases
-        for i in range(n):
-            v = str(l[i])
-            order = max+i
+        for i, v in enumerate(versions):
+            order = max + i
             if v == new_version:
                 new_version = order
-            elif order != o[v]:
+            elif order != current_ordering[v]:
+                # map from normalised back to the actual project version
+                v = norm_to_orig[v]
                 # ordering has changed, update
                 safe_execute(cursor, '''update releases set _pypi_ordering=%s
                     where name=%s and version=%s''', (order, name, v))
