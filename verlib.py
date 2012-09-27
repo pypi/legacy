@@ -1,9 +1,5 @@
-"""
-"Rational" version definition and parsing for DistutilsVersionFight
-discussion at PyCon 2009.
-"""
+"""Implementation of the versioning scheme defined in PEP 386."""
 
-import sys
 import re
 
 class IrrationalVersionError(Exception):
@@ -12,31 +8,35 @@ class IrrationalVersionError(Exception):
 
 class HugeMajorVersionNumError(IrrationalVersionError):
     """An irrational version because the major version number is huge
-    (often because a year or date was used).
-
+   (often because a year or date was used).
     See `error_on_huge_major_num` option in `NormalizedVersion` for details.
     This guard can be disabled by setting that option False.
     """
     pass
 
+__all__ = ['NormalizedVersion', 'suggest_normalized_version',
+           'VersionPredicate', 'is_valid_version', 'is_valid_versions',
+           'is_valid_predicate']
+
 # A marker used in the second and third parts of the `parts` tuple, for
 # versions that don't have those segments, to sort properly. An example
 # of versions in sort order ('highest' last):
-#   1.0b1                 ((1,0), ('b',1), ('f',))
-#   1.0.dev345            ((1,0), ('f',),  ('dev', 345))
-#   1.0                   ((1,0), ('f',),  ('f',))
-#   1.0.post256.dev345    ((1,0), ('f',),  ('f', 'post', 256, 'dev', 345))
-#   1.0.post345           ((1,0), ('f',),  ('f', 'post', 345, 'f'))
+#   1.0b1                 ((1,0), ('b',1), ('z',))
+#   1.0.dev345            ((1,0), ('z',),  ('dev', 345))
+#   1.0                   ((1,0), ('z',),  ('z',))
+#   1.0.post256.dev345    ((1,0), ('z',),  ('z', 'post', 256, 'dev', 345))
+#   1.0.post345           ((1,0), ('z',),  ('z', 'post', 345, 'z'))
 #                                   ^        ^                 ^
-#   'b' < 'f' ---------------------/         |                 |
+#   'b' < 'z' ---------------------/         |                 |
 #                                            |                 |
-#   'dev' < 'f' < 'post' -------------------/                  |
+#   'dev' < 'z' ----------------------------/                  |
 #                                                              |
-#   'dev' < 'f' ----------------------------------------------/
-# Other letters would do, but 'f' for 'final' is kind of nice.
-FINAL_MARKER = ('f',)
+#   'dev' < 'z' ----------------------------------------------/
+# 'f' for 'final' would be kind of nice, but due to bugs in the support of
+# 'rc' we must use 'z'
+_FINAL_MARKER = ('z',)
 
-VERSION_RE = re.compile(r'''
+_VERSION_RE = re.compile(r'''
     ^
     (?P<version>\d+\.\d+)          # minimum 'N.N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
@@ -48,7 +48,8 @@ VERSION_RE = re.compile(r'''
     (?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
     $''', re.VERBOSE)
 
-class NormalizedVersion(object):
+
+class NormalizedVersion:
     """A rational version.
 
     Good:
@@ -66,14 +67,16 @@ class NormalizedVersion(object):
         1.2a        # release level must have a release serial
         1.2.3b
     """
-    def __init__(self, s, error_on_huge_major_num=True):
+    def __init__(self, s, error_on_huge_major_num=True,
+                 drop_trailing_zeros=False):
         """Create a NormalizedVersion instance from a version string.
 
         @param s {str} The version string.
         @param error_on_huge_major_num {bool} Whether to consider an
             apparent use of a year or full date as the major version number
             an error. Default True. One of the observed patterns on PyPI before
-            the introduction of `NormalizedVersion` was version numbers like this:
+            the introduction of `NormalizedVersion` was version numbers like
+            this:
                 2009.01.03
                 20040603
                 2005.01
@@ -82,17 +85,22 @@ class NormalizedVersion(object):
             and, e.g. downstream Linux package managers, will forever remove
             the possibility of using a version number like "1.0" (i.e.
             where the major number is less than that huge major number).
+        @param drop_trailing_zeros {bool} Whether to drop trailing zeros
+
+            from the returned list. Default True.
         """
+        self.is_final = True  # by default, consider a version as final.
+        self.drop_trailing_zeros = drop_trailing_zeros
         self._parse(s, error_on_huge_major_num)
 
     @classmethod
-    def from_parts(cls, version, prerelease=FINAL_MARKER,
-                   devpost=FINAL_MARKER):
+    def from_parts(cls, version, prerelease=_FINAL_MARKER,
+                   devpost=_FINAL_MARKER):
         return cls(cls.parts_to_str((version, prerelease, devpost)))
 
     def _parse(self, s, error_on_huge_major_num=True):
         """Parses a string version into parts."""
-        match = VERSION_RE.search(s)
+        match = _VERSION_RE.search(s)
         if not match:
             raise IrrationalVersionError(s)
 
@@ -100,7 +108,7 @@ class NormalizedVersion(object):
         parts = []
 
         # main version
-        block = self._parse_numdots(groups['version'], s, False, 2)
+        block = self._parse_numdots(groups['version'], s, 2)
         extraversion = groups.get('extraversion')
         if extraversion not in ('', None):
             block += self._parse_numdots(extraversion[1:], s)
@@ -113,8 +121,9 @@ class NormalizedVersion(object):
             block += self._parse_numdots(groups.get('prerelversion'), s,
                                          pad_zeros_length=1)
             parts.append(tuple(block))
+            self.is_final = False
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
 
         # postdev
         if groups.get('postdev'):
@@ -122,29 +131,27 @@ class NormalizedVersion(object):
             dev = groups.get('dev')
             postdev = []
             if post is not None:
-                postdev.extend([FINAL_MARKER[0], 'post', int(post)])
+                postdev.extend((_FINAL_MARKER[0], 'post', int(post)))
                 if dev is None:
-                    postdev.append(FINAL_MARKER[0])
+                    postdev.append(_FINAL_MARKER[0])
             if dev is not None:
-                postdev.extend(['dev', int(dev)])
+                postdev.extend(('dev', int(dev)))
+                self.is_final = False
             parts.append(tuple(postdev))
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
         self.parts = tuple(parts)
         if error_on_huge_major_num and self.parts[0][0] > 1980:
             raise HugeMajorVersionNumError("huge major version number, %r, "
-                "which might cause future problems: %r" % (self.parts[0][0], s))
+               "which might cause future problems: %r" % (self.parts[0][0], s))
 
-    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=True,
-                       pad_zeros_length=0):
+    def _parse_numdots(self, s, full_ver_str, pad_zeros_length=0):
         """Parse 'N.N.N' sequences, return a list of ints.
 
-        @param s {str} 'N.N.N..." sequence to be parsed
+        @param s {str} 'N.N.N...' sequence to be parsed
         @param full_ver_str {str} The full version string from which this
             comes. Used for error strings.
-        @param drop_trailing_zeros {bool} Whether to drop trailing zeros
-            from the returned list. Default True.
-        @param pad_zeros_length {int} The length to which to pad the
+                @param pad_zeros_length {int} The length to which to pad the
             returned list with zeros, if necessary. Default 0.
         """
         nums = []
@@ -153,7 +160,7 @@ class NormalizedVersion(object):
                 raise IrrationalVersionError("cannot have leading zero in "
                     "version number segment: '%s' in %r" % (n, full_ver_str))
             nums.append(int(n))
-        if drop_trailing_zeros:
+        if self.drop_trailing_zeros:
             while nums and nums[-1] == 0:
                 nums.pop()
         while len(nums) < pad_zeros_length:
@@ -170,11 +177,12 @@ class NormalizedVersion(object):
         # XXX This doesn't check for invalid tuples
         main, prerel, postdev = parts
         s = '.'.join(str(v) for v in main)
-        if prerel is not FINAL_MARKER:
+        if prerel is not _FINAL_MARKER:
             s += prerel[0]
             s += '.'.join(str(v) for v in prerel[1:])
-        if postdev and postdev is not FINAL_MARKER:
-            if postdev[0] == 'f':
+        # XXX clean up: postdev is always true; code is obscure
+        if postdev and postdev is not _FINAL_MARKER:
+            if postdev[0] == _FINAL_MARKER[0]:
                 postdev = postdev[1:]
             i = 0
             while i < len(postdev):
@@ -213,6 +221,11 @@ class NormalizedVersion(object):
     def __ge__(self, other):
         return self.__eq__(other) or self.__gt__(other)
 
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    def __hash__(self):
+        return hash(self.parts)
+
+
 def suggest_normalized_version(s):
     """Suggest a normalized version close to the given version string.
 
@@ -224,7 +237,7 @@ def suggest_normalized_version(s):
     on observation of versions currently in use on PyPI. Given a dump of
     those version during PyCon 2009, 4287 of them:
     - 2312 (53.93%) match NormalizedVersion without change
-    - with the automatic suggestion
+      with the automatic suggestion
     - 3474 (81.04%) match when using this suggestion method
 
     @param s {str} An irrational version string.
@@ -254,7 +267,7 @@ def suggest_normalized_version(s):
     # if we have something like "b-2" or "a.2" at the end of the
     # version, that is pobably beta, alpha, etc
     # let's remove the dash or dot
-    rs = re.sub(r"([abc|rc])[\-\.](\d+)$", r"\1\2", rs)
+    rs = re.sub(r"([abc]|rc)[\-\.](\d+)$", r"\1\2", rs)
 
     # 1.0-dev-r371 -> 1.0.dev371
     # 0.1-dev-r79 -> 0.1.dev79
@@ -294,12 +307,12 @@ def suggest_normalized_version(s):
 
     # The 'r' and the '-' tags are post release tags
     #   0.4a1.r10       ->  0.4a1.post10
-    #   0.9.33-17222    ->  0.9.3.post17222
-    #   0.9.33-r17222   ->  0.9.3.post17222
+    #   0.9.33-17222    ->  0.9.33.post17222
+    #   0.9.33-r17222   ->  0.9.33.post17222
     rs = re.sub(r"\.?(r|-|-r)\.?(\d+)$", r".post\2", rs)
 
     # Clean 'r' instead of 'dev' usage:
-    #   0.9.33+r17222   ->  0.9.3.dev17222
+    #   0.9.33+r17222   ->  0.9.33.dev17222
     #   1.0dev123       ->  1.0.dev123
     #   1.0.git123      ->  1.0.dev123
     #   1.0.bzr123      ->  1.0.dev123
@@ -314,7 +327,6 @@ def suggest_normalized_version(s):
     # PyPI stats: ~21 (0.62%) better
     rs = re.sub(r"\.?(pre|preview|-c)(\d+)$", r"c\g<2>", rs)
 
-
     # Tcl/Tk uses "px" for their post release markers
     rs = re.sub(r"p(\d+)$", r".post\1", rs)
 
@@ -325,3 +337,127 @@ def suggest_normalized_version(s):
         pass
     return None
 
+
+# A predicate is: "ProjectName (VERSION1, VERSION2, ..)
+_PREDICATE = re.compile(r"(?i)^\s*(\w[\s\w-]*(?:\.\w*)*)(.*)")
+_VERSIONS = re.compile(r"^\s*\((?P<versions>.*)\)\s*$|^\s*"
+                        "(?P<versions2>.*)\s*$")
+_PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
+_SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
+
+
+def _split_predicate(predicate):
+    match = _SPLIT_CMP.match(predicate)
+    if match is None:
+        # probably no op, we'll use "=="
+        comp, version = '==', predicate
+    else:
+        comp, version = match.groups()
+    return comp, NormalizedVersion(version)
+
+
+class VersionPredicate:
+    """Defines a predicate: ProjectName (>ver1,ver2, ..)"""
+
+    _operators = {"<": lambda x, y: x < y,
+                  ">": lambda x, y: x > y,
+                  "<=": lambda x, y: str(x).startswith(str(y)) or x < y,
+                  ">=": lambda x, y: str(x).startswith(str(y)) or x > y,
+                  "==": lambda x, y: str(x).startswith(str(y)),
+                  "!=": lambda x, y: not str(x).startswith(str(y)),
+                  }
+
+    def __init__(self, predicate):
+        self._string = predicate
+        predicate = predicate.strip()
+        match = _PREDICATE.match(predicate)
+        if match is None:
+            raise ValueError('Bad predicate "%s"' % predicate)
+
+        name, predicates = match.groups()
+        self.name = name.strip()
+        self.predicates = []
+        if predicates is None:
+            return
+
+        predicates = _VERSIONS.match(predicates.strip())
+        if predicates is None:
+            return
+
+        predicates = predicates.groupdict()
+        if predicates['versions'] is not None:
+            versions = predicates['versions']
+        else:
+            versions = predicates.get('versions2')
+
+        if versions is not None:
+            for version in versions.split(','):
+                if version.strip() == '':
+                    continue
+                self.predicates.append(_split_predicate(version))
+
+    def match(self, version):
+        """Check if the provided version matches the predicates."""
+        if isinstance(version, str):
+            version = NormalizedVersion(version)
+        for operator, predicate in self.predicates:
+            if not self._operators[operator](version, predicate):
+                return False
+        return True
+
+    def __repr__(self):
+        return self._string
+
+
+class _Versions(VersionPredicate):
+    def __init__(self, predicate):
+        predicate = predicate.strip()
+        match = _PLAIN_VERSIONS.match(predicate)
+        self.name = None
+        predicates = match.groups()[0]
+        self.predicates = [_split_predicate(pred.strip())
+                           for pred in predicates.split(',')]
+
+
+class _Version(VersionPredicate):
+    def __init__(self, predicate):
+        predicate = predicate.strip()
+        match = _PLAIN_VERSIONS.match(predicate)
+        self.name = None
+        self.predicates = _split_predicate(match.groups()[0])
+
+
+def is_valid_predicate(predicate):
+    try:
+        VersionPredicate(predicate)
+    except (ValueError, IrrationalVersionError):
+        return False
+    else:
+        return True
+
+
+def is_valid_versions(predicate):
+    try:
+        _Versions(predicate)
+    except (ValueError, IrrationalVersionError):
+        return False
+    else:
+        return True
+
+
+def is_valid_version(predicate):
+    try:
+        _Version(predicate)
+    except (ValueError, IrrationalVersionError):
+        return False
+    else:
+        return True
+
+
+def get_version_predicate(requirements):
+    """Return a VersionPredicate object, from a string or an already
+    existing object.
+    """
+    if isinstance(requirements, str):
+        requirements = VersionPredicate(requirements)
+    return requirements
