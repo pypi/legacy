@@ -506,6 +506,7 @@ class Store:
         # figure the ordering values for the releases
         for i, v in enumerate(versions):
             order = max + i
+            v = str(v)
             if v == new_version:
                 new_version = order
             elif order != current_ordering[v]:
