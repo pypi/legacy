@@ -27,7 +27,7 @@ import oauth
 # some version strings are not compatible with the new method and we can fall
 # back on the old version
 from distutils.version import LooseVersion
-import verlib
+from verlib import NormalizedVersion, suggest_normalized_version
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -474,9 +474,16 @@ class Store:
             # attempt to order using the PEP 386 implementation
             for version, ordering in all_versions:
                 o[version] = ordering
-                l.append(verlib.NormalizeVersion(version))
+                version = suggest_normalized_version(version)
+                assert version is not None
+                l.append(NormalizedVersion(version))
             if new_version is not None:
-                l.append(verlib.NormalizeVersion(new_version))
+                version = suggest_normalized_version(new_version)
+                assert version is not None
+                l.append(NormalizedVersion(version))
+                # just in case we did modify the new_version we need to update
+                # it for later comparison
+                new_version = version
         except Exception:
             # fall back on the old distutils LooseVersion
             l = []
@@ -495,7 +502,7 @@ class Store:
 
         # figure the ordering values for the releases
         for i in range(n):
-            v = l[i].vstring
+            v = str(l[i])
             order = max+i
             if v == new_version:
                 new_version = order
