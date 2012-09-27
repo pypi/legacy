@@ -14,7 +14,6 @@ try:
 except ImportError:
     sqlite3_cursor = type(None)
 from xml.parsers import expat
-from distutils.version import LooseVersion
 import trove, openid2rp
 from mini_pkg_resources import safe_name
 from description_utils import processDescription
@@ -23,6 +22,12 @@ import hmac
 from base64 import b64encode
 import openid.store.sqlstore
 import oauth
+
+# we import both the old and new (PEP 386) methods of handling versions since
+# some version strings are not compatible with the new method and we can fall
+# back on the old version
+from distutils.version import LooseVersion
+import verlib
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
@@ -452,21 +457,36 @@ class Store:
     def fix_ordering(self, name, new_version=None):
         ''' Fix the _pypi_ordering column for a package's releases.
 
-            If "new_version" is supplied, insert it into the sequence and
-            return the ordering value for it.
+        If "new_version" is supplied, insert it into the sequence and
+        return the ordering value for it.
         '''
         cursor = self.get_cursor()
         # load up all the version strings for this package and sort them
         safe_execute(cursor,
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
+
+        all_versions = cursor.fetchall()
+
         l = []
         o = {}
-        for version, ordering in cursor.fetchall():
-            o[version] = ordering
-            l.append(LooseVersion(version))
-        if new_version is not None:
-            l.append(LooseVersion(new_version))
+        try:
+            # attempt to order using the PEP 386 implementation
+            for version, ordering in all_versions:
+                o[version] = ordering
+                l.append(verlib.NormalizeVersion(version))
+            if new_version is not None:
+                l.append(verlib.NormalizeVersion(new_version))
+        except Exception:
+            # fall back on the old distutils LooseVersion
+            l = []
+            o = {}
+            for version, ordering in all_versions:
+                o[version] = ordering
+                l.append(LooseVersion(version))
+            if new_version is not None:
+                l.append(LooseVersion(new_version))
+
         l.sort()
         n = len(l)
 
