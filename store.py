@@ -472,9 +472,9 @@ class Store:
         try:
             # attempt to order using the PEP 386 implementation
             for version, ordering in all_versions:
-                o[version] = ordering
                 version = suggest_normalized_version(version)
                 assert version is not None
+                o[version] = ordering
                 l.append(NormalizedVersion(version))
             # add in the new version if there is one
             if new_version is not None:
