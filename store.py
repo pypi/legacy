@@ -1013,9 +1013,12 @@ class Store:
                 self._Latest_Updates)
 
     _Latest_Release = FastResultRow('''name version submitted_date! summary
-            _pypi_hidden!''')
+            _pypi_hidden! _pypi_ordering!''')
     def get_latest_release(self, name, hidden=None):
         ''' Fetch all releses for the package name, including hidden.
+
+        The "latest" version determined by ordering version numbers, not by
+        submission date.
         '''
         args = [name, name]
         if hidden is not None:
@@ -1025,8 +1028,8 @@ class Store:
             hidden = ''
         cursor = self.get_cursor()
         safe_execute(cursor, '''
-            select r.name as name,r.version as version,j.submitted_date,
-                r.summary as summary,_pypi_hidden
+            select r.name as name, r.version as version, j.submitted_date,
+                r.summary as summary, _pypi_hidden, _pypi_ordering
             from journals j, releases r
             where j.version is not NULL
                   and j.action = 'new release'
@@ -1034,7 +1037,7 @@ class Store:
                   and r.name = %%s
                   and j.version = r.version
                   %s
-            order by submitted_date desc
+            order by _pypi_ordering desc
         '''%hidden, tuple(args))
         res = cursor.fetchall()
         if res is None:
