@@ -469,25 +469,26 @@ class Store:
 
         l = []
         o = {}
-        try:
-            # attempt to order using the PEP 386 implementation
-            for version, ordering in all_versions:
-                version = suggest_normalized_version(version)
-                assert version is not None
-                o[version] = ordering
-                l.append(NormalizedVersion(version))
-            # add in the new version if there is one
-            if new_version is not None:
-                version = suggest_normalized_version(new_version)
-                assert version is not None
-                l.append(NormalizedVersion(version))
-                # just in case we did modify the new_version we need to update
-                # it for later comparison
-                new_version = version
-        except Exception:
-            # fall back on the old distutils LooseVersion
-            l = []
-            o = {}
+#        try:
+#            # attempt to order using the PEP 386 implementation
+#            for version, ordering in all_versions:
+#                version = suggest_normalized_version(version)
+#                assert version is not None
+#                o[version] = ordering
+#                l.append(NormalizedVersion(version))
+#            # add in the new version if there is one
+#            if new_version is not None:
+#                version = suggest_normalized_version(new_version)
+#                assert version is not None
+#                l.append(NormalizedVersion(version))
+#                # just in case we did modify the new_version we need to update
+#                # it for later comparison
+#                new_version = version
+#        except Exception:
+#            # fall back on the old distutils LooseVersion
+#            l = []
+#            o = {}
+        if 1:
             for version, ordering in all_versions:
                 o[version] = ordering
                 l.append(LooseVersion(version))
