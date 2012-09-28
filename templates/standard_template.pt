@@ -24,6 +24,7 @@
 
        <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
        <link rel="stylesheet" href="/css/pypi.css" type="text/css"/>
+       <link media="screen" rel="stylesheet" href="/css/pypi-screen.css" type="text/css"/>
 
        <metal:slot define-slot="head" />
 
