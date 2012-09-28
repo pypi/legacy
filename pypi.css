@@ -279,6 +279,12 @@ margin:12px;
 margin-top:3px;
 }
 
+#document-navigation {
+	-webkit-box-shadow: 0 1px 2px rgba(0,0,0,.2);
+	-moz-box-shadow: 0 1px 2px rgba(0,0,0,.2);
+	box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
 #document-navigation ul {
   /* bit too squeezy with the default large padding */
   margin: 0px;
