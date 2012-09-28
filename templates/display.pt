@@ -19,16 +19,18 @@
 </metal:fill>
 
 <metal:fill fill-slot="body">
-<tal:element condition="python:len(data['files']) == 1">
+<div id="download-button" tal:condition="data/files">
+ <tal:element condition="python:len(data['files']) == 1">
   <a tal:define="file python:data['files'][0]"
      tal:attributes="href python:app.store.gen_file_url(
         file['python_version'], data['name'], file['filename'])"
      class="button green" style="float:right;">Download<br />
     <span style="font-size: 75%" tal:content="file/filename">download</span>
   </a>
-</tal:element>
-<a tal:condition="python:len(data['files']) > 1" class="button green"
+ </tal:element>
+ <a tal:condition="python:len(data['files']) > 1" class="button green"
     style="float:right;" href="#downloads">Downloads &darr;</a>
+</div>
 
 <p style="font-style: italic" tal:content="data/release/summary | nothing" />
 
