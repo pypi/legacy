@@ -50,8 +50,12 @@
 	filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#4e7d0e', endColorstr='#7db72f');
 }
 
-/* don't have the block expand to fill the space horizontally */
+/* don't have the block expand to fill the space horizontally  - also make it
+ * prettier */
 pre.literal-block, pre.doctest-block {
     display: inline-block;
     margin: 0 2em 0 2em;
+    display: inline-block;
+    border: thin solid #AAF;
+    border-radius: .5em;
 }
