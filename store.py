@@ -480,14 +480,20 @@ class Store:
                 # give up if we can't even do that
                 assert norm_version is not None
 
-                norm_to_orig[norm_version] = version
-                current_ordering[norm_version] = ordering
-                versions.append(NormalizedVersion(norm_version))
+                # actually objectify the version as the formal parsing and
+                # re-stringification has a bug we need to work around:
+                # >>> NormalizedVersion('0.0.2.post1')
+                # NormalizedVersion('0.0.2.post1.z')
+                s_norm_version = NormalizedVersion(norm_version)
+
+                norm_to_orig[s_norm_version] = version
+                current_ordering[s_norm_version] = ordering
+                versions.append(norm_version)
 
                 # just in case we did modify the new_version we need to update
                 # it for later comparison
                 if version == new_version:
-                    new_version = norm_version
+                    new_version = s_norm_version
         except Exception:
             # fall back on the old distutils LooseVersion
             versions = []
