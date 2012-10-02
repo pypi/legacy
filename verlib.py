@@ -49,7 +49,7 @@ _VERSION_RE = re.compile(r'''
     $''', re.VERBOSE)
 
 
-class NormalizedVersion:
+class NormalizedVersion(object):
     """A rational version.
 
     Good:
@@ -184,6 +184,8 @@ class NormalizedVersion:
         if postdev and postdev is not _FINAL_MARKER:
             if postdev[0] == _FINAL_MARKER[0]:
                 postdev = postdev[1:]
+            if postdev[-1] == _FINAL_MARKER[0]:
+                postdev = postdev[:-1]
             i = 0
             while i < len(postdev):
                 if i % 2 == 0:
@@ -356,7 +358,7 @@ def _split_predicate(predicate):
     return comp, NormalizedVersion(version)
 
 
-class VersionPredicate:
+class VersionPredicate(object):
     """Defines a predicate: ProjectName (>ver1,ver2, ..)"""
 
     _operators = {"<": lambda x, y: x < y,
@@ -398,7 +400,7 @@ class VersionPredicate:
 
     def match(self, version):
         """Check if the provided version matches the predicates."""
-        if isinstance(version, str):
+        if isinstance(version, basestring):
             version = NormalizedVersion(version)
         for operator, predicate in self.predicates:
             if not self._operators[operator](version, predicate):
@@ -458,6 +460,6 @@ def get_version_predicate(requirements):
     """Return a VersionPredicate object, from a string or an already
     existing object.
     """
-    if isinstance(requirements, str):
+    if isinstance(requirements, basestring):
         requirements = VersionPredicate(requirements)
     return requirements
