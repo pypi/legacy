@@ -484,7 +484,8 @@ class Store:
                 # re-stringification has a bug we need to work around:
                 # >>> NormalizedVersion('0.0.2.post1')
                 # NormalizedVersion('0.0.2.post1.z')
-                s_norm_version = NormalizedVersion(norm_version)
+                norm_version = NormalizedVersion(norm_version)
+                s_norm_version = str(norm_version)
 
                 norm_to_orig[s_norm_version] = version
                 current_ordering[s_norm_version] = ordering
