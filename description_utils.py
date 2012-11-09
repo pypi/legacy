@@ -60,6 +60,7 @@ class Pygments(Directive):
         parsed = highlight(u'\n'.join(self.content), lexer, formatter)
         return [nodes.raw('', parsed, format='html')]
 
+directives.register_directive('code', Pygments)
 directives.register_directive('sourcecode', Pygments)
 # END PYGMENTS SUPPORT BLOCK
 
