@@ -21,6 +21,7 @@
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
        <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
+       <link rel="stylesheet" media="screen" href="/css/pygments.css" type="text/css"/>
 
        <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
        <link rel="stylesheet" href="/css/pypi.css" type="text/css"/>
