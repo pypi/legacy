@@ -13,6 +13,56 @@ from docutils.writers import get_writer_class
 from docutils.transforms import TransformError, Transform
 
 
+# BEGIN PYGMENTS SUPPORT BLOCK
+# <RJ> the following is included from pygments' external / rst-directive.py
+# because the docutils version on both testpypi and pypi prod does not include
+# pygments support (I believe 0.9 is the minimum requirement.) If that's ever
+# resolved then this PYGMENTS SUPPORT BLOCK may be removed.
+
+# Set to True if you want inline CSS styles instead of classes
+INLINESTYLES = False
+
+from pygments.formatters import HtmlFormatter
+
+# The default formatter
+DEFAULT = HtmlFormatter(noclasses=INLINESTYLES)
+
+# Add name -> formatter pairs for every variant you want to use
+VARIANTS = {
+    # 'linenos': HtmlFormatter(noclasses=INLINESTYLES, linenos=True),
+}
+
+
+from docutils import nodes
+from docutils.parsers.rst import directives, Directive
+
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name, TextLexer
+
+class Pygments(Directive):
+    """ Source code syntax hightlighting.
+    """
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = dict([(key, directives.flag) for key in VARIANTS])
+    has_content = True
+
+    def run(self):
+        self.assert_has_content()
+        try:
+            lexer = get_lexer_by_name(self.arguments[0])
+        except ValueError:
+            # no lexer found - use the text one instead of an exception
+            lexer = TextLexer()
+        # take an arbitrary option if more than one is given
+        formatter = self.options and VARIANTS[self.options.keys()[0]] or DEFAULT
+        parsed = highlight(u'\n'.join(self.content), lexer, formatter)
+        return [nodes.raw('', parsed, format='html')]
+
+directives.register_directive('sourcecode', Pygments)
+# END PYGMENTS SUPPORT BLOCK
+
 def trim_docstring(text):
     """
     Trim indentation and blank lines from docstring text & return it.
