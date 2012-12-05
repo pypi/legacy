@@ -14,6 +14,48 @@ def set_password(store, name, pw):
     store.store_user(user['name'], pw.strip(), user['email'], None)
     print 'done'
 
+def remove_spam(store, namepat, confirm=False):
+    '''Remove packages that match namepat (SQL wildcards).
+
+    The packages will be removed. Additionally the user that created them will
+    have their password set to 'spammer'.
+
+    Pass the additional command-line argument "confirm" to perform the
+    deletions and modifications.
+
+    This will additionally display the IP address(es) of the spam submissions.
+    '''
+    assert confirm in (False, 'confirm')
+    cursor = st.get_cursor()
+    cursor.execute("""
+       select packages.name, submitted_date, submitted_by, submitted_from
+        from packages, journals
+        where packages.name LIKE %s
+          and packages.name = journals.name
+          and action = 'create'
+    """, (namepat,))
+
+    if not confirm:
+        print 'NOT taking any action; add "confirm" to the command line to act'
+
+    users = set()
+    ips = set()
+    for name, date, by, ip in cursor.fetchall():
+        ips.add(ip)
+        users.add(by)
+        print 'delete', name, 'submitted on', date
+        if confirm:
+            store.remove_package(name)
+
+    print 'IP addresses of spammers to possibly block:'
+    for ip in ips:
+        print '  ', ip
+
+    for user in users:
+        print 'disable user', user
+        if confirm:
+            cursor.execute("update users set password='spammer' where name=%s",
+                (user,))
 
 def remove_package(store, name):
     ''' Remove a package from the database
@@ -190,6 +232,8 @@ if __name__ == '__main__':
             set_password(*args)
         elif command == 'rmpackage':
             remove_package(*args)
+        elif command == 'rmspam':
+            remove_spam(*args)
         elif command == 'addclass':
             add_classifier(*args)
             print 'done'
