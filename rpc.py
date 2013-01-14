@@ -166,7 +166,7 @@ def changelog(store, since, with_ids=False):
                 '%Y-%m-%d %H:%M:%S').timetuple()
         else:
             d = row['submitted_date'].timetuple()
-        t = (row['name'],row['version'], d, row['action'])
+        t = (row['name'],row['version'], int(time.mktime(d)), row['action'])
         if with_ids:
             t += (row['id'], )
         result.append(t)
