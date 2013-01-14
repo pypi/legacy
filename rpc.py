@@ -1,6 +1,8 @@
 import sys
 import xmlrpclib
 import traceback
+import datetime
+import logging
 import re
 import time
 from cStringIO import StringIO
@@ -44,6 +46,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             # This should be thread-safe, as the store is really a singleton
             self.store = webui_obj.store
         except Exception, e:
+            logging.exception('reading input')
             # report as a fault to caller rather than propogating up to generic
             # exception handler
             response = xmlrpclib.dumps(
@@ -62,7 +65,11 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         if not method.startswith('system.'):
             # Add store to all of our own methods
             params = (self.store,)+tuple(params)
-        return SimpleXMLRPCDispatcher._dispatch(self, method, params)
+        try:
+            return SimpleXMLRPCDispatcher._dispatch(self, method, params)
+        except Exception, e:
+            logging.exception('calling %r with %r' % (method, params))
+            raise
 
     def system_multicall(self, call_list):
         if len(call_list) > 100:
@@ -152,17 +159,18 @@ def updated_releases(store, since):
     return [(row['name'], row['version']) for row in result]
 
 def changelog(store, since, with_ids=False):
-    result = store.changelog(since)
-    if with_ids:
-        return [(row['name'],row['version'],
-                int(time.mktime(row['submitted_date'].timetuple())),
-                row['action'], row['id'])
-             for row in result]
-    else:
-        return [(row['name'],row['version'],
-             int(time.mktime(row['submitted_date'].timetuple())),
-             row['action'])
-             for row in result]
+    result = []
+    for row in store.changelog(since):
+        if isinstance(row['submitted_date'], str):
+            d = datetime.datetime.strptime(row['submitted_date'],
+                '%Y-%m-%d %H:%M:%S').timetuple()
+        else:
+            d = row['submitted_date'].timetuple()
+        t = (row['name'],row['version'], d, row['action'])
+        if with_ids:
+            t += (row['id'], )
+        result.append(t)
+    return result
 
 def changed_packages(store, since):
     return store.changed_packages(since)

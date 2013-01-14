@@ -657,7 +657,7 @@ class Store:
         cursor.execute('select name from packages order by name')
         return [p[0] for p in cursor.fetchall()]
 
-    _Journal = FastResultRow('id action submitted_date! submitted_by submitted_from')
+    _Journal = FastResultRow('id! action submitted_date! submitted_by submitted_from')
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -921,7 +921,7 @@ class Store:
         return Result(None, self.get_unique(cursor.fetchall()),
                 self._Updated_Releases)
 
-    _Changelog = FastResultRow('id name version submitted_date! action')
+    _Changelog = FastResultRow('id! name version submitted_date! action')
     def changelog(self, since):
         '''Fetch (id, name, version, submitted_date, action) since 'since'
         argument.
