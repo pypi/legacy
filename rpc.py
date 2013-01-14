@@ -151,9 +151,15 @@ def updated_releases(store, since):
     result = store.updated_releases(since)
     return [(row['name'], row['version']) for row in result]
 
-def changelog(store, since):
+def changelog(store, since, with_ids=False):
     result = store.changelog(since)
-    return [(row['name'],row['version'],
+    if ids:
+        return [(row['name'],row['version'],
+                int(time.mktime(row['submitted_date'].timetuple())),
+                row['action'], row['id'])
+             for row in result]
+    else:
+        return [(row['name'],row['version'],
              int(time.mktime(row['submitted_date'].timetuple())),
              row['action'])
              for row in result]
