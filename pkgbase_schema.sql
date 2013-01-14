@@ -64,6 +64,7 @@ CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
 
 -- Table structure for table: journals
 CREATE TABLE journals (
+   id SERIAL,
    name TEXT,
    version TEXT,
    action TEXT,

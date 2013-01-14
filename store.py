@@ -657,7 +657,7 @@ class Store:
         cursor.execute('select name from packages order by name')
         return [p[0] for p in cursor.fetchall()]
 
-    _Journal = FastResultRow('action submitted_date! submitted_by submitted_from')
+    _Journal = FastResultRow('id action submitted_date! submitted_by submitted_from')
     def get_journal(self, name, version):
         ''' Retrieve info about the package from the database.
 
@@ -667,8 +667,8 @@ class Store:
         '''
         cursor = self.get_cursor()
         # get the generic stuff or the stuff specific to the version
-        sql = '''select action, submitted_date, submitted_by, submitted_from
-            from journals where name=%s and (version=%s or
+        sql = '''select id, action, submitted_date, submitted_by,
+            submitted_from from journals where name=%s and (version=%s or
            version is NULL) order by submitted_date'''
         safe_execute(cursor, sql, (name, version))
         return Result(None, cursor.fetchall(), self._Journal)
@@ -921,16 +921,16 @@ class Store:
         return Result(None, self.get_unique(cursor.fetchall()),
                 self._Updated_Releases)
 
-    _Changelog = FastResultRow('name version submitted_date! action')
+    _Changelog = FastResultRow('id name version submitted_date! action')
     def changelog(self, since):
-        '''Fetch (name, version, submitted_date, action) since 'since' argument.
+        '''Fetch (id, name, version, submitted_date, action) since 'since'
+        argument.
         '''
-
         assert isinstance(since, int)
 
         cursor = self.get_cursor()
         safe_execute(cursor, '''
-            select name,version,submitted_date,action
+            select id, name, version, submitted_date, action
             from journals j
             where j.submitted_date > %s
         ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))

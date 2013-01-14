@@ -46,6 +46,7 @@ cursor.execute('''
     )''')
 cursor.execute('''
     create table journals (
+        id integer primary key autoincrement,
         name varchar,
         version varchar,
         action varchar,
