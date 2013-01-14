@@ -50,7 +50,7 @@ cursor.execute('''
         name varchar,
         version varchar,
         action varchar,
-        submitted_date varchar,
+        submitted_date timestamp,
         submitted_by varchar,
         submitted_from varchar
     )''')
