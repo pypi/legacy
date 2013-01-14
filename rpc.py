@@ -153,7 +153,7 @@ def updated_releases(store, since):
 
 def changelog(store, since, with_ids=False):
     result = store.changelog(since)
-    if ids:
+    if with_ids:
         return [(row['name'],row['version'],
                 int(time.mktime(row['submitted_date'].timetuple())),
                 row['action'], row['id'])
