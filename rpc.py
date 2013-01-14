@@ -46,7 +46,6 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             # This should be thread-safe, as the store is really a singleton
             self.store = webui_obj.store
         except Exception, e:
-            logging.exception('reading input')
             # report as a fault to caller rather than propogating up to generic
             # exception handler
             response = xmlrpclib.dumps(
@@ -65,11 +64,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         if not method.startswith('system.'):
             # Add store to all of our own methods
             params = (self.store,)+tuple(params)
-        try:
-            return SimpleXMLRPCDispatcher._dispatch(self, method, params)
-        except Exception, e:
-            logging.exception('calling %r with %r' % (method, params))
-            raise
+        return SimpleXMLRPCDispatcher._dispatch(self, method, params)
 
     def system_multicall(self, call_list):
         if len(call_list) > 100:
