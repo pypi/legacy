@@ -793,6 +793,9 @@ class WebUI:
     def rss_regen(self):
         context = {}
         context['app'] = self
+        context['test'] = ''
+        if 'testpypi' in self.config.url:
+            context['test'] = 'Test '
 
         # generate the releases RSS
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
