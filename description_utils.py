@@ -97,7 +97,7 @@ def trim_docstring(text):
 
 ALLOWED_SCHEMES = '''file ftp gopher hdl http https imap mailto mms news nntp
 prospero rsync rtsp rtspu sftp shttp sip sips snews svn svn+ssh telnet
-wais'''.split()
+wais irc'''.split()
 
 def processDescription(source, output_encoding='unicode'):
     """Given an source string, returns an HTML fragment as a string.
