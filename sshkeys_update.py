@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import config, store, os
 standalone_py = os.path.join(os.path.dirname(__file__), 'standalone.py')
-c = config.Config("config.ini")
+c = config.Config("/data/pypi/config.ini")
 s = store.Store(c)
 cursor = s.get_cursor()
 cursor.execute("lock table sshkeys in exclusive mode") # to prevent simultaneous updates
