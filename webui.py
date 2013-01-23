@@ -607,7 +607,7 @@ class WebUI:
             #raise NotFound, 'Unknown action %s' % action
             raise NotFound
 
-        if action in 'upload submit submit_pkg_info pkg_edit remove_pkg'.split():
+        if action in 'file_upload submit submit_pkg_info pkg_edit remove_pkg'.split():
             self.rss_regen()
 
         # commit any database changes
