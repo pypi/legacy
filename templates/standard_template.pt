@@ -122,9 +122,15 @@
 
             <div id="breadcrumb">
               <a tal:attributes="href app/url_path">Package Index</a>
+              <tal:block condition="exists:data/name">
+                <span class="breadcrumb-separator">&gt;</span>
+                <a tal:content="data/name"
+                   tal:attributes="href python:app.packageURL(data['name'], None)"></a>
+              </tal:block>
               <tal:block condition="exists:data/version">
                 <span class="breadcrumb-separator">&gt;</span>
-                <a tal:content="data/title" tal:attributes="href python:app.packageURL(data['name'], data['version'])"></a>
+                <a tal:content="data/version"
+                   tal:attributes="href python:app.packageURL(data['name'], data['version'])"></a>
               </tal:block>
 
             </div>
