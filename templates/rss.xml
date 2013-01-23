@@ -4,9 +4,9 @@
      xmlns:tal="http://xml.zope.org/namespaces/tal"
      xmlns:metal="http://xml.zope.org/namespaces/metal">
  <channel>
-  <title><tal:x tal:replace="test" />PyPI recent updates</title>
+  <title><tal:x tal:replace="test" />PyPI Recent Updates</title>
   <link tal:content="string:${app/url_machine}${app/url_path}" />
-  <description>Updates to the <tal:x tal:replace="test" />Python Package Index</description>
+  <description>Recent updates to the <tal:x tal:replace="test" />Python Package Index</description>
   <language>en</language>
 
   <item tal:repeat="release app/store/latest_releases">
