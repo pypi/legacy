@@ -2021,6 +2021,9 @@ class WebUI:
         # this is used to render the form as well as edit it... UGH
         #self.csrf_check()
 
+        if name not in self.form:
+            raise FormError("Invalid package name")
+
         name = self.form['name']
         editing = self.env['REQUEST_METHOD'] == "POST"
 
