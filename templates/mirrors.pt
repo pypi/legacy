@@ -19,6 +19,9 @@
  <li><a href="http://f.pypi.python.org/">f.pypi.python.org</a></li>
  </ul>
 
+ <p>For real-time status of the mirrors, including response time and age
+ (freshness) see <a href="http://pypi-mirrors.org/">http://pypi-mirrors.org/</a>.</p>
+
  <p>More mirrors may get added over time; you can use the DNS CNAME record
  last.pypi.python.org to find out which mirror is last in alphabetical order.</p>
 
