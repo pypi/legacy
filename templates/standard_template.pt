@@ -83,18 +83,13 @@
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
 		<li><a href="/pypi?:action=browse&amp;c=533&amp;show=all">Python 3 Packages</a></li>
-
-                <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">PyPI Tutorial</a></li>
-
-                <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">PyPI
-                Support</a></li>
-                <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">PyPI
-                Bug Reports</a></li>
-                <li><a href="http://www.python.org/sigs/catalog-sig/">PyPI Discussion</a></li>
-                <li><a
-                href="http://wiki.python.org/moin/CheeseShopDev">PyPI
-                Developer Info</a></li>
-              </ul>
+        <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">PyPI Tutorial</a></li>
+        <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">Report PyPI Security Issue</a></li>
+        <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">PyPI Support</a></li>
+        <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">PyPI Bug Reports</a></li>
+        <li><a href="http://www.python.org/sigs/catalog-sig/">PyPI Discussion</a></li>
+        <li><a href="http://wiki.python.org/moin/CheeseShopDev">PyPI Developer Info</a></li>
+       </ul>
 
             </li>
 
