@@ -489,6 +489,8 @@ class WebUI:
             return self.run_simple_sign()
         if script_name == '/mirrors':
             return self.mirrors()
+        if script_name == '/security':
+            return self.security()
         if script_name == '/daytime':
             return self.daytime()
         if script_name == '/id':
@@ -2807,8 +2809,14 @@ class WebUI:
     def mirrors(self):
         ''' display the list of mirrors
         '''
-        options = {'title': 'PyPI mirrors'}
+        options = {'title': 'PyPI Mirrors'}
         self.write_template('mirrors.pt', **options)
+
+    def security(self):
+        ''' display the list of mirrors
+        '''
+        options = {'title': 'PyPI Security'}
+        self.write_template('security.pt', **options)
 
     def daytime(self):
         # Mirrors are supposed to provide /last-modified,

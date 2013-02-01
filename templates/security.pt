@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+      <metal:fill fill-slot="body">
+
+<h2>Reporting</h2>
+
+<p>If you have a query or report to make regarding security please contact
+Richard Jones and/or Martin von Löwis.</p>
+
+<p>Richard's GPG key has key id   41C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930)</p>
+
+<p>Martin's GPG key has key id 7D9DC8D2 (full fingerprint CBC5 4797 8A39 64D1 4B9A  B36A 6AF0 53F0 7D9D C8D2)</p>
+
+<p>You may also report issues in the <a href="https://sourceforge.net/tracker/?func=add&amp;group_id=66150&amp;atid=513503">PyPI bug tracker</a> where reports may be made private.</p>
+
+
+<h2>Your Security</h2>
+
+<p>You may sign your uploads with GPG using the "--sign" argument to "python setup.py upload".</p>
+
+<p>Additionally you may avoid using the default HTTP authentication used on the site and instead <a href="http://pypi.python.org/pypi/pypissh">upload using ssh</a>.</p>
+
+<p>The MD5 hash provided with files on PyPI exists <b>only</b> to provide some download corruption protection. It is <b>not</b> intended to provide any sort of security regarding tampering. Please use GPG signing for that.</p>
+
+ </metal:fill>
+</html>
+
