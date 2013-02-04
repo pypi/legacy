@@ -57,8 +57,10 @@ class Config:
         if self.url.startswith("http:"):
             self.url = "https"+self.url[4:]
             self.pydotorg = '/'
+            self.files_url = "https"+self.files_url[4:]
 
     def make_http(self):
         if self.url.startswith("https:"):
             self.url = "http"+self.url[5:]
             self.pydotorg = self.orig_pydotorg
+            self.files_url = "http"+self.files_url[5:]
