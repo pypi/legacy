@@ -2,6 +2,8 @@
 driver = postgresql2
 name = packages
 user = pypi
+# host = hostname
+# port = 5432
 files_dir = /MacDev/svn.python.org/pypi-pep345/files
 docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
 

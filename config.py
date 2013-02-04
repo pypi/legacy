@@ -21,6 +21,10 @@ class Config:
             self.database_host = c.get('database', 'host')
         else:
             self.database_host = None
+        if c.has_option('database', 'port'):
+            self.database_port = c.getint('database', 'port')
+        else:
+            self.database_port = None
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):

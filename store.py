@@ -2075,17 +2075,20 @@ class Store:
         '''
         global connection
         # ensure files are group readable and writable
-        cd = dict(database=self.config.database_name, user=self.config.database_user)
+        cd = dict(database=self.config.database_name,
+            user=self.config.database_user)
         if self.config.database_pw:
             cd['password'] = self.config.database_pw
         if self.config.database_host:
             cd['host'] = self.config.database_host
+        if self.config.database_port:
+            cd['port'] = self.config.database_port
         if keep_conn and connection:
             self._conn = connection
             # Rollback any uncommitted earlier change
             try:
                 self._conn.rollback()
-            except psycopg2.InterfaceError, e:
+            except psycopg2.InterfaceError:
                 # already closed
                 connection = None
                 return self.open()
