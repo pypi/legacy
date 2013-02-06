@@ -32,13 +32,16 @@ def doit(host, secret, srcdir):
         return
     path,url = x.read().splitlines()
     host, session = urlparse.urlsplit(url)[1:3]
+
     try:
-        data = open(srcdir+"/"+path).read()
-        presence = "present"
+        file_path = os.path.abspath(os.path.join(srcdir, path))
+        if not file_path.startswith(srcdir):
+            data = ''
+        else:
+            data = open(file_path).read()
     except IOError, e:
         if e.errno == errno.ENOENT:
             # file has been deleted
-            presence = "deleted"
             data = ''
         else:
             # some other problem with file. GAE will request transfer
