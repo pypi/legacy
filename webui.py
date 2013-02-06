@@ -237,7 +237,16 @@ class WebUI:
         else:
             self.form = None
 
-        if env.get("HTTPS") == 'on':
+        # figure who the end user is
+        self.remote_addr = self.env['REMOTE_ADDR']
+        if env.get('HTTP_X_FORWARDED_FOR'):
+            # X-Forwarded-For: client1, proxy1, proxy2
+            self.remote_addr = self.env['HTTP_X_FORWARDED_FOR'].split(',')[0]
+
+        # set HTTPS mode if we're directly or indirectly (proxy) supposed to be
+        # serving HTTPS links
+        if env.get("HTTPS") == 'on' or \
+                env.get('HTTP_X_FORWARDED_PROTO') == 'https':
             self.config.make_https()
         else:
             self.config.make_http()
@@ -516,7 +525,7 @@ class WebUI:
                     last_login = user['last_login']
                     # Only update last_login every minute
                     update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-                    self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
+                    self.store.set_user(un, self.remote_addr, update_last_login)
         else:
             un = self.env.get('SSH_USER', '')
             if un and self.store.has_user(un):
@@ -526,7 +535,7 @@ class WebUI:
                 last_login = user['last_login']
                 # Only update last_login every minute
                 update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-                self.store.set_user(un, self.env['REMOTE_ADDR'], update_last_login)
+                self.store.set_user(un, self.remote_addr, update_last_login)
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -542,7 +551,7 @@ class WebUI:
             self.username = name
             # no login time update, since looking for the
             # cookie did that already
-            self.store.set_user(name, self.env['REMOTE_ADDR'], False)
+            self.store.set_user(name, self.remote_addr, False)
 
         # Commit all user-related changes made up to here
         if self.username:
@@ -3273,7 +3282,7 @@ class WebUI:
         user = s.data_store._get_user(token)
         # recognise the user as accessing during this request
         self.username = user
-        self.store.set_user(user, self.env['REMOTE_ADDR'], False)
+        self.store.set_user(user, self.remote_addr, False)
         self.authenticated = True
         return consumer, token, params, user
 
