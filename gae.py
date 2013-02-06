@@ -37,12 +37,15 @@ def doit(host, secret, srcdir):
         file_path = os.path.abspath(os.path.join(srcdir, path))
         if not file_path.startswith(srcdir):
             data = ''
+            presence = 'deleted'
         else:
             data = open(file_path).read()
+            presence = "present"
     except IOError, e:
         if e.errno == errno.ENOENT:
             # file has been deleted
             data = ''
+            presence = 'deleted'
         else:
             # some other problem with file. GAE will request transfer
             # again
