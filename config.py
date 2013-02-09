@@ -31,8 +31,10 @@ class Config:
             self.pubsubhubbub = c.get('database', 'pubsubhubbub')
         else:
             self.pubsubhubbub = None
-        self.package_docs_url = c.get('package_docs_url',
-            'http://pythonhosted.org')
+        if c.has_option('webui', 'package_docs_url'):
+            self.package_docs_url = c.get('webui', 'package_docs_url')
+        else:
+            self.package_docs_url = 'http://pythonhosted.org'
         self.mailhost = c.get('webui', 'mailhost')
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
