@@ -6,6 +6,7 @@ user = pypi
 # port = 5432
 files_dir = /MacDev/svn.python.org/pypi-pep345/files
 docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
+package_docs_url = http://pythonhosted.org/
 
 [webui]
 mailhost = mail.python.org
@@ -35,7 +36,7 @@ local-stats = local-stats
 global-stats = global-stats
 
 [sentry]
-dsn = 
+dsn =
 
 [uwsgi]
 wsgi-file = pypi.wsgi

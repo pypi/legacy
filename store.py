@@ -1777,7 +1777,7 @@ class Store:
                                               self.userip))
 
     def docs_url(self, name):
-        '''Determine the local (packages.python.org) documentation URL, if any.
+        '''Determine the local (pythonhosted.org) documentation URL, if any.
 
         Returns the URL or '' if there are no docs.
         '''
@@ -1785,7 +1785,7 @@ class Store:
             path = [self.config.database_docs_dir,
                 name.encode('utf8')] + sub + ['index.html']
             if os.path.exists(os.path.join(*path)):
-                return '/'.join(['http://packages.python.org', name] + sub)
+                return '/'.join([self.config.package_docs_url, name] + sub)
         return ''
 
     def update_upload_times(self):

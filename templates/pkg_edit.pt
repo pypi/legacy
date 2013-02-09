@@ -75,7 +75,7 @@ uncheck the button below</p>
     enctype="multipart/form-data">
   <input type="hidden" name=":action" value="pkg_edit" />
   <input type="hidden" name="name" tal:attributes="value data/name" />
-  
+
   <!-- Apparently, we run TAL in XML mode, so the auto-remove feature
        for the checked attribute will not work -->
   <input tal:condition="data/autohide" type="checkbox" name="autohide"
@@ -86,8 +86,8 @@ uncheck the button below</p>
 </form>
 
 <p>You can now host documentation at
-<a tal:attributes="href string:http://packages.python.org/${data/name}"
-tal:content="string:http://packages.python.org/${data/name}"></a>. To
+<a tal:attributes="href string:http://pythonhosted.org/${data/name}"
+tal:content="string:http://pythonhosted.org/${data/name}"></a>. To
 upload documentation, prepare a .zip file that is unpacked into this URL.
 Only static pages are supported. The zip file must have a top-level
 "index.html".</p>
