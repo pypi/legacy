@@ -56,11 +56,11 @@ or use the search box above.
 <div id="document-navigation" style="width: 30%; float: left; display: inline; padding: 4px;">
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
-To submit a package use
+Submit a package using
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>"
 (full <a href="http://wiki.python.org/moin/CheeseShopTutorial">tutorial</a>).
-The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts documentation</a>.
-You may submit packages using
+The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
+You may also use
 <a href="/pypi/pypissh">SSH</a> or the
 <a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
 You must <a tal:attributes="href string:${app/config/url}?%3Aaction=register_form">register</a>.
