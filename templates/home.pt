@@ -20,9 +20,9 @@ links.
 <div id="document-navigation" style="margin-left: 0px; width: 50%; float: left; display: inline; padding: 4px;">
 <b>Package documentation is now at pythonhosted.org</b>
 <p style="margin-bottom: 0px">
-We've just moved the hosted package documentation to a new domain,
-<b>pythonhosted.org</b> (it was at packages.python.org and that domain will still
-work and automatically redirect you to the new documentation home.)
+Package documentation is hosted on its own domain,
+<b>pythonhosted.org</b> (it was at packages.python.org and that domain will
+still work and automatically redirect to the new documentation home.)
 </p>
 </div>
 
