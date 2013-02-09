@@ -20,11 +20,11 @@ links.
 <br clear="right" />
 
 <div id="document-navigation" style="margin-left: 0px; width: 90%; float: left; display: inline; padding: 4px;">
-<b>NEW: Test PyPI Server</b>
+<b>Package documentation is not at pythonhosted.org</b>
 <p style="margin-bottom: 0px">
-Just learning the packaging ropes or trying some system integration out? Why not use our new <b>test</b> PyPI server at
-<a href="http://testpypi.python.org/pypi">http://testpypi.python.org/pypi</a>.
-Use the "-r" option to "python setup.py upload" or the "-i" option for "pip install".
+We've just moved the hosted package documentation to a new domain,
+<b>pythonhosted.org</b> (it was at packages.python.org and that domain will still
+work and automatically redirect you to the new documentation home.)
 </p>
 </div>
 
@@ -64,6 +64,7 @@ You may submit packages using
 <a href="/pypi/pypissh">SSH</a> or the
 <a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
 You must <a tal:attributes="href string:${app/config/url}?%3Aaction=register_form">register</a>.
+Testing? Use <a href="http://wiki.python.org/moin/TestPyPI" class="vt-p">testpypi</a>.
 </p>
 </div>
 
@@ -87,9 +88,9 @@ Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastruct
 <tr><th>Updated</th><th>Package</th><th>Description</th></tr>
 
 <tal:for-release repeat="release app/store/latest_releases">
-<tal:let define="name python: release[0]; 
- version python: release[1]; 
- date python: release[2]; 
+<tal:let define="name python: release[0];
+ version python: release[1];
+ date python: release[2];
  summary python: release[3]">
 
 <tr tal:attributes="class repeat/release/parity">
