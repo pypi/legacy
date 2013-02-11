@@ -54,7 +54,7 @@ or use the search box above.
 <div id="document-navigation" style="width: 30%; float: left; display: inline; padding: 4px;">
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
-Submit a package using
+Submit packages with
 "<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>"
 (full <a href="http://wiki.python.org/moin/CheeseShopTutorial">tutorial</a>).
 The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
