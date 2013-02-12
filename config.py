@@ -70,7 +70,7 @@ class Config:
         self.sentry_dsn = c.get('sentry', 'dsn')
 
         self.passlib = CryptContext(
-                # Unless we've manually specific a list of deprecated
+                # Unless we've manually specified a list of deprecated
                 #   algorithms assume we will deprecate all but the default.
                 deprecated=["auto"],
             )
