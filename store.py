@@ -1336,7 +1336,7 @@ class Store:
         if self.has_user(name):
             if password:
                 # update existing user, including password
-                password = hashlib.sha1(password).hexdigest()
+                password = self.config.passlib.encrypt(password)
                 safe_execute(cursor,
                    'update users set password=%s, email=%s where name=%s',
                     (password, email, name))
@@ -1355,7 +1355,7 @@ class Store:
         if cursor.fetchone()[0] > 0:
             raise ValueError, "Email address already belongs to a different user"
 
-        password = hashlib.sha1(password).hexdigest()
+        password = self.config.passlib.encrypt(password)
 
         # new user
         safe_execute(cursor,
@@ -2129,8 +2129,10 @@ class Store:
                     update users set last_login=current_timestamp where name=%s''', (username,))
         self.userip = userip
 
-    def setpasswd(self, username, password):
-        password = hashlib.sha1(password).hexdigest()
+    def setpasswd(self, username, password, hashed=False):
+        if not hashed:
+            self.config.passlib.encrypt(password)
+
         self.get_cursor().execute('''
             update users set password=%s where name=%s
             ''', (password, username))
