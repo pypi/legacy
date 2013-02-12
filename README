@@ -15,6 +15,8 @@ PostgreSQL, and all these packages located at PyPI:
 - distutils2
 - python-openid
 - raven
+- passlib
+- py-bcrypt (If using the recommended bcrypt hasher)
 
 Quick development setup
 -----------------------
@@ -35,6 +37,7 @@ virtualenv installed::
     $ bin/easy_install zope.interface zope.pagetemplate
     $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
     $ bin/easy_install docutils M2Crypto python-openid raven
+    $ bin/easy_install passlib py-bcrypt
 
 Then you can launch the server using the pypi.wsgi script::
 
