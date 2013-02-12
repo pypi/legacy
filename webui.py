@@ -505,38 +505,6 @@ class WebUI:
         if script_name == '/id':
             return self.run_id()
 
-        # see if the user has provided a username/password
-        auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
-        if auth:
-            authtype, auth = auth.split(None, 1) # OAuth has many more parameters
-            if authtype.lower() == 'basic':
-                try:
-                    un, pw = base64.decodestring(auth).split(':')
-                except (binascii.Error, ValueError):
-                    # Invalid base64, or not exactly one colon
-                    un = pw = ''
-                if self.store.has_user(un):
-                    pw = hashlib.sha1(pw).hexdigest()
-                    user = self.store.get_user(un)
-                    if pw != user['password']:
-                        raise Unauthorised, 'Incorrect password'
-                    self.username = un
-                    self.authenticated = True
-                    last_login = user['last_login']
-                    # Only update last_login every minute
-                    update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-                    self.store.set_user(un, self.remote_addr, update_last_login)
-        else:
-            un = self.env.get('SSH_USER', '')
-            if un and self.store.has_user(un):
-                user = self.store.get_user(un)
-                self.username = un
-                self.authenticated = self.loggedin = True
-                last_login = user['last_login']
-                # Only update last_login every minute
-                update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-                self.store.set_user(un, self.remote_addr, update_last_login)
-
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
         try:
@@ -552,6 +520,52 @@ class WebUI:
             # no login time update, since looking for the
             # cookie did that already
             self.store.set_user(name, self.remote_addr, False)
+        else:
+            # see if the user has provided a username/password
+            auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
+            if auth:
+                authtype, auth = auth.split(None, 1) # OAuth has many more parameters
+                if authtype.lower() == 'basic':
+                    try:
+                        un, pw = base64.decodestring(auth).split(':')
+                    except (binascii.Error, ValueError):
+                        # Invalid base64, or not exactly one colon
+                        un = pw = ''
+                    if self.store.has_user(un):
+                        # Fetch the user from the database
+                        user = self.store.get_user(un)
+
+                        # Verify the hash, and see if it needs migrated
+                        ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
+
+                        # If our password didn't verify as ok then raise an
+                        #   error.
+                        if not ok:
+                            raise Unauthorised, 'Incorrect password'
+
+                        if new_hash:
+                            # The new hash needs to be stored for this user.
+                            self.store.setpasswd(un, new_hash, hashed=True)
+
+                        # Login the user
+                        self.username = un
+                        self.authenticated = True
+
+                        # Determine if we need to store the users last login,
+                        #   as we only want to do this once a minute.
+                        last_login = user['last_login']
+                        update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
+                        self.store.set_user(un, self.remote_addr, update_last_login)
+            else:
+                un = self.env.get('SSH_USER', '')
+                if un and self.store.has_user(un):
+                    user = self.store.get_user(un)
+                    self.username = un
+                    self.authenticated = self.loggedin = True
+                    last_login = user['last_login']
+                    # Only update last_login every minute
+                    update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
+                    self.store.set_user(un, self.remote_addr, update_last_login)
 
         # Commit all user-related changes made up to here
         if self.username:

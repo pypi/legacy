@@ -1,6 +1,9 @@
 import ConfigParser
 from urlparse import urlsplit, urlunsplit
 
+from passlib.context import CryptContext
+
+
 class Config:
     ''' Read in the config and set up the vars with the correct type.
     '''
@@ -60,6 +63,15 @@ class Config:
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
         self.sentry_dsn = c.get('sentry', 'dsn')
+
+        self.passlib = CryptContext(
+                # Unless we've manually specific a list of deprecated
+                #   algorithms assume we will deprecate all but the default.
+                deprecated=["auto"],
+            )
+
+        # Configure a passlib context from the config file
+        self.passlib.load_path(configfile, update=True)
 
     def make_https(self):
         if self.url.startswith("http:"):

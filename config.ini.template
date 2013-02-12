@@ -24,6 +24,11 @@ cheesecake_password = secret
 key_dir = .
 simple_sign_script = /serversig
 
+[passlib]
+; The first listed schemed will automatically be the default, see passlib
+;   documentation for a full list of options.
+schemes = bcrypt, hex_sha1
+
 [logging]
 file =
 mailhost =
