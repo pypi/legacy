@@ -2,6 +2,11 @@ import ConfigParser
 from urlparse import urlsplit, urlunsplit
 
 from passlib.context import CryptContext
+from passlib.registry import register_crypt_handler_path
+
+
+# Register our legacy password handler
+register_crypt_handler_path("bcrypt_sha1", "legacy_passwords")
 
 
 class Config:
