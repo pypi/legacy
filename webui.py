@@ -613,7 +613,7 @@ class WebUI:
         if action in '''debug home browse rss index search submit doap
         display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form
         display register_form user user_form
-        forgotten_password_form
+        forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
