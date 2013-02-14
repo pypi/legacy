@@ -48,19 +48,11 @@ If you log in before that deadline and change your password then you'll be
 fine, otherwise you'll need to use the password recovery form after the reset
 has occurred.
 
-Additionally, we would ask you to edit your .pypirc files (found in your home
-directory) to change the default repository URL to use HTTPS. This may be
-achieved by adding a "repository"line to the existing "[pypi]" section in your
-file.
+Additionally, we would ask you to begin to access PyPI using HTTPS through the
+web. We're in the process of installing a new SSL certificate so the current
+Big Red Certificate Warning should go away very soon.
 
-[pypi]
-repository: https://pypi.python.org/pypi
-username: <username>
-password: <password>
-
-You should also begin to access PyPI using HTTPS through the web. We're in the
-process of installing a new SSL certificate so the current Big Red Certificate
-Warning should go away very soon.
+We are in the process of updating the Python packaging toolset to use HTTPS.
 
 These steps are but a couple of those we're intending to take to better secure
 PyPI. If you are interested in these matters I encourage you to participate in
