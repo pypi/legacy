@@ -18,7 +18,7 @@ def main():
     else:
         with open(sys.argv[1]) as f:
             for name, email in csv.reader(f):
-                message = TEXT % locals()
+                message = TEXT.format(name=name, email=email)
                 # send email
                 s = smtplib.SMTP()
                 s.connect('localhost')
