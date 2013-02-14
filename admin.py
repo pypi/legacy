@@ -194,7 +194,7 @@ def show_user(store, name):
         sys.exit('user %r does not exist' % name)
     for key in user.keys():
         print '%s: %s' % (key, user[key])
-    for p in store.get_user_packages(user):
+    for p in store.get_user_packages(name):
         print '%s: %s' % (p['package_name'], p['role_name'])
 
 def nuke_nested_lists(store, confirm=False):

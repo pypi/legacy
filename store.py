@@ -785,13 +785,13 @@ class Store:
            name=%s and version=%s''', (name, version))
         return cursor.fetchall()
 
-    _Package_Roles = FastResultRow('role_name package_name')
+    _User_Packages_Roles = FastResultRow('role_name package_name')
     def get_user_packages(self, name):
         '''Fetch all packages and roles associated to user.'''
         cursor = self.get_cursor()
         safe_execute(cursor, '''select role_name, package_name from roles where
            user_name=%s''', (name,))
-        return Result(None, cursor.fetchall(), self._Package_Roles)
+        return Result(None, cursor.fetchall(), self._User_Packages_Roles)
 
     _Package_Roles = FastResultRow('role_name user_name')
     def get_package_roles(self, name):
