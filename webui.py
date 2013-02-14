@@ -2857,6 +2857,9 @@ class WebUI:
     def _verify_new_password(self, pw, confirm, user=None):
         '''Verify that the new password is good.
 
+        The messages here may be returned as plain text so wrap at 80 columns if
+        necessary.
+
         Returns a reason string if the verification fails.
         '''
         if user and self.config.passlib.verify(pw, user['password']):
@@ -2866,16 +2869,16 @@ class WebUI:
             return 'Please make your password harder to guess.'
 
         if pw != confirm:
-            return '''Please check you've entered the same password in
-                both fields.'''
+            return "Please check you've entered the same password in "\
+                "both fields."
 
         if len(pw) < 8:
             return "Please make your password at least 8 characters long."
 
         if len(pw) < 16 and (pw.isdigit() or pw.isalpha() or pw.isupper()
                 or pw.islower()):
-            return '''Please use a mix of different-case letters and numbers
-                in your password.'''
+            return 'Please use a mix of different-case letters and numbers '\
+                'in your password.'
 
         return ''
 
