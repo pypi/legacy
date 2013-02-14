@@ -2125,17 +2125,17 @@ class Store:
             if self.has_user(username):
                 self.username = username
                 if update_last_login:
-                    safe_execute(self.get_cursor(), '''
-                    update users set last_login=current_timestamp where name=%s''', (username,))
+                    safe_execute(self.get_cursor(), '''update users
+                        set last_login=current_timestamp
+                        where name=%s''', (username,))
         self.userip = userip
 
     def setpasswd(self, username, password, hashed=False):
         if not hashed:
             self.config.passlib.encrypt(password)
 
-        self.get_cursor().execute('''
-            update users set password=%s where name=%s
-            ''', (password, username))
+        safe_execute(self.get_cursor(), '''update users set password=%s
+            where name=%s''', (password, username))
 
     def close(self):
         if self._conn is None:
