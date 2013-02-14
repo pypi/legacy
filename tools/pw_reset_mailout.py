@@ -26,9 +26,6 @@ def main():
                 s.close()
                 time.sleep(.1)
 
-if __name__ == '__main__':
-    main()
-
 TEXT = '''From: richard@python.org
 To: {email}
 Subject: PyPI security notice
@@ -76,3 +73,6 @@ http://mail.python.org/mailman/listinfo/catalog-sig
     richard@python.org
     PyPI Maintainer
 '''
+
+if __name__ == '__main__':
+    main()
