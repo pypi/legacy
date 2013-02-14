@@ -39,6 +39,7 @@ virtualenv installed::
     $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
     $ bin/easy_install docutils M2Crypto python-openid raven
     $ bin/easy_install passlib py-bcrypt
+    $ bin/easy_install itsdangerous
 
 Then you can launch the server using the pypi.wsgi script::
 
