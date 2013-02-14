@@ -2864,6 +2864,8 @@ class WebUI:
 
         Returns a reason string if the verification fails.
         '''
+        # TODO consider strengthening this using information in:
+        # https://github.com/fedora-infra/fas/blob/develop/fas/validators.py#L237
         if user and self.config.passlib.verify(pw, user['password']):
             return 'Please ensure the new password is not the same as the old.'
 
