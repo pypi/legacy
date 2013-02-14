@@ -187,6 +187,16 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
+def show_user(store, user):
+    c = store.get_cursor()
+    user = store.get_user()
+    if not user:
+        sys.exit('user %r does not exist' % user)
+    for key in user.keys():
+        print '%s: %s' % (key, user[key])
+    for p in store.get_user_packages(user):
+        print '%s: %s' % (p['package_name'], p['role_name'])
+
 def nuke_nested_lists(store, confirm=False):
     c = store.get_cursor()
     c.execute("""select name, version, summary from releases
@@ -257,6 +267,8 @@ if __name__ == '__main__':
             nuke_nested_lists(*args)
         elif command == 'keyrotate':
             keyrotate(config, *args)
+        elif command == 'user':
+            show_user(*args)
         else:
             print "unknown command '%s'!"%command
         st.changed()

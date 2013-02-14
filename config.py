@@ -61,6 +61,7 @@ class Config:
             self.sshkeys_update = c.get('webui', 'sshkeys_update')
         else:
             self.sshkeys_update = None
+        self.reset_secret = c.get('webui', 'reset_secret')
 
         self.logfile = c.get('logging', 'file')
         self.logging_mailhost = c.get('logging', 'mailhost')

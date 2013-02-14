@@ -6,6 +6,7 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
 from xml.etree import cElementTree
+import itsdangerous
 
 try:
     import json
@@ -100,19 +101,9 @@ Someone, perhaps you, has requested that the password be changed for your
 username, "%(name)s". If you wish to proceed with the change, please follow
 the link below:
 
-  %(url)s?:action=password_reset&email=%(email)s
+  %(url)s?:action=pw_reset&otk=%(otk)s
 
-You should then receive another email with the new password.
-
-'''
-
-# password reset email - indicates what the password is now
-password_message = '''Subject: PyPI password has been reset
-From: %(admin)s
-To: %(email)s
-
-Your login is: %(name)s
-Your password is now: %(password)s
+This will present a form in which you may set your new password.
 '''
 
 _prov = '<p>You may also login or register using <a href="%(url_path)s?:action=openid">OpenID</a>'
@@ -621,8 +612,10 @@ class WebUI:
         # handle the action
         if action in '''debug home browse rss index search submit doap
         display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form
-        display register_form user_form forgotten_password_form user
-        password_reset role role_form list_classifiers login logout files
+        display register_form user user_form
+        forgotten_password_form
+        password_reset pw_reset pw_reset_change
+        role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
@@ -2627,9 +2620,10 @@ class WebUI:
                     nonce = qs['openid.response_nonce'][0]
             else:
                 claimed_id = None
-                if not info.has_key('confirm') or info['password'] <> info['confirm']:
-                    self.fail("password and confirm don't match", heading='Users')
-                    return
+                msg = self._verify_new_password(info['password'],
+                    info.get('confirm'))
+                if msg:
+                    return self.fail(msg, heading='Users')
 
             # validate a complete set of stuff
             # new user, create entry and email otk
@@ -2669,10 +2663,10 @@ class WebUI:
                 password = None
             else:
                 # make sure the confirm matches
-                if password != info.get('confirm', ''):
-                    self.fail("password and confirm don't match",
-                        heading='User profile')
-                    return
+                msg = self._verify_new_password(password, info.get('confirm'),
+                    user)
+                if msg:
+                    return self.fail(msg, heading='User profile')
             email = info.get('email', user['email'])
             gpg_keyid = info.get('gpg_keyid', user['gpg_keyid'])
             self.store.store_user(self.username, password, email, gpg_keyid)
@@ -2724,57 +2718,166 @@ class WebUI:
         self.update_sshkeys()
         return self.register_form()
 
-    def forgotten_password_form(self):
-        ''' Enable the user to reset their password.
-        '''
-        self.write_template("password_reset.pt", title="Request password reset")
-
     def password_reset(self):
-        """Reset the user's password and send an email to the address given.
+        """Send a password reset email to the user attached to the address
+        nominated.
+
+        This is a legacy interface used by distutils which supplies an email
+        address.
         """
-        def resend_otk():
-            info = {'otk':self.store.get_otk(user['name']), 'url':self.config.url,
-                    'admin':self.config.adminemail, 'email': user['email'],
-                    'name':user['name']}
+        email = self.form.get('email', '').strip()
+        user = self.store.get_user_by_email(email)
+        if not user:
+            return self.fail('email address unknown to me')
+
+        # check for existing registration-confirmation OTK
+        if self.store.get_otk(user['name']):
+            info = {'otk': self.store.get_otk(user['name']),
+                'url': self.config.url, 'admin': self.config.adminemail,
+                'email': user['email'], 'name':user['name']}
             self.send_email(info['email'], rego_message%info)
             response = 'Registration OK'
             message = 'You should receive a confirmation email shortly.'
             self.write_template('message.pt', title="Resending registration key",
                 message='Email with registration key resent')
 
-        if self.form.has_key('email') and self.form['email'].strip():
-            email = self.form['email'].strip()
-            user = self.store.get_user_by_email(email)
-            if not user:
-                self.fail('email address unknown to me')
-                return
-            if self.store.get_otk(user['name']):
-                return resend_otk()
-            pw = ''.join([random.choice(chars) for x in range(10)])
-            self.store.store_user(user['name'], pw, user['email'], None)
-            info = {'name': user['name'], 'password': pw,
-                'email':user['email']}
-            info['admin'] = self.config.adminemail
-            self.send_email(email, password_message%info)
-            self.write_template('message.pt', title="Request password reset",
-                message='Email sent with new password')
-        elif self.form.has_key('name') and self.form['name'].strip():
-            name = self.form['name'].strip()
-            user = self.store.get_user(name)
-            if not user:
-                self.fail('user name unknown to me')
-                return
-            if self.store.get_otk(user['name']):
-                return resend_otk()
-            info = {'name': user['name'], 'url': self.config.url,
-                 'email': urllib.quote(user['email'])}
-            info['admin'] = self.config.adminemail
-            self.send_email(user['email'], password_change_message%info)
-            self.write_template('message.pt', title="Request password reset",
-                message='Email sent to confirm password change')
-        else:
-            self.write_template("password_reset.pt", title="Request password reset",
-                retry=True)
+        # generate a reset OTK and mail the link
+        info = dict(name=user['name'], url=self.config.url,
+            otk=self._gen_reset_otk())
+        info['admin'] = self.config.adminemail
+        self.send_email(user['email'], password_change_message % info)
+        self.write_template('message.pt', title="Request password reset",
+            message='Email sent to confirm password change')
+
+    def forgotten_password_form(self):
+        ''' Enable the user to reset their password.
+
+        This is the first leg of a password reset and requires the user
+        identify themselves somehow by supplying their username or email
+        address.
+        '''
+        self.write_template("password_reset.pt",
+            title="Request password reset")
+
+    def forgotten_password(self):
+        '''Accept a user's submission of username and send a
+        reset email if it's valid.
+        '''
+        name = self.form.get('name', '').strip()
+        if not name:
+            self.write_template("password_reset.pt",
+                title="Request password reset", retry=True)
+
+        user = self.store.get_user(name)
+        # typically other systems would not indicate the username is invalid
+        # but in PyPI's case the username list is public so this is more
+        # user-friendly with no security penalty
+        if not user:
+            self.fail('user name unknown to me')
+            return
+
+        # existing registration OTK?
+        if self.store.get_otk(user['name']):
+            info = dict(
+                otk=self.store.get_otk(user['name']),
+                url=self.config.url,
+                admin=self.config.adminemail,
+                email=user['email'],
+                name=user['name'],
+            )
+            self.send_email(info['email'], rego_message % info)
+            return self.write_template('message.pt',
+                title="Resending registration key",
+                message='Email with registration key resent')
+
+        # generate a reset OTK and mail the link
+        info = dict(name=user['name'], url=self.config.url,
+            otk=self._gen_reset_otk())
+        info['admin'] = self.config.adminemail
+        self.send_email(user['email'], password_change_message % info)
+        self.write_template('message.pt', title="Request password reset",
+            message='Email sent to confirm password change')
+
+    def _gen_reset_otk(self):
+        # generate the reset key and sign it
+        reset_signer = itsdangerous.URLSafeTimedSerializer(
+            self.config[reset_secret], 'password-recovery')
+
+        # we include a snip of the current password hash so that the OTK can't
+        # be used again once the password is changed. And hash it to be extra
+        # obscure
+        return reset_signer.dumps((name, user['password'][-4:]))
+
+    def _decode_reset_otk(self, otk):
+        reset_signer = itsdangerous.URLSafeTimedSerializer(
+            self.config[reset_secret], 'password-recovery')
+        try:
+            # we allow 6 hours
+            name, x = reset_signer.loads(otk, max_age=6*60*60)
+        except itsdangerous.BadData:
+            return None
+        return self.store.get_user(name)
+
+    def pw_reset(self):
+        '''The user has clicked the reset link in the email we sent them.
+
+        Validate the OTK we are given and display a form for them to set their
+        new password.
+        '''
+        otk = self.form.get('otk', '').strip()
+        user = self._decode_reset_otk(otk)
+        if not user:
+            self.fail('invalid password reset token')
+            return
+        self.write_template('password_reset_change.pt', otk=otk,
+            title="Password reset")
+
+    def pw_reset_change(self):
+        '''The final leg in the password reset sequence: accept the new
+        password.'''
+        otk = self.form.get('otk', '').strip()
+        user = self._decode_reset_otk(otk)
+        if not user:
+            self.fail('invalid password reset token')
+            return
+
+        pw = self.form.get('password', '').strip()
+        confirm = self.form.get('confirm', '').strip()
+
+        msg = self._verify_new_password(pw, confirm, user)
+        if msg:
+            return self.write_template('password_reset_change.pt',
+                title="Password reset", retry=msg)
+
+        self.store.store_user(user['name'], pw, user['email'], None)
+        self.store.delete_reset_otk(otk)
+        self.write_template('message.pt', title="Password reset",
+            message='Password has been reset')
+
+    def _verify_new_password(self, pw, confirm, user=None):
+        '''Verify that the new password is good.
+
+        Returns a reason string if the verification fails.
+        '''
+        if user and self.config.passlib.verify(pw, user['password']):
+            return 'Please ensure the new password is not the same as the old.'
+
+        if user and pw == user['name']:
+            return 'Please make your password harder to guess.'
+
+        if pw != confirm:
+            return '''Please check you've entered the same password in
+                both fields.'''
+
+        if len(pw) < 8:
+            return "Please make your password at least 8 characters long."
+
+        if len(pw) < 16 and (pw.isdigit() or pw.isalpha() or pw.isupper()
+                or pw.islower()):
+            return '''Please use a mix of different-case letters and numbers
+                in your password.'''
+
+        return ''
 
     def delete_user(self):
         if not self.authenticated:

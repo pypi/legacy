@@ -23,6 +23,9 @@ debug_mode = yes
 cheesecake_password = secret
 key_dir = .
 simple_sign_script = /serversig
+; this is the secret used to sign password reset efforts - keep it secret!
+; ''.join(random.choice(string.letters + string.digits) for n in range(64))
+reset_secret = secret
 
 [passlib]
 ; The first listed schemed will automatically be the default, see passlib

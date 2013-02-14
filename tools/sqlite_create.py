@@ -84,6 +84,8 @@ SQLs = [
 "create index journals_version_idx on journals(version)",
 "create index packages_name_idx on packages(name)",
 "create index rego_otk_name_idx on rego_otk(name)",
+"create index reset_otk_name_idx on reset_otk(name)",
+"create index reset_otk_otk_idx on reset_otk(otk)",
 "create index rel_class_name_idx on release_classifiers(name)",
 "create index rel_class_trove_id_idx on "
     "release_classifiers(trove_id)",

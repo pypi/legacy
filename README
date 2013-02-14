@@ -17,6 +17,7 @@ PostgreSQL, and all these packages located at PyPI:
 - raven
 - passlib
 - py-bcrypt (If using the recommended bcrypt hasher)
+- itsdangerous
 
 Quick development setup
 -----------------------
