@@ -2806,17 +2806,20 @@ class WebUI:
         # we include a snip of the current password hash so that the OTK can't
         # be used again once the password is changed. And hash it to be extra
         # obscure
-        return reset_signer.dumps((name, user['password'][-4:]))
+        return reset_signer.dumps((user['name'], user['password'][-4:]))
 
     def _decode_reset_otk(self, otk):
         reset_signer = itsdangerous.URLSafeTimedSerializer(
             self.config.reset_secret, 'password-recovery')
         try:
             # we allow 6 hours
-            name, x = reset_signer.loads(otk, max_age=6*60*60)
+            name, pwfrag = reset_signer.loads(otk, max_age=6*60*60)
         except itsdangerous.BadData:
             return None
-        return self.store.get_user(name)
+        user = self.store.get_user(name)
+        if pwfrag == user['password'][-4:]:
+            return user
+        return None
 
     def pw_reset(self):
         '''The user has clicked the reset link in the email we sent them.
