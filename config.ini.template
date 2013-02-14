@@ -32,9 +32,8 @@ reset_secret = secret
 ; documentation for a full list of options. Schemes not listed here will
 ; not be recognised by passlib.
 ;   bcrypt is our current ideal
-;   bcrypt_sha1 is legacy unsalted sha1 converted to bcrypt(sha1)
 ;   hex_sha1 is the legacy unsalted
-schemes = bcrypt, bcrypt_sha1, hex_sha1
+schemes = bcrypt, hex_sha1
 ; Old password schemes will be automatically migrated by passlib - the default
 ; for PyPI is "auto" - setting it to blank will disable auto migration. See
 ; passlib documentation for more info.
