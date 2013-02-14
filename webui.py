@@ -2621,7 +2621,7 @@ class WebUI:
             else:
                 claimed_id = None
                 msg = self._verify_new_password(info['password'],
-                    info.get('confirm'))
+                    info['confirm'])
                 if msg:
                     return self.fail(msg, heading='Users')
 
@@ -2658,13 +2658,13 @@ class WebUI:
             # update details
             user = self.store.get_user(self.username)
             password = info.get('password', '').strip()
+            confirm = info.get('confirm', '').strip()
             if not password:
                 # no password entered - leave it alone
                 password = None
             else:
                 # make sure the confirm matches
-                msg = self._verify_new_password(password, info.get('confirm'),
-                    user)
+                msg = self._verify_new_password(password, confirm, user)
                 if msg:
                     return self.fail(msg, heading='User profile')
             email = info.get('email', user['email'])
