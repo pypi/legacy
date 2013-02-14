@@ -42,7 +42,7 @@ You may be aware that the wiki.python.org host was compromised. Since we must
 assume that all passwords stored in that system are also compromised, and we
 also assume that some users share passwords between python.org systems, we are
 performing a password reset of all PyPI accounts in one week's time, at
-2013-02-21 00:00 UTC.
+2013-02-22 00:00 UTC.
 
 If you log in before that deadline and change your password then you'll be
 fine, otherwise you'll need to use the password recovery form after the reset
@@ -59,6 +59,8 @@ PyPI. If you are interested in these matters I encourage you to participate in
 the discussion on the catalog SIG:
 
 http://mail.python.org/mailman/listinfo/catalog-sig
+
+Finally, we apologise for any inconvenience these changes have caused.
 
 
     Richard Jones
