@@ -2743,7 +2743,7 @@ class WebUI:
 
         # generate a reset OTK and mail the link
         info = dict(name=user['name'], url=self.config.url,
-            otk=self._gen_reset_otk())
+            otk=self._gen_reset_otk(user))
         info['admin'] = self.config.adminemail
         self.send_email(user['email'], password_change_message % info)
         self.write_template('message.pt', title="Request password reset",
@@ -2792,16 +2792,16 @@ class WebUI:
 
         # generate a reset OTK and mail the link
         info = dict(name=user['name'], url=self.config.url,
-            otk=self._gen_reset_otk())
+            otk=self._gen_reset_otk(user))
         info['admin'] = self.config.adminemail
         self.send_email(user['email'], password_change_message % info)
         self.write_template('message.pt', title="Request password reset",
             message='Email sent to confirm password change')
 
-    def _gen_reset_otk(self):
+    def _gen_reset_otk(self, user):
         # generate the reset key and sign it
         reset_signer = itsdangerous.URLSafeTimedSerializer(
-            self.config[reset_secret], 'password-recovery')
+            self.config.reset_secret, 'password-recovery')
 
         # we include a snip of the current password hash so that the OTK can't
         # be used again once the password is changed. And hash it to be extra
@@ -2810,7 +2810,7 @@ class WebUI:
 
     def _decode_reset_otk(self, otk):
         reset_signer = itsdangerous.URLSafeTimedSerializer(
-            self.config[reset_secret], 'password-recovery')
+            self.config.reset_secret, 'password-recovery')
         try:
             # we allow 6 hours
             name, x = reset_signer.loads(otk, max_age=6*60*60)
