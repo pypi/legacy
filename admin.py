@@ -187,11 +187,11 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
-def show_user(store, user):
+def show_user(store, name):
     c = store.get_cursor()
-    user = store.get_user()
+    user = store.get_user(name)
     if not user:
-        sys.exit('user %r does not exist' % user)
+        sys.exit('user %r does not exist' % name)
     for key in user.keys():
         print '%s: %s' % (key, user[key])
     for p in store.get_user_packages(user):
