@@ -2792,9 +2792,9 @@ class WebUI:
 
         # generate a reset OTK and mail the link
         info = dict(name=user['name'], url=self.config.url,
-            otk=self._gen_reset_otk(user))
+            email=user['email'], otk=self._gen_reset_otk(user))
         info['admin'] = self.config.adminemail
-        self.send_email(user['email'], password_change_message % info)
+        self.send_email(info['email'], password_change_message % info)
         self.write_template('message.pt', title="Request password reset",
             message='Email sent to confirm password change')
 
@@ -2850,10 +2850,9 @@ class WebUI:
         msg = self._verify_new_password(pw, confirm, user)
         if msg:
             return self.write_template('password_reset_change.pt',
-                title="Password reset", retry=msg)
+                title="Password reset", otk=otk, retry=msg)
 
         self.store.store_user(user['name'], pw, user['email'], None)
-        self.store.delete_reset_otk(otk)
         self.write_template('message.pt', title="Password reset",
             message='Password has been reset')
 
