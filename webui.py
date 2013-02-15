@@ -2741,9 +2741,11 @@ class WebUI:
             self.write_template('message.pt', title="Resending registration key",
                 message='Email with registration key resent')
 
-        # generate a reset OTK and mail the link
-        info = dict(name=user['name'], url=self.config.url,
-            otk=self._gen_reset_otk(user))
+        # generate a reset OTK and mail the link - force link to be HTTPS
+        url = self.config.url
+        if url.startswith('http'):
+            url = 'https' + url[4:]
+        info = dict(name=user['name'], url=url, otk=self._gen_reset_otk(user))
         info['admin'] = self.config.adminemail
         self.send_email(user['email'], password_change_message % info)
         self.write_template('message.pt', title="Request password reset",
