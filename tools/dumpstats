@@ -1,0 +1,29 @@
+#!/usr/bin/python
+import os
+import csv
+import psycopg2
+import bz2
+import ConfigParser
+
+
+def main(config, out):
+    # Setup database connection
+    c = ConfigParser.ConfigParser({'user': '', 'password': ''})
+    c.read(config)
+    dbname = c.get('database', 'name')
+    dbuser = c.get('database', 'user')
+    dbpass = c.get('database', 'password')
+    dbhost = c.get('database', 'host')
+    dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass,
+        host=dbhost)
+    cursor = dbconn.cursor()
+    cursor.execute('select name,version,filename,downloads from release_files')
+    with bz2.BZ2File(out, 'w') as f:
+        w = csv.writer(f)
+        w.writerows(cursor.fetchall())
+    dbconn.close()
+
+if __name__ == '__main__':
+    import sys
+    statsdir = '/data/www/pypi/stats'
+    main(sys.argv[1], os.path.join(statsdir, 'latest-totals.csv.bz2'))
