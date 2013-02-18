@@ -32,7 +32,12 @@ def integrate_remote(config, host, dbupdate=True):
     missing = files-integrated
     stats = apache_stats.LocalStats()
     for m in missing:
-        data = urllib.urlopen('http://%s.pypi.python.org/local-stats/days/%s.bz2' % (host, m)).read()
+        url = 'http://%s.pypi.python.org/local-stats/days/%s.bz2' % (host, m)
+        try:
+            data = urllib.urlopen(url).read()
+        except Exception, e:
+            print 'ERROR %s for %s' % (e, url)
+            continue
         data = bz2.decompress(data)
         data = cStringIO.StringIO(data)
         year, month, day = m.split('-')
@@ -62,4 +67,4 @@ def main():
         host = chr(ord(host)+1)
 
 main()
-        
+
