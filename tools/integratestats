@@ -22,7 +22,12 @@ def integrate(config, data):
     dbconn.close()
 
 def integrate_remote(config, host, dbupdate=True):
-    index = urllib.urlopen('http://%s.pypi.python.org/local-stats/days/' % host).read()
+    url = 'http://%s.pypi.python.org/local-stats/days/' % host
+    try:
+        index = urllib.urlopen(url).read()
+    except Exception, e:
+        print 'ERROR %s for %s' % (e, url)
+        return
     files = set(re.findall('href=.(20..-..-..).bz2', index))
     try:
         integrated = open(statsdir+'/integrated/'+host).readlines()
