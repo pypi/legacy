@@ -13,6 +13,7 @@ PostgreSQL, and all these packages located at PyPI:
 - docutils
 - M2Crypto
 - distutils2
+- six
 - python-openid
 - raven
 - passlib
@@ -35,15 +36,15 @@ Then, you can create a development environment like this, if you have
 virtualenv installed::
 
     $ virtualenv --no-site-packages --distribute .
-    $ bin/easy_install zope.interface zope.pagetemplate
-    $ bin/easy_install zope.tal zope.tales zope.i18nmessageid psycopg2
-    $ bin/easy_install docutils M2Crypto python-openid raven
-    $ bin/easy_install passlib py-bcrypt
-    $ bin/easy_install itsdangerous
+    $ pip install zope.interface zope.pagetemplate
+    $ pip install zope.tal zope.tales zope.i18nmessageid psycopg2
+    $ pip install docutils M2Crypto python-openid raven
+    $ pip install passlib py-bcrypt
+    $ pip install itsdangerous six distutils2
 
 Then you can launch the server using the pypi.wsgi script::
 
-    $ bin/python pypi.wsgi
+    $ python pypi.wsgi
     Serving on port 8000...
 
 PyPI will be available in your browser at http://localhost:8000
