@@ -58,3 +58,12 @@ Then run tools/demodata to populate the database with dummy data.
 For testing purposes, run tools/mksqlite to create packages.db. Set
 [database]driver to sqlite3, and [database]name to packages.db, then
 run tools/demodata to populate the database.
+
+TestPyPI Database Setup
+-----------------------
+
+testpypi runs under postgres; because I don't care to fill my head with such
+trivialities, the setup commands are:
+
+   createdb -O testpypi testpypi
+   psql -U testpypi testpypi <pkgbase_schema.sql

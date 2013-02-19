@@ -13,7 +13,7 @@
       <meta tal:attributes="content data/description" />
        <link rel="alternate" type="application/rss+xml" title="RSS: 40 latest updates"
             tal:attributes="href string:${app/config/url}?:action=rss"/>
-       <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages" 
+       <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages"
             tal:attributes="href string:${app/config/url}?:action=packages_rss"/>
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
        <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
@@ -37,7 +37,7 @@
       <img src="/testing-site.png" style="z-index: 100; position: absolute; top: 0; left: 0; border: 0;" alt="Testing Site" />
       <img src="/testing-site-right.png" style="z-index: 100; position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
      </tal:x>
-    
+
       <!--  Logo  -->
       <h1 id="logoheader">
        <a accesskey="1" href="http://www.python.org" id="logolink">
@@ -211,10 +211,10 @@
           </div>
           <div id="footer"><div id="credits">
             <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
-            <a href="http://www.xs4all.com/" title="Web and email hosting provided by xs4all, Netherlands">hosting by xs4all</a> /
+            <a href="http://osuosl.org/" title="Web and email hosting provided by OSU OSL">hosting by OSU OSL</a> /
             <a href="http://www.timparkin.co.uk/" title="Design by Tim Parkin, Yorkshire man, photographer and developer">design by Tim Parkin</a>
           </div>
-          Copyright © 1990-2011, <a href="http://www.python.org/psf">Python Software Foundation</a><br />
+          Copyright © 1990-2013, <a href="http://www.python.org/psf">Python Software Foundation</a><br />
           <a href="http://www.python.org/about/legal">Legal Statements</a>
 
           </div>
