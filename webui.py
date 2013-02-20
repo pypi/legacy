@@ -1,3 +1,8 @@
+# import defusedxml before anything else
+import defusedxml
+import defusedxml.xmlrpc
+defusedxml.xmlrpc.monkey_patch()
+
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse

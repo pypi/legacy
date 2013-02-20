@@ -19,6 +19,7 @@ PostgreSQL, and all these packages located at PyPI:
 - passlib
 - py-bcrypt (If using the recommended bcrypt hasher)
 - itsdangerous
+- defusedxml
 
 Quick development setup
 -----------------------
@@ -41,6 +42,7 @@ virtualenv installed::
     $ pip install docutils M2Crypto python-openid raven
     $ pip install passlib py-bcrypt
     $ pip install itsdangerous six distutils2
+    $ pip install defusedxml
 
 Then you can launch the server using the pypi.wsgi script::
 

@@ -42,6 +42,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         webui_obj.handler.end_headers()
         try:
             length = int(webui_obj.env['CONTENT_LENGTH'])
+            assert length < 10*1024*1024, 'request content way too big'
             data = webui_obj.handler.rfile.read(length)
             # This should be thread-safe, as the store is really a singleton
             self.store = webui_obj.store

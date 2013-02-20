@@ -13,7 +13,7 @@ try:
     sqlite3_cursor = sqlite3.Cursor
 except ImportError:
     sqlite3_cursor = type(None)
-from xml.parsers import expat
+from defusedxml import ElementTree
 import trove, openid2rp
 from mini_pkg_resources import safe_name
 from description_utils import processDescription
@@ -2329,10 +2329,9 @@ class OAuthDataStore(oauth.OAuthDataStore):
 
 def xmlescape(url):
     '''Make sure a URL is valid XML'''
-    p = expat.ParserCreate()
     try:
-        p.Parse('<x y="%s"/>' % url, True)
-    except expat.ExpatError:
+        ElementTree.fromstring('<x y="%s"/>' % url)
+    except ElementTree.ParseError:
         return cgi.escape(url)
     else:
         return url
