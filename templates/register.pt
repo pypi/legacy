@@ -25,7 +25,7 @@
     You can use your PyPI account to log into other services supporting <a href="http://en.wikipedia.org/wiki/OpenID">OpenID</a>.
     You need to first log into PyPI before logging into other services (doing it the other way is prone to phishing attacks).
     To log in, simply type <b>pypi.python.org</b> into the field asking for an OpenID. Your OpenID is
-    <b>http://pypi.python.org/id/<span tal:replace="data/name"/></b>; you can also use this ID directly to log in.
+    <b>https://pypi.python.org/id/<span tal:replace="data/name"/></b>; you can also use this ID directly to log in.
     </p>
     <form tal:attributes="action app/url_path" method="POST">
       <input type="hidden" name=":action" value="user" />
