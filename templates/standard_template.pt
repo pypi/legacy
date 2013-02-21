@@ -155,6 +155,7 @@
                   <h4>Welcome <span tal:replace="app/username"/></h4>
                   <li>
                     <a tal:attributes="href python:app.link_action('user_form')">Your details</a>
+                    (<a tal:attributes="href python:app.link_action('logout')">Logout</a>)
                   </li>
 
                   <tal:let define="packages python:app.store.user_packages(app.username)">
@@ -173,9 +174,6 @@
                     </tal:if-packages>
                   </tal:let>
 
-                  <li>
-                    <a tal:attributes="href python:app.link_action('logout')">Logout</a>
-                  </li>
 		</tal:if-user>
 
             </div>
