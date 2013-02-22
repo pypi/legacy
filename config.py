@@ -49,6 +49,8 @@ class Config:
         self.url = c.get('webui', 'url')
         self.scheme_host = urlunsplit(urlsplit(self.url)[:2]+('','',''))
         self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
+        if self.url.startswith("https:"):
+            self.pydotorg = '/'
         self.simple_script = c.get('webui', 'simple_script')
         self.files_url = c.get('webui', 'files_url')
         self.rss_file = c.get('webui', 'rss_file')

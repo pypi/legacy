@@ -188,7 +188,6 @@ def merge_user(store, old, new):
     c.execute('delete from users where name=%s', (old,))
 
 def show_user(store, name):
-    c = store.get_cursor()
     user = store.get_user(name)
     if not user:
         sys.exit('user %r does not exist' % name)
