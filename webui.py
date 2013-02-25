@@ -2695,7 +2695,8 @@ class WebUI:
         key = key[0].strip()
         if not any(pfx for pfx in 'ssh-dss ssh-rsa ecdsa-sha2-nistp'
                 if key.startswith(pfx)):
-            raise FormError, "Invalid key format: does not start with ssh-dss or ssh-rsa"
+            raise FormError("Invalid key format: does not start with ssh-dss, "
+                "ssh-rsa or ecdsa-sha2-nistp*")
         self.store.add_sshkey(self.username, key)
         self.store.commit()
         self.update_sshkeys()
