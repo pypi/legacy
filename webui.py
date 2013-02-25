@@ -2693,7 +2693,8 @@ class WebUI:
             if line.strip():
                 raise FormError, "Invalid key format: multiple lines"
         key = key[0].strip()
-        if not key.startswith('ssh-dss') and not key.startswith('ssh-rsa'):
+        if not any(pfx for pfx in 'ssh-dss ssh-rsa ecdsa-sha2-nistp'
+                if key.startswith(pfx)):
             raise FormError, "Invalid key format: does not start with ssh-dss or ssh-rsa"
         self.store.add_sshkey(self.username, key)
         self.store.commit()
