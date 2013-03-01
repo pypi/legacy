@@ -202,6 +202,10 @@ def extractPackageReadme(content, filename, filetype):
             # grab the content and parse if it's something we might understand,
             # based on the file extension
             text = zip.open(entry).read()
+
+            # we can only deal with UTF-8 so make it UTF-8 safe
+            text = text.decode('utf-8', 'replace').encode('utf-8')
+
             if ext in ('txt', 'rst', 'md'):
                 html = processDescription(text)
             return text, html

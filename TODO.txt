@@ -1,3 +1,16 @@
+2013 Sprints
+
+- the distutils upload command omits some meta-data (long_description)
+- the upload handler doesn't allow registration of a new package
+- distutils doesn't allow specifying https, nor does it default to https
+
+
+
+
+
+
+
+
 Now:
 
 - patch python 2.5 to use the name "Cheese Shop" and the new URL
