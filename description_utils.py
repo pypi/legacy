@@ -243,11 +243,15 @@ def extractPackageReadme(content, filename, filetype):
             # based on the file extension
             try:
                 text = tar.extractfile(entry).read()
+
+                # we can only deal with UTF-8 so make it UTF-8 safe
+                text = text.decode('utf-8', 'replace').encode('utf-8')
             except:
                 # issue 3521663: extraction may fail if entry is a symlink to
                 # a non-existing file
                 continue
-            if ext in ('txt', 'rst', 'md'):
+
+            if text and ext in ('txt', 'rst', 'md'):
                 html = processDescription(text)
             return text, html
 
