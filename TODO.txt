@@ -3,7 +3,7 @@
 - the distutils upload command omits some meta-data (long_description)
 - the upload handler doesn't allow registration of a new package
 - distutils doesn't allow specifying https, nor does it default to https
-
+- OAuth PEM to users over HTTPS
 
 
 

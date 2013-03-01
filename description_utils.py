@@ -199,6 +199,9 @@ def extractPackageReadme(content, filename, filetype):
                 ext = 'txt'
             if name.upper() != 'README':
                 continue
+            if ext not in ('txt', 'rst', 'md'):
+                return
+
             # grab the content and parse if it's something we might understand,
             # based on the file extension
             text = zip.open(entry).read()
@@ -206,9 +209,8 @@ def extractPackageReadme(content, filename, filetype):
             # we can only deal with UTF-8 so make it UTF-8 safe
             text = text.decode('utf-8', 'replace').encode('utf-8')
 
-            if ext in ('txt', 'rst', 'md'):
-                html = processDescription(text)
-            return text, html
+            if text:
+                return text, processDescription(text)
 
     elif (filename.endswith('.tar.gz') or filename.endswith('.tgz') or
             filename.endswith('.tar.bz2') or filename.endswith('.tbz2')):
@@ -239,6 +241,8 @@ def extractPackageReadme(content, filename, filetype):
                 ext = 'txt'
             if name.upper() != 'README':
                 continue
+            if ext not in ('txt', 'rst', 'md'):
+                continue
             # grab the content and parse if it's something we might understand,
             # based on the file extension
             try:
@@ -251,9 +255,8 @@ def extractPackageReadme(content, filename, filetype):
                 # a non-existing file
                 continue
 
-            if text and ext in ('txt', 'rst', 'md'):
-                html = processDescription(text)
-            return text, html
+            if text:
+                return text, processDescription(text)
 
     return text, html
 
