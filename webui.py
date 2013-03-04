@@ -20,6 +20,7 @@ except ImportError:
 try:
     import psycopg2
     OperationalError = psycopg2.OperationalError
+    IntegrityError = psycopg2.IntegrityError
 except ImportError:
     class OperationalError(Exception):
         pass
@@ -2397,8 +2398,12 @@ class WebUI:
                 m.hexdigest())''')
             return
 
-        self.store.add_file(name, version, content, md5_digest,
-            filetype, pyversion, comment, filename, signature)
+        try:
+            self.store.add_file(name, version, content, md5_digest,
+                filetype, pyversion, comment, filename, signature)
+        except IntegrityError, e:
+            raise FormError, 'Duplicate file upload detected.'
+
         self.store.changed()
 
         if response:
