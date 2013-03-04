@@ -2757,7 +2757,7 @@ class WebUI:
         url = self.config.url
         if url.startswith('http'):
             url = 'https' + url[4:]
-        info = dict(name=user['name'], url=url, email=user['emai'],
+        info = dict(name=user['name'], url=url, email=user['email'],
             otk=self._gen_reset_otk(user))
         info['admin'] = self.config.adminemail
         self.send_email(user['email'], password_change_message % info)
