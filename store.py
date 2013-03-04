@@ -1612,7 +1612,8 @@ class Store:
         cursor.execute(pkgs)
         releases = []
         for name, version, summary in cursor.fetchall():
-            releases.append((name.decode('utf-8'), version, summary.decode('utf-8')))
+            if summary: summary = summary.decode('utf-8')
+            releases.append((name.decode('utf-8'), version, summary))
         # Finally, compute the tally
         tally = """select tl.id,count(*) from (select distinct t.id, a.name,
         a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2
