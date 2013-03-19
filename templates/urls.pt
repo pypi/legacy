@@ -55,9 +55,9 @@
 
         <tr tal:repeat="url python:app.store.list_description_urls(data['name'])"
                 tal:attributes="class repeat/url/parity">
-            <td><input type="checkbox" name="url-ids" tal:attributes="value id" /></td>
+            <td><input type="checkbox" name="url-ids" tal:attributes="value url/id" /></td>
             <td tal:content="url/version" />
-            <td><a tal:attributes="href string:${url}" tal:content="url" /></td>
+            <td><a tal:attributes="href url/url" tal:content="url/url" /></td>
         </tr>
 
         <tr>
