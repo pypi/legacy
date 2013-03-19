@@ -8,6 +8,11 @@
 <p tal:replace="structure app/release_nav" />
 
 <p><b>Hosting Mode</b></p>
+<p>When presenting URLs to download tools, PyPI will include URLs pointing to
+    those files hosted with PyPI. While this is the preferred mechanism, we
+    also allow packages to refer to files on hosts external to PyPI. The URLs
+    referred to below are used <em>in addition to</em> any URLs pointing to
+    PyPI-hosted files.</p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name=":action" value="pkg_edit" />
     <input type="hidden" name="name" tal:attributes="value data/name" />
@@ -16,19 +21,21 @@
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
-    <label for="pypi-explicit">Do not extract URLs from description field</label>
+    <label for="pypi-explicit">Do not extract URLs from description field -
+        only use those URLs explicitly specified below (preferred.)</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" checked="checked" />
-    <label for="pypi-scrape">Automatically extract URLs from description field</label>
+    <label for="pypi-scrape">Present URLs extracted from the description field.</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" checked="checked" />
-    <label for="pypi-scrape-crawl">Scrape Homepage and Download URL (Slow!)</label>
+    <label for="pypi-scrape-crawl">As above but also ask tools to also scrape
+        Homepage and Download URL (slow!)</label>
 <br/>
     <input type="submit" name="submit_hosting_mode" value="Change" />
 </form>
