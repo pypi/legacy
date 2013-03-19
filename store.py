@@ -599,12 +599,19 @@ class Store:
         return self._Package(None, cursor.fetchone())
 
     def get_package_urls(self, name, relative=None):
-        ''' Return all URLS (home, download, files) for a package,
+        '''Return all URLS (home, download, files) for a package,
 
-            Return pairs of (link, rel, label).
+        Return list of (link, rel, label) or None if there are no releases.
         '''
         cursor = self.get_cursor()
         result = []
+
+        # grab the list of releases
+        safe_execute(cursor, '''select version, home_page, download_url
+            from releases where name=%s''', (name,))
+        releases = list(cursor.fetchall())
+        if not releases:
+            return None
 
         # grab the packages hosting_mode
         hosting_mode = self.get_package_hosting_mode(name)
@@ -614,29 +621,25 @@ class Store:
             downloadrel = "download" if hosting_mode == "pypi-scrape-crawl" else "ext-download"
 
             # homepage, download url
-            safe_execute(cursor, '''select version, home_page, download_url from
-            releases where name=%s''', (name,))
-            any_releases = False
-            for version, home_page, download_url in cursor.fetchall():
+            for version, home_page, download_url in releases:
                 # assume that home page and download URL are unescaped
-                any_releases = True
                 if home_page and home_page != 'UNKNOWN':
                     result.append((home_page, homerel, version + ' home_page'))
                 if download_url and download_url != 'UNKNOWN':
                     result.append((download_url, downloadrel, version + ' download_url'))
-            if not any_releases:
-                return None
 
         # uploaded files
-        safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
-        where name=%s''', (name,))
+        safe_execute(cursor, '''select filename, python_version, md5_digest
+            from release_files where name=%s''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
-            result.insert(0, (self.gen_file_url(pyversion, name, fname, relative)+"#md5="+md5,
-                              "internal", fname))
+            url = self.gen_file_url(pyversion, name, fname, relative) + \
+                "#md5=" + md5
+            result.insert(0, (url, "internal", fname))
 
-        # urls from description
+        # urls from description - this also now includes explicit URLs provided
+        # through the web interface
         for url in self.list_description_urls(name):
             # assume that description urls are escaped
             result.append((url, None, url))
