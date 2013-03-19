@@ -2101,8 +2101,7 @@ class WebUI:
             self.store.changed()
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
-                            autohide=self.store.get_package_autohide(name),
-                            hosting_mode=self.store.get_package_hosting_mode(name),
+            autohide=self.store.get_package_autohide(name),
             title="Package '%s' Editing"%name)
 
     def remove_pkg(self):
@@ -2252,7 +2251,9 @@ class WebUI:
             self.store.add_description_url(name, version, url)
             self.store.changed()
 
-        self.write_template("urls.pt", name=name, version=version, title="Urls for %s %s" % (name, version))
+        self.write_template("urls.pt", name=name, version=version,
+            hosting_mode=self.store.get_package_hosting_mode(name),
+            title="Urls for %s %s" % (name, version))
 
     def pretty_size(self, size):
         n = 0
