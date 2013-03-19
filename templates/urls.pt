@@ -8,8 +8,9 @@
 <p tal:replace="structure app/release_nav" />
 
 <p><b>Hosting Mode</b></p>
-<p>When presenting URLs to download tools, PyPI will include URLs pointing to
-    those files hosted with PyPI. While this is the preferred mechanism, we
+<p>Download tools like pip ask PyPI what download URLs exist for a package.
+    When determining those URLs, PyPI will include URLs pointing to files
+    you have uploaded to PyPI. While this is the preferred mechanism, we
     also allow packages to refer to files on hosts external to PyPI. The URLs
     referred to below are used <em>in addition to</em> any URLs pointing to
     PyPI-hosted files.</p>
@@ -22,7 +23,7 @@
     <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
     <label for="pypi-explicit">Do not extract URLs from description field -
-        only use those URLs explicitly specified below (preferred.)</label>
+        only use URLs explicitly specified below (this is preferred).</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
