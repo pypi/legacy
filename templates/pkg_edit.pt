@@ -28,7 +28,7 @@ assigned to users for this package.</p>
 
  <table class="list" style="width: auto">
   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th>
-      <th colspan="3">Links</th></tr>
+      <th colspan="4">Links</th></tr>
 
   <tr tal:repeat="release data/releases"
       tal:attributes="class repeat/release/parity">
