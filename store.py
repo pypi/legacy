@@ -646,7 +646,7 @@ class Store:
 
         return result
 
-    _Description_URLs = FastResultRow('id version url')
+    _Description_URLs = FastResultRow('!id version url')
     def list_description_urls(self, name, version=None):
         if version is None:
             sql = "SELECT id, version, url FROM description_urls WHERE name=%s"
