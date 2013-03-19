@@ -22,14 +22,14 @@
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
-    <label for="pypi-explicit">Do not extract URLs from description field -
+    <label for="pypi-explicit">Do not extract URLs from the long description field -
         only use URLs explicitly specified below (this is preferred).</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" checked="checked" />
-    <label for="pypi-scrape">Present URLs extracted from the description field.</label>
+    <label for="pypi-scrape">Present URLs extracted from the long description field.</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
@@ -41,7 +41,7 @@
     <input type="submit" name="submit_hosting_mode" value="Change" />
 </form>
 
-<p><b>Registered File URLs</b></p>
+<p><b>Additional File URLs</b></p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="name" tal:attributes="value data/name" />
     <input type="hidden" name="version" tal:attributes="value data/version" />
@@ -73,6 +73,8 @@
 <p>Each URL must locate a distribution file directly, not point to an
     index page of file URLs. The contents of the URLs you provide here are not
     scraped for file download URLs.</p>
+<p>The URL must end with the MD5 hash of the file contents.
+    This must take the form "#md5=2f3dff3357af889fc7021b568d40e866".</p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="name" tal:attributes="value data/name" />
     <input type="hidden" name="version" tal:attributes="value data/version" />

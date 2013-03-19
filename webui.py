@@ -2248,6 +2248,9 @@ class WebUI:
 
         elif "submit_new_url" in self.form and "new-url" in self.form:
             url = self.form["new-url"]
+            u = urlparse.urlparse(url)
+            if not u.fragment.startswith('#md5='):
+                raise FormError('URL does not end with #md5=...')
             self.store.add_description_url(name, version, url)
             self.store.changed()
 
