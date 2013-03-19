@@ -642,7 +642,7 @@ class Store:
         # through the web interface
         for url in self.list_description_urls(name):
             # assume that description urls are escaped
-            result.append((url.url, None, url.url))
+            result.append((url['url'], None, url['url']))
 
         return result
 
