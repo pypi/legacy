@@ -646,6 +646,7 @@ class Store:
 
         return result
 
+    _Description_URLs = FastResultRow('id version url')
     def list_description_urls(self, name, version=None):
         if version is None:
             sql = "SELECT id, version, url FROM description_urls WHERE name=%s"
@@ -657,7 +658,7 @@ class Store:
 
         cursor = self.get_cursor()
         safe_execute(cursor, sql, params)
-        return list(cursor.fetchall())
+        return Result(None, cursor.fetchall(), self._Description_URLs)
 
     def add_description_url(self, name, version, url):
         cursor = self.get_cursor()
