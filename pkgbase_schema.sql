@@ -90,7 +90,8 @@ CREATE TABLE packages (
    normalized_name TEXT,
    bugtrack_url TEXT,
    autohide BOOLEAN DEFAULT TRUE,
-   comments BOOLEAN DEFAULT TRUE
+   comments BOOLEAN DEFAULT TRUE,
+   hosting_mode TEXT NOT NULL DEFAULT 'pypi-scrape-crawl'
 );
 
 CREATE TABLE cheesecake_main_indices (
