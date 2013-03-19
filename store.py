@@ -648,19 +648,21 @@ class Store:
 
     def list_description_urls(self, name, version=None):
         if version is None:
-            sql = "SELECT DISTINCT url FROM description_urls WHERE name=%s"
+            sql = "SELECT id, version, url FROM description_urls WHERE name=%s"
             params = [name]
         else:
-            sql = "SELECT DISTINCT url FROM description_urls WHERE name=%s AND version=%s"
+            sql = """SELECT id, version, url FROM description_urls
+                WHERE name=%s AND version=%s"""
             params = [name, version]
 
         cursor = self.get_cursor()
         safe_execute(cursor, sql, params)
-        return [x[0] for x in cursor.fetchall()]
+        return list(cursor.fetchall())
 
     def add_description_url(self, name, version, url):
         cursor = self.get_cursor()
-        safe_execute(cursor, "INSERT INTO description_urls (name, version, url) VALUES (%s, %s, %s)", [name, version, url])
+        safe_execute(cursor, """INSERT INTO description_urls (name, version, url)
+             VALUES (%s, %s, %s)""", [name, version, url])
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''insert into journals (
@@ -668,9 +670,14 @@ class Store:
               submitted_from) values (%s, %s, %s, %s, %s, %s)''',
         (name, version, 'add url ' + url, date, self.username, self.userip))
 
-    def remove_description_url(self, name, version, url):
+    def remove_description_url(self, url_id):
         cursor = self.get_cursor()
-        safe_execute(cursor, "DELETE FROM description_urls WHERE name=%s AND version=%s AND url=%s", [name, version, url])
+        sql = "SELECT name, version, url FROM description_urls WHERE id=%s"
+        safe_execute(cursor, sql, [url_id])
+        name, version, url = cursor.fetchone
+
+        sql = "DELETE FROM description_urls WHERE id=%s"
+        safe_execute(cursor, sql, [url_id])
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''insert into journals (

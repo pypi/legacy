@@ -212,6 +212,7 @@ CREATE INDEX release_urls_packagetype_idx ON release_urls(packagetype);
 
 -- Table structure for table: description_urls
 CREATE TABLE description_urls (
+   id serial primary key,
    name TEXT,
    version TEXT,
    url TEXT,

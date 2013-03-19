@@ -49,11 +49,14 @@
     <table class="list" style="width: auto">
         <tr>
             <th>Remove?</th>
+            <th>Release</th>
             <th>URL</th>
         </tr>
 
-        <tr tal:repeat="url python:app.store.list_description_urls(data['name'], data['version'])" tal:attributes="class repeat/url/parity">
-            <td><input type="checkbox" name="url-ids" tal:attributes="value url" /></td>
+        <tr tal:repeat="url python:app.store.list_description_urls(data['name'])"
+                tal:attributes="class repeat/url/parity">
+            <td><input type="checkbox" name="url-ids" tal:attributes="value id" /></td>
+            <td tal:content="url/version" />
             <td><a tal:attributes="href string:${url}" tal:content="url" /></td>
         </tr>
 

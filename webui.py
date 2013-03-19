@@ -2237,12 +2237,12 @@ class WebUI:
             self.store.changed()
 
         elif "submit_remove" in self.form and "url-ids" in self.form:
-            urls = self.form["url-ids"]
-            if not isinstance(urls, list):
-                urls = [urls]
+            urlids = self.form["url-ids"]
+            if not isinstance(urlids, list):
+                urlids = [urlids]
 
-            for url in urls:
-                self.store.remove_description_url(name, version, url)
+            for url_id in urlids:
+                self.store.remove_description_url(url_id)
 
             self.store.changed()
 
