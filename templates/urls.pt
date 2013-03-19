@@ -14,7 +14,7 @@
     referred to below are used <em>in addition to</em> any URLs pointing to
     PyPI-hosted files.</p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
-    <input type="hidden" name=":action" value="pkg_edit" />
+    <input type="hidden" name=":action" value="urls" />
     <input type="hidden" name="name" tal:attributes="value data/name" />
 
     <input tal:condition="python: data['hosting_mode'] != 'pypi-explicit'"

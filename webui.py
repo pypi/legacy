@@ -2069,11 +2069,6 @@ class WebUI:
             value = self.form.has_key('autohide')
             self.store.set_package_autohide(name, value)
 
-        if "submit_hosting_mode" in self.form:
-            value = self.form["hosting_mode"]
-            self.store.set_package_hosting_mode(name, value)
-            self.store.changed()
-
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -2236,7 +2231,12 @@ class WebUI:
                 self.store.has_role('Owner', name)):
             raise Forbidden("You do not have permission")
 
-        if "submit_remove" in self.form and "url-ids" in self.form:
+        if "submit_hosting_mode" in self.form:
+            value = self.form["hosting_mode"]
+            self.store.set_package_hosting_mode(name, value)
+            self.store.changed()
+
+        elif "submit_remove" in self.form and "url-ids" in self.form:
             urls = self.form["url-ids"]
             if not isinstance(urls, list):
                 urls = [urls]
@@ -2246,7 +2246,7 @@ class WebUI:
 
             self.store.changed()
 
-        if "submit_new_url" in self.form and "new-url" in self.form:
+        elif "submit_new_url" in self.form and "new-url" in self.form:
             url = self.form["new-url"]
             self.store.add_description_url(name, version, url)
             self.store.changed()
