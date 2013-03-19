@@ -1345,7 +1345,7 @@ class WebUI:
         uv = urllib.quote_plus(version.encode('utf-8'))
         url = '%s?name=%s&amp;version=%s'%(self.url_path, un, uv)
         return '''<p class="release-nav">Package:
-  <a href="%s?:action=role_form&amp;package_name=%s">admin</a> |
+  <a href="%s?:action=role_form&amp;package_name=%s">roles</a> |
   <a href="%s?:action=pkg_edit&amp;name=%s">releases</a> |
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |

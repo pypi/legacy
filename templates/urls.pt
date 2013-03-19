@@ -7,6 +7,33 @@
 
 <p tal:replace="structure app/release_nav" />
 
+<p><b>Hosting Mode</b></p>
+<form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name=":action" value="pkg_edit" />
+    <input type="hidden" name="name" tal:attributes="value data/name" />
+
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-explicit'"
+        type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
+        type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
+    <label for="pypi-explicit">Do not extract URLs from description field</label>
+<br>
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
+        type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape'"
+        type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" checked="checked" />
+    <label for="pypi-scrape">Automatically extract URLs from description field</label>
+<br>
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape-crawl'"
+        type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape-crawl'"
+        type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" checked="checked" />
+    <label for="pypi-scrape-crawl">Scrape Homepage and Download URL (Slow!)</label>
+<br>
+    <input type="submit" name="submit_hosting_mode" value="Change" />
+</form>
+
+<p><b>Registered File URLs</b></p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="name" tal:attributes="value data/name" />
     <input type="hidden" name="version" tal:attributes="value data/version" />
