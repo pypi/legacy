@@ -91,7 +91,7 @@ CREATE TABLE packages (
    bugtrack_url TEXT,
    autohide BOOLEAN DEFAULT TRUE,
    comments BOOLEAN DEFAULT TRUE,
-   hosting_mode TEXT NOT NULL DEFAULT 'pypi-scrape-crawl'
+   hosting_mode TEXT NOT NULL DEFAULT 'pypi-external'
 );
 
 CREATE TABLE cheesecake_main_indices (
