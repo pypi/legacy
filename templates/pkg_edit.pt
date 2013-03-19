@@ -54,6 +54,7 @@ assigned to users for this package.</p>
    <td><a tal:attributes="href string:${app/url_path}?:action=display&amp;name=${data/name}&amp;version=${release/version}">show</a></td>
    <td><a tal:attributes="href string:${app/url_path}?:action=submit_form&amp;name=${data/name}&amp;version=${release/version}">edit</a></td>
    <td><a tal:attributes="href string:${app/url_path}?:action=files&amp;name=${data/name}&amp;version=${release/version}">files</a></td>
+   <td><a tal:attributes="href string:${app/url_path}?:action=urls&amp;name=${data/name}&amp;version=${release/version}">urls</a></td>
   </tr>
 
  <tr>
@@ -83,6 +84,26 @@ uncheck the button below</p>
   <input tal:condition="not:data/autohide" type="checkbox" name="autohide">Auto-hide old releases</input>
   <input type="submit" name="submit_autohide" value="Change" />
   <br/>
+</form>
+
+<p>Hosting Mode</p>
+<form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name=":action" value="pkg_edit" />
+    <input type="hidden" name="name" tal:attributes="value data/name" />
+
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-explicit'" type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'" type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
+    <label for="pypi-explicit">Do not extract URLs from description field</label>
+
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'" type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape'" type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" checked="checked" />
+    <label for="pypi-scrape">Automatically extract URLs from description field</label>
+
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape-crawl'" type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape-crawl'" type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" checked="checked" />
+    <label for="pypi-scrape-crawl">Scrape Homepage and Download URL (Slow!)</label>
+
+    <input type="submit" name="submit_hosting_mode" value="Change" />
 </form>
 
 <p>You can now host documentation at

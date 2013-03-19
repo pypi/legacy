@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+
+<p tal:replace="structure app/release_nav" />
+
+<form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="name" tal:attributes="value data/name" />
+    <input type="hidden" name="version" tal:attributes="value data/version" />
+    <input type="hidden" name=":action" value="urls" />
+
+    <table class="list" style="width: auto">
+        <tr>
+            <th>Remove?</th>
+            <th>URL</th>
+        </tr>
+
+        <tr tal:repeat="url python:app.store.list_description_urls(data['name'], data['version'])" tal:attributes="class repeat/url/parity">
+            <td><input type="checkbox" name="url-ids" tal:attributes="value url" /></td>
+            <td><a tal:attributes="href string:${url}" tal:content="url" /></td>
+        </tr>
+
+        <tr>
+            <td colspan="2" id="last">
+                <input type="submit" name="submit_remove" value="Remove" />
+            </td>
+        </tr>
+    </table>
+</form>
+
+<p><b>Add a New URL</b></p>
+<p>Each URL must locate a distribution file directly, not point to an
+    index page of file URLs. The contents of the URLs you provide here are not
+    scraped for file download URLs.</p>
+<form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="name" tal:attributes="value data/name" />
+    <input type="hidden" name="version" tal:attributes="value data/version" />
+    <input type="hidden" name=":action" value="urls" />
+
+    <input name="new-url" />
+    <input type="submit" name="submit_new_url" value="Add URL" />
+</form>
+
+</metal:fill>
+</html>
+

@@ -32,6 +32,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(release_downloads)
         self.register_function(package_roles)
         self.register_function(user_packages)
+        self.register_function(package_hosting_mode)
         self.register_introspection_functions()
         self.register_multicall_functions()
 
@@ -71,6 +72,10 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         if len(call_list) > 100:
             raise Fault, "multicall too large"
         return SimpleXMLRPCDispatcher.system_multicall(self, call_list)
+
+def package_hosting_mode(store, package_name):
+    """Returns the hosting mode for a given package."""
+    return store.get_package_hosting_mode(package_name)
 
 def release_downloads(store, package_name, version):
     '''Return download count for given release.'''

@@ -621,7 +621,7 @@ class WebUI:
         display register_form user user_form
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
-        role role_form list_classifiers login logout files
+        role role_form list_classifiers login logout files urls
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
@@ -1350,8 +1350,9 @@ class WebUI:
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
+  <a href="%s&amp;:action=urls">urls</a> |
   <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
-</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url)
+</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url, url)
 
     def quote_plus(self, data):
         return urllib.quote_plus(data)
@@ -2068,6 +2069,11 @@ class WebUI:
             value = self.form.has_key('autohide')
             self.store.set_package_autohide(name, value)
 
+        if "submit_hosting_mode" in self.form:
+            value = self.form["hosting_mode"]
+            self.store.set_package_hosting_mode(name, value)
+            self.store.changed()
+
         # look up the current info about the releases
         releases = list(self.store.get_package_releases(name))
         reldict = {}
@@ -2096,6 +2102,7 @@ class WebUI:
 
         self.write_template('pkg_edit.pt', releases=releases, name=name,
                             autohide=self.store.get_package_autohide(name),
+                            hosting_mode=self.store.get_package_hosting_mode(name),
             title="Package '%s' Editing"%name)
 
     def remove_pkg(self):
@@ -2212,6 +2219,40 @@ class WebUI:
 
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
+
+    def urls(self):
+        """
+        List urls and handle changes.
+        """
+        name = self.form.get("name", None)
+        version = self.form.get("version", None)
+
+        if not name or not version:
+            self.fail(heading='Name and version are required',
+                message='Name and version are required')
+            return
+
+        if not (self.store.has_role('Maintainer', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Owner', name)):
+            raise Forbidden("You do not have permission")
+
+        if "submit_remove" in self.form and "url-ids" in self.form:
+            urls = self.form["url-ids"]
+            if not isinstance(urls, list):
+                urls = [urls]
+
+            for url in urls:
+                self.store.remove_description_url(name, version, url)
+
+            self.store.changed()
+
+        if "submit_new_url" in self.form and "new-url" in self.form:
+            url = self.form["new-url"]
+            self.store.add_description_url(name, version, url)
+            self.store.changed()
+
+        self.write_template("urls.pt", name=name, version=version, title="Urls for %s %s" % (name, version))
 
     def pretty_size(self, size):
         n = 0

@@ -427,7 +427,11 @@ class Store:
 
         # add description urls
         if html:
-            self.update_description_urls(name, version, get_description_urls(html))
+            # grab the packages hosting_mode
+            hosting_mode = self.get_package_hosting_mode(name)
+
+            if hosting_mode in ["pypi-scrape-crawl", "pypi-scrape"]:
+                self.update_description_urls(name, version, get_description_urls(html))
 
         # handle trove information
         if info.has_key('classifiers') and old_cifiers != classifiers:
@@ -602,19 +606,26 @@ class Store:
         cursor = self.get_cursor()
         result = []
 
-        # homepage, download url
-        safe_execute(cursor, '''select version, home_page, download_url from
-        releases where name=%s''', (name,))
-        any_releases = False
-        for version, home_page, download_url in cursor.fetchall():
-            # assume that home page and download URL are unescaped
-            any_releases = True
-            if home_page and home_page != 'UNKNOWN':
-                result.append((home_page, 'homepage', version + ' home_page'))
-            if download_url and download_url != 'UNKNOWN':
-                result.append((download_url, 'download', version + ' download_url'))
-        if not any_releases:
-            return None
+        # grab the packages hosting_mode
+        hosting_mode = self.get_package_hosting_mode(name)
+
+        if hosting_mode in ["pypi-scrape-crawl", "pypi-scrape"]:
+            homerel = "homepage" if hosting_mode == "pypi-scrape-crawl" else "ext-homepage"
+            downloadrel = "download" if hosting_mode == "pypi-scrape-crawl" else "ext-download"
+
+            # homepage, download url
+            safe_execute(cursor, '''select version, home_page, download_url from
+            releases where name=%s''', (name,))
+            any_releases = False
+            for version, home_page, download_url in cursor.fetchall():
+                # assume that home page and download URL are unescaped
+                any_releases = True
+                if home_page and home_page != 'UNKNOWN':
+                    result.append((home_page, homerel, version + ' home_page'))
+                if download_url and download_url != 'UNKNOWN':
+                    result.append((download_url, downloadrel, version + ' download_url'))
+            if not any_releases:
+                return None
 
         # uploaded files
         safe_execute(cursor, '''select filename, python_version, md5_digest from release_files
@@ -623,16 +634,46 @@ class Store:
             # Put files first, to have setuptools consider
             # them before going to other sites
             result.insert(0, (self.gen_file_url(pyversion, name, fname, relative)+"#md5="+md5,
-                              None, fname))
+                              "internal", fname))
 
         # urls from description
-        safe_execute(cursor, '''select distinct url from description_urls
-        where name=%s''', (name,))
-        for url, in cursor.fetchall():
+        for url in self.list_description_urls(name):
             # assume that description urls are escaped
             result.append((url, None, url))
 
         return result
+
+    def list_description_urls(self, name, version=None):
+        if version is None:
+            sql = "SELECT DISTINCT url FROM description_urls WHERE name=%s"
+            params = [name]
+        else:
+            sql = "SELECT DISTINCT url FROM description_urls WHERE name=%s AND version=%s"
+            params = [name, version]
+
+        cursor = self.get_cursor()
+        safe_execute(cursor, sql, params)
+        return [x[0] for x in cursor.fetchall()]
+
+    def add_description_url(self, name, version, url):
+        cursor = self.get_cursor()
+        safe_execute(cursor, "INSERT INTO description_urls (name, version, url) VALUES (%s, %s, %s)", [name, version, url])
+
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+        (name, version, 'add url ' + url, date, self.username, self.userip))
+
+    def remove_description_url(self, name, version, url):
+        cursor = self.get_cursor()
+        safe_execute(cursor, "DELETE FROM description_urls WHERE name=%s AND version=%s AND url=%s", [name, version, url])
+
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+        (name, version, 'remove url ' + url, date, self.username, self.userip))
 
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package:s stable version.
@@ -812,6 +853,26 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
+
+    def get_package_hosting_mode(self, name):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select hosting_mode from packages where name=%s',
+                     [name])
+        return cursor.fetchall()[0][0]
+
+    def set_package_hosting_mode(self, name, value):
+        if value not in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl"]:
+            raise ValueError("Invalid value for hosting_mode")
+
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'update packages set hosting_mode=%s where name=%s',
+                     [value, name])
+
+        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        safe_execute(cursor, '''insert into journals (
+              name, version, action, submitted_date, submitted_by,
+              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
+        (name, None, 'update hosting_mode', date, self.username, self.userip))
 
     def set_description(self, name, version, desc_text, desc_html,
             from_readme=False):
