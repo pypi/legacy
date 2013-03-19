@@ -74,7 +74,8 @@
     index page of file URLs. The contents of the URLs you provide here are not
     scraped for file download URLs.</p>
 <p>The URL must end with the MD5 hash of the file contents.
-    This must take the form "#md5=2f3dff3357af889fc7021b568d40e866".</p>
+    This must take the form "#md5=2f3dff3357af889fc7021b568d40e866".
+    Note: <em>PyPI does not verify the MD5 hash</em> but <em>install tools like pip do</em>.</p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="name" tal:attributes="value data/name" />
     <input type="hidden" name="version" tal:attributes="value data/version" />
