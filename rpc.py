@@ -162,8 +162,9 @@ def updated_releases(store, since):
     return [(row['name'], row['version']) for row in result]
 
 
-def changelog_last_hour(store, with_ids=False):
-    return changelog(store, int(time.time())-3600, with_ids)
+def changelog_last_serial(store):
+    "return the last changelog event's serial"
+    return store.changelog_last_serial()
 
 def changelog(store, since, with_ids=False):
     result = []

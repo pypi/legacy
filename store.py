@@ -1023,6 +1023,13 @@ class Store:
 
         return Result(None, cursor.fetchall(), self._Changelog)
 
+    def changelog_last_serial(self):
+        '''Fetch the last event's serial id.
+        '''
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select max(id) from journals j')
+        return cursor.fetchone()[0]
+
     def changed_packages(self, since):
         "Fetch list of names of packages changed 'since'"
         assert isinstance(since, int)
