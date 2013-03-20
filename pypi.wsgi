@@ -58,9 +58,13 @@ def debug(environ, start_response):
 def application(environ, start_response):
     if "HTTP_AUTHORIZATION" in environ:
         environ["HTTP_CGI_AUTHORIZATION"] = environ["HTTP_AUTHORIZATION"]
-    r = Request(environ, start_response)
-    webui.WebUI(r, environ).run()
-    return [r.wfile.getvalue()]
+    try:
+        r = Request(environ, start_response)
+        webui.WebUI(r, environ).run()
+        return [r.wfile.getvalue()]
+    except Exception, e:
+        import traceback;traceback.print_exc()
+        return ['Ooops, there was a problem (%s)' % e]
 #application=debug
 
 

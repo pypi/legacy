@@ -17,6 +17,7 @@
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name=":action" value="urls" />
     <input type="hidden" name="name" tal:attributes="value data/name" />
+    <input type="hidden" name="version" tal:attributes="value data/version" />
 
     <input tal:condition="python: data['hosting_mode'] != 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
