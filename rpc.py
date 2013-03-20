@@ -27,7 +27,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(browse)
         self.register_function(updated_releases)
         self.register_function(changelog)
-        self.register_function(changelog_last_hour)
+        self.register_function(changelog_last_serial)
         self.register_function(changelog_since_serial)
         self.register_function(changed_packages)
         self.register_function(post_cheesecake_for_release)
