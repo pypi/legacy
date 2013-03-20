@@ -27,6 +27,8 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(browse)
         self.register_function(updated_releases)
         self.register_function(changelog)
+        self.register_function(changelog_last_hour)
+        self.register_function(changelog_since_serial)
         self.register_function(changed_packages)
         self.register_function(post_cheesecake_for_release)
         self.register_function(release_downloads)
@@ -159,6 +161,10 @@ def updated_releases(store, since):
     result = store.updated_releases(since)
     return [(row['name'], row['version']) for row in result]
 
+
+def changelog_last_hour(store, with_ids=False):
+    return changelog(store, int(time.time())-3600, with_ids)
+
 def changelog(store, since, with_ids=False):
     result = []
     for row in store.changelog(since):
@@ -171,6 +177,19 @@ def changelog(store, since, with_ids=False):
         if with_ids:
             t += (row['id'], )
         result.append(t)
+    return result
+
+def changelog_since_serial(store, since_serial):
+    'return the changes since the nominated event serial (id)'
+    result = []
+    for row in store.changelog_since_serial(since_serial):
+        if isinstance(row['submitted_date'], str):
+            d = datetime.datetime.strptime(row['submitted_date'],
+                '%Y-%m-%d %H:%M:%S').timetuple()
+        else:
+            d = row['submitted_date'].timetuple()
+        result.append((row['name'],row['version'], int(time.mktime(d)),
+            row['action'], row['id']))
     return result
 
 def changed_packages(store, since):

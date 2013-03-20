@@ -1009,6 +1009,20 @@ class Store:
 
         return Result(None, cursor.fetchall(), self._Changelog)
 
+    def changelog_since_serial(self, since):
+        '''Fetch (name, version, submitted_date, action, id) since 'since' id
+        argument.
+        '''
+        assert isinstance(since, int)
+
+        cursor = self.get_cursor()
+        safe_execute(cursor, '''
+            select name, version, submitted_date, action, id
+            from journals j where j.id > %s
+        ''', (since,))
+
+        return Result(None, cursor.fetchall(), self._Changelog)
+
     def changed_packages(self, since):
         "Fetch list of names of packages changed 'since'"
         assert isinstance(since, int)
