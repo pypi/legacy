@@ -35,7 +35,7 @@
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" checked="checked" />
-    <label for="pypi-scrape-crawl">As above but also ask tools to also scrape
+    <label for="pypi-scrape-crawl">As above but also ask tools to scrape
         Homepage and Download URL (slow!)</label>
 <br/>
     <input type="submit" name="submit_hosting_mode" value="Change" />
