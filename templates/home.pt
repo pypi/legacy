@@ -55,8 +55,8 @@ or use the search box above.
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
 Submit packages with
-"<a href="http://wiki.python.org/moin/CheeseShopTutorial" class="vt-p">python setup.py upload</a>"
-(full <a href="http://wiki.python.org/moin/CheeseShopTutorial">tutorial</a>).
+"<a href="http://docs.python.org/3/distutils/packageindex.html" class="vt-p">python setup.py upload</a>"
+(full <a href="http://docs.python.org/3/distutils/packageindex.html">tutorial</a>).
 The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
 You may also use
 <a href="/pypi/pypissh">SSH</a> or the
