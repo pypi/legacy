@@ -2010,7 +2010,7 @@ class WebUI:
 
         # again, this is a restriction required by the implementation and not
         # mentiond in documentation; ensure name and version are valid for URLs
-        if re.search('<>%#"', data['name'] + data['version']):
+        if re.search('[<>%#"]', data['name'] + data['version']):
             raise ValueError('Invalid package name or version (URL safety)')
 
         # check requires and obsoletes
