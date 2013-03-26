@@ -668,7 +668,7 @@ class WebUI:
                 rel = ' rel="%s"' % rel
             else:
                 rel = ''
-            href = urllib.quote(href)
+            href = cgi.escape(href, quote=True)
             text = cgi.escape(text)
             html.append("""<a href="%s"%s>%s</a><br/>\n""" % (href, rel, text))
         html.append("</body></html>")
