@@ -53,9 +53,8 @@
 /* don't have the block expand to fill the space horizontally  - also make it
  * prettier */
 pre.literal-block, pre.doctest-block, div.highight > pre {
-    display: inline-block;
     margin: 0 2em 0 2em;
-    display: inline-block;
+    display: table;
     border: thin solid #AAF;
     border-radius: .5em;
 }
