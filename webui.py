@@ -1557,8 +1557,10 @@ class WebUI:
         Try name first, then summary then description. Collate a
         score for each package that matches.
         '''
-        term = self.form.get('term', '').strip().lower()
-        term = re.sub(r'[^\w\s\.\-]', '', term)
+        term = self.form.get('term', '')
+        if isinstance(term, list):
+            term = ' '.join(term)
+        term = re.sub(r'[^\w\s\.\-]', '', term.strip().lower())
         terms = [t for t in term.split() if t not in self.STOPWORDS]
         terms = filter(None, terms)
         if not terms:
