@@ -521,38 +521,7 @@ class WebUI:
             # see if the user has provided a username/password
             auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
             if auth:
-                authtype, auth = auth.split(None, 1) # OAuth has many more parameters
-                if authtype.lower() == 'basic':
-                    try:
-                        un, pw = base64.decodestring(auth).split(':')
-                    except (binascii.Error, ValueError):
-                        # Invalid base64, or not exactly one colon
-                        un = pw = ''
-                    if self.store.has_user(un):
-                        # Fetch the user from the database
-                        user = self.store.get_user(un)
-
-                        # Verify the hash, and see if it needs migrated
-                        ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
-
-                        # If our password didn't verify as ok then raise an
-                        #   error.
-                        if not ok:
-                            raise Unauthorised, 'Incorrect password'
-
-                        if new_hash:
-                            # The new hash needs to be stored for this user.
-                            self.store.setpasswd(un, new_hash, hashed=True)
-
-                        # Login the user
-                        self.username = un
-                        self.authenticated = True
-
-                        # Determine if we need to store the users last login,
-                        #   as we only want to do this once a minute.
-                        last_login = user['last_login']
-                        update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-                        self.store.set_user(un, self.remote_addr, update_last_login)
+                self._handle_basic_auth(auth)
             else:
                 un = self.env.get('SSH_USER', '')
                 if un and self.store.has_user(un):
@@ -636,6 +605,44 @@ class WebUI:
 
         # commit any database changes
         self.store.commit()
+
+    def _handle_basic_auth(self, auth):
+        if not auth.lower().startswith('basic '):
+            return
+
+        authtype, auth = auth.split(None, 1)
+        try:
+            un, pw = base64.decodestring(auth).split(':')
+        except (binascii.Error, ValueError):
+            # Invalid base64, or not exactly one colon
+            un = pw = ''
+        if not self.store.has_user(un):
+            return
+
+        # Fetch the user from the database
+        user = self.store.get_user(un)
+
+        # Verify the hash, and see if it needs migrated
+        ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
+
+        # If our password didn't verify as ok then raise an
+        #   error.
+        if not ok:
+            raise Unauthorised, 'Incorrect password'
+
+        if new_hash:
+            # The new hash needs to be stored for this user.
+            self.store.setpasswd(un, new_hash, hashed=True)
+
+        # Login the user
+        self.username = un
+        self.authenticated = True
+
+        # Determine if we need to store the users last login,
+        #   as we only want to do this once a minute.
+        last_login = user['last_login']
+        update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
+        self.store.set_user(un, self.remote_addr, update_last_login)
 
     def debug(self):
         self.fail('Debug info', code=200, content=str(self.env))
