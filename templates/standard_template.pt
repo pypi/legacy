@@ -86,8 +86,8 @@
         <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">PyPI Tutorial</a></li>
         <li><a href="/security">PyPI Security</a></li>
         <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">PyPI Support</a></li>
-        <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513503">PyPI Bug Reports</a></li>
-        <li><a href="http://www.python.org/sigs/catalog-sig/">PyPI Discussion</a></li>
+        <li><a href="https://bitbucket.org/pypa/pypi/issues">PyPI Bug Reports</a></li>
+        <li><a href="http://www.python.org/sigs/distutils-sig/">PyPI Discussion</a></li>
         <li><a href="http://wiki.python.org/moin/CheeseShopDev">PyPI Developer Info</a></li>
        </ul>
 
