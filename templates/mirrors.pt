@@ -25,6 +25,10 @@
  <p>More mirrors may get added over time; you can use the DNS CNAME record
  last.pypi.python.org to find out which mirror is last in alphabetical order.</p>
 
+<p>Use the <a href="https://pypi.python.org/pypi/bandersnatch">bandersnatch</a>
+mirroring client to set up your own mirror. If you make it public
+you can add your mirror to the list above and be awesome!</p>
+
  <p>The mirroring protocol is defined in <a href="http://www.python.org/dev/peps/pep-0381">http://www.python.org/dev/peps/pep-0381</a></p>
 
  </metal:fill>
