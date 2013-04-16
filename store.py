@@ -2226,7 +2226,7 @@ class Store:
 
     def setpasswd(self, username, password, hashed=False):
         if not hashed:
-            self.config.passlib.encrypt(password)
+            password = self.config.passlib.encrypt(password)
 
         safe_execute(self.get_cursor(), '''update users set password=%s
             where name=%s''', (password, username))
