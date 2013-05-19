@@ -24,7 +24,7 @@
     <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
     <label for="pypi-explicit">Do not extract URLs from the long description field -
-        only use URLs explicitly specified below (this is preferred).</label>
+        only use URLs explicitly specified below and files uploaded to PyPI (this is preferred).</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
