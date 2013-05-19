@@ -662,7 +662,7 @@ class WebUI:
                 raise Redirect, self.config.simple_script + '/' + names[0]
             raise NotFound, path + " does not have any releases"
         html = []
-        html.append("""<html><head><title>Links for %s</title></head>"""
+        html.append("""<html><head><title>Links for %s</title><meta name="api-version" value="2"></head>"""
                     % cgi.escape(path))
         html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
         for href, rel, text in urls:
@@ -717,7 +717,7 @@ class WebUI:
         accept_encoding = self.get_accept_encoding(('identity', 'gzip'))
         if path=='/':
             html = []
-            html.append("<html><head><title>Simple Index</title></head>")
+            html.append('<html><head><title>Simple Index</title><meta name="api-version" value="2"></head>')
             html.append("<body>\n")
             for name in self.store.get_packages_utf8():
                 qname = urllib.quote(name)
