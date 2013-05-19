@@ -694,6 +694,18 @@ class Store:
         safe_execute(cursor, sql, (name, ))
         return cursor.fetchone()[0]
 
+    def top_packages(self, num=None):
+        cursor = self.get_cursor()
+        sql = """SELECT name, SUM(downloads) AS downloads FROM release_files
+                    GROUP BY name ORDER BY downloads DESC"""
+        if num is not None:
+            sql += " LIMIT %s"
+            safe_execute(cursor, sql, (num,))
+        else:
+            safe_execute(cursor, sql)
+
+        return [(p[0], p[1]) for p in cursor.fetchall()]
+
     _Packages = FastResultRow('name stable_version')
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.

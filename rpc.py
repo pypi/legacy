@@ -35,6 +35,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(package_roles)
         self.register_function(user_packages)
         self.register_function(package_hosting_mode)
+        self.register_function(top_packages)
         self.register_introspection_functions()
         self.register_multicall_functions()
 
@@ -202,5 +203,9 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
 
     store.save_cheesecake_score(name, version, score_data)
     store.commit()
+
+
+def top_packages(store, num=None):
+    return store.top_packages(num=num)
 
 handle_request = RequestHandler()
