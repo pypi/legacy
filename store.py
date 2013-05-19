@@ -675,7 +675,11 @@ class Store:
         cursor = self.get_cursor()
         sql = "SELECT name, version, url FROM description_urls WHERE id=%s"
         safe_execute(cursor, sql, [url_id])
-        name, version, url = cursor.fetchone()
+        results = cursor.fetchone()
+        if results is None:
+            return
+
+        name, version, url = results
 
         sql = "DELETE FROM description_urls WHERE id=%s"
         safe_execute(cursor, sql, [url_id])
