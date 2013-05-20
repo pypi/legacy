@@ -55,6 +55,12 @@
             <th>URL</th>
         </tr>
 
+        <tr>
+            <td><input type="checkbox" onClick="toggle(this)" /></td>
+            <td></td>
+            <td>Toggle All</td>
+        </tr>
+
         <tr tal:repeat="url python:app.store.list_description_urls(data['name'])"
                 tal:attributes="class repeat/url/parity">
             <td><input type="checkbox" name="url-ids" tal:attributes="value url/id" /></td>
@@ -85,6 +91,17 @@
     <input name="new-url" />
     <input type="submit" name="submit_new_url" value="Add URL" />
 </form>
+
+<script type="text/javascript">
+    // <![CDATA[
+    function toggle(source) {
+        checkboxes = document.getElementsByName('url-ids');
+        for(var i=0, n=checkboxes.length;i<n;i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+    // ]]>
+</script>
 
 </metal:fill>
 </html>
