@@ -426,6 +426,9 @@ class WebUI:
             heading=None, headers={}, content=''):
         ''' Indicate to the user that something has failed.
         '''
+        if isinstance(message, unicode):
+            message = message.encode("utf-8")
+
         self.handler.send_response(code, message)
         if '<' in content and '>' in content:
             html = True
@@ -2701,7 +2704,7 @@ class WebUI:
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII alphanum,.,_ only)'
             if self.store.has_user(name, case_sensitive=False):
-                self.fail('user "%s" already exists'%name,
+                self.fail('user "%s" already exists' % name,
                     heading='User registration')
                 return
             olduser = self.store.get_user_by_email(info['email'])
