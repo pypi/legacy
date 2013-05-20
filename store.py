@@ -1423,14 +1423,17 @@ class Store:
     #
     # Users interface
     #
-    def has_user(self, name):
+    def has_user(self, name, case_sensitive=True):
         ''' Determine whether the user exists in the database.
 
             Returns true/false.
         '''
+        if case_sensitive:
+            sql = "select count(*) from users where name=%s"
+        else:
+            sql = "select count(*) from users where LOWER(name)=LOWER(%s)"
         cursor = self.get_cursor()
-        safe_execute(cursor, "select count(*) from users where name=%s",
-            (name, ))
+        safe_execute(cursor, sql, (name,))
         return int(cursor.fetchone()[0])
 
     def store_user(self, name, password, email, gpg_keyid="", otk=True):
@@ -1442,7 +1445,7 @@ class Store:
             New user entries create a rego_otk entry too and return the OTK.
         '''
         cursor = self.get_cursor()
-        if self.has_user(name):
+        if self.has_user(name, case_sensitive=False):
             if password:
                 # update existing user, including password
                 password = self.config.passlib.encrypt(password)

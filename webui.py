@@ -2700,7 +2700,7 @@ class WebUI:
             name = info['name']
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII alphanum,.,_ only)'
-            if self.store.has_user(name):
+            if self.store.has_user(name, case_sensitive=False):
                 self.fail('user "%s" already exists'%name,
                     heading='User registration')
                 return
@@ -3147,7 +3147,7 @@ class WebUI:
         username = username.replace(' ','.')
         username = re.sub('[^a-zA-Z0-9._]','',username)
         error = 'Please choose a username to complete registration'
-        if self.store.has_user(username):
+        if self.store.has_user(username, case_sensitive=False):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
                 suffix += 1
