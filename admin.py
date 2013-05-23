@@ -284,6 +284,8 @@ if __name__ == '__main__':
             send_comments(*args)
         elif command == 'mergeuser':
             merge_user(*args)
+        elif command == 'renameuser':
+            rename_user(*args)
         elif command == 'nuke_nested_lists':
             nuke_nested_lists(*args)
         elif command == 'keyrotate':
