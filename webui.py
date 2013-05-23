@@ -7,6 +7,7 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
+import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
@@ -58,7 +59,7 @@ def enumerate(sequence):
 #   - dashes
 #   - periods
 #   - Starts with letter or digit
-legal_package_name = re.compile(r"^[a-z0-9][a-z0-9\._-]*$", re.IGNORECASE)
+legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
 safe_username = re.compile(r'^[A-Za-z0-9._]+$')
@@ -2037,8 +2038,16 @@ class WebUI:
             if legal_package_name.search(data["name"]) is None:
                 raise ValueError("Invalid package name. Names must contain "
                                  "only ASCII letters, digits, underscores, "
-                                 "hyphens, and periods and must start with a "
-                                 "letter or digit")
+                                 "hyphens, and periods")
+
+            if not data["name"][0].isalnum():
+                raise ValueError("Invalid package name. Names must start with "
+                                 "an ASCII letter or digit")
+
+            if not data["name"][-1].isalnum():
+                raise ValueError("Invalid package name. Names must end with "
+                                 "an ASCII letter or digit")
+
 
         # Traditionally, package names are restricted only for
         # technical reasons; / is not allowed because it may be
