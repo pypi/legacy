@@ -187,6 +187,28 @@ def merge_user(store, old, new):
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
     c.execute('delete from users where name=%s', (old,))
 
+def rename_user(store, old, new):
+    c = store.get_cursor()
+    old_user = store.get_user(old)
+    if not old_user:
+        raise SystemExit("Old does not exist")
+    if store.get_user(new):
+        raise SystemExit("New user already exists!")
+
+    c.execute('insert into users (name, email, password) values (%s, %s, %s)',
+        (new, old_user['email'] + '.temp', old_user['password']))
+    c.execute('update openids set name=%s where name=%s', (new, old))
+    c.execute('update sshkeys set name=%s where name=%s', (new, old))
+    c.execute('update roles set user_name=%s where user_name=%s', (new, old))
+    c.execute('delete from rego_otk where name=%s', (old,))
+    c.execute('update journals set submitted_by=%s where submitted_by=%s', (new, old))
+    c.execute('update mirrors set user_name=%s where user_name=%s', (new, old))
+    c.execute('update comments set user_name=%s where user_name=%s', (new, old))
+    c.execute('update ratings set user_name=%s where user_name=%s', (new, old))
+    c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
+    c.execute('delete from users where name=%s', (old,))
+    c.execute('update users set email=%s where name=%s', (old_user['email'], new))
+
 def show_user(store, name):
     user = store.get_user(name)
     if not user:
