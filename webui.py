@@ -51,10 +51,20 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
+# Requires:
+#   - ASCII letters
+#   - ASCII digits
+#   - underscores
+#   - dashes
+#   - periods
+#   - Starts with letter or digit
+legal_package_name = re.compile(r"^[a-z0-9][a-z0-9\._-]*$", re.IGNORECASE)
+
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
 safe_username = re.compile(r'^[A-Za-z0-9._]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
+
 
 class NotFound(Exception):
     pass
@@ -2011,6 +2021,24 @@ class WebUI:
             del data['metadata_version']
         else:
             metadata_version = '1.0'  # default
+
+        # Ensure that package names follow a restricted set of characters.
+        # These characters are:
+        #     * ASCII letters (``[a-zA-Z]``)
+        #     * ASCII digits (``[0-9]``)
+        #     * underscores (``_``)
+        #     * hyphens (``-``)
+        #     * periods (``.``)
+        # The reasoning for this restriction is codified in PEP426. For the
+        # time being this check is only validated against brand new packages
+        # and not pre-existing packages because of existing names that violate
+        # this policy.
+        if not self.store.find_package(safe_name(data["name"]).lower()):
+            if legal_package_name.search(data["name"]) is None:
+                raise ValueError("Invalid package name. Names must contain "
+                                 "only ASCII letters, digits, underscores, "
+                                 "hyphens, and periods and must start with a "
+                                 "letter or digit")
 
         # Traditionally, package names are restricted only for
         # technical reasons; / is not allowed because it may be
