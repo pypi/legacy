@@ -66,6 +66,10 @@ def main():
     last = last.split('.')[0]
     host = 'a'
     while True:
+        if host == "d":
+            # This is just a CNAME back to a.pypi.python.org
+            continue
+
         integrate_remote(sys.argv[1], host)
         if host == last:
             break
