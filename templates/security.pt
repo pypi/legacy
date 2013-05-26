@@ -8,10 +8,12 @@
 <h2>Reporting</h2>
 
 <p>If you have a query or report to make regarding security please contact
-Richard Jones and/or Martin von Löwis. Both have GPG keys on key servers like
-pgp.mit.edu.</p>
+Richard Jones, Donald Stufft and/or Martin von Löwis. All have GPG keys on key
+servers like pgp.mit.edu.</p>
 
-<p>Richard's GPG key has key id 41C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930) and his email address is richard&#64;mechanicalcat&#46;net</p>
+<p>Richard's GPG key has key id 41C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930) and his email address is richard&#64;python&#46;org</p>
+
+<p>Donald's GPG key has key id 3372DCFA (full fingerprint 7C6B 7C5D 5E2B 6356 A926 F04F 6E3C BCE9 3372 DCFA) and his email address is donald&#64;python&#46;org</p>
 
 <p>Martin's GPG key has key id 7D9DC8D2 (full fingerprint CBC5 4797 8A39 64D1 4B9A  B36A 6AF0 53F0 7D9D C8D2) and his email address is martin&#64;v&#46;loewis&#46;de</p>
 
