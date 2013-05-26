@@ -5,23 +5,13 @@ import apache_stats
 
 statsdir = '/data/www/pypi/stats'
 
-def integrate(config, data):
-    # Setup database connection
-    c = ConfigParser.ConfigParser({'user':'', 'password':''})
-    c.read(config)
-    dbname = c.get('database', 'name')
-    dbuser = c.get('database', 'user')
-    dbpass = c.get('database', 'password')
-    dbhost = c.get('database', 'host')
-    dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass, host=dbhost)
-    cursor = dbconn.cursor()
+def integrate(config, data, dbconn):
     for (filename, browser, package), count in data.items():
         cursor.execute('update release_files set downloads=downloads+%s where filename=%s',
                        (count, filename))
     dbconn.commit()
-    dbconn.close()
 
-def integrate_remote(config, host, dbupdate=True):
+def integrate_remote(config, host, dbconn, dbupdate=True):
     url = 'http://%s.pypi.python.org/local-stats/days/' % host
     try:
         index = urllib.urlopen(url).read()
@@ -50,11 +40,20 @@ def integrate_remote(config, host, dbupdate=True):
         delta = stats.integrate_stats(statsdir, year, month, day, data)
         if dbupdate:
             # database integration
-            integrate(config, delta)
+            integrate(config, delta, dbconn=dbconn)
         integrated.add(m)
         open(statsdir+'/integrated/'+host, 'w').write('\n'.join(sorted(integrated)))
 
 def main():
+    # Setup database connection
+    c = ConfigParser.ConfigParser({'user':'', 'password':''})
+    c.read(sys.argv[1])
+    dbname = c.get('database', 'name')
+    dbuser = c.get('database', 'user')
+    dbpass = c.get('database', 'password')
+    dbhost = c.get('database', 'host')
+    dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass, host=dbhost)
+
     lasts = socket.gethostbyname_ex('last.pypi.python.org')
     # look for name X.pypi.python.org
     lasts = [lasts[0]] + lasts[1]
@@ -66,10 +65,15 @@ def main():
     last = last.split('.')[0]
     host = 'a'
     while True:
-        integrate_remote(sys.argv[1], host)
+        if host == "d":
+            # This is just a CNAME back to a.pypi.python.org
+            continue
+
+        integrate_remote(sys.argv[1], host, dbconn=dbconn)
         if host == last:
             break
         host = chr(ord(host)+1)
+    dbconn.close()
 
 main()
 
