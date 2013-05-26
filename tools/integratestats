@@ -47,7 +47,7 @@ def integrate_remote(config, host, dbconn, dbupdate=True):
 def main():
     # Setup database connection
     c = ConfigParser.ConfigParser({'user':'', 'password':''})
-    c.read(config)
+    c.read(sys.argv[1])
     dbname = c.get('database', 'name')
     dbuser = c.get('database', 'user')
     dbpass = c.get('database', 'password')
