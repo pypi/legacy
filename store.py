@@ -1341,6 +1341,7 @@ class Store:
                                               self.username, self.userip))
 
         self._changed_packages.add(name)
+        self._changed_urls.add("https://pypi.python.org/simple/")
 
     def rename_package(self, old, new):
         ''' Rename a package. Relies on cascaded updates.
@@ -1377,6 +1378,7 @@ class Store:
 
         self._changed_packages.add(old)
         self._changed_packages.add(new)
+        self._changed_urls.add("https://pypi.python.org/simple/")
 
     def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
