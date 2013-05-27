@@ -22,6 +22,8 @@ import hmac
 from base64 import b64encode
 import openid.store.sqlstore
 import oauth
+import requests
+import urlparse
 
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
@@ -237,6 +239,8 @@ class Store:
         else:
             self.true, self.false = 'TRUE', 'FALSE'
             self.can_lock = True
+
+        self._changed_packages = set()
 
     def last_id(self, tablename):
         ''' Return an SQL expression that returns the last inserted row,
@@ -456,6 +460,8 @@ class Store:
                     kind, specifier) values (%s, %s, %s, %s)''', (name,
                     version, nkind, specifier))
 
+        self._changed_packages.add(name)
+
         return message
 
     def fix_ordering(self, name, new_version=None):
@@ -519,6 +525,8 @@ class Store:
                 # ordering has changed, update
                 safe_execute(cursor, '''update releases set _pypi_ordering=%s
                     where name=%s and version=%s''', (order, name, v))
+
+        self._changed_packages.add(name)
 
         # return the ordering for this release
         return new_version
@@ -671,6 +679,8 @@ class Store:
               submitted_from) values (%s, %s, %s, %s, %s, %s)''',
         (name, version, 'add url ' + url, date, self.username, self.userip))
 
+        self._changed_packages.add(name)
+
     def remove_description_url(self, url_id):
         cursor = self.get_cursor()
         sql = "SELECT name, version, url FROM description_urls WHERE id=%s"
@@ -689,6 +699,8 @@ class Store:
               name, version, action, submitted_date, submitted_by,
               submitted_from) values (%s, %s, %s, %s, %s, %s)''',
         (name, version, 'remove url ' + url, date, self.username, self.userip))
+
+        self._changed_packages.add(name)
 
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package:s stable version.
@@ -901,6 +913,8 @@ class Store:
               submitted_from) values (%s, %s, %s, %s, %s, %s)''',
         (name, None, 'update hosting_mode', date, self.username, self.userip))
 
+        self._changed_packages.add(name)
+
     def set_description(self, name, version, desc_text, desc_html,
             from_readme=False):
         cursor = self.get_cursor()
@@ -908,6 +922,8 @@ class Store:
             description_html=%s, description_from_readme=%s where name=%s
             and version=%s''', [desc_text, desc_html, from_readme, name,
             version])
+
+        self._changed_packages.add(name)
 
     def _get_package_url(self, name):
         name = name.split()[0]
@@ -1216,6 +1232,8 @@ class Store:
             safe_execute(cursor, '''insert into description_urls(name, version, url)
             values(%s, %s, %s)''', (name, version, url))
 
+        self._changed_packages.add(name)
+
     def updateurls(self):
         cursor = self.get_cursor()
         safe_execute(cursor, '''select name, version, description_html from
@@ -1233,6 +1251,8 @@ class Store:
             safe_execute(cursor, 'update description_urls set url=%s where name=%s and version=%s and url=%s',
                          (url2, name, version, url))
 
+        self._changed_packages.add(name)
+
     def update_normalized_text(self):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name from packages')
@@ -1240,12 +1260,16 @@ class Store:
             safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
                          [normalize_package_name(name), name])
 
+        self._changed_packages.add(name)
+
     def update_description_html(self, name):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select version,description from releases where name=%s', (name,))
         for version, description in cursor.fetchall():
             safe_execute(cursor, 'update releases set description_html=%s where name=%s and version=%s',
                          (processDescription(description), name, version))
+
+        self._changed_packages.add(name)
 
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
@@ -1274,6 +1298,8 @@ class Store:
                 (%s, %s, %s, %s, %s, %s)''', (name, version, 'remove', date,
                                               self.username, self.userip))
 
+        self._changed_packages.add(name)
+
     def remove_package(self, name):
         ''' Delete an entire package from the database.
         '''
@@ -1299,6 +1325,8 @@ class Store:
                 submitted_date, submitted_by, submitted_from) values
                 (%s, %s, %s, %s, %s, %s)''', (name, None, 'remove', date,
                                               self.username, self.userip))
+
+        self._changed_packages.add(name)
 
     def rename_package(self, old, new):
         ''' Rename a package. Relies on cascaded updates.
@@ -1331,6 +1359,9 @@ class Store:
                                               date,
                                               self.username,
                                               self.userip))
+
+        self._changed_packages.add(old)
+        self._changed_packages.add(new)
 
     def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
@@ -1418,6 +1449,8 @@ class Store:
             remove_indices_for_release(name, version)
 
         insert_score_for_release(name, version, installability_id, documentation_id, code_kwalitee_id)
+
+        self._changed_packages.add(name)
 
 
     #
@@ -1797,6 +1830,8 @@ class Store:
             (name, version, 'add %s file %s'%(pyversion, filename), date,
             self.username, self.userip))
 
+        self._changed_packages.add(name)
+
     _List_Files = FastResultRow('''packagetype python_version comment_text
     filename md5_digest size! has_sig! downloads! upload_time!''')
     def list_files(self, name, version, show_missing=False):
@@ -1859,6 +1894,8 @@ class Store:
             (name, version, 'remove file '+filename, date,
             self.username, self.userip))
 
+        self._changed_packages.add(name)
+
 
     _File_Info = FastResultRow('''python_version packagetype name comment_text
                                 filename''')
@@ -1889,6 +1926,8 @@ class Store:
                                               self.username,
                                               self.userip))
 
+        self._changed_packages.add(name)
+
     def docs_url(self, name):
         '''Determine the local (pythonhosted.org) documentation URL, if any.
 
@@ -1916,6 +1955,8 @@ class Store:
             safe_execute(cursor, "update release_files "
             "set upload_time=%s where python_version=%s and name=%s "
             "and filename = %s", (date, pyversion, name, filename))
+
+            self._changed_packages.add(name)
     #
     # Mirrors managment
     #
@@ -2214,6 +2255,7 @@ class Store:
             self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
+        self._changed_packages = set()
 
     def oid_store(self):
         if self.config.database_driver == 'sqlite3':
@@ -2229,6 +2271,7 @@ class Store:
         except Exception:
             pass
         connection = None
+        self._changed_packages = set()
 
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
@@ -2268,11 +2311,28 @@ class Store:
             return
         self._conn.commit()
 
+        # Purge all tags from Fastly
+        if self.config.fastly_api_key:
+            session = requests.session()
+            for package in self._changed_packages:
+                normalized_name = normalize_package_name(name)
+                path = "/service/%(id)s/purge/%(key)s" % {"id": None, "name": normalized_name}
+                url = urlparse.urljoin(self.config.fastly_api_domain, path)
+                session.post(url,
+                    headers={
+                        "X-Fastly-Key": self.config.fastly_api_key,
+                        "Accept": "application/json",
+                    },
+                )
+
+        self._changed_packages = set()
+
     def rollback(self):
         if self._conn is None:
             return
         self._conn.rollback()
         self._cursor = None
+        self._changed_packages = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''

@@ -749,6 +749,7 @@ class WebUI:
                 self.handler.send_header('Content-encoding', 'gzip')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
+            self.handler.send_header("Surrogate-Key", "simple")
             self.handler.end_headers()
             self.wfile.write(html)
             return
@@ -770,6 +771,7 @@ class WebUI:
                 self.handler.send_header('Content-encoding', 'gzip')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
+            self.handler.send_header("Surrogate-Key", "simple %s" % safe_name(path).lower())
             self.handler.end_headers()
             self.wfile.write(html)
             return
@@ -791,6 +793,7 @@ class WebUI:
         sig = self.privkey.sign_asn1(digest)
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('application/octet-stream')
+        self.handler.send_header("Surrogate-Key", "simple %s" % safe_name(path).lower())
         self.handler.end_headers()
         self.wfile.write(sig)
 

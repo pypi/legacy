@@ -81,6 +81,11 @@ class Config:
         # Configure a passlib context from the config file
         self.passlib.load_path(configfile, update=True)
 
+        # Get the fastly API key
+        self.fastly_api_domain = c.get("fastly", "api_domain")
+        self.fastly_api_key = c.get("fastly", "api_key")
+        self.fastly_service_id = c.get("fastly", "service_id")
+
     def make_https(self):
         if self.url.startswith("http:"):
             self.url = "https"+self.url[4:]

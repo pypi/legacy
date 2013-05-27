@@ -60,3 +60,7 @@ harakiri = 60
 master = 1
 post-buffering = 8192
 chmod-socket = 666
+
+api_domain = https://api.fastly.com/
+api_key =
+service_id =
