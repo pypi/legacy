@@ -2316,7 +2316,7 @@ class Store:
             session = requests.session()
             for package in self._changed_packages:
                 normalized_name = normalize_package_name(name)
-                path = "/service/%(id)s/purge/%(key)s" % {"id": None, "name": normalized_name}
+                path = "/service/%(id)s/purge/pkg~%(name)s" % {"id": None, "name": normalized_name}
                 url = urlparse.urljoin(self.config.fastly_api_domain, path)
                 session.post(url,
                     headers={
