@@ -61,6 +61,7 @@ master = 1
 post-buffering = 8192
 chmod-socket = 666
 
+[fastly]
 api_domain = https://api.fastly.com/
 api_key =
 service_id =
