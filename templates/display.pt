@@ -57,7 +57,6 @@
   <th>Py Version</th>
   <th>Uploaded on</th>
   <th style="text-align: right;">Size</th>
-  <th style="text-align: right;"># downloads</th>
 </tr>
 
 <tr tal:repeat="file data/files" tal:attributes="class repeat/file/parity">
@@ -94,7 +93,6 @@
   </td>
   <td tal:content="uploaded" />
   <td tal:content="size" style="text-align: right;" />
-  <td tal:content="downloads" style="text-align: right;" />
 </tal:block>
 </tr>
 
@@ -191,7 +189,7 @@
      <li tal:repeat="require data/requires_dist">
        <a tal:condition="require/href" tal:attributes="href require/href"
            tal:content="require/name"/>
-        <tal:block tal:condition="not:require/href" 
+        <tal:block tal:condition="not:require/href"
                    tal:replace="require/name">
         </tal:block>
      </li>
@@ -204,7 +202,7 @@
      <li tal:repeat="provide data/provides_dist">
        <a tal:condition="provide/href" tal:attributes="href provide/href"
            tal:content="provide/name"/>
-       <tal:block tal:condition="not:provide/href" 
+       <tal:block tal:condition="not:provide/href"
                    tal:replace="provide/name">
         </tal:block>
 
@@ -218,7 +216,7 @@
      <li tal:repeat="obsolete data/obsoletes_dist">
        <a tal:condition="obsolete/href" tal:attributes="href obsolete/href"
            tal:content="obsolete/name"/>
-        <tal:block tal:condition="not:obsolete/href" 
+        <tal:block tal:condition="not:obsolete/href"
                    tal:replace="obsolete/name">
         </tal:block>
 

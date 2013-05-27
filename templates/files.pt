@@ -93,7 +93,7 @@ href="http://www.python.org/doc/dist/package-upload.html">upload</a>" command.</
  <tr>
   <th tal:condition="data/maintainer">Remove?</th>
   <th>Type</th><th>Py Version</th><th>Comment</th>
-  <th>Download</th><th>Size</th><th># downloads</th>
+  <th>Download</th><th>Size</th>
   <th>MD5 digest</th>
  </tr>
 
@@ -111,13 +111,12 @@ href="http://www.python.org/doc/dist/package-upload.html">upload</a>" command.</
    <a tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])"
     tal:content="file/filename" />
-    <a tal:condition="file/has_sig" 
+    <a tal:condition="file/has_sig"
        tal:attributes="href python:app.store.gen_file_url(file['python_version'],
         data['name'], file['filename'])+'.asc'"
        tal:content="string:sig" />
   </td>
   <td tal:content="python:app.pretty_size(file['size'])" />
-  <td tal:content="file/downloads"/>
   <td style="font-size: 75%">
    <a tal:attributes="href string:${app/url_path}?:action=show_md5&amp;digest=${file/md5_digest}"
        tal:content="file/md5_digest" />
