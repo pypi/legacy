@@ -241,6 +241,7 @@ class Store:
             self.can_lock = True
 
         self._changed_packages = set()
+        self._changed_urls = set()
 
     def last_id(self, tablename):
         ''' Return an SQL expression that returns the last inserted row,
@@ -653,6 +654,15 @@ class Store:
             result.append((url['url'], None, url['url']))
 
         return result
+
+    def get_uploaded_file_urls(self, name):
+        cursor = self.get_cursor()
+        urls = []
+        safe_execute(cursor, '''select filename, python_version
+            from release_files where name=%s''', (name,))
+        for fname, pyversion in cursor.fetchall():
+            urls.append(self.gen_file_url(pyversion, name, fname))
+        return urls
 
     _Description_URLs = FastResultRow('id! version url')
     def list_description_urls(self, name, version=None):
@@ -1280,6 +1290,7 @@ class Store:
         for file in self.list_files(name, version):
             os.remove(self.gen_file_path(file['python_version'], name,
                 file['filename']))
+            self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1308,6 +1319,7 @@ class Store:
             for file in self.list_files(name, release['version']):
                 os.remove(self.gen_file_path(file['python_version'], name,
                     file['filename']))
+                self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1333,6 +1345,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        self._changed_urls |= set(self.get_uploaded_file_urls(old))
         safe_execute(cursor, '''update packages
         set name=%s, normalized_name=%s where name=%s''',
                      (new, normalize_package_name(new), old))
@@ -1873,6 +1886,7 @@ class Store:
         if not info:
             raise KeyError, 'no such file'
         pyversion, name, version, filename = info
+        self._changed_urls.add(self.gen_file_url(pyversion, name, filename))
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
@@ -2256,6 +2270,7 @@ class Store:
 
         cursor = self._cursor = self._conn.cursor()
         self._changed_packages = set()
+        self._changed_urls = set()
 
     def oid_store(self):
         if self.config.database_driver == 'sqlite3':
@@ -2272,6 +2287,7 @@ class Store:
             pass
         connection = None
         self._changed_packages = set()
+        self._changed_urls = set()
 
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
@@ -2329,7 +2345,15 @@ class Store:
                 )
                 resp.raise_for_status()
 
+            for url in self._changed_urls:
+                resp = session.request("PURGE", url, headers={
+                        "X-Fastly-Key": self.config.fastly_api_key,
+                        "Accept": "application/json",
+                    })
+                resp.raise_for_status()
+
         self._changed_packages = set()
+        self._changed_urls = set()
 
     def rollback(self):
         if self._conn is None:
@@ -2337,6 +2361,7 @@ class Store:
         self._conn.rollback()
         self._cursor = None
         self._changed_packages = set()
+        self._changed_urls = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''
