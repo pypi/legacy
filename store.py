@@ -304,7 +304,7 @@ class Store:
             if not self.has_role('Owner', name):
                 self.add_role(self.username, 'Owner', name)
 
-            self._changed_urls.add("/simple/")
+            self._changed_urls.add("https://pypi.python.org/simple/")
 
         # extract the Trove classifiers
         classifiers = info.get('classifiers', [])
