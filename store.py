@@ -2318,12 +2318,13 @@ class Store:
                 normalized_name = normalize_package_name(package)
                 path = "/service/%(id)s/purge/pkg~%(name)s" % {"id": None, "name": normalized_name}
                 url = urlparse.urljoin(self.config.fastly_api_domain, path)
-                session.post(url,
+                resp = session.post(url,
                     headers={
                         "X-Fastly-Key": self.config.fastly_api_key,
                         "Accept": "application/json",
                     },
                 )
+                resp.raise_for_status()
 
         self._changed_packages = set()
 
