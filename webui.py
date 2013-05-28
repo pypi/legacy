@@ -1442,7 +1442,7 @@ class WebUI:
                 name = self.form.get('name', None)
             # Try to locate the normalized name
             found = self.store.find_package(name)
-            if not found or found == name:
+            if not found or found[0] == name:
                 raise
             realname = found[0]
             url = "%s/%s" % (self.config.url, realname)
