@@ -1437,6 +1437,9 @@ class WebUI:
         except MultipleReleases, e:
             return self.index(releases=e.releases)
         except NotFound:
+            if name is None:
+                # check that we get one - and only one - name argument
+                name = self.form.get('name', None)
             # Try to locate the normalized name
             found = self.store.find_package(name)
             if not found:
