@@ -22,16 +22,19 @@ EMAIL_PLURAL = """
 Hello there!
 
 PyPI has begun to enforce restrictions on what a valid Python package name
-contains. These rules are:
+contains.
 
-* Must contain ONLY ASCII letters, digits, underscores, hyphens, and
-periods
+These rules are:
+
+* Must contain ONLY ASCII letters, digits, underscores, hyphens, and periods
 * Must begin and end with an ASCII letter or digit
 
-You are listed as an owner or maintainer on %(old)s. Due to
-the new rules these packages will be renamed to %(new)s.
-These new names represent what someone using pip or easy_install would
-already have had to use in order to install your packages.
+You are listed as an owner or maintainer on %(old)s.
+
+Due to the new rules these packages will be renamed to %(new)s.
+
+These new names represent what someone using pip or easy_install would already
+have had to use in order to install your packages.
 
 I am sorry for any inconvenience this may have caused you.
 """
@@ -41,15 +44,18 @@ EMAIL_SINGLE = """
 Hello there!
 
 PyPI has begun to enforce restrictions on what a valid Python package name
-contains. These rules are:
+contains.
 
-* Must contain ONLY ASCII letters, digits, underscores, hyphens, and
-periods
+These rules are:
+
+* Must contain ONLY ASCII letters, digits, underscores, hyphens, and periods
 * Must begin and end with an ASCII letter or digit
 
-You are listed as an owner or maintainer on %(old)s. Due to
-the new rules this package will be renamed to %(new)s.
-These new names represent what someone using pip or easy_install would
+You are listed as an owner or maintainer on "%(old)s".
+
+Due to the new rules this package will be renamed to "%(new)s".
+
+This new name represents what someone using pip or easy_install would
 already have had to use in order to install your package.
 
 I am sorry for any inconvenience this may have caused you.
@@ -69,6 +75,7 @@ for old, new in renamed:
 # Email each user
 server = smtplib.SMTP(config.mailhost)
 for username, packages in users.iteritems():
+    packages = sorted(set(packages))
 
     user = store.get_user(username)
 
@@ -77,9 +84,9 @@ for username, packages in users.iteritems():
 
     if len(packages) > 1:
         msg = MIMEText(EMAIL_PLURAL % {
-                                "old": ", ".join([x[0] for x in packages]),
-                                "new": ", ".join([x[1] for x in packages]),
-                            })
+                        "old": ", ".join(['"%s"' % x[0] for x in packages]),
+                        "new": ", ".join(['"%s"' % x[1] for x in packages]),
+                    })
     elif packages:
         msg = MIMEText(EMAIL_SINGLE % {
                                 "old": packages[0][0],
