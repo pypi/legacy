@@ -1436,6 +1436,17 @@ class WebUI:
             info, latest_version = self._load_release_info(name, version)
         except MultipleReleases, e:
             return self.index(releases=e.releases)
+        except NotFound:
+            # Try to locate the normalized name
+            found = self.store.find_package(name)
+            if not found:
+                raise
+            realname = found[0]
+            url = "%s/%s" % (self.config.url, realname)
+            if version:
+                url = url + "/" + version
+            raise RedirectTemporary, url
+
 
         name = info['name']
         version = info['version']
