@@ -49,11 +49,11 @@ for name in junk_names:
         renamed.append((name, new_name))
         store.rename_package(name, new_name)
 
-# Commit the changes
-store.commit()
-
 with open("renamed.pkl", "w") as pkl:
     pickle.dump(renamed, pkl)
+
+# Commit the changes
+store.commit()
 
 junk_names = bad_names()
 print("Found %s bad names" % len(junk_names))
