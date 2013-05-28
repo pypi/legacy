@@ -72,6 +72,8 @@ for old, new in renamed:
         user_packages = users.setdefault(role["user_name"], [])
         user_packages.append((old, new))
 
+sent = []
+
 # Email each user
 server = smtplib.SMTP(config.mailhost)
 for username, packages in users.iteritems():
@@ -98,4 +100,8 @@ for username, packages in users.iteritems():
     msg["To"] = user["email"]
 
     server.sendmail("donald@python.org", [user["email"]], msg.as_string())
+    sent.append(("donald@python.org", [user["email"]], msg.as_string()))
 server.quit()
+
+with open("sent.pkl", "w") as pkl:
+    pickle.dump(sent, pkl)
