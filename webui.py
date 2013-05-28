@@ -1451,7 +1451,7 @@ class WebUI:
                     version = self.form['version']
             if version:
                 url = url + "/" + version
-            raise RedirectTemporary, url
+            raise Redirect, url
 
 
         name = info['name']
