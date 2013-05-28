@@ -1446,6 +1446,9 @@ class WebUI:
                 raise
             realname = found[0]
             url = "%s/%s" % (self.config.url, realname)
+            if version is None:
+                if self.form.get('version'):
+                    version = self.form['version']
             if version:
                 url = url + "/" + version
             raise RedirectTemporary, url
