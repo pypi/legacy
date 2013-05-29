@@ -58,10 +58,10 @@
         <!--  Search Box  -->
         <div id="searchbox">
           <form tal:attributes="action app/url_path" id="searchform"
-                method="get" name="searchform" autofocus="autofocus">
+                method="get" name="searchform">
             <input type="hidden" name=":action" value="search" />
             <div id="search">
-              <input class="input-text" id="term" name="term" />
+              <input class="input-text" id="term" name="term" autofocus="autofocus" />
               <input class="input-button" type="submit" name="submit"
                      value="search" id="submit" />
             </div>
