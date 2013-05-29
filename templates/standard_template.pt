@@ -58,7 +58,7 @@
         <!--  Search Box  -->
         <div id="searchbox">
           <form tal:attributes="action app/url_path" id="searchform"
-                method="get" name="searchform">
+                method="get" name="searchform" autofocus="autofocus">
             <input type="hidden" name=":action" value="search" />
             <div id="search">
               <input class="input-text" id="term" name="term" />
