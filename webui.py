@@ -760,6 +760,7 @@ class WebUI:
         path = path[:-1]
         if '/' not in path:
             html = self.simple_body(path)
+            serial = self.store.last_serial_for_package(path)
             self.handler.send_response(200, 'OK')
             if accept_encoding == 'gzip':
                 stream = cStringIO.StringIO()
@@ -772,6 +773,7 @@ class WebUI:
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
             self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
+            self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
             self.handler.end_headers()
             self.wfile.write(html)
             return
@@ -785,6 +787,7 @@ class WebUI:
         if '/' in path:
             raise NotFound, path
         html = self.simple_body(path)
+        serial = self.store.last_serial_for_package(path)
         if not self.privkey:
             self.privkey = DSA.load_key(os.path.join(self.config.key_dir, 'privkey'))
         md = EVP.MessageDigest('sha1')
@@ -794,6 +797,7 @@ class WebUI:
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('application/octet-stream')
         self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
+        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
         self.handler.end_headers()
         self.wfile.write(sig)
 

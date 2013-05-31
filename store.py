@@ -1074,6 +1074,13 @@ class Store:
         safe_execute(cursor, 'select max(id) from journals j')
         return cursor.fetchone()[0]
 
+    def last_serial_for_package(self, package):
+        cursor = self.get_cursor()
+        safe_execute(cursor, """
+            SELECT id FROM journals WHERE name = %s ORDER BY id DESC LIMIT 1
+        """, (package,))
+        return cursor.fetchone()[0]
+
     def changed_packages(self, since):
         "Fetch list of names of packages changed 'since'"
         assert isinstance(since, int)
