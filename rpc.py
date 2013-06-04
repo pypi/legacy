@@ -36,6 +36,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_function(user_packages)
         self.register_function(package_hosting_mode)
         self.register_function(top_packages)
+        self.register_function(list_packages_with_serial)
         self.register_introspection_functions()
         self.register_multicall_functions()
 
@@ -97,6 +98,10 @@ def user_packages(store, user):
 def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
+
+
+def list_packages_with_serial(store):
+    return store.get_packages_with_serial()
 
 def package_releases(store, package_name, show_hidden=False):
     if show_hidden:

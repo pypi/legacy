@@ -742,6 +742,11 @@ class Store:
         safe_execute(cursor, 'select name,stable_version from packages order by name')
         return Result(None, cursor.fetchall(), self._Packages)
 
+    def get_packages_with_serial(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, "SELECT journals.name, max(id) FROM journals, packages WHERE journals.name = packages.name GROUP BY journals.name")
+        return {n: i for n, i in cursor.fetchall()}
+
     def get_packages_utf8(self):
         '''Fetch the complete list of package names, UTF-8 encoded
         '''
