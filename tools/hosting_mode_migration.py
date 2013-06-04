@@ -7,6 +7,7 @@ import pickle
 import sys
 import os
 import json
+import traceback
 
 from email.mime.text import MIMEText
 
@@ -129,8 +130,12 @@ for i, (package, users) in enumerate(package_users.iteritems()):
 
     print "Sending for", package, "[%s/%s]" % (i, len(package_users))
 
-    server.sendmail("donald@python.org", emails, msg.as_string())
-    sent.append(("donald@python.org", emails, msg.as_string()))
+    try:
+        server.sendmail("donald@python.org", emails, msg.as_string())
+        sent.append(("donald@python.org", emails, msg.as_string()))
+    except:
+        traceback.print_exc()
+
 server.quit()
 
 
