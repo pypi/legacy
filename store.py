@@ -305,6 +305,7 @@ class Store:
 
     def add_journal_entry(self, name, version, action, submitted_date,
                                                 submitted_by, submitted_from):
+        cursor = self.get_cursor()
         safe_execute(cursor, """
             INSERT INTO journals
                 (name, version, action, submitted_date, submitted_by,
