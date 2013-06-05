@@ -2331,7 +2331,7 @@ class Store:
         # Purge all tags from Fastly
         if self.config.fastly_api_key:
             session = requests.session()
-            for package in self._changed_packages:
+            for package in set(self._changed_packages):
                 normalized_name = normalize_package_name(package)
                 path = "/service/%(id)s/purge/pkg~%(name)s" % {
                                         "id": self.config.fastly_service_id,
@@ -2345,16 +2345,15 @@ class Store:
                     },
                 )
                 resp.raise_for_status()
+                self._changed_packages.remove(package)
 
-            for url in self._changed_urls:
+            for url in set(self._changed_urls):
                 resp = session.request("PURGE", url, headers={
                         "X-Fastly-Key": self.config.fastly_api_key,
                         "Accept": "application/json",
                     })
                 resp.raise_for_status()
-
-        self._changed_packages = set()
-        self._changed_urls = set()
+                self._changed_urls.remove(url)
 
     def close(self):
         if self._conn is None:
