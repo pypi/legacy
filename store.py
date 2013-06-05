@@ -1660,7 +1660,7 @@ class Store:
             values (%s, %s, %s)''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(
-            package_name, "add %s %s" % (role_name, user_name), date,
+            package_name, None, "add %s %s" % (role_name, user_name), date,
             self.username, self.userip)
 
     def delete_role(self, user_name, role_name, package_name):
@@ -1672,8 +1672,8 @@ class Store:
             and package_name=%s''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(
-                package_name, "remove %s %s" % (role_name, user_name), date,
-                self.username, self.userip)
+                package_name, None, "remove %s %s" % (role_name, user_name),
+                date, self.username, self.userip)
 
     def delete_otk(self, otk):
         ''' Delete the One Time Key.
