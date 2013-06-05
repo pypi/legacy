@@ -110,6 +110,8 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
                     time.sleep(mdelay)
                     mtries -= 1
                     mdelay *= backoff
+                    if not mtries:
+                        raise
             return f(*args, **kwargs)
 
         return f_retry  # true decorator
