@@ -24,6 +24,8 @@ import openid.store.sqlstore
 import oauth
 import requests
 import urlparse
+import time
+from functools import wraps
 
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
@@ -70,6 +72,50 @@ for k,v in dependency.__dict__.items():
 keep_conn = False
 connection = None
 keep_trove = True
+
+
+def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
+    """Retry calling the decorated function using an exponential backoff.
+
+    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
+    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
+
+    :param ExceptionToCheck: the exception to check. may be a tuple of
+        exceptions to check
+    :type ExceptionToCheck: Exception or tuple
+    :param tries: number of times to try (not retry) before giving up
+    :type tries: int
+    :param delay: initial delay between retries in seconds
+    :type delay: int
+    :param backoff: backoff multiplier e.g. value of 2 will double the delay
+        each retry
+    :type backoff: int
+    :param logger: logger to use. If None, print
+    :type logger: logging.Logger instance
+    """
+    def deco_retry(f):
+
+        @wraps(f)
+        def f_retry(*args, **kwargs):
+            mtries, mdelay = tries, delay
+            while mtries > 1:
+                try:
+                    return f(*args, **kwargs)
+                except ExceptionToCheck as e:
+                    msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
+                    if logger:
+                        logger.warning(msg)
+                    else:
+                        print(msg)
+                    time.sleep(mdelay)
+                    mtries -= 1
+                    mdelay *= backoff
+            return f(*args, **kwargs)
+
+        return f_retry  # true decorator
+
+    return deco_retry
+
 
 def normalize_package_name(n):
     "Return lower-cased version of safe_name of n."
@@ -2280,24 +2326,8 @@ class Store:
         safe_execute(self.get_cursor(), '''update users set password=%s
             where name=%s''', (password, username))
 
-    def close(self):
-        if self._conn is None:
-            return
-        if keep_conn:
-            # rollback any aborted transaction
-            self._conn.rollback()
-        else:
-            self._conn.close()
-        if not keep_trove:
-            self._trove = None
-        self._conn = None
-        self._cursor = None
-
-    def commit(self):
-        if self._conn is None:
-            return
-        self._conn.commit()
-
+    @retry(Exception, tries=5, delay=1, backoff=1)
+    def _invalidate_cache(self):
         # Purge all tags from Fastly
         if self.config.fastly_api_key:
             session = requests.session()
@@ -2325,6 +2355,25 @@ class Store:
 
         self._changed_packages = set()
         self._changed_urls = set()
+
+    def close(self):
+        if self._conn is None:
+            return
+        if keep_conn:
+            # rollback any aborted transaction
+            self._conn.rollback()
+        else:
+            self._conn.close()
+        if not keep_trove:
+            self._trove = None
+        self._conn = None
+        self._cursor = None
+
+    def commit(self):
+        if self._conn is None:
+            return
+        self._conn.commit()
+        self._invalidate_cache()
 
     def rollback(self):
         if self._conn is None:
