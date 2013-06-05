@@ -257,6 +257,18 @@ class Store:
             self._trove = trove.Trove(self.get_cursor())
         return self._trove
 
+    def add_journal_entry(self, name, version, action, submitted_date,
+                                                submitted_by, submitted_from):
+        safe_execute(cursor, """
+            INSERT INTO journals
+                (name, version, action, submitted_date, submitted_by,
+                    submitted_from)
+            VALUES
+                (%s, %s, %s, %s, %s, %s)
+        """, (name, version, action, submitted_date, submitted_by,
+                                                            submitted_from))
+        self._changed_packages.add(name)
+
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
 
@@ -288,14 +300,8 @@ class Store:
             safe_execute(cursor, sql, args)
 
             # journal entry
-            safe_execute(cursor, '''insert into journals (name, version, action,
-                submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name,
-                                              None,
-                                              'create',
-                                              date,
-                                              self.username,
-                                              self.userip))
+            self.add_journal_entry(name, None, "create", date,
+                                                self.username, self.userip)
 
             # first person to add an entry may be considered owner - though
             # make sure they don't already have the Role (this might just
@@ -384,10 +390,8 @@ class Store:
                     and version=%%s'''%cols, vals)
 
             # journal the update
-            safe_execute(cursor, '''insert into journals (name, version,
-                action, submitted_date, submitted_by, submitted_from)
-                values (%s, %s, %s, %s, %s, %s)''', (name, version, message,
-                date, self.username, self.userip))
+            self.add_journal_entry(name, version, message, date,
+                                                self.username, self.userip)
         else:
             # round off the information (make sure name and version are in
             # the info dict)
@@ -415,10 +419,8 @@ class Store:
             safe_execute(cursor, sql, args)
 
             # journal entry
-            safe_execute(cursor, '''insert into journals (name, version, action,
-                submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name, version, 'new release',
-                date, self.username, self.userip))
+            self.add_journal_entry(name, version, "new release", date,
+                                                self.username, self.userip)
 
             # first person to add an entry may be considered owner - though
             # make sure they don't already have the Role (this might just
@@ -686,12 +688,8 @@ class Store:
              VALUES (%s, %s, %s)""", [name, version, url])
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-        (name, version, 'add url ' + url, date, self.username, self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(name, version, "add url " + url, date,
+                                                self.username, self.userip)
 
     def remove_description_url(self, url_id):
         cursor = self.get_cursor()
@@ -707,12 +705,8 @@ class Store:
         safe_execute(cursor, sql, [url_id])
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-        (name, version, 'remove url ' + url, date, self.username, self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(name, version, "remove url " + url, date,
+                                                self.username, self.userip)
 
     def get_stable_version(self, name):
         ''' Retrieve the version marked as a package:s stable version.
@@ -925,12 +919,8 @@ class Store:
                      [value, name])
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-        (name, None, 'update hosting_mode', date, self.username, self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(name, None, "update hosting_mode", date,
+                                                    self.username, self.userip)
 
     def set_description(self, name, version, desc_text, desc_html,
             from_readme=False):
@@ -1318,12 +1308,8 @@ class Store:
             (name, version))
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (name, version, action,
-                submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name, version, 'remove', date,
-                                              self.username, self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(name, version, "remove", date,
+                                                    self.username, self.userip)
 
     def remove_package(self, name):
         ''' Delete an entire package from the database.
@@ -1347,12 +1333,9 @@ class Store:
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (name, version, action,
-                submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name, None, 'remove', date,
-                                              self.username, self.userip))
+        self.add_journal_entry(name, None, "remove", date,
+                                                    self.username, self.userip)
 
-        self._changed_packages.add(name)
         self._changed_urls.add("https://pypi.python.org/simple/")
 
     def rename_package(self, old, new):
@@ -1379,17 +1362,11 @@ class Store:
             if not os.path.exists(dirpath):
                 os.makedirs(dirpath)
             os.rename(oldname, newname)
-        safe_execute(cursor,'''insert into journals (name, version, action,
-                submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (new,
-                                              None,
-                                              'rename from %s' % old,
-                                              date,
-                                              self.username,
-                                              self.userip))
+
+        self.add_journal_entry(new, None, "rename from %s" % old, date,
+                                                    self.username, self.userip)
 
         self._changed_packages.add(old)
-        self._changed_packages.add(new)
         self._changed_urls.add("https://pypi.python.org/simple/")
 
     def save_cheesecake_score(self, name, version, score_data):
@@ -1635,11 +1612,9 @@ class Store:
             insert into roles (user_name, role_name, package_name)
             values (%s, %s, %s)''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        sql = '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, NULL, %s, %s, %s, %s)'''
-        safe_execute(cursor, sql, (package_name, 'add %s %s'%(role_name,
-            user_name), date, self.username, self.userip))
+        self.add_journal_entry(
+            package_name, "add %s %s" % (role_name, user_name), date,
+            self.username, self.userip)
 
     def delete_role(self, user_name, role_name, package_name):
         ''' Delete a role for the user for the package.
@@ -1649,11 +1624,9 @@ class Store:
             delete from roles where user_name=%s and role_name=%s
             and package_name=%s''', (user_name, role_name, package_name))
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, NULL, %s, %s, %s, %s)''',
-            (package_name, 'remove %s %s'%(role_name, user_name), date,
-            self.username, self.userip))
+        self.add_journal_entry(
+                package_name, "remove %s %s" % (role_name, user_name), date,
+                self.username, self.userip)
 
     def delete_otk(self, otk):
         ''' Delete the One Time Key.
@@ -1853,13 +1826,9 @@ class Store:
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-            (name, version, 'add %s file %s'%(pyversion, filename), date,
-            self.username, self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(
+            name, version, "add %s file %s" % (pyversion, filename), date,
+            self.username, self.userip)
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
     filename md5_digest size! has_sig! downloads! upload_time!''')
@@ -1918,14 +1887,8 @@ class Store:
             os.rmdir(dirpath)
             dirpath = os.path.split(dirpath)[0]
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (
-              name, version, action, submitted_date, submitted_by,
-              submitted_from) values (%s, %s, %s, %s, %s, %s)''',
-            (name, version, 'remove file '+filename, date,
-            self.username, self.userip))
-
-        self._changed_packages.add(name)
-
+        self.add_journal_entry(name, version, "remove file %s" % filename,
+                                            date, self.username, self.userip)
 
     _File_Info = FastResultRow('''python_version packagetype name comment_text
                                 filename''')
@@ -1947,16 +1910,8 @@ class Store:
     def log_docs(self, name, version):
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''insert into journals (name, version, action,
-            submitted_date, submitted_by, submitted_from) values
-                (%s, %s, %s, %s, %s, %s)''', (name,
-                                              version,
-                                              'docupdate',
-                                              date,
-                                              self.username,
-                                              self.userip))
-
-        self._changed_packages.add(name)
+        self.add_journal_entry(name, version, "docupdate", date,
+                                                self.username, self.userip)
 
     def docs_url(self, name):
         '''Determine the local (pythonhosted.org) documentation URL, if any.
