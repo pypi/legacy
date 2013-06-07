@@ -2,6 +2,7 @@
 '''
 import sys, os, re, time, hashlib, random, types, math, stat, errno
 import logging, string, datetime, calendar, binascii, urllib2, cgi
+import posixpath
 from collections import defaultdict
 import cPickle as pickle
 try:
@@ -288,7 +289,6 @@ class Store:
             self.true, self.false = 'TRUE', 'FALSE'
             self.can_lock = True
 
-        self._changed_packages = set()
         self._changed_urls = set()
 
     def last_id(self, tablename):
@@ -316,7 +316,7 @@ class Store:
                 (%s, %s, %s, %s, %s, %s)
         """, (name, version, action, submitted_date, submitted_by,
                                                             submitted_from))
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
@@ -359,7 +359,7 @@ class Store:
             if not self.has_role('Owner', name):
                 self.add_role(self.username, 'Owner', name)
 
-            self._changed_urls.add("https://pypi.python.org/simple/")
+            self._add_invalidation(None)
 
         # extract the Trove classifiers
         classifiers = info.get('classifiers', [])
@@ -514,7 +514,7 @@ class Store:
                     kind, specifier) values (%s, %s, %s, %s)''', (name,
                     version, nkind, specifier))
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
         return message
 
@@ -580,7 +580,7 @@ class Store:
                 safe_execute(cursor, '''update releases set _pypi_ordering=%s
                     where name=%s and version=%s''', (order, name, v))
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
         # return the ordering for this release
         return new_version
@@ -979,7 +979,7 @@ class Store:
             and version=%s''', [desc_text, desc_html, from_readme, name,
             version])
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def _get_package_url(self, name):
         name = name.split()[0]
@@ -1295,7 +1295,7 @@ class Store:
             safe_execute(cursor, '''insert into description_urls(name, version, url)
             values(%s, %s, %s)''', (name, version, url))
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def updateurls(self):
         cursor = self.get_cursor()
@@ -1314,7 +1314,7 @@ class Store:
             safe_execute(cursor, 'update description_urls set url=%s where name=%s and version=%s and url=%s',
                          (url2, name, version, url))
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def update_normalized_text(self):
         cursor = self.get_cursor()
@@ -1323,7 +1323,7 @@ class Store:
             safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
                          [normalize_package_name(name), name])
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def update_description_html(self, name):
         cursor = self.get_cursor()
@@ -1332,7 +1332,7 @@ class Store:
             safe_execute(cursor, 'update releases set description_html=%s where name=%s and version=%s',
                          (processDescription(description), name, version))
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
@@ -1385,7 +1385,7 @@ class Store:
         self.add_journal_entry(name, None, "remove", date,
                                                     self.username, self.userip)
 
-        self._changed_urls.add("https://pypi.python.org/simple/")
+        self._add_invalidation(None)
 
     def rename_package(self, old, new):
         ''' Rename a package. Relies on cascaded updates.
@@ -1415,8 +1415,8 @@ class Store:
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
 
-        self._changed_packages.add(old)
-        self._changed_urls.add("https://pypi.python.org/simple/")
+        self._add_invalidation(name)
+        self._add_invalidation(None)
 
     def save_cheesecake_score(self, name, version, score_data):
         '''Save Cheesecake score for a release.
@@ -1505,7 +1505,7 @@ class Store:
 
         insert_score_for_release(name, version, installability_id, documentation_id, code_kwalitee_id)
 
-        self._changed_packages.add(name)
+        self._add_invalidation(name)
 
 
     #
@@ -1990,7 +1990,7 @@ class Store:
             "set upload_time=%s where python_version=%s and name=%s "
             "and filename = %s", (date, pyversion, name, filename))
 
-            self._changed_packages.add(name)
+            self._add_invalidation(name)
     #
     # Mirrors managment
     #
@@ -2289,7 +2289,6 @@ class Store:
             self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
-        self._changed_packages = set()
         self._changed_urls = set()
 
     def oid_store(self):
@@ -2306,7 +2305,6 @@ class Store:
         except Exception:
             pass
         connection = None
-        self._changed_packages = set()
         self._changed_urls = set()
 
     def set_user(self, username, userip, update_last_login):
@@ -2329,27 +2327,23 @@ class Store:
         safe_execute(self.get_cursor(), '''update users set password=%s
             where name=%s''', (password, username))
 
+    def _add_invalidation(self, package=None):
+        parts = ["/", "simple"]
+        if package is not None:
+            parts.append(package)
+        path = posixpath.join(*parts)
+        url = urlparse.urljoin(
+                    "https://%s" % urlparse.urlparse(self.config.url).netloc,
+                    path,
+                )
+        url = url if url.endswith("/") else url + "/"
+        self._changed_urls.add(url)
+
     @retry(Exception, tries=5, delay=1, backoff=1)
     def _invalidate_cache(self):
         # Purge all tags from Fastly
         if self.config.fastly_api_key:
             session = requests.session()
-            for package in set(self._changed_packages):
-                normalized_name = normalize_package_name(package)
-                path = "/service/%(id)s/purge/pkg~%(name)s" % {
-                                        "id": self.config.fastly_service_id,
-                                        "name": normalized_name,
-                                    }
-                url = urlparse.urljoin(self.config.fastly_api_domain, path)
-                resp = session.post(url,
-                    headers={
-                        "X-Fastly-Key": self.config.fastly_api_key,
-                        "Accept": "application/json",
-                    },
-                )
-                resp.raise_for_status()
-                self._changed_packages.remove(package)
-
             for url in set(self._changed_urls):
                 resp = session.request("PURGE", url, headers={
                         "X-Fastly-Key": self.config.fastly_api_key,
@@ -2357,6 +2351,8 @@ class Store:
                     })
                 resp.raise_for_status()
                 self._changed_urls.remove(url)
+        else:
+            self._changed_urls = set()
 
     def close(self):
         if self._conn is None:
@@ -2382,7 +2378,6 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
-        self._changed_packages = set()
         self._changed_urls = set()
 
     def changed(self):
