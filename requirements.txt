@@ -1,5 +1,5 @@
 Distutils2==1.0a4
-M2Crypto==0.21.1
+M2Crypto
 Pygments==1.6
 defusedxml==0.4.1
 docutils==0.10
