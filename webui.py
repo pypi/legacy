@@ -425,8 +425,13 @@ class WebUI:
         else:
             self.handler.set_content_type('text/html; charset=utf-8')
         if self.usercookie:
+            if self.url_machine.startswith('https'):
+                secure = ';secure'
+            else:
+                secure = ''
+
             self.handler.send_header('Set-Cookie',
-                'pypi=%s;path=%s/' % (self.usercookie, self.url_machine))
+                'pypi=%s;path=/%s' % (self.usercookie, secure))
         for k,v in headers.items():
             self.handler.send_header(k, v)
         self.handler.end_headers()
