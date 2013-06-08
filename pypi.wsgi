@@ -1,8 +1,10 @@
 #!/usr/bin/python
 import sys
 import os
-prefix = os.path.dirname(__file__)
-sys.path.insert(0, prefix)
+import site
+
+site.addsitedir(os.path.dirname(__file__))
+
 import cStringIO
 import webui
 import store
