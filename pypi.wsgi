@@ -21,8 +21,7 @@ from functools import partial
 
 store.keep_conn = True
 
-PREFIX = os.path.dirname(__file__)
-CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(PREFIX, "config.ini"))
+CONFIG_FILE = os.path.join(PREFIX, "config.ini")
 
 
 class Request:
