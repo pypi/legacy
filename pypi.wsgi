@@ -1,9 +1,16 @@
 #!/usr/bin/python
 import sys
 import os
-import site
 
-site.addsitedir(os.path.dirname(__file__))
+PREFIX = os.path.dirname(__file__)
+
+try:
+    with open(os.path.join(PREFIX, "pypi.pth"), "r") as fp:
+        path = fp.read().strip()
+except IOError:
+    path = PREFIX
+
+sys.path.insert(0, path)
 
 import cStringIO
 import webui
