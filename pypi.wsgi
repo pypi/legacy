@@ -21,7 +21,21 @@ from functools import partial
 
 store.keep_conn = True
 
-CONFIG_FILE = os.path.join(PREFIX, "config.ini")
+
+def find_nearest(directory, search):
+    directory = os.path.abspath(directory)
+    parts = directory.split(os.path.sep)
+    for idx in xrange(len(parts)):
+        d = os.path.sep.join(parts[:-idx])
+        if not d:
+            d = os.path.sep.join(parts)
+        s = os.path.join(d, search)
+        if os.path.isdir(s) or os.path.isfile(s):
+            return d
+    raise OSError
+
+
+CONFIG_FILE = os.path.join(find_nearest(PREFIX, "config.ini"), "config.ini")
 
 
 class Request:
