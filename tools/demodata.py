@@ -3,6 +3,8 @@ import sys, os, urllib
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
+# Work around http://sourceforge.net/p/docutils/bugs/214/
+import docutils.utils
 import admin, store, config
 
 cfg = config.Config(root+'/config.ini')
