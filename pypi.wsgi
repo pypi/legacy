@@ -96,7 +96,7 @@ def application(environ, start_response):
 def site_fake(app, environ, start_response):
     PATH_INFO = environ['PATH_INFO']
     m = re.match('^/(pypi|simple|daytime|serversig|mirrors|id|oauth|'
-        'security)(.*)', PATH_INFO)
+        'security|packages)(.*)', PATH_INFO)
     if not m:
         start_response("404 not found", [('Content-type', 'text/plain')])
         return ['Not Found: %s' % PATH_INFO]

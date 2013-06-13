@@ -3,6 +3,8 @@ import sys, os, urllib
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root)
+# Work around http://sourceforge.net/p/docutils/bugs/214/
+import docutils.utils
 import admin, store, config
 
 cfg = config.Config(root+'/config.ini')
@@ -52,7 +54,7 @@ for version in ('0.1', '0.2', '0.3', '0.4'):
             '_pypi_hidden':version!='0.4'
             })
 
-st.add_file('spam', '1.0', 'THIS IS SOME CONTENT', '1234', 'sdist',
+st.add_file('spam', '1.0', 'THIS IS SOME CONTENT', '12e6ed27f5a127cab06e449171b35b6d', 'sdist',
             'any', '', 'demo.txt', None)
 
 st.commit()

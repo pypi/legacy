@@ -65,6 +65,8 @@ safe_username = re.compile(r'^[A-Za-z0-9._]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
+packages_path_to_package_name = re.compile(
+    '^/([0-9\.]+|any|source)/./([a-zA-Z0-9][a-zA-Z0-9_\-\.]*)')
 
 class NotFound(Exception):
     pass
@@ -500,7 +502,6 @@ class WebUI:
                          (cssclass, cssclass, self.link_action(action_name), desc))
         return links
 
-
     def inner_run(self):
         ''' Figure out what the request is, and farm off to the appropriate
             handler.
@@ -511,6 +512,8 @@ class WebUI:
             return self.run_simple()
         if script_name and script_name == self.config.simple_sign_script:
             return self.run_simple_sign()
+        if script_name == '/packages':
+            return self.packages()
         if script_name == '/mirrors':
             return self.mirrors()
         if script_name == '/security':
@@ -755,6 +758,10 @@ class WebUI:
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
             self.handler.send_header("Surrogate-Key", "simple")
+            # XXX not quite sure whether this is the right thing for empty
+            # mirrors, but anyway.
+            serial = self.store.changelog_last_serial() or 0
+            self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
             self.handler.end_headers()
             self.wfile.write(html)
             return
@@ -786,9 +793,8 @@ class WebUI:
 
     def run_simple_sign(self):
         path = self.env.get('PATH_INFO')
-        if not path.endswith('/'):
-            raise Redirect, self.config.simple_sign_script+path+'/'
-        path = path[1:-1]
+        # Helper to support this working with simple WSGI main script.
+        path = path.strip('/')
         if '/' in path:
             raise NotFound, path
         html = self.simple_body(path)
@@ -805,6 +811,36 @@ class WebUI:
         self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
         self.handler.end_headers()
         self.wfile.write(sig)
+
+    def packages(self):
+        path = self.env.get('PATH_INFO')
+
+        # I expect that nginx will do the right thing if it doesn't find the 
+        # actual file when resolving the X-accel headers.
+        self.handler.send_response(200, 'OK')
+
+        package = packages_path_to_package_name.match(path)
+        if package:
+            # Make sure that we associate the delivered file with the serial this
+            # is valid for. Intended to support mirrors to more easily achieve
+            # consistency with files that are newer than they may expect.
+            package = package.group(2)
+            serial = self.store.last_serial_for_package(package)
+            self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+
+        # we expect nginx to have configured a location named
+        # '/packages_raw/...' that aliases the original path correctly, see
+        # http://wiki.nginx.org/X-accel and http://wiki.nginx.org/XSendfile for
+        # details.
+        # Sample: (note the missing slash on the alias and the internal)
+        # location /packages_raw {
+        #       internal;
+        #       alias /data/files;
+        #       autoindex on;
+        # }
+        self.handler.send_header("X-Accel-Redirect", "/packages_raw" + path)
+
+        self.handler.end_headers()
 
     def run_id(self):
         path = self.env.get('PATH_INFO')
