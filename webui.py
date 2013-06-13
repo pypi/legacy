@@ -832,12 +832,14 @@ class WebUI:
         # '/packages_raw/...' that aliases the original path correctly, see
         # http://wiki.nginx.org/X-accel and http://wiki.nginx.org/XSendfile for
         # details.
-        # Sample: (note the missing slash on the alias and the internal)
+        # Sample: (note the missing slash on the alias!)
         # location /packages_raw {
-        #       internal;
-        #       alias /data/files;
-        #       autoindex on;
+        #    alias /path/to/packages/dir;
+        #    add_header X-PYPI-LAST-SERIAL $upstream_http_x_pypi_last_serial;
+        #    internal;
+        #    autoindex on;
         # }
+	# I tested this using regular http upstreams, so no guarantee this works with uwsgi.
         self.handler.send_header("X-Accel-Redirect", "/packages_raw" + path)
 
         self.handler.end_headers()
