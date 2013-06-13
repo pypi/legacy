@@ -1415,7 +1415,8 @@ class Store:
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
 
-        self._add_invalidation(name)
+        self._add_invalidation(new)
+        self._add_invalidation(old)
         self._add_invalidation(None)
 
     def save_cheesecake_score(self, name, version, score_data):

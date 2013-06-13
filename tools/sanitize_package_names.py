@@ -38,7 +38,6 @@ renamed = []
 junk_names = bad_names()
 print("Found %s bad names" % len(junk_names))
 
-# Rename anything where the only bad character is spaces
 print("Rename packages where the only invalid name is a space")
 for name in junk_names:
     if name.strip() != name:
@@ -46,6 +45,17 @@ for name in junk_names:
 
     if valid_name.search(name.replace(" ", "-")) is not None:
         new_name = re.sub("\s+", "-", name)
+        renamed.append((name, new_name))
+        store.rename_package(name, new_name)
+    else:
+        new_name = re.sub("[^A-Za-z0-9.]+", "-", name).strip("_-.")
+        if valid_name.search(new_name) is None:
+            continue
+        num = 2
+        onew_name = new_name
+        while [x for x in store.find_package(new_name) if x != name]:
+            new_name = "%s%s" % (onew_name, str(num))
+            num += 1
         renamed.append((name, new_name))
         store.rename_package(name, new_name)
 
