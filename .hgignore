@@ -1,7 +1,13 @@
 syntax: glob
+*.swp
+lib
+bin
+local
+include
 **.pyc
 config.ini
 uwsgi-logd.conf
 sshkeys_update
 privkey*
 pubkey*
+pypi.egg*
