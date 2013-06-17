@@ -1,17 +1,8 @@
 #!/usr/bin/python
 import sys
 import os
-
-PREFIX = os.path.dirname(__file__)
-
-try:
-    with open(os.path.join(PREFIX, "pypi.pth"), "r") as fp:
-        path = fp.read().strip()
-except IOError:
-    path = PREFIX
-
-sys.path.insert(0, path)
-
+prefix = os.path.dirname(__file__)
+sys.path.insert(0, prefix)
 import cStringIO
 import webui
 import store
@@ -21,21 +12,7 @@ from functools import partial
 
 store.keep_conn = True
 
-
-def find_nearest(directory, search):
-    directory = os.path.abspath(directory)
-    parts = directory.split(os.path.sep)
-    for idx in xrange(len(parts)):
-        d = os.path.sep.join(parts[:-idx])
-        if not d:
-            d = os.path.sep.join(parts)
-        s = os.path.join(d, search)
-        if os.path.isdir(s) or os.path.isfile(s):
-            return d
-    raise OSError
-
-
-CONFIG_FILE = os.path.join(find_nearest(PREFIX, "config.ini"), "config.ini")
+CONFIG_FILE = os.path.join(prefix, 'config.ini')
 
 
 class Request:
@@ -43,7 +20,7 @@ class Request:
     def __init__(self, environ, start_response):
         self.start_response = start_response
         try:
-            length = int(environ.get('CONTENT_LENGTH', 0))
+            length = int(environ['CONTENT_LENGTH'])
         except ValueError:
             length = 0
         self.rfile = cStringIO.StringIO(environ['wsgi.input'].read(length))
