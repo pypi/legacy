@@ -27,7 +27,7 @@ except ImportError:
 
 # Importing M2Crypto patches urllib; don't let them do that
 orig = urllib.URLopener.open_https.im_func
-from M2Crypto import EVP, DSA
+from M2Crypto import DSA
 urllib.URLopener.open_https = orig
 
 # OpenId provider imports
@@ -795,9 +795,9 @@ class WebUI:
         serial = self.store.last_serial_for_package(path)
         if not self.privkey:
             self.privkey = DSA.load_key(os.path.join(self.config.key_dir, 'privkey'))
-        md = EVP.MessageDigest('sha1')
-        md.update(html)
-        digest = md.final()
+
+        digest = hashlib.sha1(html).digest()
+
         sig = self.privkey.sign_asn1(digest)
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('application/octet-stream')
