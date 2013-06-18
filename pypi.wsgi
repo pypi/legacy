@@ -12,7 +12,7 @@ from functools import partial
 
 store.keep_conn = True
 
-CONFIG_FILE = os.path.join(prefix, 'config.ini')
+CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
 
 
 class Request:
