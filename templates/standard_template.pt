@@ -50,7 +50,7 @@
       </h1>
       <!--  Skip to Navigation  -->
       <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="/static/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
-      <div class="skiptonav"><a accesskey="3" href="#content-body"><img src="/static/images/images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
+      <div class="skiptonav"><a accesskey="3" href="#content-body"><img src="/static/images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
       <!--  Utility Menu  -->
 
       <div id="utility-menu">
