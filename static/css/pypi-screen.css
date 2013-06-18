@@ -52,9 +52,13 @@
 
 /* don't have the block expand to fill the space horizontally  - also make it
  * prettier */
-pre.literal-block, pre.doctest-block, div.highight > pre {
+div.highlight {
+    background: none;
+}
+pre.literal-block, pre.doctest-block, div.highlight > pre {
+    background-color: #E0E0FF;
     margin: 0 2em 0 2em;
-    display: table;
+    padding: 10px;
     border: thin solid #AAF;
     border-radius: .5em;
 }

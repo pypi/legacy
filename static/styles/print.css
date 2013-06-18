@@ -13,6 +13,11 @@
 {
   color: #000000;
   text-decoration:none;
+  display:inline;
+}
+
+pre {
+  font-size:10pt;
 }
 
 #body-main a
@@ -20,12 +25,16 @@
   font-weight:bold;
 }
 
-#body-main a:after
-{
-   content: " (" attr(href) ") ";
-}
 
 h1
 {
   font-size:14pt;
+}
+
+iframe {
+  display:none;
+}
+
+#footer {
+  display:none;
 }
