@@ -730,28 +730,25 @@ class WebUI:
 
     def run_simple(self):
         path = self.env.get('PATH_INFO')
+
         if not path:
-            raise Redirect, self.config.simple_script+'/'
-        accept_encoding = self.get_accept_encoding(('identity', 'gzip'))
-        if path=='/':
-            html = []
-            html.append('<html><head><title>Simple Index</title><meta name="api-version" value="2" /></head>')
-            html.append("<body>\n")
+            raise Redirect(self.config.simple_script + '/')
+
+        if path == '/':
+            html = [
+                '<html><head><title>Simple Index</title><meta name="api-version" value="2" /></head>',
+                "<body>\n",
+            ]
+
             for name in self.store.get_packages_utf8():
                 qname = urllib.quote(name)
                 ename = cgi.escape(name)
-                html.append("<a href='%s/'>%s</a><br/>\n" % (qname,ename))
+                html.append("<a href='%s/'>%s</a><br/>\n" % (qname, ename))
+
             html.append("</body></html>")
             html = ''.join(html)
+
             self.handler.send_response(200, 'OK')
-            if accept_encoding == 'gzip':
-                stream = cStringIO.StringIO()
-                # level 6 is what the gzip command line tool uses by default
-                f = gzip.GzipFile(mode='wb', fileobj=stream, compresslevel=6)
-                f.write(html)
-                f.close()
-                html = stream.getvalue()
-                self.handler.send_header('Content-encoding', 'gzip')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
             self.handler.send_header("Surrogate-Key", "simple")
@@ -761,28 +758,21 @@ class WebUI:
 
         path = path[1:]
         if not path.endswith('/'):
-            raise Redirect, self.config.simple_script + '/' + path + '/'
+            raise Redirect(self.config.simple_script + '/' + path + '/')
         path = path[:-1]
-        if '/' not in path:
-            html = self.simple_body(path)
-            serial = self.store.last_serial_for_package(path)
-            self.handler.send_response(200, 'OK')
-            if accept_encoding == 'gzip':
-                stream = cStringIO.StringIO()
-                # level 6 is what the gzip command line tool uses by default
-                f = gzip.GzipFile(mode='wb', fileobj=stream, compresslevel=6)
-                f.write(html)
-                f.close()
-                html = stream.getvalue()
-                self.handler.send_header('Content-encoding', 'gzip')
-            self.handler.set_content_type('text/html; charset=utf-8')
-            self.handler.send_header('Content-Length', str(len(html)))
-            self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
-            self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
-            self.handler.end_headers()
-            self.wfile.write(html)
-            return
-        raise NotFound, path
+
+        if '/' in path:
+            raise NotFound(path)
+
+        html = self.simple_body(path)
+        serial = self.store.last_serial_for_package(path)
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/html; charset=utf-8')
+        self.handler.send_header('Content-Length', str(len(html)))
+        self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
+        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+        self.handler.end_headers()
+        self.wfile.write(html)
 
     def run_simple_sign(self):
         path = self.env.get('PATH_INFO')
