@@ -19,8 +19,8 @@
        <link media="print" href="/static/styles/print.css" type="text/css" rel="stylesheet" />
        <link media="screen" href="/static/styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
        <link media="screen" href="/static/styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
-       <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
-       <link rel="stylesheet" media="screen" href="/css/pygments.css" type="text/css"/>
+       <link rel="stylesheet" media="screen" href="/static/css/docutils.css" type="text/css"/>
+       <link rel="stylesheet" media="screen" href="/static/css/pygments.css" type="text/css"/>
 
        <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
        <link rel="stylesheet" href="/static/css/pypi.css" type="text/css"/>
