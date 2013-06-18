@@ -7,7 +7,6 @@
     <head>
       <META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW" tal:condition="data/norobots"/>
       <meta content="text/html; charset=utf-8" http-equiv="content-type" />
-      <base tal:attributes="href data/FULL_PATH_INFO"/>
       <title tal:content="string:${data/title} : Python Package Index" />
       <meta tal:attributes="content data/keywords" />
       <meta tal:attributes="content data/description" />
@@ -15,17 +14,17 @@
             tal:attributes="href string:${app/config/url}?:action=rss"/>
        <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages"
             tal:attributes="href string:${app/config/url}?:action=packages_rss"/>
-       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/screen-switcher-default.css" type="text/css" id="screen-switcher-stylesheet" rel="stylesheet" />
-       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/netscape4.css" type="text/css" rel="stylesheet" />
-       <link media="print" tal:attributes="href string:${app/config/pydotorg}styles/print.css" type="text/css" rel="stylesheet" />
-       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
-       <link media="screen" tal:attributes="href string:${app/config/pydotorg}styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
+       <link rel="stylesheet" media="screen" href="/static/styles/screen-switcher-default.css" type="text/css"/>
+       <link media="screen" href="/static/styles/netscape4.css" type="text/css" rel="stylesheet" />
+       <link media="print" href="/static/styles/print.css" type="text/css" rel="stylesheet" />
+       <link media="screen" href="/static/styles/largestyles.css" type="text/css" rel="alternate stylesheet" title="large text" />
+       <link media="screen" href="/static/styles/defaultfonts.css" type="text/css" rel="alternate stylesheet" title="default fonts" />
        <link rel="stylesheet" media="screen" href="/css/docutils.css" type="text/css"/>
        <link rel="stylesheet" media="screen" href="/css/pygments.css" type="text/css"/>
 
        <!-- allow pypi to override the standard pydotorg/docutils/etc. styles -->
-       <link rel="stylesheet" href="/css/pypi.css" type="text/css"/>
-       <link media="screen" rel="stylesheet" href="/css/pypi-screen.css" type="text/css"/>
+       <link rel="stylesheet" href="/static/css/pypi.css" type="text/css"/>
+       <link media="screen" rel="stylesheet" href="/static/css/pypi-screen.css" type="text/css"/>
 
        <metal:slot define-slot="head" />
 
@@ -34,24 +33,24 @@
     </head>
     <body>
      <tal:x tal:condition="python:'testpypi' in app.config.url">
-      <img src="/testing-site.png" style="z-index: 100; position: absolute; top: 0; left: 0; border: 0;" alt="Testing Site" />
-      <img src="/testing-site-right.png" style="z-index: 100; position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
+      <img src="/static/testing-site.png" style="z-index: 100; position: absolute; top: 0; left: 0; border: 0;" alt="Testing Site" />
+      <img src="/static/testing-site-right.png" style="z-index: 100; position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
      </tal:x>
 
       <!--  Logo  -->
       <h1 id="logoheader">
        <a accesskey="1" href="http://www.python.org" id="logolink">
         <tal:x condition="python:data.get('is_py3k')">
-          <img src="/python-3.png" alt="homepage" border="0" id="logo" />
+          <img src="/static/images/python-3.png" alt="homepage" border="0" id="logo" />
         </tal:x>
         <tal:x condition="python:not data.get('is_py3k')">
-          <img tal:attributes="src string:${app/config/pydotorg}images/python-logo.gif" alt="homepage" border="0" id="logo" />
+          <img src="/static/images/python-logo.gif" alt="homepage" border="0" id="logo" />
         </tal:x>
        </a>
       </h1>
       <!--  Skip to Navigation  -->
-      <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img tal:attributes="src string:${app/config/pydotorg}images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
-      <div class="skiptonav"><a accesskey="3" href="#content-body"><img tal:attributes="src string:${app/config/pydotorg}images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
+      <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="/static/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
+      <div class="skiptonav"><a accesskey="3" href="#content-body"><img src="/static/images/images/trans.gif" alt="skip to content" border="0" id="skiptocontent" /></a></div>
       <!--  Utility Menu  -->
 
       <div id="utility-menu">
