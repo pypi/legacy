@@ -20,7 +20,7 @@ class Request:
     def __init__(self, environ, start_response):
         self.start_response = start_response
         try:
-            length = int(environ['CONTENT_LENGTH'])
+            length = int(environ.get('CONTENT_LENGTH', 0))
         except ValueError:
             length = 0
         self.rfile = cStringIO.StringIO(environ['wsgi.input'].read(length))
