@@ -1123,7 +1123,9 @@ class Store:
         safe_execute(cursor, """
             SELECT id FROM journals WHERE name = %s ORDER BY id DESC LIMIT 1
         """, (package,))
-        return cursor.fetchone()[0]
+        row = cursor.fetchone()
+        if row:
+            return row[0]
 
     def changed_packages(self, since):
         "Fetch list of names of packages changed 'since'"

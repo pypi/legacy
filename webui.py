@@ -805,7 +805,7 @@ class WebUI:
     def packages(self):
         path = self.env.get('PATH_INFO')
 
-        # I expect that nginx will do the right thing if it doesn't find the 
+        # I expect that nginx will do the right thing if it doesn't find the
         # actual file when resolving the X-accel headers.
         self.handler.send_response(200, 'OK')
 
@@ -816,7 +816,8 @@ class WebUI:
             # consistency with files that are newer than they may expect.
             package = package.group(2)
             serial = self.store.last_serial_for_package(package)
-            self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+            if serial is not None:
+                self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
@@ -829,7 +830,6 @@ class WebUI:
         #    internal;
         #    autoindex on;
         # }
-	# I tested this using regular http upstreams, so no guarantee this works with uwsgi.
         self.handler.send_header("X-Accel-Redirect", "/packages_raw" + path)
 
         self.handler.end_headers()
