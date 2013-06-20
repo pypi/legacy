@@ -59,6 +59,7 @@ class Config:
         self.cheesecake_password = c.get('webui', 'cheesecake_password')
         self.key_dir = c.get('webui', 'key_dir')
         self.simple_sign_script = c.get('webui', 'simple_sign_script')
+        self.raw_package_prefix = c.get("webui", "raw_package_prefix")
         if c.has_option('webui', 'sshkeys_update'):
             self.sshkeys_update = c.get('webui', 'sshkeys_update')
         else:

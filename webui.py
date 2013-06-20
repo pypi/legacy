@@ -830,7 +830,7 @@ class WebUI:
         #    internal;
         #    autoindex on;
         # }
-        self.handler.send_header("X-Accel-Redirect", "/packages_raw" + path)
+        self.handler.send_header("X-Accel-Redirect", self.config.raw_package_prefix + path)
 
         self.handler.end_headers()
 
