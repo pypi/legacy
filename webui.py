@@ -783,8 +783,9 @@ class WebUI:
 
     def run_simple_sign(self):
         path = self.env.get('PATH_INFO')
-        # Helper to support this working with simple WSGI main script.
-        path = path.strip('/')
+        if not path.endswith('/'):
+            raise Redirect, self.config.simple_sign_script+path+'/'
+        path = path[1:-1]
         if '/' in path:
             raise NotFound, path
         html = self.simple_body(path)
