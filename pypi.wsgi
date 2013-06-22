@@ -41,6 +41,25 @@ class Request:
         self.start_response(self.status, self.headers)
 
 
+class CacheControlMiddleware(object):
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+
+        def _start_response(status, headers, exc_info=None):
+            script = environ.get("SCRIPT_NAME", None)
+            if script in set(["/simple", "/serversig", "/packages"]):
+                headers += [("Cache-Control", "max-age=86400, public")]
+            else:
+                headers += [("Cache-Control", "private")]
+
+            return start_response(status, headers, exc_info)
+
+        return self.app(environ, _start_response)
+
+
 def debug(environ, start_response):
     if environ['PATH_INFO'].startswith("/auth") and \
            "HTTP_AUTHORIZATION" not in environ:
@@ -66,6 +85,10 @@ def application(environ, start_response):
         import traceback;traceback.print_exc()
         return ['Ooops, there was a problem (%s)' % e]
 #application=debug
+
+
+# Handle Caching at the WSGI layer
+application = CacheControlMiddleware(application)
 
 
 # pretend to be like the UWSGI configuration - set SCRIPT_NAME to the first
