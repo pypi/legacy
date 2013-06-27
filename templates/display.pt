@@ -99,7 +99,7 @@
 <tr><td id="last" colspan="6"></td></tr>
   </table>
 
-<ul style="display: none;" class="nodot" tal:condition="data/download_counts | nothing">
+<ul class="nodot" tal:condition="data/download_counts | nothing">
   <li><strong>Downloads (All Versions):</strong></li>
   <li>
     <span tal:content="data/download_counts/day" /> downloads in the last day
