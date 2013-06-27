@@ -99,6 +99,20 @@
 <tr><td id="last" colspan="6"></td></tr>
   </table>
 
+<ul style="display: none;" class="nodot" tal:condition="data/download_counts | nothing">
+  <li><strong>Downloads:</strong></li>
+  <li>
+    <span tal:content="data/download_counts/day" /> downloads in the last day
+  </li>
+  <!-- will be displayed when we have enough data -->
+  <li style="display: none;">
+    <span tal:content="data/download_counts/day" /> downloads in the last week
+  </li>
+  <li style="display: none;">
+    <span tal:content="data/download_counts/day" /> downloads in the last month
+  </li>
+</ul>
+
 <ul class="nodot">
  <li tal:condition="data/release/author | nothing">
   <strong>Author:</strong>

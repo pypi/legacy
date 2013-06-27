@@ -7,11 +7,13 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
+import datetime
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
 from xml.etree import cElementTree
 import itsdangerous
+import redis
 
 try:
     import json
@@ -50,6 +52,15 @@ esq = lambda x: cgi.escape(x, True)
 
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
+
+PRECISIONS = [
+    ("hour", "%y-%m-%d-%H"),
+    ("daily", "%y-%m-%d"),
+]
+def make_key(precision, datetime, key):
+    return "downloads:%s:%s:%s:*" % (
+        precision[0], datetime.strftime(precision[1]), key)
+
 
 # Requires:
 #   - ASCII letters
@@ -227,6 +238,10 @@ class WebUI:
         self.sentry_client = None
         if self.config.sentry_dsn:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
+        if self.config.redis_url:
+            self.redis = redis.Redis.from_url(self.config.redis_url)
+        else:
+            self.redis = None
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -1568,6 +1583,30 @@ class WebUI:
         docs = self.store.docs_url(name)
         files = self.store.list_files(name, version)
 
+        # Download Counts from redis
+        download_counts = {}
+        if self.redis is not None:
+            # Get the current utc time
+            current = datetime.datetime.utcnow()
+
+            # Get the download count for the last 24 hours (roughly)
+            keys = [make_key(PRECISIONS[0], current - datetime.timedelta(hours=x), name) for x in xrange(25)]
+            last_1 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
+
+            # Get the download count for the last 7 days (roughly)
+            keys = [make_key(PRECISIONS[1], current - datetime.timedelta(days=x), name) for x in xrange(8)]
+            last_7 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
+
+            # Get the download count for the last month (roughly)
+            keys = [make_key(PRECISIONS[1], current - datetime.timedelta(days=x), name) for x in xrange(31)]
+            last_30 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
+
+            download_counts = {
+                "day": last_1,
+                "week": last_7,
+                "month": last_30,
+            }
+
         self.write_template('display.pt',
                             name=name, version=version, release=release,
                             description=release.get('summary') or name,
@@ -1591,7 +1630,8 @@ class WebUI:
                             obsoletes_dist=obsoletes_dist,
                             requires_external=requires_external,
                             project_url=project_url,
-			    bugtrack_url = bugtrack_url,
+                            download_counts=download_counts,
+                            bugtrack_url=bugtrack_url,
                             requires_python=release.get('requires_python', ''))
 
     def index(self, nav_current='index', releases=None):
