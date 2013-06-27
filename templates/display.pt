@@ -100,7 +100,7 @@
   </table>
 
 <ul style="display: none;" class="nodot" tal:condition="data/download_counts | nothing">
-  <li><strong>Downloads:</strong></li>
+  <li><strong>Downloads (All Versions):</strong></li>
   <li>
     <span tal:content="data/download_counts/day" /> downloads in the last day
   </li>
