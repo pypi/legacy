@@ -58,7 +58,7 @@ PRECISIONS = [
     ("daily", "%y-%m-%d"),
 ]
 def make_key(precision, datetime, key):
-    return "downloads:%s:%s:%s:*" % (
+    return "downloads:%s:%s:%s" % (
         precision[0], datetime.strftime(precision[1]), key)
 
 
