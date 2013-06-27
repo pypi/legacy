@@ -43,6 +43,9 @@ def incr(when, project, filename):
 
 
 def process(line):
+    if "last message repeated" in line:
+        logger.error("Duplicate Line in rsyslog-cdn")
+
     try:
         row = list(csv.reader([line], delimiter=" "))[0]
         path = row[7].split(" ", 1)[1]
