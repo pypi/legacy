@@ -55,8 +55,8 @@ cursor.executemany(
     "UPDATE release_files SET downloads = downloads + %s WHERE filename = %s",
     downloads,
 )
-cursor.commit()
-cursor.close()
+store.commit()
+store.close()
 
 # Add this to our integrated set
 redis.sadd("downloads:integrated", search)
