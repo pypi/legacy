@@ -106,10 +106,10 @@
   </li>
   <!-- will be displayed when we have enough data -->
   <li style="display: none;">
-    <span tal:content="data/download_counts/day" /> downloads in the last week
+    <span tal:content="data/download_counts/week" /> downloads in the last week
   </li>
   <li style="display: none;">
-    <span tal:content="data/download_counts/day" /> downloads in the last month
+    <span tal:content="data/download_counts/month" /> downloads in the last month
   </li>
 </ul>
 
