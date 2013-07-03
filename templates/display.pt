@@ -104,10 +104,10 @@
   <li>
     <span tal:content="data/download_counts/day" /> downloads in the last day
   </li>
-  <!-- will be displayed when we have enough data -->
-  <li style="display: none;">
+  <li>
     <span tal:content="data/download_counts/week" /> downloads in the last week
   </li>
+  <!-- will be displayed when we have enough data -->
   <li style="display: none;">
     <span tal:content="data/download_counts/month" /> downloads in the last month
   </li>
