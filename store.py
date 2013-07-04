@@ -2331,16 +2331,17 @@ class Store:
             where name=%s''', (password, username))
 
     def _add_invalidation(self, package=None):
-        parts = ["/", "simple"]
-        if package is not None:
-            parts.append(package)
-        path = posixpath.join(*parts)
-        url = urlparse.urljoin(
+        all_parts = [["/", "simple"], ["/", "serversig"]]
+        for parts in all_parts:
+            if package is not None:
+                parts.append(package)
+            path = posixpath.join(*parts)
+            url = urlparse.urljoin(
                     "https://%s" % urlparse.urlparse(self.config.url).netloc,
                     path,
                 )
-        url = url if url.endswith("/") else url + "/"
-        self._changed_urls.add(url)
+            url = url if url.endswith("/") else url + "/"
+            self._changed_urls.add(url)
 
     @retry(Exception, tries=5, delay=1, backoff=1)
     def _invalidate_cache(self):
