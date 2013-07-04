@@ -2346,14 +2346,29 @@ class Store:
     def _invalidate_cache(self):
         # Purge all tags from Fastly
         if self.config.fastly_api_key:
+            api_domain = self.config.fastly_api_domain
             session = requests.session()
-            for url in set(self._changed_urls):
-                resp = session.request("PURGE", url, headers={
-                        "X-Fastly-Key": self.config.fastly_api_key,
-                        "Accept": "application/json",
-                    })
-                resp.raise_for_status()
-                self._changed_urls.remove(url)
+
+            count = 0
+            while self._changed_urls and count <= 10:
+                count += 1
+                purges = {}
+
+                for url in set(self._changed_urls):
+                    # Issue the purge
+                    resp = session.request("PURGE", url, headers={
+                            "X-Fastly-Key": self.config.fastly_api_key,
+                            "Accept": "application/json",
+                        })
+                    resp.raise_for_status()
+                    purges[url] = resp.json()["id"]
+
+                for url, pid in purges.iteritems():
+                    # Ensure that the purge completed successfully
+                    status = session.get("%spurge?id=%s" % (api_domain, pid))
+                    status.raise_for_status()
+                    if status.json().get("results", {}).get("complete", None):
+                        self._changed_urls.remove(url)
         else:
             self._changed_urls = set()
 
