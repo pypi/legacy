@@ -76,6 +76,12 @@ safe_username = re.compile(r'^[A-Za-z0-9._]+$')
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
+wheel_file_re = re.compile(
+                r"""^(?P<namever>(?P<name>.+?)(-(?P<ver>\d.+?))?)
+                ((-(?P<build>\d.*?))?-(?P<pyver>.+?)-(?P<abi>.+?)-(?P<plat>.+?)
+                \.whl|\.dist-info)$""",
+                re.VERBOSE)
+
 packages_path_to_package_name = re.compile(
     '^/([0-9\.]+|any|source)/./([a-zA-Z0-9][a-zA-Z0-9_\-\.]*)')
 
@@ -2566,6 +2572,15 @@ class WebUI:
         # check the file for valid contents based on the type
         if not verify_filetype.is_distutils_file(content, filename, filetype):
             raise FormError, 'invalid distribution file'
+
+        # Check that if it's a binary wheel, it's on a supported platform
+        #   TODO(dstufft): Remove this once we have a better binary distribution
+        #       story for Linux and such
+        if filename.endswith(".whl"):
+            wheel_info = wheel_file_re.match(filename)
+            plats = wheel_info.group('plat').split('.')
+            if set(plats) - set(["any", "win32", "win-amd64", "win-ia64"]):
+                raise FormError, "Binary wheel for an unsupported platform"
 
         # Check whether signature is ASCII-armored
         if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
