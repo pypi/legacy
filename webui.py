@@ -2579,7 +2579,7 @@ class WebUI:
         if filename.endswith(".whl"):
             wheel_info = wheel_file_re.match(filename)
             plats = wheel_info.group('plat').split('.')
-            if set(plats) - set(["any", "win32", "win-amd64", "win-ia64"]):
+            if set(plats) - set(["any", "win32", "win-amd64", "win_amd64", "win-ia64", "win_ia64"]):
                 raise FormError, "Binary wheel for an unsupported platform"
 
         # Check whether signature is ASCII-armored
