@@ -662,7 +662,7 @@ class WebUI:
             return
 
         # Fetch the user from the database
-        user = self.store.get_user(un)
+        user = self.store.get_user(un, case_sensitive=False)
 
         # Verify the hash, and see if it needs migrated
         ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
@@ -2995,12 +2995,12 @@ class WebUI:
             self.write_template("password_reset.pt",
                 title="Request password reset", retry=True)
 
-        user = self.store.get_user(name)
+        user = self.store.get_user(name, case_sensitive=False)
         # typically other systems would not indicate the username is invalid
         # but in PyPI's case the username list is public so this is more
         # user-friendly with no security penalty
         if not user:
-            self.fail('user name unknown to me')
+            self.fail('user "%s" unknown to me' % name)
             return
 
         # existing registration OTK?

@@ -1572,15 +1572,20 @@ class Store:
         return otk
 
     _User = FastResultRow('name password email gpg_keyid last_login!')
-    def get_user(self, name):
+    def get_user(self, name, case_sensitive=True):
         ''' Retrieve info about the user from the database.
 
             Returns a mapping with the user info or None if there is no
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select name, password, email, gpg_keyid, last_login
-            from users where name=%s''', (name,))
+        if case_sensitive:
+            sql = '''select name, password, email, gpg_keyid, last_login
+                from users where name=%s'''
+        else:
+            sql = '''select name, password, email, gpg_keyid, last_login
+                from users where lower(name)=lower(%s)'''
+        safe_execute(cursor, , (name,))
         return self._User(None, cursor.fetchone())
 
     def get_user_by_email(self, email):
@@ -1686,11 +1691,14 @@ class Store:
         safe_execute(self.get_cursor(), "delete from rego_otk where otk=%s",
                      (otk,))
 
-    def get_otk(self, name):
+    def get_otk(self, username):
         ''' Retrieve the One Time Key for the user.
+
+        Username must be a case-sensitive match.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, "select otk from rego_otk where name=%s", (name, ))
+        safe_execute(cursor, 'select otk from rego_otk where name=%s',
+            (username, ))
         res = cursor.fetchone()
         if res is None:
             return ''
