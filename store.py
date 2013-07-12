@@ -1585,7 +1585,7 @@ class Store:
         else:
             sql = '''select name, password, email, gpg_keyid, last_login
                 from users where lower(name)=lower(%s)'''
-        safe_execute(cursor, (name,))
+        safe_execute(cursor, sql, (name,))
         return self._User(None, cursor.fetchone())
 
     def get_user_by_email(self, email):
