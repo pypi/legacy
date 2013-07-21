@@ -1653,6 +1653,23 @@ class Store:
                 )
                 return otkv
 
+    def user_active(self, username):
+        """
+        Determines if the user is active (allowed to login)
+        """
+        cursor = self.get_cursor()
+        sql = "SELECT is_active FROM accounts_user WHERE username = %s"
+        safe_execute(cursor, sql, (username,))
+        return cursor.fetchone()[0]
+
+    def activate_user(self, username):
+        """
+        Activates the given user
+        """
+        cursor = self.get_cursor()
+        sql = "UPDATE accounts_user SET is_active = TRUE WHERE username = %s"
+        safe_execute(cursor, sql, (username,))
+
     _User = FastResultRow('name password email gpg_keyid last_login!')
     def get_user(self, name):
         ''' Retrieve info about the user from the database.

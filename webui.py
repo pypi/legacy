@@ -625,6 +625,8 @@ class WebUI:
                 raise Unauthorised
             if self.store.get_otk(self.username):
                 raise Unauthorised, "Incomplete registration; check your email"
+            if not self.store.user_active(self.username):
+                raise Unauthorised("Inactive User")
 
         # handle the action
         if action in '''debug home browse rss index search submit doap
@@ -2807,6 +2809,8 @@ class WebUI:
                     return
                 # OK, delete the key
                 self.store.delete_otk(info['otk'])
+                user = self.store.get_user_by_otk(info['otk'])
+                self.store.activate_user(user["name"])
                 self.write_template('message.pt', title='Registration complete',
                                     message='You are now registered.',
                                     url='%s?:action=login' % self.url_path,
