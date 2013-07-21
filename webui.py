@@ -662,7 +662,7 @@ class WebUI:
             return
 
         # Fetch the user from the database
-        user = self.store.get_user(un, case_sensitive=False)
+        user = self.store.get_user(un)
 
         # Verify the hash, and see if it needs migrated
         ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
@@ -2852,7 +2852,7 @@ class WebUI:
             name = info['name']
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII alphanum,.,_ only)'
-            if self.store.has_user(name, case_sensitive=False):
+            if self.store.has_user(name):
                 self.fail('user "%s" already exists' % name,
                     heading='User registration')
                 return
@@ -2995,7 +2995,7 @@ class WebUI:
             self.write_template("password_reset.pt",
                 title="Request password reset", retry=True)
 
-        user = self.store.get_user(name, case_sensitive=False)
+        user = self.store.get_user(name)
         # typically other systems would not indicate the username is invalid
         # but in PyPI's case the username list is public so this is more
         # user-friendly with no security penalty
@@ -3299,7 +3299,7 @@ class WebUI:
         username = username.replace(' ','.')
         username = re.sub('[^a-zA-Z0-9._]','',username)
         error = 'Please choose a username to complete registration'
-        if self.store.has_user(username, case_sensitive=False):
+        if self.store.has_user(username):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
                 suffix += 1

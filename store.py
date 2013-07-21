@@ -1514,7 +1514,7 @@ class Store:
     #
     # Users interface
     #
-    def has_user(self, name, case_sensitive=True):
+    def has_user(self, name):
         ''' Determine whether the user exists in the database.
 
             Returns true/false.
@@ -1654,7 +1654,7 @@ class Store:
                 return otkv
 
     _User = FastResultRow('name password email gpg_keyid last_login!')
-    def get_user(self, name, case_sensitive=True):
+    def get_user(self, name):
         ''' Retrieve info about the user from the database.
 
             Returns a mapping with the user info or None if there is no
