@@ -841,6 +841,9 @@ class WebUI:
             if serial is not None:
                 self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
+            self.handler.send_header(
+                                "Surrogate-Key", "package pkg~%s" % package)
+
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
         # http://wiki.nginx.org/X-accel and http://wiki.nginx.org/XSendfile for
