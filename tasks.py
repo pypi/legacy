@@ -13,6 +13,8 @@ def purge_fastly_tags(domain, api_key, service_id, tags, max_tries=25):
     count = 0
 
     while all_tags and not count > max_tries:
+        count += 1
+
         try:
             for tag in set(all_tags):
                 # Build the URL
