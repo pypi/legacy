@@ -71,3 +71,14 @@ trivialities, the setup commands are:
 
    createdb -O testpypi testpypi
    psql -U testpypi testpypi <pkgbase_schema.sql
+
+
+Restarting PyPI
+---------------
+
+PyPI has 2 different pieces that need started, web server and the task runner.
+
+    # Restart the web server
+    $ /etc/init.d/pypi restart
+    # Restart the task runner
+    $ initctl restart pypi-worker
