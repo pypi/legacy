@@ -780,7 +780,7 @@ class WebUI:
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
-            self.handler.send_header("Surrogate-Key", "simple")
+            self.handler.send_header("Surrogate-Key", "simple simple-index")
             # XXX not quite sure whether this is the right thing for empty
             # mirrors, but anyway.
             serial = self.store.changelog_last_serial() or 0
