@@ -289,7 +289,7 @@ class Store:
             self.true, self.false = 'TRUE', 'FALSE'
             self.can_lock = True
 
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def last_id(self, tablename):
         ''' Return an SQL expression that returns the last inserted row,
@@ -1341,11 +1341,12 @@ class Store:
         '''
         cursor = self.get_cursor()
 
+        self._add_invalidation(name)
+
         # delete the files
         for file in self.list_files(name, version):
             os.remove(self.gen_file_path(file['python_version'], name,
                 file['filename']))
-            self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1370,7 +1371,6 @@ class Store:
             for file in self.list_files(name, release['version']):
                 os.remove(self.gen_file_path(file['python_version'], name,
                     file['filename']))
-                self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1387,6 +1387,7 @@ class Store:
         self.add_journal_entry(name, None, "remove", date,
                                                     self.username, self.userip)
 
+        self._add_invalidation(name)
         self._add_invalidation(None)
 
     def rename_package(self, old, new):
@@ -1394,7 +1395,6 @@ class Store:
         '''
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self._changed_urls |= set(self.get_uploaded_file_urls(old))
         safe_execute(cursor, '''update packages
         set name=%s, normalized_name=%s where name=%s''',
                      (new, normalize_package_name(new), old))
@@ -1931,7 +1931,6 @@ class Store:
         if not info:
             raise KeyError, 'no such file'
         pyversion, name, version, filename = info
-        self._changed_urls.add(self.gen_file_url(pyversion, name, filename))
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
@@ -1949,6 +1948,8 @@ class Store:
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
+
+        self._add_invalidation(name)
 
     _File_Info = FastResultRow('''python_version packagetype name comment_text
                                 filename''')
@@ -2300,7 +2301,7 @@ class Store:
             self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def oid_store(self):
         if self.config.database_driver == 'sqlite3':
@@ -2316,7 +2317,7 @@ class Store:
         except Exception:
             pass
         connection = None
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
@@ -2339,47 +2340,50 @@ class Store:
             where name=%s''', (password, username))
 
     def _add_invalidation(self, package=None):
-        all_parts = [["/", "simple"], ["/", "serversig"]]
-        for parts in all_parts:
-            if package is not None:
-                parts.append(package)
-            path = posixpath.join(*parts)
-            url = urlparse.urljoin(
-                    "https://%s" % urlparse.urlparse(self.config.url).netloc,
-                    path,
-                )
-            url = url if url.endswith("/") else url + "/"
-            self._changed_urls.add(url)
+        self._changed_packages.add(package)
 
     @retry(Exception, tries=5, delay=1, backoff=1)
     def _invalidate_cache(self):
         # Purge all tags from Fastly
         if self.config.fastly_api_key:
             api_domain = self.config.fastly_api_domain
-            session = requests.session()
+            service_id = self.config.fastly_service_id
 
+            session = requests.session()
             count = 0
-            while self._changed_urls and count <= 10:
+
+            while self._changed_packages and count <= 10:
                 count += 1
                 purges = {}
 
-                for url in set(self._changed_urls):
-                    # Issue the purge
-                    resp = session.request("PURGE", url, headers={
-                            "X-Fastly-Key": self.config.fastly_api_key,
-                            "Accept": "application/json",
-                        })
-                    resp.raise_for_status()
-                    purges[url] = resp.json()["id"]
+                headers = {
+                    "X-Fastly-Key": self.config.fastly_api_key,
+                    "Accept": "application/json",
+                }
 
-                for url, pid in purges.iteritems():
+                for package in set(self._changed_packages):
+                    if package is None:
+                        tag = "simple-index"
+                    else:
+                        tag = "pkg~%s" % package
+
+                    # Issue the purge
+                    url_path = "/service/%s/purge/%s" % (service_id, tag)
+                    url = urlparse.urljoin(api_domain, url_path)
+                    resp = session.post(url, headers=headers)
+                    resp.raise_for_status()
+                    purges[package] = resp.json()["id"]
+
+                for package, pid in purges.iteritems():
                     # Ensure that the purge completed successfully
-                    status = session.get("%spurge?id=%s" % (api_domain, pid))
+                    url = urlparse.urljoin(api_domain, "/purge")
+                    status = session.get(url, params={"id": pid})
                     status.raise_for_status()
+
                     if status.json().get("results", {}).get("complete", None):
-                        self._changed_urls.remove(url)
+                        self._changed_packages.remove(package)
         else:
-            self._changed_urls = set()
+            self._changed_packages = set()
 
     def close(self):
         if self._conn is None:
@@ -2405,7 +2409,7 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
-        self._changed_urls = set()
+        self._changed_packages = set() = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''
