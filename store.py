@@ -2313,8 +2313,11 @@ class Store:
             tags = ["pkg~%s" % pkg if pkg is not None else "simple-index"
                         for pkg in self._changed_packages]
 
-            # Enqueue the purge
-            self.enqueue(tasks.purge_fastly_tags,
+            # We only need to bother to enqueue a task if we have something
+            #   to purge
+            if tags:
+                # Enqueue the purge
+                self.enqueue(tasks.purge_fastly_tags,
                             self.config.fastly_api_domain,
                             self.config.fastly_api_key,
                             self.config.fastly_service_id,
