@@ -2310,8 +2310,12 @@ class Store:
     def _invalidate_cache(self):
         if self.config.fastly_api_key:
             # Build up a list of tags we want to purge
-            tags = ["pkg~%s" % pkg if pkg is not None else "simple-index"
-                        for pkg in self._changed_packages]
+            tags = []
+            for pkg in self._changed_packages:
+                if pkg is None:
+                    tags += ["simple-index"]
+                else:
+                    tags += [safe_name(pkg).lower()]
 
             # We only need to bother to enqueue a task if we have something
             #   to purge

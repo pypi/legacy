@@ -847,7 +847,7 @@ class WebUI:
                 self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
             self.handler.send_header(
-                                "Surrogate-Key", "package pkg~%s" % package)
+                                "Surrogate-Key", "package pkg~%s" % safe_name(package).lower())
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
