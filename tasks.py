@@ -26,16 +26,16 @@ def purge_fastly_tags(domain, api_key, service_id, tags, max_tries=25):
                 # Store the Purge ID so we can track it later
                 purges[tag] = resp.json()["id"]
 
-            for tag, purge_id in purges.iteritems():
-                # Ensure that the purge completed successfully
-                url = urlparse.urljoin(domain, "/purge")
-                status = session.get(url, params={"id": purge_id})
-                status.raise_for_status()
+            # for tag, purge_id in purges.iteritems():
+            #     # Ensure that the purge completed successfully
+            #     url = urlparse.urljoin(domain, "/purge")
+            #     status = session.get(url, params={"id": purge_id})
+            #     status.raise_for_status()
 
-                # If the purge completely successfully remove the tag from
-                #   our list.
-                if status.json().get("results", {}).get("complete", None):
-                    all_tags.remove(tag)
+            #     # If the purge completely successfully remove the tag from
+            #     #   our list.
+            #     if status.json().get("results", {}).get("complete", None):
+            #         all_tags.remove(tag)
         except Exception:
             if count > max_tries:
                 raise
