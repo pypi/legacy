@@ -2348,7 +2348,7 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
-        self._changed_packages = set() = set()
+        self._changed_packages = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''
