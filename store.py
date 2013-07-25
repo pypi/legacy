@@ -2315,7 +2315,7 @@ class Store:
                 if pkg is None:
                     tags += ["simple-index"]
                 else:
-                    tags += [safe_name(pkg).lower()]
+                    tags += ["pkg~%s" % safe_name(pkg).lower()]
 
             # We only need to bother to enqueue a task if we have something
             #   to purge
