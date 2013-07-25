@@ -259,7 +259,7 @@ class WebUI:
         self.failed = None # error message if initialization already produced a failure
 
         # Queue to handle asynchronous tasks
-        self.queue = Queue(connection=self.redis)
+        self.queue = rq.Queue(connection=self.redis)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
