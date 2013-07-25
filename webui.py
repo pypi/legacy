@@ -14,6 +14,7 @@ from distutils2.metadata import Metadata
 from xml.etree import cElementTree
 import itsdangerous
 import redis
+import rq
 
 try:
     import json
@@ -257,6 +258,9 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
+        # Queue to handle asynchronous tasks
+        self.queue = Queue(connection=self.redis)
+
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
             fs = cgi.FieldStorage(fp=handler.rfile, environ=env)
@@ -310,7 +314,7 @@ class WebUI:
             # failed during initialization
             self.fail(self.failed)
             return
-        self.store = store.Store(self.config)
+        self.store = store.Store(self.config, queue=self.queue)
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
