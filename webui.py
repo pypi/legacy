@@ -247,8 +247,12 @@ class WebUI:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
         if self.config.redis_url:
             self.redis = redis.Redis.from_url(self.config.redis_url)
+
+            # Queue to handle asynchronous tasks
+            self.queue = rq.Queue(connection=self.redis)
         else:
             self.redis = None
+            self.queue = None
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -257,9 +261,6 @@ class WebUI:
         self.loggedin = False      # was a valid cookie sent?
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
-
-        # Queue to handle asynchronous tasks
-        self.queue = rq.Queue(connection=self.redis)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
