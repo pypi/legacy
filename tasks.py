@@ -3,7 +3,7 @@ import urlparse
 import requests
 
 
-def purge_fastly_tags(domain, api_key, service_id, *tags, max_tries=25):
+def purge_fastly_tags(domain, api_key, service_id, tags, max_tries=25):
     session = requests.session()
     headers = {"X-Fastly-Key": api_key, "Accept": "application/json"}
 

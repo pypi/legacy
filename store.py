@@ -2318,7 +2318,7 @@ class Store:
                             self.config.fastly_api_domain,
                             self.config.fastly_api_key,
                             self.config.fastly_service_id,
-                            *tags
+                            tags,
                         )
 
         # Empty our changed packages
