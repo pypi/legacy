@@ -7,7 +7,7 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
-import datetime
+import datetime, string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
