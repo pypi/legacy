@@ -62,7 +62,7 @@ def process(line):
     project = posixpath.basename(directory)
 
     # We need to get the time this request occurred
-    rtime = datetime.datetime(*parsedate(row[5])[:6])
+    rtime = datetime.datetime(*parsedate(row[4])[:6])
 
     incr(rtime, project, filename)
 
