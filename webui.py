@@ -3307,9 +3307,22 @@ class WebUI:
                 username = username.rsplit('@', 1)[0]
             if not username:
                 username = "nonamegiven"
-        username = username.replace(' ','.')
-        username = re.sub('[^a-zA-Z0-9._]','',username)
+
+        username = username.strip()
+        username = username.replace(' ', '.')
+        username = re.sub('[^a-zA-Z0-9._]', '', username)
         error = 'Please choose a username to complete registration'
+
+        if not username:
+            username = "nonamegiven"
+
+        alphanums = set(string.ascii_letters + string.digits)
+        if not safe_username.match(username):
+            if username[0] not in alphanums:
+                username = "openid_" + username
+            if username[-1] not in alphanums:
+                username = username + "_user"
+
         if self.store.has_user(username, case_sensitive=False):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
