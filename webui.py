@@ -73,7 +73,10 @@ def make_key(precision, datetime, key):
 legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
-safe_username = re.compile(r'^[A-Za-z0-9._]+$')
+
+# Must begin and end with an alphanumeric, interior can also contain ._-
+safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
+
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
