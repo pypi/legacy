@@ -3119,8 +3119,9 @@ class WebUI:
 
         if len(pw) < 16 and (pw.isdigit() or pw.isalpha() or pw.isupper()
                 or pw.islower()):
-            return 'Please use a mix of different-case letters and numbers '\
-                'in your password.'
+            return 'Please use 16 or more characters, or a mix of ' \
+                   'different-case letters and numbers '\
+                   'in your password.'
 
         return ''
 
