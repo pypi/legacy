@@ -221,10 +221,14 @@ def show_user(store, name):
 def nuke_nested_lists(store, confirm=False):
     c = store.get_cursor()
     c.execute("""select name, version, summary from releases
-        where summary like '%nested lists%'""")
+        where lower(summary) like '%nested lists%' or
+        lower(summary) like '%geschachtelter listen%'""")
     hits = {}
     for name, version, summary in c.fetchall():
         if "printer of nested lists" in summary:
+            hits[name] = summary
+            continue
+        if "Einfache Ausgabe geschachtelter Listen" in summary:
             hits[name] = summary
             continue
         for f in store.list_files(name, version):
@@ -233,7 +237,7 @@ def nuke_nested_lists(store, confirm=False):
                 z = zipfile.ZipFile(path)
                 for i in z.infolist():
                     if not i.filename.endswith('.py'): continue
-                    if 'def print_lol' in z.read(i.filename):
+                    if 'def print_lol' or 'def print_lvl' in z.read(i.filename):
                         hits[name] = summary
             elif path.endswith('.tar.gz'):
                 z = gzip.GzipFile(path)
@@ -241,7 +245,7 @@ def nuke_nested_lists(store, confirm=False):
                 for i in t.getmembers():
                     if not i.name.endswith('.py'): continue
                     f = t.extractfile(i.name)
-                    if 'def print_lol' in f.read():
+                    if 'def print_lol' or 'def print_lvl' in f.read():
                         hits[name] = summary
     for name in hits:
         if confirm:
