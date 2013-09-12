@@ -2671,7 +2671,7 @@ class WebUI:
             # a file uploaded in the content element
             raise FormError, "No file uploaded"
 
-        if len(data) > 30*1024*1024:
+        if len(data) > 100*1024*1024:
             raise FormError, "Documentation zip file is too large"
         data = cStringIO.StringIO(data)
         try:
