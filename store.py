@@ -760,7 +760,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         cursor.execute('select name from packages order by name')
-        return [p[0] for p in cursor.fetchall()]
+        return (p[0] for p in cursor.fetchall())
 
     _Journal = FastResultRow('action submitted_date! submitted_by submitted_from id!')
     def get_journal(self, name, version):
