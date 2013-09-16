@@ -1108,12 +1108,6 @@ class Store:
         '''Fetch "number" latest packages registered, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        # After the limited query below, we still have to do
-        # filtering. Assume that doubling the number of records
-        # we look for will still allow for sufficient room for
-        # filtering out unneeded records. If this was wrong,
-        # try again without limit.
-        limit = ' limit %s' % (2*num)
         # This query is designed to run from the journals_latest_releases
         # index, doing a reverse index scan, then lookups in the releases
         # table to find the description and whether the package is hidden.
@@ -1121,32 +1115,68 @@ class Store:
         # is "small".
 
         statement = '''
-            select j.name, r.version, j.submitted_date%s, r.summary
-              from releases r
-                   JOIN (SELECT name, max(submitted_Date) submitted_date
-                         FROM  journals GROUP BY name) j ON j.name = r.name
-             where r.version is not NULL
-               and not r._pypi_hidden
-               and r.name in (SELECT name FROM journals
-                              WHERE  action='create'
-                              ORDER BY submitted_date DESC %%s)
-             order by j.submitted_date desc'''
+            SELECT
+                name,
+                version,
+                submitted_date,
+                summary
+            FROM (
+                SELECT
+                    name,
+                    version,
+                    submitted_date,
+                    summary,
+                    rank() OVER(PARTITION BY name, version ORDER BY submitted_date DESC)
+                FROM (
+                    SELECT
+                        j.name,
+                        r.version,
+                        j.submitted_date%%s,
+                        r.summary
+                    FROM
+                        releases r
+                    JOIN (
+                        SELECT
+                            name,
+                            max(submitted_date) submitted_date
+                        FROM
+                            journals
+                        GROUP BY
+                            name
+                    ) j ON j.name = r.name
+                    WHERE
+                            r.version IS NOT NULL
+                        AND
+                            NOT r._pypi_hidden
+                        AND
+                            r.name IN (
+                                SELECT
+                                    name
+                                FROM
+                                    journals
+                                WHERE
+                                    action = 'create'
+                                ORDER BY submitted_date DESC
+                            )
+                    ORDER BY j.submitted_date DESC
+                ) AS inner_latest
+            ) AS outer_latest
+            WHERE
+                rank = 1
+            ORDER BY submitted_date DESC
+            LIMIT
+                %d
+            ''' % num
 
         if self.config.database_driver == 'sqlite3':
             statement = statement % ' as "sd [timestamp]"'
         else:
             statement = statement % ''
 
-        #print ' '.join((statement % limit).split())
-        safe_execute(cursor, statement % limit)
-        result = Result(None, self.get_unique(cursor.fetchall())[:num],
+        safe_execute(cursor, statement)
+        result = Result(None, cursor.fetchall()[:num],
                 self._Latest_Packages)
-        if len(result) == num:
-            return result
-        # try again without limit
-        safe_execute(cursor, statement % '')
-        return Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Packages)
+        return result
 
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
     def latest_releases(self, num=40):
