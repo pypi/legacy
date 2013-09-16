@@ -7,13 +7,14 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
-import datetime
+import datetime, string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
 from xml.etree import cElementTree
 import itsdangerous
 import redis
+import rq
 
 try:
     import json
@@ -72,7 +73,10 @@ def make_key(precision, datetime, key):
 legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
 safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
-safe_username = re.compile(r'^[A-Za-z0-9._]+$')
+
+# Must begin and end with an alphanumeric, interior can also contain ._-
+safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
+
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
@@ -246,8 +250,12 @@ class WebUI:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
         if self.config.redis_url:
             self.redis = redis.Redis.from_url(self.config.redis_url)
+
+            # Queue to handle asynchronous tasks
+            self.queue = rq.Queue(connection=self.redis)
         else:
             self.redis = None
+            self.queue = None
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -310,7 +318,7 @@ class WebUI:
             # failed during initialization
             self.fail(self.failed)
             return
-        self.store = store.Store(self.config)
+        self.store = store.Store(self.config, queue=self.queue)
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
@@ -766,10 +774,10 @@ class WebUI:
                 "<body>\n",
             ]
 
-            for name in self.store.get_packages_utf8():
-                qname = urllib.quote(name)
-                ename = cgi.escape(name)
-                html.append("<a href='%s/'>%s</a><br/>\n" % (qname, ename))
+            html.extend(
+                cgi.escape(urllib.quote(name))
+                for name in self.store.get_packages_utf8()
+            )
 
             html.append("</body></html>")
             html = ''.join(html)
@@ -777,7 +785,7 @@ class WebUI:
             self.handler.send_response(200, 'OK')
             self.handler.set_content_type('text/html; charset=utf-8')
             self.handler.send_header('Content-Length', str(len(html)))
-            self.handler.send_header("Surrogate-Key", "simple")
+            self.handler.send_header("Surrogate-Key", "simple simple-index")
             # XXX not quite sure whether this is the right thing for empty
             # mirrors, but anyway.
             serial = self.store.changelog_last_serial() or 0
@@ -842,6 +850,9 @@ class WebUI:
             serial = self.store.last_serial_for_package(package)
             if serial is not None:
                 self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+
+            self.handler.send_header(
+                                "Surrogate-Key", "package pkg~%s" % safe_name(package).lower())
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
@@ -2662,7 +2673,7 @@ class WebUI:
             # a file uploaded in the content element
             raise FormError, "No file uploaded"
 
-        if len(data) > 30*1024*1024:
+        if len(data) > 100*1024*1024:
             raise FormError, "Documentation zip file is too large"
         data = cStringIO.StringIO(data)
         try:
@@ -3112,8 +3123,9 @@ class WebUI:
 
         if len(pw) < 16 and (pw.isdigit() or pw.isalpha() or pw.isupper()
                 or pw.islower()):
-            return 'Please use a mix of different-case letters and numbers '\
-                'in your password.'
+            return 'Please use 16 or more characters, or a mix of ' \
+                   'different-case letters and numbers '\
+                   'in your password.'
 
         return ''
 
@@ -3300,9 +3312,22 @@ class WebUI:
                 username = username.rsplit('@', 1)[0]
             if not username:
                 username = "nonamegiven"
-        username = username.replace(' ','.')
-        username = re.sub('[^a-zA-Z0-9._]','',username)
+
+        username = username.strip()
+        username = username.replace(' ', '.')
+        username = re.sub('[^a-zA-Z0-9._]', '', username)
         error = 'Please choose a username to complete registration'
+
+        if not username:
+            username = "nonamegiven"
+
+        alphanums = set(string.ascii_letters + string.digits)
+        if not safe_username.match(username):
+            if username[0] not in alphanums:
+                username = "openid_" + username
+            if username[-1] not in alphanums:
+                username = username + "_user"
+
         if self.store.has_user(username):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):

@@ -48,8 +48,9 @@ def process(line):
 
     try:
         row = list(csv.reader([line], delimiter=" "))[0]
-        path = row[7].split(" ", 1)[1]
+        path = row[6].split(" ", 1)[1]
     except Exception:
+        logger.error("Invalid Fastly Log Line: '%s'" % line)
         return
 
     # We only care about /packages/ urls
@@ -61,7 +62,7 @@ def process(line):
     project = posixpath.basename(directory)
 
     # We need to get the time this request occurred
-    rtime = datetime.datetime(*parsedate(row[5])[:6])
+    rtime = datetime.datetime(*parsedate(row[4])[:6])
 
     incr(rtime, project, filename)
 

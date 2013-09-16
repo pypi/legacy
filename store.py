@@ -28,6 +28,8 @@ import urlparse
 import time
 from functools import wraps
 
+import tasks
+
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
 # back on the old version
@@ -73,51 +75,6 @@ for k,v in dependency.__dict__.items():
 keep_conn = False
 connection = None
 keep_trove = True
-
-
-def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
-    """Retry calling the decorated function using an exponential backoff.
-
-    http://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/
-    original from: http://wiki.python.org/moin/PythonDecoratorLibrary#Retry
-
-    :param ExceptionToCheck: the exception to check. may be a tuple of
-        exceptions to check
-    :type ExceptionToCheck: Exception or tuple
-    :param tries: number of times to try (not retry) before giving up
-    :type tries: int
-    :param delay: initial delay between retries in seconds
-    :type delay: int
-    :param backoff: backoff multiplier e.g. value of 2 will double the delay
-        each retry
-    :type backoff: int
-    :param logger: logger to use. If None, print
-    :type logger: logging.Logger instance
-    """
-    def deco_retry(f):
-
-        @wraps(f)
-        def f_retry(*args, **kwargs):
-            mtries, mdelay = tries, delay
-            while mtries > 1:
-                try:
-                    return f(*args, **kwargs)
-                except ExceptionToCheck as e:
-                    msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
-                    if logger:
-                        logger.warning(msg)
-                    else:
-                        print(msg)
-                    time.sleep(mdelay)
-                    mtries -= 1
-                    mdelay *= backoff
-                    if not mtries:
-                        raise
-            return f(*args, **kwargs)
-
-        return f_retry  # true decorator
-
-    return deco_retry
 
 
 def normalize_package_name(n):
@@ -275,7 +232,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config):
+    def __init__(self, config, queue=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -289,7 +246,15 @@ class Store:
             self.true, self.false = 'TRUE', 'FALSE'
             self.can_lock = True
 
-        self._changed_urls = set()
+        self.queue = queue
+
+        self._changed_packages = set()
+
+    def enqueue(self, func, *args, **kwargs):
+        if self.queue is None:
+            func(*args, **kwargs)
+        else:
+            self.queue.enqueue(func, *args, **kwargs)
 
     def last_id(self, tablename):
         ''' Return an SQL expression that returns the last inserted row,
@@ -795,7 +760,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         cursor.execute('select name from packages order by name')
-        return [p[0] for p in cursor.fetchall()]
+        return (p[0] for p in cursor.fetchall())
 
     _Journal = FastResultRow('action submitted_date! submitted_by submitted_from id!')
     def get_journal(self, name, version):
@@ -1143,12 +1108,6 @@ class Store:
         '''Fetch "number" latest packages registered, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        # After the limited query below, we still have to do
-        # filtering. Assume that doubling the number of records
-        # we look for will still allow for sufficient room for
-        # filtering out unneeded records. If this was wrong,
-        # try again without limit.
-        limit = ' limit %s' % (2*num)
         # This query is designed to run from the journals_latest_releases
         # index, doing a reverse index scan, then lookups in the releases
         # table to find the description and whether the package is hidden.
@@ -1156,32 +1115,68 @@ class Store:
         # is "small".
 
         statement = '''
-            select j.name, r.version, j.submitted_date%s, r.summary
-              from releases r
-                   JOIN (SELECT name, max(submitted_Date) submitted_date
-                         FROM  journals GROUP BY name) j ON j.name = r.name
-             where r.version is not NULL
-               and not r._pypi_hidden
-               and r.name in (SELECT name FROM journals
-                              WHERE  action='create'
-                              ORDER BY submitted_date DESC %%s)
-             order by j.submitted_date desc'''
+            SELECT
+                name,
+                version,
+                submitted_date,
+                summary
+            FROM (
+                SELECT
+                    name,
+                    version,
+                    submitted_date,
+                    summary,
+                    rank() OVER(PARTITION BY name, version ORDER BY submitted_date DESC)
+                FROM (
+                    SELECT
+                        j.name,
+                        r.version,
+                        j.submitted_date%%s,
+                        r.summary
+                    FROM
+                        releases r
+                    JOIN (
+                        SELECT
+                            name,
+                            max(submitted_date) submitted_date
+                        FROM
+                            journals
+                        GROUP BY
+                            name
+                    ) j ON j.name = r.name
+                    WHERE
+                            r.version IS NOT NULL
+                        AND
+                            NOT r._pypi_hidden
+                        AND
+                            r.name IN (
+                                SELECT
+                                    name
+                                FROM
+                                    journals
+                                WHERE
+                                    action = 'create'
+                                ORDER BY submitted_date DESC
+                            )
+                    ORDER BY j.submitted_date DESC
+                ) AS inner_latest
+            ) AS outer_latest
+            WHERE
+                rank = 1
+            ORDER BY submitted_date DESC
+            LIMIT
+                %d
+            ''' % num
 
         if self.config.database_driver == 'sqlite3':
             statement = statement % ' as "sd [timestamp]"'
         else:
             statement = statement % ''
 
-        #print ' '.join((statement % limit).split())
-        safe_execute(cursor, statement % limit)
-        result = Result(None, self.get_unique(cursor.fetchall())[:num],
+        safe_execute(cursor, statement)
+        result = Result(None, cursor.fetchall()[:num],
                 self._Latest_Packages)
-        if len(result) == num:
-            return result
-        # try again without limit
-        safe_execute(cursor, statement % '')
-        return Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Packages)
+        return result
 
     _Latest_Releases = FastResultRow('name version submitted_date! summary')
     def latest_releases(self, num=40):
@@ -1341,11 +1336,12 @@ class Store:
         '''
         cursor = self.get_cursor()
 
+        self._add_invalidation(name)
+
         # delete the files
         for file in self.list_files(name, version):
             os.remove(self.gen_file_path(file['python_version'], name,
                 file['filename']))
-            self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1370,7 +1366,6 @@ class Store:
             for file in self.list_files(name, release['version']):
                 os.remove(self.gen_file_path(file['python_version'], name,
                     file['filename']))
-                self._changed_urls.add(self.gen_file_url(file['python_version'], name, file['filename']))
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1387,6 +1382,7 @@ class Store:
         self.add_journal_entry(name, None, "remove", date,
                                                     self.username, self.userip)
 
+        self._add_invalidation(name)
         self._add_invalidation(None)
 
     def rename_package(self, old, new):
@@ -1394,7 +1390,6 @@ class Store:
         '''
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self._changed_urls |= set(self.get_uploaded_file_urls(old))
         safe_execute(cursor, '''update packages
         set name=%s, normalized_name=%s where name=%s''',
                      (new, normalize_package_name(new), old))
@@ -2069,7 +2064,6 @@ class Store:
         if not info:
             raise KeyError, 'no such file'
         pyversion, name, version, filename = info
-        self._changed_urls.add(self.gen_file_url(pyversion, name, filename))
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
@@ -2087,6 +2081,8 @@ class Store:
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
+
+        self._add_invalidation(name)
 
     _File_Info = FastResultRow('''python_version packagetype name comment_text
                                 filename''')
@@ -2438,7 +2434,7 @@ class Store:
             self._conn = connection = psycopg2.connect(**cd)
 
         cursor = self._cursor = self._conn.cursor()
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def oid_store(self):
         if self.config.database_driver == 'sqlite3':
@@ -2454,7 +2450,7 @@ class Store:
         except Exception:
             pass
         connection = None
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
@@ -2477,47 +2473,31 @@ class Store:
             where username=%s''', (password, username))
 
     def _add_invalidation(self, package=None):
-        all_parts = [["/", "simple"], ["/", "serversig"]]
-        for parts in all_parts:
-            if package is not None:
-                parts.append(package)
-            path = posixpath.join(*parts)
-            url = urlparse.urljoin(
-                    "https://%s" % urlparse.urlparse(self.config.url).netloc,
-                    path,
-                )
-            url = url if url.endswith("/") else url + "/"
-            self._changed_urls.add(url)
+        self._changed_packages.add(package)
 
-    @retry(Exception, tries=5, delay=1, backoff=1)
     def _invalidate_cache(self):
-        # Purge all tags from Fastly
         if self.config.fastly_api_key:
-            api_domain = self.config.fastly_api_domain
-            session = requests.session()
+            # Build up a list of tags we want to purge
+            tags = []
+            for pkg in self._changed_packages:
+                if pkg is None:
+                    tags += ["simple-index"]
+                else:
+                    tags += ["pkg~%s" % safe_name(pkg).lower()]
 
-            count = 0
-            while self._changed_urls and count <= 10:
-                count += 1
-                purges = {}
+            # We only need to bother to enqueue a task if we have something
+            #   to purge
+            if tags:
+                # Enqueue the purge
+                self.enqueue(tasks.purge_fastly_tags,
+                            self.config.fastly_api_domain,
+                            self.config.fastly_api_key,
+                            self.config.fastly_service_id,
+                            tags,
+                        )
 
-                for url in set(self._changed_urls):
-                    # Issue the purge
-                    resp = session.request("PURGE", url, headers={
-                            "X-Fastly-Key": self.config.fastly_api_key,
-                            "Accept": "application/json",
-                        })
-                    resp.raise_for_status()
-                    purges[url] = resp.json()["id"]
-
-                for url, pid in purges.iteritems():
-                    # Ensure that the purge completed successfully
-                    status = session.get("%spurge?id=%s" % (api_domain, pid))
-                    status.raise_for_status()
-                    if status.json().get("results", {}).get("complete", None):
-                        self._changed_urls.remove(url)
-        else:
-            self._changed_urls = set()
+        # Empty our changed packages
+        self._changed_packages = set()
 
     def close(self):
         if self._conn is None:
@@ -2543,7 +2523,7 @@ class Store:
             return
         self._conn.rollback()
         self._cursor = None
-        self._changed_urls = set()
+        self._changed_packages = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''
