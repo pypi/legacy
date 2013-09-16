@@ -772,10 +772,10 @@ class WebUI:
                 "<body>\n",
             ]
 
-            for name in self.store.get_packages_utf8():
-                qname = urllib.quote(name)
-                ename = cgi.escape(name)
-                html.append("<a href='%s/'>%s</a><br/>\n" % (qname, ename))
+            html.extend(
+                cgi.escape(urllib.quote(name))
+                for name in self.store.get_packages_utf8()
+            )
 
             html.append("</body></html>")
             html = ''.join(html)
