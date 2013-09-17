@@ -2824,7 +2824,7 @@ class WebUI:
                 # OK, delete the key
                 self.store.delete_otk(info['otk'])
                 user = self.store.get_user_by_otk(info['otk'])
-                self.store.activate_user(user["name"])
+                self.store.activate_user(user)
                 self.write_template('message.pt', title='Registration complete',
                                     message='You are now registered.',
                                     url='%s?:action=login' % self.url_path,
