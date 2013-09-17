@@ -726,9 +726,6 @@ class WebUI:
         update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
         self.store.set_user(un, self.remote_addr, update_last_login)
 
-    def debug(self):
-        self.fail('Debug info', code=200, content=str(self.env))
-
     def exception(self):
         FAIL
 
