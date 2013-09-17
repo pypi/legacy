@@ -375,17 +375,17 @@ class WebUI:
                 # attempt to send all the exceptions to Raven
                 try:
                     if self.sentry_client:
-                        env = self.env.copy()
-
-                        santize = [
+                        sanitize = [
                             "HTTP_AUTHORIZATION",
                             "HTTP_CGI_AUTHORIZATION",
                             "HTTP_COOKIE",
                         ]
 
-                        for k in santize:
-                            if k in env:
-                                del env[k]
+                        env = dict(
+                            (k, v)
+                            for k, v in self.env.items()
+                            if k.upper() not in sanitize
+                        )
 
                         headers = dict(
                             (k, v)
@@ -393,10 +393,10 @@ class WebUI:
                         )
 
                         data = {
-                            "url": self.env.get('PATH_INFO', ''),
-                            "method": self.env.get("REQUEST_METHOD", ""),
+                            "url": env.get('PATH_INFO', ''),
+                            "method": env.get("REQUEST_METHOD", ""),
                             "headers": headers,
-                            "env": self.env,
+                            "env": env,
                         }
 
                         if self.form:
