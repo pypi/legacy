@@ -40,6 +40,7 @@ from openid.server import server as OpenIDServer
 
 # Raven for error reporting
 import raven
+import raven.utils.wsgi
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
@@ -375,37 +376,27 @@ class WebUI:
                 # attempt to send all the exceptions to Raven
                 try:
                     if self.sentry_client:
-                        sanitize = [
-                            "HTTP_AUTHORIZATION",
-                            "HTTP_CGI_AUTHORIZATION",
-                            "HTTP_COOKIE",
-                        ]
-
-                        env = dict(
-                            (k, v)
-                            for k, v in self.env.items()
-                            if k.upper() not in sanitize
+                        self.sentry_client.captureException(
+                            data={
+                                "sentry.interfaces.Http": {
+                                    "method": self.env.get("REQUEST_METHOD"),
+                                    "url": raven.utils.wsgi.get_current_url(
+                                        self.env,
+                                        strip_querystring=True,
+                                    ),
+                                    "query_string": self.env.get(
+                                        "QUERY_STRING",
+                                    ),
+                                    "data": self.form or "",
+                                    "headers": dict(
+                                        raven.utils.wsgi.get_headers(self.env),
+                                    ),
+                                    "env": dict(
+                                        raven.utils.wsgi.get_environ(self.env),
+                                    ),
+                                }
+                            },
                         )
-
-                        headers = dict(
-                            (k, v)
-                            for k, v in env.items() if k.upper() == k
-                        )
-
-                        data = {
-                            "url": env.get('PATH_INFO', ''),
-                            "method": env.get("REQUEST_METHOD", ""),
-                            "headers": headers,
-                            "env": env,
-                        }
-
-                        if self.form:
-                            data["data"] = self.form
-
-                        if "QUERY_STRING" in self.env:
-                            data["query_string"] = self.env["QUERY_STRING"]
-
-                        self.sentry_client.captureException(data=data)
                 except Exception:
                     # sentry broke so just email the exception like old times
                     if ('connection limit exceeded for non-superusers'
