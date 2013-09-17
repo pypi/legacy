@@ -1509,15 +1509,12 @@ class Store:
     #
     # Users interface
     #
-    def has_user(self, name, case_sensitive=True):
+    def has_user(self, name):
         ''' Determine whether the user exists in the database.
 
             Returns true/false.
         '''
-        if case_sensitive:
-            sql = "select count(*) from users where name=%s"
-        else:
-            sql = "select count(*) from users where LOWER(name)=LOWER(%s)"
+        sql = "select count(*) from accounts_user where username=%s"
         cursor = self.get_cursor()
         safe_execute(cursor, sql, (name,))
         return int(cursor.fetchone()[0])
@@ -1531,55 +1528,157 @@ class Store:
             New user entries create a rego_otk entry too and return the OTK.
         '''
         cursor = self.get_cursor()
-        if self.has_user(name, case_sensitive=False):
+
+        if self.has_user(name):
+            # Existing User so we will update their entries
+            safe_execute(cursor,
+                "SELECT id FROM accounts_user WHERE username = %s",
+                (name,)
+            )
+            user_id = cursor.fetchone()[0]
+
             if password:
-                # update existing user, including password
+                # We've been given a new password for this user
                 password = self.config.passlib.encrypt(password)
                 safe_execute(cursor,
-                   'update users set password=%s, email=%s where name=%s',
-                    (password, email, name))
-            else:
-                # update existing user - but not password
-                safe_execute(cursor, 'update users set email=%s where name=%s',
-                    (email, name))
+                    """UPDATE accounts_user
+                        SET password = %s
+                        WHERE id = %s
+                    """,
+                    (password, user_id)
+                )
+
+            if email:
+                # We've been given a new email for this user
+
+                # Delete existing primary email addresses
+                safe_execute(cursor,
+                    """DELETE FROM accounts_email
+                        WHERE user_id = %s AND "primary" = TRUE
+                    """,
+                    (user_id,)
+                )
+
+                # Create a new primary email address
+                safe_execute(cursor,
+                    """INSERT INTO accounts_email
+                                        (user_id, email, "primary", verified)
+                        VALUES (%s, %s, TRUE, FALSE)
+                    """,
+                    (user_id, email)
+                )
+
             if gpg_keyid is not None:
-                safe_execute(cursor, 'update users set gpg_keyid=%s where name=%s',
-                    (gpg_keyid, name))
-            return None
+                # We've been given a new GPG Key ID for this user
 
-        # Make sure email addresses are unique
-        safe_execute(cursor, 'select count(*) from users where lower(email)=%s',
-                     (email.lower(),))
-        if cursor.fetchone()[0] > 0:
-            raise ValueError, "Email address already belongs to a different user"
+                # Delete existing GPG Key IDs
+                safe_execute(cursor,
+                    "DELETE FROM accounts_gpgkey WHERE user_id = %s",
+                    (user_id,)
+                )
 
-        password = self.config.passlib.encrypt(password)
+                # Create a new GPG Key for the user
+                safe_execute(cursor,
+                    """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
+                        VALUES (%s, %s, FALSE)
+                    """,
+                    (user_id, gpg_keyid)
+                )
+        else:
+            # New User so we will create new entries
 
-        # new user
-        safe_execute(cursor,
-           'insert into users (name, password, email) values (%s, %s, %s)',
-           (name, password, email))
-        if not otk:
-            return None
-        otk = ''.join([random.choice(chars) for x in range(32)])
-        safe_execute(cursor, 'insert into rego_otk (name, otk, date) values (%s, %s, current_timestamp)',
-            (name, otk))
-        return otk
+            # Make sure Email addresses are unique
+            safe_execute(cursor,
+                "SELECT COUNT(*) FROM accounts_email WHERE email = %s",
+                (email,)
+            )
+            if cursor.fetchone()[0] > 0:
+                raise ValueError(
+                        "Email address already belongs to a different user")
+
+            # Hash our password
+            hashed_pw = self.config.passlib.encrypt(password)
+
+            # Create a new User
+            safe_execute(cursor,
+                """INSERT INTO accounts_user (
+                                        username, password, last_login,
+                                        is_superuser, name, is_staff,
+                                        date_joined, is_active
+                                    )
+                    VALUES (
+                                %s, %s, current_timestamp, FALSE, '', FALSE,
+                                current_timestamp, FALSE
+                            )
+                    RETURNING id
+                """,
+                (name, hashed_pw)
+            )
+
+            # Get the id of the just inserted user
+            user_id = cursor.fetchone()[0]
+
+            if email:
+                # We have an email address, so create an email for this user
+                safe_execute(cursor,
+                    """INSERT INTO accounts_email
+                                        (user_id, email, "primary", verified)
+                            VALUES (%s, %s, TRUE, FALSE)
+                    """,
+                    (user_id, email)
+                )
+
+            if gpg_keyid:
+                # We have a gpg key id for this user
+                safe_execute(cursor,
+                    """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
+                        VALUES (%s, %s, FALSE)
+                    """,
+                    (user_id, gpg_keyid)
+                )
+
+            if otk:
+                # We want an OTK so we'll generate one
+                otkv = "".join([random.choice(chars) for x in range(32)])
+                safe_execute(cursor,
+                    """INSERT INTO rego_otk (name, otk, date)
+                        VALUES (%s, %s, current_timestamp)
+                    """,
+                    (name, otkv)
+                )
+                return otkv
+
+    def user_active(self, username):
+        """
+        Determines if the user is active (allowed to login)
+        """
+        cursor = self.get_cursor()
+        sql = "SELECT is_active FROM accounts_user WHERE username = %s"
+        safe_execute(cursor, sql, (username,))
+        return cursor.fetchone()[0]
+
+    def activate_user(self, username):
+        """
+        Activates the given user
+        """
+        cursor = self.get_cursor()
+        sql = "UPDATE accounts_user SET is_active = TRUE WHERE username = %s"
+        safe_execute(cursor, sql, (username,))
 
     _User = FastResultRow('name password email gpg_keyid last_login!')
-    def get_user(self, name, case_sensitive=True):
+    def get_user(self, name):
         ''' Retrieve info about the user from the database.
 
             Returns a mapping with the user info or None if there is no
             such user.
         '''
         cursor = self.get_cursor()
-        if case_sensitive:
-            sql = '''select name, password, email, gpg_keyid, last_login
-                from users where name=%s'''
-        else:
-            sql = '''select name, password, email, gpg_keyid, last_login
-                from users where lower(name)=lower(%s)'''
+        sql = """SELECT username, password, email, key_id, last_login
+                    FROM accounts_user u
+                        LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
+                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
+                    WHERE username = %s
+        """
         safe_execute(cursor, sql, (name,))
         return self._User(None, cursor.fetchone())
 
@@ -1591,8 +1690,17 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select name, password, email, gpg_keyid
-            from users where lower(email)=%s''', (email.lower(),))
+        sql = """SELECT username, password, email, key_id, last_login
+                    FROM accounts_user u
+                        LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
+                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
+                    WHERE u.id = (
+                                    SELECT user_id
+                                    FROM accounts_email
+                                    WHERE email = %s
+                                )
+        """
+        safe_execute(cursor, sql, (email,))
         return self._User(None, cursor.fetchone())
 
     def get_user_by_openid(self, openid):
@@ -1603,9 +1711,16 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, '''select users.name, password, email, gpg_keyid
-            from users,openids where users.name=openids.name
-            and openids.id=%s''', (openid,))
+        sql = """SELECT username, password, email, key_id, last_login
+                    FROM accounts_user u
+                        LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
+                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
+                    WHERE u.username = (
+                                    SELECT name FROM openids WHERE id = %s
+                                )
+        """
+
+        safe_execute(cursor, sql, (openid,))
         return self._User(None, cursor.fetchone())
 
     _Users = FastResultRow('name email')
@@ -1613,7 +1728,12 @@ class Store:
         ''' Fetch the complete list of users from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name,email from users order by lower(name)')
+        sql = """SELECT username, email
+                    FROM accounts_user, accounts_email
+                    WHERE accounts_user.id = accounts_email.user_id
+                    ORDER BY username
+        """
+        safe_execute(cursor, sql)
         return Result(None, cursor.fetchall(), self._Users)
 
     _Openid = FastResultRow('id')
@@ -1743,11 +1863,29 @@ class Store:
         safe_execute(cursor,
                      '''delete from cookies where name=%s''',
                      (user,))
+
+        safe_execute(cursor,
+            "SELECT id FROM accounts_user WHERE username = %s", (user,)
+        )
+        user_id = cursor.fetchone()[0]
+
+        # Delete all the users emails
+        safe_execute(cursor,
+            "DELETE FROM accounts_email WHERE user_id = %s", (user_id,)
+        )
+
+        # Delete all the users gpg keys
+        safe_execute(cursor,
+            "DELETE FROM accounts_gpgkey WHERE user_id = %s", (user_id,)
+        )
+
         # every other reference should either be cascading,
         # or it's a bug to break it
 
         # delete user account itself
-        safe_execute(cursor, 'delete from users where name=%s', (user,))
+        safe_execute(cursor,
+            "DELETE FROM accounts_user WHERE username=%s", (user,)
+        )
 
     #
     # Trove
@@ -2040,7 +2178,7 @@ class Store:
                 # refresh cookie and login time every minute
                 sql = 'update cookies set last_seen=current_timestamp where cookie=%s'
                 safe_execute(cursor, sql, (cookie,))
-                sql ='update users set last_login=current_timestamp where name=%s'
+                sql ='update accounts_user set last_login=current_timestamp where username=%s'
                 safe_execute(cursor, sql, (name,))
             return name
         return None
@@ -2322,17 +2460,17 @@ class Store:
             if self.has_user(username):
                 self.username = username
                 if update_last_login:
-                    safe_execute(self.get_cursor(), '''update users
+                    safe_execute(self.get_cursor(), '''update accounts_user
                         set last_login=current_timestamp
-                        where name=%s''', (username,))
+                        where username=%s''', (username,))
         self.userip = userip
 
     def setpasswd(self, username, password, hashed=False):
         if not hashed:
             password = self.config.passlib.encrypt(password)
 
-        safe_execute(self.get_cursor(), '''update users set password=%s
-            where name=%s''', (password, username))
+        safe_execute(self.get_cursor(), '''update accounts_user set password=%s
+            where username=%s''', (password, username))
 
     def _add_invalidation(self, package=None):
         self._changed_packages.add(package)

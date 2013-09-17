@@ -633,6 +633,8 @@ class WebUI:
                 raise Unauthorised
             if self.store.get_otk(self.username):
                 raise Unauthorised, "Incomplete registration; check your email"
+            if not self.store.user_active(self.username):
+                raise Unauthorised("Inactive User")
 
         # handle the action
         if action in '''debug home browse rss index search submit doap
@@ -670,7 +672,7 @@ class WebUI:
             return
 
         # Fetch the user from the database
-        user = self.store.get_user(un, case_sensitive=False)
+        user = self.store.get_user(un)
 
         # Verify the hash, and see if it needs migrated
         ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
@@ -2821,6 +2823,8 @@ class WebUI:
                     return
                 # OK, delete the key
                 self.store.delete_otk(info['otk'])
+                user = self.store.get_user_by_otk(info['otk'])
+                self.store.activate_user(user)
                 self.write_template('message.pt', title='Registration complete',
                                     message='You are now registered.',
                                     url='%s?:action=login' % self.url_path,
@@ -2866,7 +2870,7 @@ class WebUI:
             name = info['name']
             if not safe_username.match(name):
                 raise FormError, 'Username is invalid (ASCII alphanum,.,_ only)'
-            if self.store.has_user(name, case_sensitive=False):
+            if self.store.has_user(name):
                 self.fail('user "%s" already exists' % name,
                     heading='User registration')
                 return
@@ -3009,7 +3013,7 @@ class WebUI:
             self.write_template("password_reset.pt",
                 title="Request password reset", retry=True)
 
-        user = self.store.get_user(name, case_sensitive=False)
+        user = self.store.get_user(name)
         # typically other systems would not indicate the username is invalid
         # but in PyPI's case the username list is public so this is more
         # user-friendly with no security penalty
@@ -3327,7 +3331,7 @@ class WebUI:
             if username[-1] not in alphanums:
                 username = username + "_user"
 
-        if self.store.has_user(username, case_sensitive=False):
+        if self.store.has_user(username):
             suffix = 2
             while self.store.has_user("%s_%d" % (username, suffix)):
                 suffix += 1
