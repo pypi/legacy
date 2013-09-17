@@ -375,7 +375,37 @@ class WebUI:
                 # attempt to send all the exceptions to Raven
                 try:
                     if self.sentry_client:
-                        self.sentry_client.captureException()
+                        env = self.env.copy()
+
+                        santize = [
+                            "HTTP_AUTHORIZATION",
+                            "HTTP_CGI_AUTHORIZATION",
+                            "HTTP_COOKIE",
+                        ]
+
+                        for k in santize:
+                            if k in env:
+                                del env[k]
+
+                        headers = dict(
+                            (k, v)
+                            for k, v in env.items() if k.upper() == k
+                        )
+
+                        data = {
+                            "url": self.env.get('PATH_INFO', ''),
+                            "method": self.env.get("REQUEST_METHOD", ""),
+                            "headers": headers,
+                            "env": self.env,
+                        }
+
+                        if self.form:
+                            data["data"] = self.form
+
+                        if "QUERY_STRING" in self.env:
+                            data["query_string"] = self.env["QUERY_STRING"]
+
+                        self.sentry_client.captureException(data=data)
                 except Exception:
                     # sentry broke so just email the exception like old times
                     if ('connection limit exceeded for non-superusers'
