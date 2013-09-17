@@ -667,7 +667,7 @@ class WebUI:
                 raise Unauthorised("Inactive User")
 
         # handle the action
-        if action in '''debug home browse rss index search submit doap
+        if action in '''home browse rss index search submit doap
         display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form
         display register_form user user_form
         forgotten_password_form forgotten_password
