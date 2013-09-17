@@ -1644,7 +1644,7 @@ class Store:
                     """INSERT INTO rego_otk (name, otk, date)
                         VALUES (%s, %s, current_timestamp)
                     """,
-                    (name, otk)
+                    (name, otkv)
                 )
                 return otkv
 
