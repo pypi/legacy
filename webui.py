@@ -1846,13 +1846,15 @@ class WebUI:
                             <option value="1"%s>Yes</option>
                            </select>'''%(a,b)
             elif property in ('license', 'platform'):
-                field = '''<textarea name="%s" rows="5"
-                    cols="80">%s</textarea><br />You should enter a full
+                field = '''\
+                    <textarea name="%s" rows="5" cols="80">%s</textarea>
+                    <br />You should enter a full
                     description here only if appropriate classifiers aren\'t
                     available (see below).'''%(property, cgi.escape(value))
             elif property.endswith('description'):
-                field = '''<textarea name="%s" rows="5"
-                    cols="80">%s</textarea><br />You may use
+                field = '''\
+                    <textarea name="%s" rows="25" cols="80">%s</textarea>
+                    <br /> You may use
                     <a target="_new" href="http://docutils.sf.net/rst.html">ReStructuredText</a>
                     formatting for this field.'''%(property,
                     cgi.escape(value))
