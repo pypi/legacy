@@ -2240,7 +2240,7 @@ class Store:
         sql = """
             WITH new_values (name, token, end_date) AS (
                 VALUES
-                    (%s, %s, %s),
+                    (%s, %s, %s)
             ),
             upsert AS
             (
