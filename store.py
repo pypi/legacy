@@ -632,6 +632,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         result = []
+        file_urls = []
 
         # grab the list of releases
         safe_execute(cursor, '''select version, home_page, download_url
@@ -657,13 +658,13 @@ class Store:
 
         # uploaded files
         safe_execute(cursor, '''select filename, python_version, md5_digest
-            from release_files where name=%s order by filename''', (name,))
+            from release_files where name=%s''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
             url = self.gen_file_url(pyversion, name, fname, relative) + \
                 "#md5=" + md5
-            result.insert(0, (url, "internal", fname))
+            file_urls.append((url, "internal", fname))
 
         # urls from description - this also now includes explicit URLs provided
         # through the web interface
@@ -671,7 +672,7 @@ class Store:
             # assume that description urls are escaped
             result.append((url['url'], None, url['url']))
 
-        return result
+        return sorted(file_urls) + sorted(result)
 
     def get_uploaded_file_urls(self, name):
         cursor = self.get_cursor()
