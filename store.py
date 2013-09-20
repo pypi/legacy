@@ -1551,23 +1551,31 @@ class Store:
 
             if email:
                 # We've been given a new email for this user
-
-                # Delete existing primary email addresses
-                safe_execute(cursor,
-                    """DELETE FROM accounts_email
-                        WHERE user_id = %s AND "primary" = TRUE
-                    """,
-                    (user_id,)
-                )
-
-                # Create a new primary email address
-                safe_execute(cursor,
-                    """INSERT INTO accounts_email
-                                        (user_id, email, "primary", verified)
-                        VALUES (%s, %s, TRUE, FALSE)
-                    """,
-                    (user_id, email)
-                )
+                sql = """
+                    WITH new_values (user_id, email, "primary", verified) AS (
+                        VALUES
+                            (%s, %s, TRUE, FALSE)
+                    ),
+                    upsert AS
+                    (
+                        UPDATE accounts_email ae
+                            set email = nv.email,
+                             verified = nv.verified
+                        FROM new_values nv
+                        WHERE ae.user_id = nv.user_id
+                            AND ae.primary = nv.primary
+                        RETURNING ae.*
+                    )
+                    INSERT INTO accounts_email
+                        (user_id, email, "primary", verified)
+                    SELECT user_id, email, "primary", verified
+                    FROM new_values
+                    WHERE NOT EXISTS (SELECT 1
+                                      FROM upsert up
+                                      WHERE up.user_id = new_values.user_id
+                                        AND up.primary = new_values.primary)
+                """
+                safe_execute(cursor, sql, (user_id, email))
 
             if gpg_keyid is not None:
                 # We've been given a new GPG Key ID for this user
