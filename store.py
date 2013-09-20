@@ -657,7 +657,7 @@ class Store:
 
         # uploaded files
         safe_execute(cursor, '''select filename, python_version, md5_digest
-            from release_files where name=%s''', (name,))
+            from release_files where name=%s order by filename''', (name,))
         for fname, pyversion, md5 in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
