@@ -1578,13 +1578,14 @@ class Store:
                     (user_id,)
                 )
 
-                # Create a new GPG Key for the user
-                safe_execute(cursor,
-                    """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
-                        VALUES (%s, %s, FALSE)
-                    """,
-                    (user_id, gpg_keyid)
-                )
+                if gpg_keyid:
+                    # Create a new GPG Key for the user
+                    safe_execute(cursor,
+                        """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
+                            VALUES (%s, %s, FALSE)
+                        """,
+                        (user_id, gpg_keyid)
+                    )
         else:
             # New User so we will create new entries
 
