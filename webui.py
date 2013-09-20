@@ -2846,8 +2846,8 @@ class WebUI:
                               heading='User registration')
                     return
                 # OK, delete the key
-                self.store.delete_otk(info['otk'])
                 user = self.store.get_user_by_otk(info['otk'])
+                self.store.delete_otk(info['otk'])
                 self.store.activate_user(user)
                 self.write_template('message.pt', title='Registration complete',
                                     message='You are now registered.',
