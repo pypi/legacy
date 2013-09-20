@@ -1456,6 +1456,8 @@ class WebUI:
                 version = l[-1][1]
             except IndexError:
                 version = "(latest release)"
+        if isinstance(version , list):
+            version = version[0]
 
         un = urllib.quote_plus(name.encode('utf-8'))
         uv = urllib.quote_plus(version.encode('utf-8'))
