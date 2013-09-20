@@ -1533,6 +1533,8 @@ class WebUI:
             if name is None:
                 # check that we get one - and only one - name argument
                 name = self.form.get('name', None)
+                if name is None:
+                    raise NotFound
             # Try to locate the normalized name
             found = self.store.find_package(name)
             if not found or found[0] == name:
