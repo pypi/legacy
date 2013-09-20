@@ -2237,7 +2237,27 @@ class Store:
         # we may have a current entry which is out of date, delete
         safe_execute(cursor, 'delete from csrf_tokens where name=%s', (username,))
         target = datetime.datetime.now() + datetime.timedelta(minutes=15)
-        sql = 'insert into csrf_tokens values(%s, %s, %s)'
+        sql = """
+            WITH new_values (name, token, end_date) AS (
+                VALUES
+                    (%s, %s, %s),
+            ),
+            upsert AS
+            (
+                UPDATE csrf_tokens ct
+                    set token = nv.token,
+                     end_date = nv.end_date
+                FROM new_values nv
+                WHERE ct.name = nv.name
+                RETURNING ct.*
+            )
+            INSERT INTO csrf_tokens (name, token, end_date)
+            SELECT name, token, end_date
+            FROM new_values
+            WHERE NOT EXISTS (SELECT 1
+                              FROM upsert up
+                              WHERE up.name = new_values.name)
+        """
         safe_execute(cursor, sql, (username, rand, target))
 
         return rand
