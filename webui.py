@@ -875,6 +875,8 @@ class WebUI:
                 if serial is not None:
                     self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
+                possible_package = package
+
         self.handler.send_header(
             "Surrogate-Key",
             "package pkg~%s" % safe_name(possible_package).lower()
