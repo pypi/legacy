@@ -872,9 +872,11 @@ class WebUI:
             # Make sure that we associate the delivered file with the serial this
             # is valid for. Intended to support mirrors to more easily achieve
             # consistency with files that are newer than they may expect.
-            serial = self.store.last_serial_for_package(package)
-            if serial is not None:
-                self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+            packages = self.store.find_package(package)
+            if packages:
+                serial = self.store.last_serial_for_package(packages[0])
+                if serial is not None:
+                    self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
             self.handler.send_header(
                                 "Surrogate-Key", "package pkg~%s" % safe_name(package).lower())
