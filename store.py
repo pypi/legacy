@@ -1989,7 +1989,7 @@ class Store:
             LIMIT 1
         """
         cursor = self.get_cursor()
-        cursor.execute(query)
+        cursor.execute(query, [filename])
         results = cursor.fetchall()
         if results:
             return results[0][0]
