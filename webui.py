@@ -863,6 +863,7 @@ class WebUI:
         self.handler.send_response(200, 'OK')
 
         filename = os.path.basename(path)
+        possible_package = os.path.basename(os.path.dirname(path))
 
         if filename:
             # Make sure that we associate the delivered file with the serial this
@@ -874,8 +875,10 @@ class WebUI:
                 if serial is not None:
                     self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
 
-            self.handler.send_header(
-                                "Surrogate-Key", "package pkg~%s" % safe_name(package).lower())
+        self.handler.send_header(
+            "Surrogate-Key",
+            "package pkg~%s" % safe_name(possible_package).lower()
+        )
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
