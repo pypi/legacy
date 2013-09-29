@@ -16,6 +16,8 @@ import itsdangerous
 import redis
 import rq
 
+from distlib.util import split_filename
+
 try:
     import json
 except ImportError:
@@ -862,12 +864,14 @@ class WebUI:
         # actual file when resolving the X-accel headers.
         self.handler.send_response(200, 'OK')
 
-        package = packages_path_to_package_name.match(path)
+
+        filename, _ = os.path.splitext(os.path.basename(path))
+        package, _, _ = split_filename(filename)
+
         if package:
             # Make sure that we associate the delivered file with the serial this
             # is valid for. Intended to support mirrors to more easily achieve
             # consistency with files that are newer than they may expect.
-            package = package.group(2)
             serial = self.store.last_serial_for_package(package)
             if serial is not None:
                 self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
