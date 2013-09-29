@@ -5,6 +5,19 @@
       metal:use-macro="standard_template/macros/page">
       <metal:fill fill-slot="body">
 
+<p><b>The public PyPI mirrors using *.pypi.python.org DNS aliases are being
+    deprecated as specified in
+    <a href="http://www.python.org/dev/peps/pep-0449/">PEP 449 (Removal of
+    the PyPI Mirror Auto Discovery and Naming Scheme)</a>. Package
+    files uploaded to PyPI are now served through a CDN which is more reliable.
+    You are welcome
+    to continue to run your own private mirrors, but the DNS aliases will be
+    shut down on February 15th, 2014.</b></p>
+
+<p><b>Additionally, the "mirror authenticity" API specified in the PEP below
+will be deprecated in the near future, and use of it is discouraged.</b></p>
+
+<!--
  <p>The PyPI repository provides alternative locations that store the packages.
  This service is primarily intended to be used by automated download tools
  (such as setuptools or pip); ask your tool vendor to make use of this infrastructure.
@@ -24,10 +37,10 @@
 
  <p>More mirrors may get added over time; you can use the DNS CNAME record
  last.pypi.python.org to find out which mirror is last in alphabetical order.</p>
+-->
 
 <p>Use the <a href="https://pypi.python.org/pypi/bandersnatch">bandersnatch</a>
-mirroring client to set up your own mirror. If you make it public
-you can add your mirror to the list above and be awesome!</p>
+mirroring client to set up your own mirror.</p>
 
  <p>The mirroring protocol is defined in <a href="http://www.python.org/dev/peps/pep-0381">http://www.python.org/dev/peps/pep-0381</a></p>
 
