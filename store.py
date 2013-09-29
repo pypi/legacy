@@ -1982,6 +1982,18 @@ class Store:
         tally = cursor.fetchall()
         return releases, tally
 
+    def get_package_from_filename(self, filename):
+        query = """
+            SELECT name FROM release_files
+            WHERE filename = %s
+            LIMIT 1
+        """
+        cursor = self.get_cursor()
+        cursor.execute(query)
+        results = cursor.fetchall()
+        if results:
+            return results[0][0]
+
     #
     # File handling
     #
