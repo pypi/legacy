@@ -862,8 +862,7 @@ class WebUI:
         # actual file when resolving the X-accel headers.
         self.handler.send_response(200, 'OK')
 
-
-        filename, _ = os.path.basename(path)
+        filename = os.path.basename(path)
 
         if filename:
             # Make sure that we associate the delivered file with the serial this
