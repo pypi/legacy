@@ -102,13 +102,13 @@
 <ul class="nodot" tal:condition="data/download_counts | nothing">
   <li><strong>Downloads (All Versions):</strong></li>
   <li>
-    <span tal:content="data/download_counts/day" /> downloads in the last day
+    <span tal:content="data/download_counts/last_day" /> downloads in the last day
   </li>
   <li>
-    <span tal:content="data/download_counts/week" /> downloads in the last week
+    <span tal:content="data/download_counts/last_week" /> downloads in the last week
   </li>
   <li>
-    <span tal:content="data/download_counts/month" /> downloads in the last month
+    <span tal:content="data/download_counts/last_month" /> downloads in the last month
   </li>
 </ul>
 

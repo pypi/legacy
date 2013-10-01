@@ -319,7 +319,11 @@ class WebUI:
             # failed during initialization
             self.fail(self.failed)
             return
-        self.store = store.Store(self.config, queue=self.queue)
+        self.store = store.Store(
+            self.config,
+            queue=self.queue,
+            redis=self.redis,
+        )
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
@@ -1635,28 +1639,7 @@ class WebUI:
         files = self.store.list_files(name, version)
 
         # Download Counts from redis
-        download_counts = {}
-        if self.redis is not None:
-            # Get the current utc time
-            current = datetime.datetime.utcnow()
-
-            # Get the download count for the last 24 hours (roughly)
-            keys = [make_key(PRECISIONS[0], current - datetime.timedelta(hours=x), name) for x in xrange(25)]
-            last_1 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
-
-            # Get the download count for the last 7 days (roughly)
-            keys = [make_key(PRECISIONS[1], current - datetime.timedelta(days=x), name) for x in xrange(8)]
-            last_7 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
-
-            # Get the download count for the last month (roughly)
-            keys = [make_key(PRECISIONS[1], current - datetime.timedelta(days=x), name) for x in xrange(31)]
-            last_30 = sum([int(x) for x in self.redis.mget(*keys) if x is not None])
-
-            download_counts = {
-                "day": last_1,
-                "week": last_7,
-                "month": last_30,
-            }
+        download_counts = self.store.download_counts(name)
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
