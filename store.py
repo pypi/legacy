@@ -39,6 +39,14 @@ from verlib import NormalizedVersion, suggest_normalized_version
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
+PRECISIONS = [
+    ("hour", "%y-%m-%d-%H"),
+    ("daily", "%y-%m-%d"),
+]
+def make_key(precision, datetime, key):
+    return "downloads:%s:%s:%s" % (
+        precision[0], datetime.strftime(precision[1]), key)
+
 
 chars = string.ascii_letters + string.digits
 
