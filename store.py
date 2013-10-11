@@ -567,6 +567,7 @@ class Store:
             key=lambda x: pkg_resources.parse_version(x[0]),
         )
 
+        new_order = 0
         for order, (ver, current) in enumerate(sorted_versions):
             if current != order:
                 safe_execute(
@@ -577,11 +578,13 @@ class Store:
                     """,
                     (order, name, ver),
                 )
+            if ver == new_version:
+                new_order = order
 
         self._add_invalidation(name)
 
         # return the ordering for this release
-        return new_version
+        return new_order
 
     def has_package(self, name):
         ''' Determine whether the package exists in the database.
