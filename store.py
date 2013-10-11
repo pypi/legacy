@@ -29,6 +29,7 @@ import time
 from functools import wraps
 
 import tasks
+import pkg_resources
 
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
@@ -557,55 +558,25 @@ class Store:
             'select version,_pypi_ordering from releases where name=%s',
             (name,))
         all_versions = list(cursor.fetchall())
-        all_versions.append((new_version, None))
 
-        versions = []
-        current_ordering = {}
-        norm_to_orig = {}
-        try:
-            # attempt to order using the PEP 386 implementation
-            for version, ordering in all_versions:
-                # fix up the 8% of PyPI versions that aren't PEP 386-strict
-                norm_version = suggest_normalized_version(version)
+        if new_version is not None:
+            all_versions.append((new_version, None))
 
-                # give up if we can't even do that
-                assert norm_version is not None
+        sorted_versions = sorted(
+            all_versions,
+            key=lambda x: pkg_resources.parse_version(x[0]),
+        )
 
-                norm_to_orig[norm_version] = version
-                current_ordering[norm_version] = ordering
-                versions.append(NormalizedVersion(norm_version))
-
-                # just in case we did modify the new_version we need to update
-                # it for later comparison
-                if version == new_version:
-                    new_version = norm_version
-        except Exception:
-            # fall back on the old distutils LooseVersion
-            versions = []
-            current_ordering = {}
-            for version, ordering in all_versions:
-                norm_to_orig[version] = version
-                current_ordering[version] = ordering
-                versions.append(LooseVersion(version))
-
-        versions.sort()
-        n = len(versions)
-
-        # most packages won't need to renumber if we give them 100 releases
-        max = 10 ** min(math.ceil(math.log10(n)), 2)
-
-        # figure the ordering values for the releases
-        for i, v in enumerate(versions):
-            order = max + i
-            v = str(v)
-            if v == new_version:
-                new_version = order
-            elif order != current_ordering[v]:
-                # map from normalised back to the actual project version
-                v = norm_to_orig[v]
-                # ordering has changed, update
-                safe_execute(cursor, '''update releases set _pypi_ordering=%s
-                    where name=%s and version=%s''', (order, name, v))
+        for order, (ver, current) in enumerate(sorted_versions):
+            if current != order:
+                safe_execute(
+                    cursor,
+                    """
+                    UPDATE releases SET _pypi_ordering = %s
+                    WHERE name = %s AND version = %s
+                    """,
+                    (order, name, ver),
+                )
 
         self._add_invalidation(name)
 
