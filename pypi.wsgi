@@ -10,6 +10,13 @@ import config
 import re
 from functools import partial
 
+try:
+    import newrelic
+except ImportError:
+    newrelic = None
+else:
+    newrelic.agent.initialize('/data/pypi/newrelic.ini')
+
 store.keep_conn = True
 
 CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
@@ -91,6 +98,10 @@ def application(environ, start_response):
 
 # Handle Caching at the WSGI layer
 application = CacheControlMiddleware(application)
+
+# If we have New Relic, wrap the application
+if newrelic:
+    application = newrelic.agent.WSGIApplicationWrapper(application)
 
 
 # pretend to be like the UWSGI configuration - set SCRIPT_NAME to the first
