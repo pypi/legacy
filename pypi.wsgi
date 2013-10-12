@@ -12,6 +12,7 @@ from functools import partial
 
 try:
     import newrelic
+    import newrelic.agent
 except ImportError:
     newrelic = None
 else:
