@@ -185,7 +185,7 @@ def merge_user(store, old, new):
     c.execute('update comments set user_name=%s where user_name=%s', (new, old))
     c.execute('update ratings set user_name=%s where user_name=%s', (new, old))
     c.execute('update comments_journal set submitted_by=%s where submitted_by=%s', (new, old))
-    c.execute('delete from users where name=%s', (old,))
+    c.execute('delete from accounts_user where username=%s', (old,))
 
 def rename_user(store, old, new):
     c = store.get_cursor()
