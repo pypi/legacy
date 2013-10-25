@@ -1145,70 +1145,22 @@ class Store:
         '''Fetch "number" latest packages registered, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        # This query is designed to run from the journals_latest_releases
-        # index, doing a reverse index scan, then lookups in the releases
-        # table to find the description and whether the package is hidden.
-        # Postgres will only do that if the number of expected results
-        # is "small".
-
-        statement = '''
-            SELECT
-                name,
-                version,
-                submitted_date,
-                summary
-            FROM (
-                SELECT
-                    name,
-                    version,
-                    submitted_date,
-                    summary,
-                    rank() OVER(PARTITION BY name, version ORDER BY submitted_date DESC)
-                FROM (
-                    SELECT
-                        j.name,
-                        r.version,
-                        j.submitted_date%%s,
-                        r.summary
-                    FROM
-                        releases r
-                    JOIN (
-                        SELECT
-                            name,
-                            max(submitted_date) submitted_date
-                        FROM
-                            journals
-                        GROUP BY
-                            name
-                    ) j ON j.name = r.name
-                    WHERE
-                            r.version IS NOT NULL
-                        AND
-                            NOT r._pypi_hidden
-                        AND
-                            r.name IN (
-                                SELECT
-                                    name
-                                FROM
-                                    journals
-                                WHERE
-                                    action = 'create'
-                                ORDER BY submitted_date DESC
-                            )
-                    ORDER BY j.submitted_date DESC
-                ) AS inner_latest
-            ) AS outer_latest
-            WHERE
-                rank = 1
-            ORDER BY submitted_date DESC
-            LIMIT
-                %d
+        statement = '''SELECT
+                p.name, r.version, p.created as submitted_date, r.summary
+            FROM releases r, (
+                SELECT packages.name, max_order, packages.created
+                FROM packages
+                JOIN (
+                   SELECT name, max(_pypi_ordering) AS max_order
+                    FROM releases
+                    GROUP BY name
+                ) mo ON packages.name = mo.name
+            ) p
+            WHERE p.name = r.name
+              AND p.max_order = r._pypi_ordering
+            ORDER BY p.created DESC
+            LIMIT %d
             ''' % num
-
-        if self.config.database_driver == 'sqlite3':
-            statement = statement % ' as "sd [timestamp]"'
-        else:
-            statement = statement % ''
 
         safe_execute(cursor, statement)
         result = Result(None, cursor.fetchall()[:num],
