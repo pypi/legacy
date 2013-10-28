@@ -1,3 +1,9 @@
+
+THIS FILE IS OUT OF DATE
+
+Database creation is now under the control of the Warehouse project. This
+file does not reflect the current schema of the PyPI service.
+
 begin;
 -- Table structure for table: users
 CREATE TABLE users (
