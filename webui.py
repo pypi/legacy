@@ -2604,7 +2604,11 @@ class WebUI:
             wheel_info = wheel_file_re.match(filename)
             plats = wheel_info.group('plat').split('.')
             if set(plats) - set(["any", "win32", "win-amd64", "win_amd64", "win-ia64", "win_ia64"]):
-                raise FormError, "Binary wheel for an unsupported platform"
+                for plat in plats:
+                    if plat.startswith("win") or plat.startswith("macosx"):
+                        break
+                else:
+                    raise FormError, "Binary wheel for an unsupported platform"
 
         # Check whether signature is ASCII-armored
         if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
