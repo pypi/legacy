@@ -1,367 +1,1665 @@
+-- THIS FILE IS OUT OF DATE
 
-THIS FILE IS OUT OF DATE
+-- Database creation is now under the control of the Warehouse project. This
+-- file does not reflect the current schema of the PyPI service.
 
-Database creation is now under the control of the Warehouse project. This
-file does not reflect the current schema of the PyPI service.
+BEGIN;
 
-begin;
--- Table structure for table: users
-CREATE TABLE users (
-   name TEXT PRIMARY KEY,
-   password TEXT,
-   email TEXT,
-   gpg_keyid TEXT,
-   last_login TIMESTAMP
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+--
+-- Name: citext; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION citext; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: accounts_email; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE accounts_email (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    email character varying(254) NOT NULL,
+    "primary" boolean NOT NULL,
+    verified boolean NOT NULL
 );
-CREATE INDEX users_email_idx ON users(email);
 
--- OpenID tables
 
-CREATE TABLE openids (
-   id TEXT PRIMARY KEY,
-   name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
+--
+-- Name: accounts_email_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE accounts_email_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accounts_email_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE accounts_email_id_seq OWNED BY accounts_email.id;
+
+
+--
+-- Name: accounts_gpgkey; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE accounts_gpgkey (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    key_id citext NOT NULL,
+    verified boolean NOT NULL,
+    CONSTRAINT accounts_gpgkey_valid_key_id CHECK ((key_id ~* '^[A-F0-9]{8}$'::citext))
 );
 
-CREATE TABLE openid_discovered (
-    created TIMESTAMP,
-    url TEXT PRIMARY KEY,
-    services BYTEA,
-    op_endpoint TEXT,
-    op_local TEXT
+
+--
+-- Name: accounts_gpgkey_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE accounts_gpgkey_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accounts_gpgkey_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE accounts_gpgkey_id_seq OWNED BY accounts_gpgkey.id;
+
+
+--
+-- Name: accounts_user; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE accounts_user (
+    id integer NOT NULL,
+    password character varying(128) NOT NULL,
+    last_login timestamp with time zone NOT NULL,
+    is_superuser boolean NOT NULL,
+    username citext NOT NULL,
+    name character varying(100) NOT NULL,
+    is_staff boolean NOT NULL,
+    is_active boolean NOT NULL,
+    date_joined timestamp with time zone DEFAULT now(),
+    CONSTRAINT accounts_user_username_length CHECK ((length((username)::text) <= 50)),
+    CONSTRAINT accounts_user_valid_username CHECK ((username ~* '^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$'::citext))
 );
 
-CREATE TABLE openid_sessions (
-   id SERIAL PRIMARY KEY,
-   url TEXT,
-   assoc_handle TEXT,
-   expires TIMESTAMP,
-   mac_key TEXT
+
+--
+-- Name: accounts_user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE accounts_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: accounts_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE accounts_user_id_seq OWNED BY accounts_user.id;
+
+
+--
+-- Name: alembic_version; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE alembic_version (
+    version_num character varying(32) NOT NULL
 );
 
-CREATE TABLE openid_nonces (
-   created TIMESTAMP,
-   nonce TEXT
-);
-CREATE INDEX openid_nonces_created ON openid_nonces(created);
-CREATE INDEX openid_nonces_nonce ON openid_nonces(nonce);
 
-CREATE TABLE cookies (
-    cookie text PRIMARY KEY,
-    name text references users ON UPDATE CASCADE ON DELETE CASCADE,
-    last_seen timestamp
-);
-CREATE INDEX cookies_last_seen ON cookies(last_seen);
+SET default_with_oids = true;
 
-CREATE TABLE sshkeys(
-   id SERIAL PRIMARY KEY,
-   name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
-   key TEXT
-);
-CREATE INDEX sshkeys_name ON sshkeys(name);
+--
+-- Name: browse_tally; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
--- Table structure for table: rego_otk
-CREATE TABLE rego_otk (
-   -- not cascading: rego_otk will have to expire to allow user name changes
-   name TEXT REFERENCES users,
-   otk TEXT UNIQUE,
-   date TIMESTAMP );
-CREATE INDEX rego_otk_name_idx ON rego_otk(name);
-CREATE INDEX rego_otk_otk_idx ON rego_otk(otk);
-
--- Table structure for table: journals
-CREATE TABLE journals (
-   id SERIAL,
-   name TEXT,
-   version TEXT,
-   action TEXT,
-   submitted_date TIMESTAMP,
-   -- no cascaded delete: need to check whether journal has useful information
-   submitted_by TEXT REFERENCES users ON UPDATE CASCADE,
-   submitted_from TEXT
+CREATE TABLE browse_tally (
+    trove_id integer NOT NULL,
+    tally integer
 );
-CREATE INDEX journals_name_idx ON journals(name);
-CREATE INDEX journals_version_idx ON journals(version);
--- nosqlite
-CREATE INDEX journals_latest_releases ON
-  journals(submitted_date, name, version)
-  WHERE version IS NOT NULL AND action='new release';
--- nosqlite-end
-CREATE INDEX journals_changelog ON
-  journals(submitted_date, name, version, action);
 
--- Table structure for table: packages
-CREATE TABLE packages (
-   name TEXT PRIMARY KEY,
-   stable_version TEXT,
-   normalized_name TEXT,
-   bugtrack_url TEXT,
-   autohide BOOLEAN DEFAULT TRUE,
-   comments BOOLEAN DEFAULT TRUE,
-   hosting_mode TEXT NOT NULL DEFAULT 'pypi-external'
-);
+
+--
+-- Name: cheesecake_main_indices; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
 CREATE TABLE cheesecake_main_indices (
-    id SERIAL PRIMARY KEY,
-    absolute INTEGER NOT NULL,
-    relative INTEGER NOT NULL
+    id integer NOT NULL,
+    absolute integer NOT NULL,
+    relative integer NOT NULL
 );
+
+
+--
+-- Name: cheesecake_main_indices_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE cheesecake_main_indices_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: cheesecake_main_indices_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE cheesecake_main_indices_id_seq OWNED BY cheesecake_main_indices.id;
+
+
+--
+-- Name: cheesecake_subindices; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
 CREATE TABLE cheesecake_subindices (
-    main_index_id INTEGER REFERENCES cheesecake_main_indices,
-    name TEXT,
-    value INTEGER NOT NULL,
-    details TEXT NOT NULL,
-    PRIMARY KEY (main_index_id, name)
+    main_index_id integer NOT NULL,
+    name text NOT NULL,
+    value integer NOT NULL,
+    details text NOT NULL
 );
 
--- Table structure for table: releases
-CREATE TABLE releases (
-   name TEXT REFERENCES packages ON UPDATE CASCADE,
-   version TEXT,
-   author TEXT,
-   author_email TEXT,
-   maintainer TEXT,
-   maintainer_email TEXT,
-   home_page TEXT,
-   license TEXT,
-   summary TEXT,
-   description TEXT,
-   description_html TEXT,
-   description_from_readme BOOLEAN,
-   keywords TEXT,
-   platform TEXT,
-   download_url TEXT,
-   requires_python TEXT,
-   cheesecake_installability_id INTEGER REFERENCES cheesecake_main_indices,
-   cheesecake_documentation_id INTEGER REFERENCES cheesecake_main_indices,
-   cheesecake_code_kwalitee_id INTEGER REFERENCES cheesecake_main_indices,
-   _pypi_ordering INTEGER,
-   _pypi_hidden BOOLEAN,
-   PRIMARY KEY (name, version)
-);
-CREATE INDEX release_pypi_hidden_idx ON releases(_pypi_hidden);
 
--- Table structure for table: trove_classifiers
--- l2, l3, l4, l5 is the corresponding parent;
--- 0 if there is no parent on that level (each node is its
--- own parent)
-CREATE TABLE trove_classifiers (
-   id INTEGER PRIMARY KEY,
-   classifier TEXT UNIQUE,
-   l2 INTEGER,
-   l3 INTEGER,
-   l4 INTEGER,
-   l5 INTEGER
+SET default_with_oids = false;
+
+--
+-- Name: comments; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE comments (
+    id integer NOT NULL,
+    rating integer,
+    user_name citext,
+    date timestamp without time zone,
+    message text,
+    in_reply_to integer
 );
-CREATE INDEX trove_class_class_idx ON trove_classifiers(classifier);
-CREATE INDEX trove_class_id_idx ON trove_classifiers(id);
 
 
--- Table structure for table: release_classifiers
-CREATE TABLE release_classifiers (
-   name TEXT,
-   version TEXT,
-   trove_id INTEGER REFERENCES trove_classifiers,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)
-);
-CREATE INDEX rel_class_name_idx ON release_classifiers(name);
-CREATE INDEX rel_class_version_id_idx ON release_classifiers(version);
-CREATE INDEX rel_class_trove_id_idx ON release_classifiers(trove_id);
-CREATE INDEX rel_class_name_version_idx ON release_classifiers(name, version);
+--
+-- Name: comments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
 
--- Release dependencies
--- See store.py for the valid kind values
-CREATE TABLE release_dependencies (
-   name TEXT,
-   version TEXT,
-   kind INTEGER,
-   specifier TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version)  ON UPDATE CASCADE
-);
-CREATE INDEX rel_dep_name_idx ON release_dependencies(name);
-CREATE INDEX rel_dep_name_version_idx ON release_dependencies(name, version);
-CREATE INDEX rel_dep_name_version_kind_idx ON release_dependencies(name, version, kind);
-
--- Table structure for table: package_files
--- python version is only first two digits
--- actual file path is constructed <py version>/<a-z>/<name>/<filename>
--- we remember filename because it can differ
-CREATE TABLE release_files (
-   name TEXT,
-   version TEXT,
-   python_version TEXT,
-   packagetype TEXT,
-   comment_text TEXT,
-   filename TEXT UNIQUE,
-   md5_digest TEXT UNIQUE,
-   upload_time TIMESTAMP,
-   downloads INTEGER DEFAULT 0,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX release_files_name_idx ON release_files(name);
-CREATE INDEX release_files_version_idx ON release_files(version);
-CREATE INDEX release_files_packagetype_idx ON release_files(packagetype);
-CREATE INDEX release_files_name_version_idx ON release_files(name,version);
+CREATE SEQUENCE comments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
--- Table structure for table: package_urls
-CREATE TABLE release_urls (
-   name TEXT,
-   version TEXT,
-   url TEXT,
-   packagetype TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX release_urls_name_idx ON release_urls(name);
-CREATE INDEX release_urls_version_idx ON release_urls(version);
-CREATE INDEX release_urls_packagetype_idx ON release_urls(packagetype);
+--
+-- Name: comments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
 
--- Table structure for table: description_urls
-CREATE TABLE description_urls (
-   id serial primary key,
-   name TEXT,
-   version TEXT,
-   url TEXT,
-   FOREIGN KEY (name, version) REFERENCES releases (name, version) ON UPDATE CASCADE
-);
-CREATE INDEX description_urls_name_idx ON description_urls(name);
-CREATE INDEX description_urls_name_version_idx ON description_urls(name, version);
+ALTER SEQUENCE comments_id_seq OWNED BY comments.id;
 
--- Table structure for table: roles
--- Note: roles are Maintainer, Admin, Owner
-CREATE TABLE roles (
-   role_name TEXT,
-   -- no cascaded delete: user needs to drop all roles explicitly
-   user_name TEXT REFERENCES users ON UPDATE CASCADE,
-   package_name TEXT REFERENCES packages ON UPDATE CASCADE
-);
-CREATE INDEX roles_pack_name_idx ON roles(package_name);
-CREATE INDEX roles_user_name_idx ON roles(user_name);
 
--- Table structure for table: timestamps
--- Note: stamp_name is ftp, http, browse_tally
-CREATE TABLE timestamps (
-   name TEXT PRIMARY KEY,
-   value TIMESTAMP
-);
-INSERT INTO timestamps(name, value) VALUES('http','1970-01-01 00:00:00');
-INSERT INTO timestamps(name, value) VALUES('ftp','1970-01-01 00:00:00');
-INSERT INTO timestamps(name, value) VALUES('browse_tally','1970-01-01 00:00:00');
+--
+-- Name: comments_journal; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
--- Table structure for table: timestamps
--- Note: stamp_name is ftp, http
-CREATE TABLE browse_tally (
-   trove_id INTEGER PRIMARY KEY,
-   tally INTEGER
+CREATE TABLE comments_journal (
+    name text,
+    version text,
+    id integer,
+    submitted_by citext,
+    date timestamp without time zone,
+    action text
 );
 
--- Table structure for table: mirrors
-CREATE TABLE mirrors (
-   ip TEXT PRIMARY KEY,
-   user_name TEXT REFERENCES users
+
+--
+-- Name: cookies; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE cookies (
+    cookie text NOT NULL,
+    name citext,
+    last_seen timestamp without time zone
 );
 
--- ratings
-CREATE TABLE ratings(
-   id SERIAL PRIMARY KEY,
-   name TEXT,
-   version TEXT,
-   user_name TEXT REFERENCES users ON DELETE CASCADE,
-   date TIMESTAMP,
-   rating INTEGER,
-   UNIQUE(name,version,user_name),
-   FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
-);
-CREATE INDEX rating_name_version ON ratings(name, version);
-CREATE TABLE comments(
-  id SERIAL PRIMARY KEY,
-  rating INTEGER REFERENCES ratings(id) ON DELETE CASCADE,
-  user_name TEXT REFERENCES users ON DELETE CASCADE,
-  date TIMESTAMP,
-  message TEXT,
-  in_reply_to INTEGER REFERENCES comments ON DELETE CASCADE
-);
-CREATE TABLE comments_journal(
-  name text,
-  version text,
-  id INTEGER,
-  submitted_by TEXT REFERENCES users ON DELETE CASCADE,
-  date TIMESTAMP,
-  action TEXT,
-  FOREIGN KEY (name, version) REFERENCES releases ON UPDATE CASCADE ON DELETE CASCADE
-);
+
+--
+-- Name: csrf_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
 CREATE TABLE csrf_tokens (
-  name     text REFERENCES users(name) ON UPDATE CASCADE ON DELETE CASCADE,
-  token    text,
-  end_date timestamp without time zone,
-  PRIMARY KEY(name)
+    name citext NOT NULL,
+    token text,
+    end_date timestamp without time zone
 );
 
-CREATE TABLE openid_whitelist
-(
-  "name" text NOT NULL,
-  trust_root text NOT null,
-  created timestamp without time zone,
-  CONSTRAINT openid_whitelist__pkey PRIMARY KEY (name, trust_root)
+
+SET default_with_oids = true;
+
+--
+-- Name: description_urls; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE description_urls (
+    name text,
+    version text,
+    url text,
+    id integer NOT NULL
 );
 
--- tables for the python-openid library, using default table names
-CREATE TABLE oid_nonces
-(
-   server_url VARCHAR(2047) NOT NULL,
-   timestamp INTEGER NOT NULL,
-   salt CHAR(40) NOT NULL,
-   PRIMARY KEY (server_url, timestamp, salt)
+
+--
+-- Name: description_urls_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE description_urls_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: description_urls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE description_urls_id_seq OWNED BY description_urls.id;
+
+
+--
+-- Name: dual; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE dual (
+    dummy integer
 );
 
-CREATE TABLE oid_associations
-(
-   server_url VARCHAR(2047) NOT NULL,
-   handle VARCHAR(255) NOT NULL,
-   secret BYTEA NOT NULL,
-   issued INTEGER NOT NULL,
-   lifetime INTEGER NOT NULL,
-   assoc_type VARCHAR(64) NOT NULL,
-   PRIMARY KEY (server_url, handle),
-   CONSTRAINT secret_length_constraint CHECK (LENGTH(secret) <= 128)
+
+--
+-- Name: journals; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE journals (
+    name text,
+    version text,
+    action text,
+    submitted_date timestamp without time zone,
+    submitted_by citext,
+    submitted_from text,
+    id integer NOT NULL
 );
 
--- tables for the oauth library
 
-CREATE TABLE oauth_consumers (
-      consumer              varchar(32) primary key,
-      secret                varchar(64) not null,
-      date_created          date not null,
-      created_by TEXT REFERENCES users ON UPDATE CASCADE,
-      last_modified         date not null,
-      description           varchar(255) not null
+--
+-- Name: journals_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE journals_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: journals_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE journals_id_seq OWNED BY journals.id;
+
+
+SET default_with_oids = false;
+
+--
+-- Name: mirrors; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE mirrors (
+    ip text NOT NULL,
+    user_name citext,
+    index_url text,
+    last_modified_url text,
+    local_stats_url text,
+    stats_url text,
+    mirrors_url text
 );
 
-CREATE TABLE oauth_request_tokens (
-      token                 varchar(32) primary key,
-      secret                varchar(64) not null,
-      consumer              varchar(32) not null,
-      callback              text,
-      date_created          date not null,
-      user_name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
-);
+
+--
+-- Name: oauth_access_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
 CREATE TABLE oauth_access_tokens (
-      token                 varchar(32) primary key,
-      secret                varchar(64) not null,
-      consumer              varchar(32) not null,
-      date_created          date not null,
-      last_modified         date not null,
-      user_name TEXT REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE
+    token character varying(32) NOT NULL,
+    secret character varying(64) NOT NULL,
+    consumer character varying(32) NOT NULL,
+    date_created date NOT NULL,
+    last_modified date NOT NULL,
+    user_name citext
 );
+
+
+--
+-- Name: oauth_consumers; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE oauth_consumers (
+    consumer character varying(32) NOT NULL,
+    secret character varying(64) NOT NULL,
+    date_created date NOT NULL,
+    created_by citext,
+    last_modified date NOT NULL,
+    description character varying(255) NOT NULL
+);
+
+
+--
+-- Name: oauth_nonce; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
 
 CREATE TABLE oauth_nonce (
-      timestamp             integer not null,
-      consumer              varchar(32) not null,
-      nonce                 varchar(32) not null,
-      token                 varchar(32)
+    "timestamp" integer NOT NULL,
+    consumer character varying(32) NOT NULL,
+    nonce character varying(32) NOT NULL,
+    token character varying(32)
 );
 
 
-Commit;
+--
+-- Name: oauth_request_tokens; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE oauth_request_tokens (
+    token character varying(32) NOT NULL,
+    secret character varying(64) NOT NULL,
+    consumer character varying(32) NOT NULL,
+    callback text,
+    date_created date NOT NULL,
+    user_name citext
+);
+
+
+--
+-- Name: oid_associations; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE oid_associations (
+    server_url character varying(2047) NOT NULL,
+    handle character varying(255) NOT NULL,
+    secret bytea NOT NULL,
+    issued integer NOT NULL,
+    lifetime integer NOT NULL,
+    assoc_type character varying(64) NOT NULL,
+    CONSTRAINT secret_length_constraint CHECK ((length(secret) <= 128))
+);
+
+
+--
+-- Name: oid_nonces; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE oid_nonces (
+    server_url character varying(2047) NOT NULL,
+    "timestamp" integer NOT NULL,
+    salt character(40) NOT NULL
+);
+
+
+--
+-- Name: openid_discovered; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE openid_discovered (
+    created timestamp without time zone,
+    url text NOT NULL,
+    services bytea,
+    op_endpoint text,
+    op_local text
+);
+
+
+--
+-- Name: openid_nonces; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE openid_nonces (
+    created timestamp without time zone,
+    nonce text
+);
+
+
+--
+-- Name: openid_sessions; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE openid_sessions (
+    id integer NOT NULL,
+    url text,
+    assoc_handle text,
+    expires timestamp without time zone,
+    mac_key text
+);
+
+
+--
+-- Name: openid_sessions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE openid_sessions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: openid_sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE openid_sessions_id_seq OWNED BY openid_sessions.id;
+
+
+--
+-- Name: openid_whitelist; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE openid_whitelist (
+    name text NOT NULL,
+    trust_root text NOT NULL,
+    created timestamp without time zone
+);
+
+
+--
+-- Name: openids; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE openids (
+    id text NOT NULL,
+    name citext
+);
+
+
+SET default_with_oids = true;
+
+--
+-- Name: packages; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE packages (
+    name text NOT NULL,
+    stable_version text,
+    normalized_name text,
+    autohide boolean DEFAULT true,
+    comments boolean DEFAULT true,
+    bugtrack_url text,
+    hosting_mode text DEFAULT 'pypi-explicit'::text NOT NULL,
+    created timestamp without time zone DEFAULT now() NOT NULL,
+    CONSTRAINT packages_valid_name CHECK ((name ~* '^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$'::text))
+);
+
+
+SET default_with_oids = false;
+
+--
+-- Name: ratings; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE ratings (
+    name text NOT NULL,
+    version text NOT NULL,
+    user_name citext NOT NULL,
+    date timestamp without time zone,
+    rating integer,
+    id integer NOT NULL
+);
+
+
+--
+-- Name: ratings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE ratings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ratings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE ratings_id_seq OWNED BY ratings.id;
+
+
+SET default_with_oids = true;
+
+--
+-- Name: rego_otk; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE rego_otk (
+    name citext,
+    otk text,
+    date timestamp without time zone
+);
+
+
+--
+-- Name: release_classifiers; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE release_classifiers (
+    name text,
+    version text,
+    trove_id integer
+);
+
+
+SET default_with_oids = false;
+
+--
+-- Name: release_dependencies; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE release_dependencies (
+    name text,
+    version text,
+    kind integer,
+    specifier text
+);
+
+
+SET default_with_oids = true;
+
+--
+-- Name: release_files; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE release_files (
+    name text,
+    version text,
+    python_version text,
+    packagetype text,
+    comment_text text,
+    filename text,
+    md5_digest text,
+    downloads integer DEFAULT 0,
+    upload_time timestamp without time zone
+);
+
+
+SET default_with_oids = false;
+
+--
+-- Name: release_requires_python; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE release_requires_python (
+    name text,
+    version text,
+    specifier text
+);
+
+
+SET default_with_oids = true;
+
+--
+-- Name: release_urls; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE release_urls (
+    name text,
+    version text,
+    url text,
+    packagetype text
+);
+
+
+--
+-- Name: releases; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE releases (
+    name text NOT NULL,
+    version text NOT NULL,
+    author text,
+    author_email text,
+    maintainer text,
+    maintainer_email text,
+    home_page text,
+    license text,
+    summary text,
+    description text,
+    keywords text,
+    platform text,
+    download_url text,
+    _pypi_ordering integer,
+    _pypi_hidden boolean,
+    description_html text,
+    cheesecake_installability_id integer,
+    cheesecake_documentation_id integer,
+    cheesecake_code_kwalitee_id integer,
+    requires_python text,
+    description_from_readme boolean,
+    created timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: roles; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE roles (
+    role_name text,
+    user_name citext,
+    package_name text
+);
+
+
+SET default_with_oids = false;
+
+--
+-- Name: sshkeys; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE sshkeys (
+    id integer NOT NULL,
+    name citext,
+    key text
+);
+
+
+--
+-- Name: sshkeys_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE sshkeys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sshkeys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE sshkeys_id_seq OWNED BY sshkeys.id;
+
+
+SET default_with_oids = true;
+
+--
+-- Name: timestamps; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE timestamps (
+    name text NOT NULL,
+    value timestamp without time zone
+);
+
+
+--
+-- Name: trove_classifiers; Type: TABLE; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE TABLE trove_classifiers (
+    id integer NOT NULL,
+    classifier text,
+    l2 integer,
+    l3 integer,
+    l4 integer,
+    l5 integer
+);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts_email ALTER COLUMN id SET DEFAULT nextval('accounts_email_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts_gpgkey ALTER COLUMN id SET DEFAULT nextval('accounts_gpgkey_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts_user ALTER COLUMN id SET DEFAULT nextval('accounts_user_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY cheesecake_main_indices ALTER COLUMN id SET DEFAULT nextval('cheesecake_main_indices_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments ALTER COLUMN id SET DEFAULT nextval('comments_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY description_urls ALTER COLUMN id SET DEFAULT nextval('description_urls_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY journals ALTER COLUMN id SET DEFAULT nextval('journals_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY openid_sessions ALTER COLUMN id SET DEFAULT nextval('openid_sessions_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY ratings ALTER COLUMN id SET DEFAULT nextval('ratings_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY sshkeys ALTER COLUMN id SET DEFAULT nextval('sshkeys_id_seq'::regclass);
+
+
+--
+-- Name: accounts_email_email_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_email
+    ADD CONSTRAINT accounts_email_email_key UNIQUE (email);
+
+
+--
+-- Name: accounts_email_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_email
+    ADD CONSTRAINT accounts_email_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts_gpgkey_key_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_gpgkey
+    ADD CONSTRAINT accounts_gpgkey_key_id_key UNIQUE (key_id);
+
+
+--
+-- Name: accounts_gpgkey_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_gpgkey
+    ADD CONSTRAINT accounts_gpgkey_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts_user_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_user
+    ADD CONSTRAINT accounts_user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts_user_username_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY accounts_user
+    ADD CONSTRAINT accounts_user_username_key UNIQUE (username);
+
+
+--
+-- Name: browse_tally_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY browse_tally
+    ADD CONSTRAINT browse_tally_pkey PRIMARY KEY (trove_id);
+
+
+--
+-- Name: cheesecake_main_indices_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY cheesecake_main_indices
+    ADD CONSTRAINT cheesecake_main_indices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cheesecake_subindices_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY cheesecake_subindices
+    ADD CONSTRAINT cheesecake_subindices_pkey PRIMARY KEY (main_index_id, name);
+
+
+--
+-- Name: comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY comments
+    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cookies_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY cookies
+    ADD CONSTRAINT cookies_pkey PRIMARY KEY (cookie);
+
+
+--
+-- Name: csrf_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY csrf_tokens
+    ADD CONSTRAINT csrf_tokens_pkey PRIMARY KEY (name);
+
+
+--
+-- Name: description_urls_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY description_urls
+    ADD CONSTRAINT description_urls_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: mirrors_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY mirrors
+    ADD CONSTRAINT mirrors_pkey PRIMARY KEY (ip);
+
+
+--
+-- Name: oauth_access_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY oauth_access_tokens
+    ADD CONSTRAINT oauth_access_tokens_pkey PRIMARY KEY (token);
+
+
+--
+-- Name: oauth_consumers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY oauth_consumers
+    ADD CONSTRAINT oauth_consumers_pkey PRIMARY KEY (consumer);
+
+
+--
+-- Name: oauth_request_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY oauth_request_tokens
+    ADD CONSTRAINT oauth_request_tokens_pkey PRIMARY KEY (token);
+
+
+--
+-- Name: oid_associations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY oid_associations
+    ADD CONSTRAINT oid_associations_pkey PRIMARY KEY (server_url, handle);
+
+
+--
+-- Name: oid_nonces_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY oid_nonces
+    ADD CONSTRAINT oid_nonces_pkey PRIMARY KEY (server_url, "timestamp", salt);
+
+
+--
+-- Name: openid_discovered_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY openid_discovered
+    ADD CONSTRAINT openid_discovered_pkey PRIMARY KEY (url);
+
+
+--
+-- Name: openid_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY openid_sessions
+    ADD CONSTRAINT openid_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: openid_whitelist_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY openid_whitelist
+    ADD CONSTRAINT openid_whitelist_pkey PRIMARY KEY (name, trust_root);
+
+
+--
+-- Name: openids_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY openids
+    ADD CONSTRAINT openids_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: packages_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY packages
+    ADD CONSTRAINT packages_pkey PRIMARY KEY (name);
+
+
+--
+-- Name: ratings_id_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY ratings
+    ADD CONSTRAINT ratings_id_key UNIQUE (id);
+
+
+--
+-- Name: ratings_name_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY ratings
+    ADD CONSTRAINT ratings_name_key UNIQUE (name, version, user_name);
+
+
+--
+-- Name: ratings_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY ratings
+    ADD CONSTRAINT ratings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: rego_otk_unique; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY rego_otk
+    ADD CONSTRAINT rego_otk_unique UNIQUE (otk);
+
+
+--
+-- Name: release_files_filename_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY release_files
+    ADD CONSTRAINT release_files_filename_key UNIQUE (filename);
+
+
+--
+-- Name: release_files_md5_digest_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY release_files
+    ADD CONSTRAINT release_files_md5_digest_key UNIQUE (md5_digest);
+
+
+--
+-- Name: releases_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT releases_pkey PRIMARY KEY (name, version);
+
+
+--
+-- Name: sshkeys_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY sshkeys
+    ADD CONSTRAINT sshkeys_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: timestamps_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY timestamps
+    ADD CONSTRAINT timestamps_pkey PRIMARY KEY (name);
+
+
+--
+-- Name: trove_classifiers_classifier_key; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY trove_classifiers
+    ADD CONSTRAINT trove_classifiers_classifier_key UNIQUE (classifier);
+
+
+--
+-- Name: trove_classifiers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+--
+
+ALTER TABLE ONLY trove_classifiers
+    ADD CONSTRAINT trove_classifiers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: accounts_email_email_like; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX accounts_email_email_like ON accounts_email USING btree (email varchar_pattern_ops);
+
+
+--
+-- Name: accounts_email_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX accounts_email_user_id ON accounts_email USING btree (user_id);
+
+
+--
+-- Name: accounts_gpgkey_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX accounts_gpgkey_user_id ON accounts_gpgkey USING btree (user_id);
+
+
+--
+-- Name: cookies_last_seen; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX cookies_last_seen ON cookies USING btree (last_seen);
+
+
+--
+-- Name: description_urls_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX description_urls_name_idx ON description_urls USING btree (name);
+
+
+--
+-- Name: description_urls_name_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX description_urls_name_version_idx ON description_urls USING btree (name, version);
+
+
+--
+-- Name: journals_changelog; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX journals_changelog ON journals USING btree (submitted_date, name, version, action);
+
+
+--
+-- Name: journals_latest_releases; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX journals_latest_releases ON journals USING btree (submitted_date, name, version) WHERE ((version IS NOT NULL) AND (action = 'new release'::text));
+
+
+--
+-- Name: journals_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX journals_name_idx ON journals USING btree (name);
+
+
+--
+-- Name: journals_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX journals_version_idx ON journals USING btree (version);
+
+
+--
+-- Name: openid_nonces_created; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX openid_nonces_created ON openid_nonces USING btree (created);
+
+
+--
+-- Name: openid_nonces_nonce; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX openid_nonces_nonce ON openid_nonces USING btree (nonce);
+
+
+--
+-- Name: rating_name_version; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rating_name_version ON ratings USING btree (name, version);
+
+
+--
+-- Name: rego_otk_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rego_otk_name_idx ON rego_otk USING btree (name);
+
+
+--
+-- Name: rego_otk_otk_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rego_otk_otk_idx ON rego_otk USING btree (otk);
+
+
+--
+-- Name: rel_class_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_class_name_idx ON release_classifiers USING btree (name);
+
+
+--
+-- Name: rel_class_name_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_class_name_version_idx ON release_classifiers USING btree (name, version);
+
+
+--
+-- Name: rel_class_trove_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_class_trove_id_idx ON release_classifiers USING btree (trove_id);
+
+
+--
+-- Name: rel_class_version_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_class_version_id_idx ON release_classifiers USING btree (version);
+
+
+--
+-- Name: rel_dep_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_dep_name_idx ON release_dependencies USING btree (name);
+
+
+--
+-- Name: rel_dep_name_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_dep_name_version_idx ON release_dependencies USING btree (name, version);
+
+
+--
+-- Name: rel_dep_name_version_kind_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_dep_name_version_kind_idx ON release_dependencies USING btree (name, version, kind);
+
+
+--
+-- Name: rel_req_python_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_req_python_name_idx ON release_requires_python USING btree (name);
+
+
+--
+-- Name: rel_req_python_name_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_req_python_name_version_idx ON release_requires_python USING btree (name, version);
+
+
+--
+-- Name: rel_req_python_version_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX rel_req_python_version_id_idx ON release_requires_python USING btree (version);
+
+
+--
+-- Name: release_files_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_files_name_idx ON release_files USING btree (name);
+
+
+--
+-- Name: release_files_name_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_files_name_version_idx ON release_files USING btree (name, version);
+
+
+--
+-- Name: release_files_packagetype_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_files_packagetype_idx ON release_files USING btree (packagetype);
+
+
+--
+-- Name: release_files_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_files_version_idx ON release_files USING btree (version);
+
+
+--
+-- Name: release_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_name_idx ON releases USING btree (name);
+
+
+--
+-- Name: release_pypi_hidden_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_pypi_hidden_idx ON releases USING btree (_pypi_hidden);
+
+
+--
+-- Name: release_urls_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_urls_name_idx ON release_urls USING btree (name);
+
+
+--
+-- Name: release_urls_packagetype_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_urls_packagetype_idx ON release_urls USING btree (packagetype);
+
+
+--
+-- Name: release_urls_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_urls_version_idx ON release_urls USING btree (version);
+
+
+--
+-- Name: release_version_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX release_version_idx ON releases USING btree (version);
+
+
+--
+-- Name: roles_pack_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX roles_pack_name_idx ON roles USING btree (package_name);
+
+
+--
+-- Name: roles_user_name_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX roles_user_name_idx ON roles USING btree (user_name);
+
+
+--
+-- Name: sshkeys_name; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX sshkeys_name ON sshkeys USING btree (name);
+
+
+--
+-- Name: trove_class_class_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX trove_class_class_idx ON trove_classifiers USING btree (classifier);
+
+
+--
+-- Name: trove_class_id_idx; Type: INDEX; Schema: public; Owner: -; Tablespace:
+--
+
+CREATE INDEX trove_class_id_idx ON trove_classifiers USING btree (id);
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_classifiers
+    ADD CONSTRAINT "$1" FOREIGN KEY (trove_id) REFERENCES trove_classifiers(id);
+
+
+--
+-- Name: $1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY cheesecake_subindices
+    ADD CONSTRAINT "$1" FOREIGN KEY (main_index_id) REFERENCES cheesecake_main_indices(id);
+
+
+--
+-- Name: $2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT "$2" FOREIGN KEY (cheesecake_installability_id) REFERENCES cheesecake_main_indices(id);
+
+
+--
+-- Name: $3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT "$3" FOREIGN KEY (cheesecake_documentation_id) REFERENCES cheesecake_main_indices(id);
+
+
+--
+-- Name: $4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT "$4" FOREIGN KEY (cheesecake_code_kwalitee_id) REFERENCES cheesecake_main_indices(id);
+
+
+--
+-- Name: comments_in_reply_to_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments
+    ADD CONSTRAINT comments_in_reply_to_fkey FOREIGN KEY (in_reply_to) REFERENCES comments(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comments_journal_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments_journal
+    ADD CONSTRAINT comments_journal_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: comments_journal_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments_journal
+    ADD CONSTRAINT comments_journal_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES accounts_user(username) ON DELETE CASCADE;
+
+
+--
+-- Name: comments_rating_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments
+    ADD CONSTRAINT comments_rating_fkey FOREIGN KEY (rating) REFERENCES ratings(id) ON DELETE CASCADE;
+
+
+--
+-- Name: comments_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY comments
+    ADD CONSTRAINT comments_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username) ON DELETE CASCADE;
+
+
+--
+-- Name: cookies_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY cookies
+    ADD CONSTRAINT cookies_name_fkey FOREIGN KEY (name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: csrf_tokens_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY csrf_tokens
+    ADD CONSTRAINT csrf_tokens_name_fkey FOREIGN KEY (name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: description_urls_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY description_urls
+    ADD CONSTRAINT description_urls_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: journals_submitted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY journals
+    ADD CONSTRAINT journals_submitted_by_fkey FOREIGN KEY (submitted_by) REFERENCES accounts_user(username) ON UPDATE CASCADE;
+
+
+--
+-- Name: mirrors_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY mirrors
+    ADD CONSTRAINT mirrors_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username);
+
+
+--
+-- Name: oauth_access_tokens_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY oauth_access_tokens
+    ADD CONSTRAINT oauth_access_tokens_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_consumers_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY oauth_consumers
+    ADD CONSTRAINT oauth_consumers_created_by_fkey FOREIGN KEY (created_by) REFERENCES accounts_user(username) ON UPDATE CASCADE;
+
+
+--
+-- Name: oauth_request_tokens_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY oauth_request_tokens
+    ADD CONSTRAINT oauth_request_tokens_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: openids_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY openids
+    ADD CONSTRAINT openids_name_fkey FOREIGN KEY (name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: ratings_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY ratings
+    ADD CONSTRAINT ratings_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: ratings_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY ratings
+    ADD CONSTRAINT ratings_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username) ON DELETE CASCADE;
+
+
+--
+-- Name: rego_otk_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY rego_otk
+    ADD CONSTRAINT rego_otk_name_fkey FOREIGN KEY (name) REFERENCES accounts_user(username) ON DELETE CASCADE;
+
+
+--
+-- Name: release_classifiers_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_classifiers
+    ADD CONSTRAINT release_classifiers_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: release_dependencies_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_dependencies
+    ADD CONSTRAINT release_dependencies_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: release_files_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_files
+    ADD CONSTRAINT release_files_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: release_requires_python_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_requires_python
+    ADD CONSTRAINT release_requires_python_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: release_urls_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY release_urls
+    ADD CONSTRAINT release_urls_name_fkey FOREIGN KEY (name, version) REFERENCES releases(name, version) ON UPDATE CASCADE;
+
+
+--
+-- Name: releases_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY releases
+    ADD CONSTRAINT releases_name_fkey FOREIGN KEY (name) REFERENCES packages(name) ON UPDATE CASCADE;
+
+
+--
+-- Name: roles_package_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY roles
+    ADD CONSTRAINT roles_package_name_fkey FOREIGN KEY (package_name) REFERENCES packages(name) ON UPDATE CASCADE;
+
+
+--
+-- Name: roles_user_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY roles
+    ADD CONSTRAINT roles_user_name_fkey FOREIGN KEY (user_name) REFERENCES accounts_user(username) ON UPDATE CASCADE;
+
+
+--
+-- Name: sshkeys_name_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY sshkeys
+    ADD CONSTRAINT sshkeys_name_fkey FOREIGN KEY (name) REFERENCES accounts_user(username) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: user_id_refs_id_22cd5328; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts_email
+    ADD CONSTRAINT user_id_refs_id_22cd5328 FOREIGN KEY (user_id) REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: user_id_refs_id_54e87d75; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY accounts_gpgkey
+    ADD CONSTRAINT user_id_refs_id_54e87d75 FOREIGN KEY (user_id) REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+COMMIT;
