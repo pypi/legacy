@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# 
+#
 # $Id$
 
 import sys, os, cgi, StringIO, traceback
@@ -12,7 +12,7 @@ if 0:
     print 'The Cheese Shop server is down for a short time for maintenance.'
     print 'Please try to connect later.'
     sys.exit(0)
-    
+
 #
 # Provide interface to CGI HTTP response handling
 #
@@ -39,7 +39,7 @@ try:
     sys.path.insert(0, '/data/pypi/src/pypi')
     from webui import WebUI
     import config
-    cfg = config.Config('/data/pypi/config.ini')
+    cfg = config.Config(os.environ.get("PYPI_COFNIG", "config.ini"))
     request = RequestWrapper(cfg, sys.stdin, sys.stdout)
     handler = WebUI(request, os.environ)
     handler.run()

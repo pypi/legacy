@@ -1,12 +1,20 @@
 #!/usr/bin/python
-# 
+#
 # $Id$
+
+import os.path
+import sys
+
+prefix = os.path.dirname(__file__)
+sys.path.insert(0, prefix)
 
 from mod_python import apache
 import sys, os, cgi, StringIO, traceback
 from BaseHTTPServer import BaseHTTPRequestHandler, DEFAULT_ERROR_MESSAGE
 from webui import WebUI
 import config
+
+CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
 
 class RequestWrapper:
     '''Used to make the CGI server look like a BaseHTTPRequestHandler
@@ -26,7 +34,7 @@ class RequestWrapper:
 
 def handle(req):
     req.content_type = req.headers_out['Content-Type'] = 'text/html'
-    cfg = config.Config('/data/pypi/config.ini')
+    cfg = config.Config(os.environ.get("PYPI_COFNIG", CONFIG_FILE))
     request = RequestWrapper(cfg, req)
     pseudoenv = {}
     pseudoenv['CONTENT_TYPE'] = req.headers_in.get('content-type', '')

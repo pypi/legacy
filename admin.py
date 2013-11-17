@@ -3,6 +3,11 @@ import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, shutil
 import zipfile, gzip, tarfile
 #sys.path.append('/usr/local/pypi/lib')
 
+prefix = os.path.dirname(__file__)
+sys.path.insert(0, prefix)
+
+CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
+
 import store, config
 
 def set_password(store, name, pw):
@@ -258,7 +263,7 @@ def nuke_nested_lists(store, confirm=False):
         print 'WOULD HAVE removed %d packages' % len(hits)
 
 if __name__ == '__main__':
-    config = config.Config('/data/pypi/config.ini')
+    config = config.Config(CONFIG_FILE)
     st = store.Store(config)
     st.open()
     command = sys.argv[1]

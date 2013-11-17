@@ -49,7 +49,7 @@ downloads = izip(
             )
 
 # Update the database
-c = config.Config("/data/pypi/config.ini")
+c = config.Config(os.path.join(root, "config.ini"))
 store = store.Store(c)
 cursor = store.get_cursor()
 cursor.executemany(

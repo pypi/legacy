@@ -1,8 +1,14 @@
 #!/usr/bin/python
 import config, webui, BaseHTTPServer, urllib, sys, getopt, os
 
+prefix = os.path.dirname(__file__)
+sys.path.insert(0, prefix)
+
+CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
+
+
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    config = config.Config(os.path.dirname(__file__)+"/config.ini")
+    config = config.Config(CONFIG_FILE)
     ssh_user = None
 
     def set_content_type(self, content_type):
@@ -28,7 +34,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if i >= 0:
             rest, query = rest[:i], rest[i+1:]
         else:
-            query = ''            
+            query = ''
 
         env = {}
         #env['SERVER_SOFTWARE'] = self.version_string()
