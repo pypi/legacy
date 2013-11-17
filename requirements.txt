@@ -1,5 +1,5 @@
 Distutils2==1.0a4
-M2Crypto
+M2Crypto  # Unversioned because it might be satisfied by the OS
 Pygments==1.6
 defusedxml==0.4.1
 docutils==0.11
