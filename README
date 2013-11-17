@@ -39,6 +39,8 @@ For testing purposes, run tools/mksqlite to create packages.db. Set
 [database]driver to sqlite3, and [database]name to packages.db, then
 run tools/demodata to populate the database.
 
+PyPI Requires the citext extension to be installed.
+
 TestPyPI Database Setup
 -----------------------
 
