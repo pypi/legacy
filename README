@@ -1,26 +1,8 @@
 Required packages
 -----------------
 
-To run the PyPI software, you need Python 2.5+,
-PostgreSQL, and all these packages located at PyPI:
+To run the PyPI software, you need Python 2.5+ and PostgreSQL
 
-- zope.interface
-- zope.pagetemplate
-- zope.tal
-- zope.tales
-- zope.i18nmessageid
-- psycopg2 (for testing, sqlite3 might be sufficient)
-- docutils
-- M2Crypto
-- distutils2
-- six
-- python-openid
-- raven
-- passlib
-- py-bcrypt (If using the recommended bcrypt hasher)
-- itsdangerous
-- defusedxml
-- requests
 
 Quick development setup
 -----------------------
@@ -37,14 +19,8 @@ so it looks like this::
 Then, you can create a development environment like this, if you have
 virtualenv installed::
 
-    $ virtualenv --no-site-packages --distribute .
-    $ pip install zope.interface zope.pagetemplate
-    $ pip install zope.tal zope.tales zope.i18nmessageid psycopg2
-    $ pip install docutils M2Crypto python-openid raven
-    $ pip install passlib py-bcrypt
-    $ pip install itsdangerous six distutils2
-    $ pip install defusedxml
-    $ pip install requests
+    $ virtualenv --no-site-packages .
+    $ pip install -r requirements.txt
 
 Then you can launch the server using the pypi.wsgi script::
 
