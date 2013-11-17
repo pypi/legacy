@@ -3,6 +3,7 @@ import os
 import sys
 import datetime
 import redis
+import string
 
 from itertools import izip, izip_longest
 
@@ -53,7 +54,7 @@ store = store.Store(c)
 cursor = store.get_cursor()
 cursor.executemany(
     "UPDATE release_files SET downloads = downloads + %s WHERE filename = %s",
-    downloads,
+    (d for d in downloads if not set(d[1]) - set(string.printable)),
 )
 store.commit()
 store.close()
