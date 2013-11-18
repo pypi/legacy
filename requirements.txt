@@ -16,6 +16,7 @@ requests==2.0.1
 rq==0.3.11
 six==1.4.1
 times==0.6.2
+uWSGI==1.9.20
 wsgiref==0.1.2
 zope.browser==2.0.2
 zope.component==4.1.0
