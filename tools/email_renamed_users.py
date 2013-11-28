@@ -75,7 +75,11 @@ for old, new in renamed:
 sent = []
 
 # Email each user
-server = smtplib.SMTP(config.mailhost)
+server = smtplib.SMTP(config.mailgun_hostname)
+if config.smtp_starttls:
+    server.starttls()
+if config.smtp_auth:
+    server.login(config.smtp_login, config.smtp_password)
 for username, packages in users.iteritems():
     packages = sorted(set(packages))
 

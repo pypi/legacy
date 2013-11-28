@@ -30,8 +30,8 @@ class SubjectFormatter(Formatter):
     
 class MailingLogger(SMTPHandler):
 
-    def __init__(self, mailhost, fromaddr, toaddrs, subject, send_empty_entries,flood_level=None):
-        SMTPHandler.__init__(self,mailhost,fromaddr,toaddrs,subject)
+    def __init__(self, mailhost, fromaddr, toaddrs, subject, credentials=None, secure=None, send_empty_entries=False, flood_level=None):
+        SMTPHandler.__init__(self, mailhost, fromaddr, toaddrs, subject, credentials=credentials, secure=secure)
         self.subject_formatter = SubjectFormatter(subject)
         self.send_empty_entries = send_empty_entries
         self.flood_level = flood_level
@@ -42,8 +42,6 @@ class MailingLogger(SMTPHandler):
         return self.subject_formatter.format(record)
 
     def emit(self,record):
-        if not self.send_empty_entries and not record.msg.strip():
-            return
         current_time = now()
         current_hour = current_time.hour
         if current_hour > self.hour:
@@ -69,6 +67,8 @@ that may contain important entries that have not been emailed.
 """ % (self.sent,current_time.strftime('%H:%M:%S'),current_hour+1),
                 args = (),
                 exc_info = None)
+        if not self.send_empty_entries and not record.msg.strip():
+            return
         elif self.sent > self.flood_level:
             # do nothing, we've sent too many emails already
             return
@@ -87,6 +87,10 @@ that may contain important entries that have not been emailed.
             email['From']=self.fromaddr
             email['To']=', '.join(self.toaddrs)
             email['X-Mailer']='MailingLogger'
+            if self.username:
+                if self.secure is not None:
+                    smtp.starttls(*self.secure)
+                    smtp.login(self.username, self.password)
             smtp.sendmail(self.fromaddr, self.toaddrs, email.as_string())
             smtp.quit()
         except:

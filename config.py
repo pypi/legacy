@@ -43,7 +43,6 @@ class Config:
             self.package_docs_url = c.get('webui', 'package_docs_url')
         else:
             self.package_docs_url = 'http://pythonhosted.org'
-        self.mailhost = c.get('webui', 'mailhost')
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
@@ -67,7 +66,7 @@ class Config:
         self.reset_secret = c.get('webui', 'reset_secret')
 
         self.logfile = c.get('logging', 'file')
-        self.logging_mailhost = c.get('logging', 'mailhost')
+        self.mail_logger = c.get('logging', 'mail_logger') 
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
@@ -88,6 +87,14 @@ class Config:
         self.fastly_api_domain = c.get("fastly", "api_domain")
         self.fastly_api_key = c.get("fastly", "api_key")
         self.fastly_service_id = c.get("fastly", "service_id")
+
+        # Get the smtp configuration
+        self.smtp_hostname = c.get("smtp", "hostname")
+        self.smtp_auth = c.get("smtp", "auth")
+        self.smtp_starttls = c.get("smtp", "starttls")
+        if self.smtp_auth:
+            self.smtp_login = c.get("smtp", "login")
+            self.smtp_password = c.get("smtp", "password")
 
     def make_https(self):
         if self.url.startswith("http:"):

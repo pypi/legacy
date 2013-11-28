@@ -102,7 +102,11 @@ for package in migrations["pypi-explicit"]:
 sent = []
 
 # Email each user
-server = smtplib.SMTP(config.mailhost)
+server = smtplib.SMTP(config.smtp_hostname)
+if config.smtp_starttls:
+    server.starttls()
+if config.smtp_auth:
+    server.login(config.smtp_login, config.smtp_password)
 for i, (package, users) in enumerate(package_users.iteritems()):
     fpackage = store.find_package(package)
 

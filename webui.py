@@ -289,21 +289,30 @@ class WebUI:
         self.url_path = path
 
         # configure logging
-        if self.config.logfile or self.config.mailhost:
+        if self.config.logfile or self.config.mail_logger:
             root = logging.getLogger()
-            hdlrs = []
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
                 formatter = logging.Formatter(
                     '%(asctime)s %(name)s:%(levelname)s %(message)s')
                 hdlr.setFormatter(formatter)
-                hdlrs.append(hdlr)
-            if self.config.logging_mailhost:
-                hdlr = MailingLogger.MailingLogger(self.config.logging_mailhost,
-                    self.config.fromaddr, self.config.toaddrs,
-                    '[PyPI] %(line)s', False, flood_level=10)
-                hdlrs.append(hdlr)
-            root.handlers = hdlrs
+                root.handlers.append(hdlr)
+            if self.config.mail_logger:
+                smtp_starttls = None
+                if self.config.smtp_starttls:
+                    smtp_starttls = ()
+                smtp_credentials = None
+                if self.config.smtp_auth:
+                    smtp_credentials = (self.config.smtp_login, self.config.smtp_password)
+                hdlr = MailingLogger.MailingLogger(self.config.smtp_hostname,
+                                                   self.config.fromaddr,
+                                                   self.config.toaddrs,
+                                                   '[PyPI] %(line)s',
+                                                   credentials=smtp_credentials,
+                                                   secure=smtp_starttls,
+                                                   send_empty_entries=False,
+                                                   flood_level=10)
+                root.handlers.append(hdlr)
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
@@ -3172,7 +3181,11 @@ class WebUI:
     def send_email(self, recipient, message):
         ''' Send an administrative email to the recipient
         '''
-        smtp = smtplib.SMTP(self.config.mailhost)
+        smtp = smtplib.SMTP(self.config.smtp_hostname)
+        if self.config.smtp_starttls:
+            smtp.starttls()
+        if self.config.smtp_auth:
+            smtp.login(self.config.smtp_login, self.config.smtp_password)
         smtp.sendmail(self.config.adminemail, recipient, message)
 
     def packageURL(self, name, version):

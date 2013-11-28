@@ -1,33 +1,57 @@
 [database]
-driver = postgresql2
+
+;Postgres Database
+;host = hostname
+;port = 5432
 name = packages
 user = pypi
-# host = hostname
-# port = 5432
-files_dir = /MacDev/svn.python.org/pypi-pep345/files
-docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
-package_docs_url = http://pythonhosted.org/
+
+; Redis
 redis_url = redis://localhost:6379/0
 
-[webui]
-mailhost = mail.python.org
-adminemail = richard@python.org
-replyto = richard@python.org
-url =  http://localhost:8000/pypi
-pydotorg = http://www.python.org/
+; Storage Directories
+files_dir = /MacDev/svn.python.org/pypi-pep345/files
+docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
 
-simple_script = /simple
-files_url = http://localhost/pypi_files
+; Third-Party
+pubsubhubbub = http://pubsubhubbub.appspot.com/
+
+[webui]
+
+; PyPI config
+debug_mode = yes
 rss_file = /tmp/pypi_rss.xml
 packages_rss_file = /tmp/pypi_packages_rss.xml
-debug_mode = yes
-cheesecake_password = secret
+
+; Email
+adminemail = richard@python.org
+replyto = richard@python.org
+
+; Secrets
+;sshkeys_update = /opt/devpypi/src/sshkeys_update
 key_dir = .
-simple_sign_script = /serversig
-raw_package_prefix = /raw-packages
+cheesecake_password = secret
 ; this is the secret used to sign password reset efforts - keep it secret!
 ; ''.join(random.choice(string.letters + string.digits) for n in range(64))
-reset_secret = secret
+;reset_secret = secret
+
+; URI Paths
+simple_script = /simple
+raw_package_prefix = /raw-packages
+simple_sign_script = /serversig
+
+; URLs
+url =  http://localhost:8000/pypi
+files_url = http://localhost/pypi_files
+pydotorg = http://www.python.org/
+package_docs_url = http://pythonhosted.org/
+
+[smtp]
+hostname = localhost:25
+starttls = off
+auth = off
+;login = postmaster@localhost
+;password = muchsecret
 
 [passlib]
 ; The first listed schemed will automatically be the default, see passlib
@@ -43,26 +67,37 @@ schemes = bcrypt, hex_sha1
 
 [logging]
 file =
-mailhost =
+mail_logger = off
 fromaddr =
 toaddrs =
 
-[mirrors]
-folder = mirrors
-local-stats = local-stats
-global-stats = global-stats
+; Not seeing this used in production
+;[mirrors]
+;folder = mirrors
+;local-stats = local-stats
+;global-stats = global-stats
 
 [sentry]
 dsn =
 
 [uwsgi]
+;uid=pypi
+;gid=pypi
 wsgi-file = pypi.wsgi
 socket = /tmp/pypi.sock
+;pidfile = /var/run/devpypi/pypi.pid 
+;daemonize = 127.0.0.1:8224
+;processes = 2
 harakiri = 60
+;reload-on-as = 400
+;max-requests = 10000
 master = 1
 post-buffering = 8192
 chmod-socket = 666
+;disable-logging = true
+;log-5xx = true
 
+; CDN API
 [fastly]
 api_domain = https://api.fastly.com/
 api_key =
