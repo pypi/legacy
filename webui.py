@@ -246,7 +246,7 @@ class WebUI:
         if self.config.count_redis_url:
             self.count_redis = redis.Redis.from_url(self.config.count_redis_url)
         else:
-            self.queue_redis = None
+            self.count_redis = None
         if self.config.queue_redis_url:
             self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url)
             self.queue = rq.Queue(connection=self.queue_redis)
