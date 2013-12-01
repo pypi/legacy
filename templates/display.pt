@@ -99,7 +99,7 @@
 <tr><td id="last" colspan="6"></td></tr>
   </table>
 
-<ul class="nodot" tal:condition="data/download_counts | nothing">
+<ul class="nodot" tal:condition="data/download_counts">
   <li><strong>Downloads (All Versions):</strong></li>
   <li>
     <span tal:content="data/download_counts/last_day" /> downloads in the last day
@@ -110,6 +110,10 @@
   <li>
     <span tal:content="data/download_counts/last_month" /> downloads in the last month
   </li>
+</ul>
+
+<ul class="nodot" tal:condition="not: data/download_counts">
+  <li><strong><font size="3" color="#A00000">Download Counts Temporarily Unavailable</font></strong></li>
 </ul>
 
 <ul class="nodot">

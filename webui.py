@@ -1643,7 +1643,10 @@ class WebUI:
         files = self.store.list_files(name, version)
 
         # Download Counts from redis
-        download_counts = self.store.download_counts(name)
+        try:
+            download_counts = self.store.download_counts(name)
+        except redis.exceptions.ConnectionError as conn_fail:
+            download_counts = False
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
