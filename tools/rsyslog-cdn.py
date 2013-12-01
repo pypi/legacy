@@ -2,6 +2,7 @@
 import sys
 import redis
 import csv
+import os
 import posixpath
 import datetime
 import logging
@@ -9,6 +10,13 @@ import logging.handlers
 
 from email.utils import parsedate
 
+# Make sure our PyPI directory is on the sys.path
+root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path = [root] + sys.path
+
+import config
+
+conf = config.Config(os.environ.get("PYPI_CONFIG", os.path.join(root, "config.ini")))
 
 PRECISIONS = [
     ("hour", "%y-%m-%d-%H", datetime.timedelta(days=2)),
@@ -20,7 +28,7 @@ logger = logging.getLogger("rsyslog-cdn")
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.handlers.SysLogHandler(address="/dev/log"))
 
-store = redis.Redis()
+store = redis.Redis.from_url(conf.count_redis_url)
 
 
 def make_key(precision, when, key):

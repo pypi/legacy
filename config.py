@@ -70,7 +70,8 @@ class Config:
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 
-        self.redis_url = c.get('database', 'redis_url')
+        self.queue_redis_url = c.get('database', 'queue_redis_url')
+        self.count_redis_url = c.get('database', 'count_redis_url')
 
         self.sentry_dsn = c.get('sentry', 'dsn')
 

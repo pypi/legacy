@@ -256,7 +256,7 @@ class Store:
             self.can_lock = True
 
         self.queue = queue
-        self.redis = redis
+        self.count_redis = redis
 
         self._changed_packages = set()
 
@@ -269,7 +269,7 @@ class Store:
     def download_counts(self, name):
         # Download Counts from redis
         download_counts = {}
-        if self.redis is not None:
+        if self.count_redis is not None:
             # Get the current utc time
             current = datetime.datetime.utcnow()
 
@@ -283,7 +283,7 @@ class Store:
                 for x in xrange(25)
             ]
             last_1 = sum(
-                [int(x) for x in self.redis.mget(*keys) if x is not None]
+                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
             )
 
             # Get the download count for the last 7 days (roughly)
@@ -296,7 +296,7 @@ class Store:
                 for x in xrange(8)
             ]
             last_7 = sum(
-                [int(x) for x in self.redis.mget(*keys) if x is not None]
+                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
             )
 
             # Get the download count for the last month (roughly)
@@ -309,7 +309,7 @@ class Store:
                 for x in xrange(31)
             ]
             last_30 = sum(
-                [int(x) for x in self.redis.mget(*keys) if x is not None]
+                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
             )
 
             download_counts = {

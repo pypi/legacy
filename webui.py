@@ -243,13 +243,14 @@ class WebUI:
         self.sentry_client = None
         if self.config.sentry_dsn:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
-        if self.config.redis_url:
-            self.redis = redis.Redis.from_url(self.config.redis_url)
-
-            # Queue to handle asynchronous tasks
-            self.queue = rq.Queue(connection=self.redis)
+        if self.config.count_redis_url:
+            self.count_redis = redis.Redis.from_url(self.config.count_redis_url)
         else:
-            self.redis = None
+            self.queue_redis = None
+        if self.config.queue_redis_url:
+            self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url)
+            self.queue = rq.Queue(connection=self.queue_redis)
+        else:
             self.queue = None
         self.env = env
         self.nav_current = None
@@ -325,7 +326,7 @@ class WebUI:
         self.store = store.Store(
             self.config,
             queue=self.queue,
-            redis=self.redis,
+            redis=self.count_redis,
         )
         try:
             try:

@@ -19,7 +19,7 @@ sys.path = [root] + sys.path
 import config
 
 conf = config.Config(os.environ.get("PYPI_CONFIG", os.path.join(root, "config.ini")))
-redis_conn = redis.Redis.from_url(conf.redis_url)
+redis_conn = redis.Redis.from_url(conf.queue_redis_url)
 
 # Create our queues
 if sys.argv[1:]:
