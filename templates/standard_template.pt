@@ -175,6 +175,12 @@
 
 		</tal:if-user>
 
+                <br/>
+                <div>
+                  <h4>Status</h4>
+                  <span id="statuspage">
+                  </span>
+                </div>
             </div>
         </div>
         <tal:block condition="data/project_url | nothing">
@@ -234,6 +240,19 @@
             })();
         // ]]>
       </script>
+
+      <script type="text/javascript" src="//statuspage-production.s3.amazonaws.com/se.js">
+      </script>
+      <script type="text/javascript">
+        window.fetchStatusPage({
+          pageId: '<span tal:replace="string:${app/config/statuspage_id}">foo</span>',
+          renderTo: '#statuspage',
+          successCallback: function(data) {
+            console.log(data);
+          }
+        });
+      </script>
+
     </body>
   </html>
 </metal:macro>

@@ -47,6 +47,10 @@ class Config:
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
         self.scheme_host = urlunsplit(urlsplit(self.url)[:2]+('','',''))
+        if c.has_option('webui', 'statuspage_id'):
+          self.statuspage_id = c.get('webui', 'statuspage_id')
+        else:
+          self.statuspage_id = False
         self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
         if self.url.startswith("https:"):
             self.pydotorg = '/'
