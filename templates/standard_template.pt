@@ -175,11 +175,7 @@
 
 		</tal:if-user>
 
-                <br/>
-                <div>
-                  <h4>Status</h4>
-                  <span id="statuspage">
-                  </span>
+                <div id="status">
                 </div>
             </div>
         </div>
@@ -246,10 +242,29 @@
       <script type="text/javascript">
         window.fetchStatusPage({
           pageId: '<span tal:replace="string:${app/config/statuspage_id}">foo</span>',
-          renderTo: '#statuspage',
+          // <![CDATA[
           successCallback: function(data) {
-            console.log(data);
+            if (data.incidents.length > 0) {
+              var div = document.getElementById('status');
+              var reports = "</br><h4 class='status'>Status</h4>\n";
+              for (i in data.incidents) {
+                var incident = data.incidents[i];
+                var message, status = incident.status;
+                if (status === 'scheduled') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' scheduled.</a></li>\n';
+                  reports += message;
+                } else if (status === 'in_progress') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' is currently in progress.' + '</a></li>\n';
+                  reports += message;
+                } else if (status !== 'resolved' && status !== 'postmortem' && status !== 'completed') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ': ' + incident.status + '</a></li>\n';
+                  reports += message;
+                }
+              }
+              div.innerHTML=reports;
+            }
           }
+          // ]]>
         });
       </script>
 

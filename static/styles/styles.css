@@ -820,6 +820,21 @@ P.news A:visited
 
 }
 
+/* Document Navigation */
+#status h4
+{
+  font-family: Arial, Verdana, Geneva, "Bitstream Vera Sans", Helvetica, sans-serif;
+  font-size: 94%;
+  font-weight: bold;
+  padding: 3px 0 4px 12px;
+  margin:0 0 0 0;
+  text-align: left;
+  z-index: 0;
+  color:#FFFFFF;
+  -moz-border-radius-topleft: 11px;
+  background-color: #FC234A;
+}
+
 #document-navigation h4 a, .homepage-box h4 a, .externallinks h4 a
 {
   background: #4C83A3;
