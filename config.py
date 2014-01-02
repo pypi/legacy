@@ -95,8 +95,8 @@ class Config:
 
         # Get the smtp configuration
         self.smtp_hostname = c.get("smtp", "hostname")
-        self.smtp_auth = c.get("smtp", "auth")
-        self.smtp_starttls = c.get("smtp", "starttls")
+        self.smtp_auth = c.getboolean("smtp", "auth")
+        self.smtp_starttls = c.getboolean("smtp", "starttls")
         if self.smtp_auth:
             self.smtp_login = c.get("smtp", "login")
             self.smtp_password = c.get("smtp", "password")
