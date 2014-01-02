@@ -175,7 +175,7 @@
 
 		</tal:if-user>
 
-                <div id="status">
+                <div id="statusdiv">
                 </div>
             </div>
         </div>
