@@ -44,7 +44,7 @@
           <img src="/static/images/python-3.png" alt="homepage" border="0" id="logo" />
         </tal:x>
         <tal:x condition="python:not data.get('is_py3k')">
-          <img src="/static/images/python-logo.gif" alt="homepage" border="0" id="logo" />
+          <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
         </tal:x>
        </a>
       </h1>
