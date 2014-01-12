@@ -49,6 +49,7 @@ href="http://www.python.org/doc/dist/package-upload.html">upload</a>" command.</
     <option value="3.1">3.1</option>
     <option value="3.2">3.2</option>
     <option value="3.3">3.3</option>
+    <option value="3.4">3.4</option>
    </select> (not needed for source distributions)
   </td>
  </tr>
