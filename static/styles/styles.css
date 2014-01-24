@@ -75,10 +75,9 @@ H4
 
 #logo
 {
-  width: 211px;
-  height:71px;
-  margin-top: 10px;
-  margin-left: 3%;
+  width: 165px;
+  margin-top: 20px;
+  margin-left: 50px;
 }
 
 
@@ -820,6 +819,7 @@ P.news A:visited
 
 }
 
+/* Document Navigation */
 #document-navigation h4 a, .homepage-box h4 a, .externallinks h4 a
 {
   background: #4C83A3;

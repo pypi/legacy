@@ -47,6 +47,9 @@ files_url = http://localhost/pypi_files
 pydotorg = http://www.python.org/
 package_docs_url = http://pythonhosted.org/
 
+; Statuspage.io
+statuspage_id = 928bjjg42vzc
+
 [smtp]
 hostname = localhost:25
 starttls = off

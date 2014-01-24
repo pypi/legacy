@@ -40,12 +40,7 @@
       <!--  Logo  -->
       <h1 id="logoheader">
        <a accesskey="1" href="http://www.python.org" id="logolink">
-        <tal:x condition="python:data.get('is_py3k')">
-          <img src="/static/images/python-3.png" alt="homepage" border="0" id="logo" />
-        </tal:x>
-        <tal:x condition="python:not data.get('is_py3k')">
-          <img src="/static/images/python-logo.gif" alt="homepage" border="0" id="logo" />
-        </tal:x>
+          <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
        </a>
       </h1>
       <!--  Skip to Navigation  -->
@@ -175,6 +170,8 @@
 
 		</tal:if-user>
 
+                <div id="statusdiv">
+                </div>
             </div>
         </div>
         <tal:block condition="data/project_url | nothing">
@@ -234,6 +231,50 @@
             })();
         // ]]>
       </script>
+
+      <script type="text/javascript" src="//statuspage-production.s3.amazonaws.com/se.js">
+      </script>
+      <script type="text/javascript">
+        window.fetchStatusPage({
+          pageId: '<span tal:replace="string:${app/config/statuspage_id}">foo</span>',
+          // <![CDATA[
+          successCallback: function(data) {
+            if (data.incidents.length > 0) {
+              var div = document.getElementById('statusdiv');
+              var reports = "</br><h4 id='statusbox'>Status</h4>\n";
+              var outage = 0;
+              var maintenance = 0;
+              for (i in data.incidents) {
+                var incident = data.incidents[i];
+                var message, status = incident.status;
+                if (status === 'scheduled') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' scheduled.</a></li>\n';
+                  reports += message;
+                  maintenance += 1;
+                } else if (status === 'in_progress') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' is currently in progress.' + '</a></li>\n';
+                  reports += message;
+                  maintenance += 1;
+                } else if (status !== 'resolved' && status !== 'postmortem' && status !== 'completed') {
+                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ': ' + incident.status + '</a></li>\n';
+                  reports += message;
+                  outage += 1;
+                }
+              }
+              if (outage + maintenance === 0) {
+                reports += "<li><a href='http://status.python.org'>Nothing to report</a></li>";
+              }
+              div.innerHTML=reports;
+              if (outage > 0) {
+                var statusbox = document.getElementById("statusbox");
+                statusbox.style.background = '#FC234A';
+              }
+            }
+          }
+          // ]]>
+        });
+      </script>
+
     </body>
   </html>
 </metal:macro>

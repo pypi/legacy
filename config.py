@@ -47,6 +47,10 @@ class Config:
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
         self.scheme_host = urlunsplit(urlsplit(self.url)[:2]+('','',''))
+        if c.has_option('webui', 'statuspage_id'):
+          self.statuspage_id = c.get('webui', 'statuspage_id')
+        else:
+          self.statuspage_id = False
         self.orig_pydotorg = self.pydotorg = c.get('webui', 'pydotorg')
         if self.url.startswith("https:"):
             self.pydotorg = '/'
@@ -91,8 +95,8 @@ class Config:
 
         # Get the smtp configuration
         self.smtp_hostname = c.get("smtp", "hostname")
-        self.smtp_auth = c.get("smtp", "auth")
-        self.smtp_starttls = c.get("smtp", "starttls")
+        self.smtp_auth = c.getboolean("smtp", "auth")
+        self.smtp_starttls = c.getboolean("smtp", "starttls")
         if self.smtp_auth:
             self.smtp_login = c.get("smtp", "login")
             self.smtp_password = c.get("smtp", "password")
