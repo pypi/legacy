@@ -62,6 +62,30 @@ def remove_spam(store, namepat, confirm=False):
             cursor.execute("update accounts_user set password='spammer' where name=%s",
                 (user,))
 
+def remove_spammer(store, name, confirm=False):
+    user = store.get_user(name)
+    if not user:
+        sys.exit('user %r does not exist' % name)
+
+    cursor = st.get_cursor()
+    cursor.execute("""
+       select distinct(submitted_from)
+        from journals
+        where submitted_by = %s
+    """, (name,))
+    print 'IP addresses of spammers to possibly block:'
+    for (ip,) in cursor.fetchall():
+        print '  ', ip
+
+    for p in store.get_user_packages(name):
+        print '%s: %s' % (p['package_name'], p['role_name'])
+        if confirm:
+            store.remove_package(name)
+
+    if confirm:
+        cursor.execute("update accounts_user set password='spammer' where name=%s",
+             (name,))
+
 def remove_package(store, name):
     ''' Remove a package from the database
     '''
@@ -275,6 +299,8 @@ if __name__ == '__main__':
             remove_package(*args)
         elif command == 'rmspam':
             remove_spam(*args)
+        elif command == 'rmspammer':
+            remove_spammer(*args)
         elif command == 'addclass':
             add_classifier(*args)
             print 'done'
