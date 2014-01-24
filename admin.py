@@ -59,7 +59,7 @@ def remove_spam(store, namepat, confirm=False):
     for user in users:
         print 'disable user', user
         if confirm:
-            cursor.execute("update users set password='spammer' where name=%s",
+            cursor.execute("update accounts_user set password='spammer' where name=%s",
                 (user,))
 
 def remove_package(store, name):
