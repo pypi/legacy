@@ -78,9 +78,9 @@ def remove_spammer(store, name, confirm=False):
         print '  ', ip
 
     for p in store.get_user_packages(name):
-        print '%s: %s' % (p['package_name'], p['role_name'])
+        print p['package_name']
         if confirm:
-            store.remove_package(name)
+            store.remove_package(p['package_name'])
 
     if confirm:
         cursor.execute("update accounts_user set password='spammer' where name=%s",
