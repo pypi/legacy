@@ -349,16 +349,16 @@ class WebUI:
                 self.fail(message, code=403, heading='Forbidden')
             except Redirect, e:
                 self.handler.send_response(301, 'Moved Permanently')
-                self.handler.send_header('Location', e.args[0])
+                self.handler.send_header('Location', e.args[0].encode("utf8"))
                 self.handler.end_headers()
             except RedirectFound, e:
                 self.handler.send_response(302, 'Found')
-                self.handler.send_header('Location', e.args[0])
+                self.handler.send_header('Location', e.args[0].encode("utf8"))
                 self.handler.end_headers()
             except RedirectTemporary, e:
                 # ask browser not to cache this redirect
-                self.handler.send_response(302, 'Temporary Redirect')
-                self.handler.send_header('Location', e.args[0])
+                self.handler.send_response(307, 'Temporary Redirect')
+                self.handler.send_header('Location', e.args[0].encode("utf8"))
                 self.handler.send_header('Cache-Control', 'max-age=0')
                 self.handler.end_headers()
             except FormError, message:
