@@ -7,7 +7,7 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
-import datetime, string
+import datetime, string, traceback
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
@@ -380,6 +380,7 @@ class WebUI:
                     code=500, heading='Database connection failed')
             except:
                 exc, value, tb = sys.exc_info()
+                real_tb = traceback.format_exc()
 
                 # attempt to send all the exceptions to Raven
                 try:
@@ -409,8 +410,10 @@ class WebUI:
                     # sentry broke so just email the exception like old times
                     if ('connection limit exceeded for non-superusers'
                             not in str(value)):
-                        logging.exception('Internal Error\n----\n%s\n----\n'%(
-                            '\n'.join(['%s: %s'%x for x in self.env.items()])))
+                        logging.exception('Internal Error\n----\n%s\n----\n%s\n----\n' % (
+                            '\n'.join(['%s: %s' % x for x in self.env.items()]),
+                            real_tb,
+                        ))
 
                 if self.config.debug_mode == 'yes':
                     s = cStringIO.StringIO()
