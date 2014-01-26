@@ -2986,7 +2986,6 @@ class WebUI:
             raise Unauthorised, "not your key"
         self.store.delete_sshkey(id)
         self.store.commit()
-        self.update_sshkeys()
         return self.register_form()
 
     def password_reset(self):
