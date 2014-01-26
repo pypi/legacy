@@ -92,11 +92,6 @@
       <textarea name="key" cols="50" rows="4" readonly="1" tal:content="key/key"/>
       <input type="submit" value="Delete this key"/>
       </form>
-      <form tal:attributes="action app/url_path" method="POST">
-      <input type="hidden" name=":action" value="addkey" />
-      <textarea name="key" cols="50" rows="4"> </textarea>
-      <input type="submit" value="Add SSH key"/>
-      </form>
     </tal:block>
 
     <tal:block tal:condition="data/openids">

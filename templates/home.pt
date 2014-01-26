@@ -58,9 +58,7 @@ Submit packages with
 "<a href="http://docs.python.org/3/distutils/packageindex.html" class="vt-p">python setup.py upload</a>"
 (full <a href="http://docs.python.org/3/distutils/packageindex.html">tutorial</a>).
 The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
-You may also use
-<a href="/pypi/pypissh">SSH</a> or the
-<a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
+You may also use the <a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
 You must <a tal:attributes="href string:${app/config/url}?%3Aaction=register_form">register</a>.
 Testing? Use <a href="http://wiki.python.org/moin/TestPyPI" class="vt-p">testpypi</a>.
 </p>
