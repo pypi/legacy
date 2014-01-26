@@ -206,7 +206,7 @@
           <div id="footer"><div id="credits">
             <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
             <a href="https://www.fastly.com/" title="Real-time CDN services provided by Fastly">Real-time CDN by Fastly</a> /
-            <a href="http://osuosl.org/" title="Web and email hosting provided by OSU OSL">hosting by OSU OSL</a> /
+            <a href="http://developer.rackspace.com/" title="Server hosting by Rackspace Open Source support">hosting by Rackspace</a> /
             <a href="http://www.timparkin.co.uk/" title="Design by Tim Parkin, Yorkshire man, photographer and developer">design by Tim Parkin</a>
           </div>
           Copyright © 1990-2013, <a href="http://www.python.org/psf">Python Software Foundation</a><br />
