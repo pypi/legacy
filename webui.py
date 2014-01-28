@@ -402,7 +402,7 @@ class WebUI:
                                     "query_string": self.env.get(
                                         "QUERY_STRING",
                                     ),
-                                    "data":form_data,
+                                    "data": form_data,
                                     "headers": dict(
                                         raven.utils.wsgi.get_headers(self.env),
                                     ),
