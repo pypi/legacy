@@ -279,8 +279,7 @@ class WebUI:
 
         # set HTTPS mode if we're directly or indirectly (proxy) supposed to be
         # serving HTTPS links
-        if env.get("HTTPS") == 'on' or \
-                env.get('HTTP_X_FORWARDED_PROTO') == 'https':
+        if env.get('HTTP_X_FORWARDED_PROTO') == 'https':
             self.config.make_https()
         else:
             self.config.make_http()
@@ -3592,7 +3591,7 @@ class WebUI:
     # OAuth
     #
     def run_oauth(self):
-        if self.env.get('HTTPS') != 'on':
+        if env.get('HTTP_X_FORWARDED_PROTO') != 'https':
             raise NotFound('HTTPS must be used to access this URL')
 
         path = self.env.get('PATH_INFO')
