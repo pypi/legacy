@@ -3591,7 +3591,7 @@ class WebUI:
     # OAuth
     #
     def run_oauth(self):
-        if env.get('HTTP_X_FORWARDED_PROTO') != 'https':
+        if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
             raise NotFound('HTTPS must be used to access this URL')
 
         path = self.env.get('PATH_INFO')
