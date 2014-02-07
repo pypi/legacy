@@ -384,6 +384,8 @@ class WebUI:
 
                 # attempt to send all the exceptions to Raven
                 try:
+                    from raven.utils.serializer import transform
+
                     if self.sentry_client:
                         if self.form and not isinstance(self.form, FileUpload):
                             form_data = self.form
@@ -401,7 +403,7 @@ class WebUI:
                                     "query_string": self.env.get(
                                         "QUERY_STRING",
                                     ),
-                                    "data": form_data,
+                                    "data": transform(form_data),
                                     "headers": dict(
                                         raven.utils.wsgi.get_headers(self.env),
                                     ),
