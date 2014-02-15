@@ -1,10 +1,10 @@
 [database]
 
 ;Postgres Database
-;host = hostname
-;port = 5432
-name = packages
-user = pypi
+host = hostname
+port = 5432
+name = pypi
+;user = pypi
 
 ; Redis
 queue_redis_url = redis://localhost:6379/0

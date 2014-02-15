@@ -10,10 +10,6 @@ import admin, store, config
 cfg = config.Config(root+'/config.ini')
 st = store.Store(cfg)
 
-# classifiers
-for c in urllib.urlopen("http://pypi.python.org/pypi?%3Aaction=list_classifiers").read().splitlines():
-    admin.add_classifier(st, c)
-
 # Demo data starts here
 
 # an admin
