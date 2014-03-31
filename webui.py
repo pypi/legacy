@@ -2749,7 +2749,7 @@ class WebUI:
 
         self.store.log_docs(name, version)
         self.store.changed()
-        raise Redirect("http://packages.python.org/%s/" % name)
+        raise Redirect("https://pythonhosted.org/%s/" % name)
 
     #
     # Reverse download for Google AppEngine
