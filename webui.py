@@ -877,9 +877,8 @@ class WebUI:
         path = self.env.get('PATH_INFO')
         parts = path.split("/")
 
-        elif len(parts) < 5:
-            if not path.endswith("/"):
-                raise Redirect(path + "/")
+        if len(parts) < 5 and not path.endswith("/"):
+            raise Redirect(path + "/")
 
         # I expect that nginx will do the right thing if it doesn't find the
         # actual file when resolving the X-accel headers.
