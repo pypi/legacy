@@ -878,7 +878,7 @@ class WebUI:
         parts = path.split("/")
 
         if len(parts) < 5 and not path.endswith("/"):
-            raise Redirect(path + "/")
+            raise Redirect("/packages" + path + "/")
 
         # I expect that nginx will do the right thing if it doesn't find the
         # actual file when resolving the X-accel headers.
