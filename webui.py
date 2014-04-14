@@ -1383,12 +1383,20 @@ class WebUI:
         '''Return JSON rendering of a package.
         '''
         info, name, version = self._get_latest_pkg_info(name, version)
+
+        package_releases = self.store.get_package_releases(name)
+        releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
+        
         d = {
             'info': rpc.release_data(self.store, name, version),
             'urls': rpc.release_urls(self.store, name, version),
+            'releases': releases,
         }
         for url in d['urls']:
             url['upload_time'] = url['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
+        for release, release_files in d['releases'].iteritems():
+            for file in release_files:
+                file['upload_time'] = file['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('application/json; charset="UTF-8"')
         #filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
@@ -1396,6 +1404,8 @@ class WebUI:
         #self.handler.send_header('Content-Disposition',
         #    'attachment; filename=%s'%filename)
         self.handler.send_header('Content-Disposition', 'inline')
+        serial = self.store.changelog_last_serial() or 0
+        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d, indent=4)
