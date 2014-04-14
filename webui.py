@@ -1399,10 +1399,6 @@ class WebUI:
                 file['upload_time'] = file['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('application/json; charset="UTF-8"')
-        #filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
-        #    version.encode('ascii', 'replace'))
-        #self.handler.send_header('Content-Disposition',
-        #    'attachment; filename=%s'%filename)
         self.handler.send_header('Content-Disposition', 'inline')
         serial = self.store.changelog_last_serial() or 0
         self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
