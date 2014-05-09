@@ -29,9 +29,9 @@ except ImportError:
         pass
 
 # Importing M2Crypto patches urllib; don't let them do that
-# orig = urllib.URLopener.open_https.im_func
-# from M2Crypto import DSA
-# urllib.URLopener.open_https = orig
+orig = urllib.URLopener.open_https.im_func
+from M2Crypto import DSA
+urllib.URLopener.open_https = orig
 
 # OpenId provider imports
 OPENID_FILESTORE = '/tmp/openid-filestore'
