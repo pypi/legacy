@@ -1982,6 +1982,18 @@ class Store:
         if results:
             return results[0][0]
 
+    def get_digest_from_filename(self, filename):
+        query = """
+            SELECT md5_digest FROM release_files
+            WHERE filename = %s
+            LIMIT 1
+        """
+        cursor = self.get_cursor()
+        cursor.execute(query, [filename])
+        results = cursor.fetchall()
+        if results:
+            return results[0][0]
+
     #
     # File handling
     #

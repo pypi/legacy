@@ -29,9 +29,9 @@ except ImportError:
         pass
 
 # Importing M2Crypto patches urllib; don't let them do that
-orig = urllib.URLopener.open_https.im_func
-from M2Crypto import DSA
-urllib.URLopener.open_https = orig
+# orig = urllib.URLopener.open_https.im_func
+# from M2Crypto import DSA
+# urllib.URLopener.open_https = orig
 
 # OpenId provider imports
 OPENID_FILESTORE = '/tmp/openid-filestore'
@@ -880,14 +880,20 @@ class WebUI:
         if len(parts) < 5 and not path.endswith("/"):
             raise Redirect("/packages" + path + "/")
 
-        # I expect that nginx will do the right thing if it doesn't find the
-        # actual file when resolving the X-accel headers.
-        self.handler.send_response(200, 'OK')
-
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
 
+        headers = {}
+        status = (200, "OK")
+
         if filename:
+            md5_digest = self.store.get_digest_from_filename(filename)
+
+            if md5_digest:
+                headers["ETag"] = md5_digest
+                if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
+                    status = (304, "Not Modified")
+
             # Make sure that we associate the delivered file with the serial this
             # is valid for. Intended to support mirrors to more easily achieve
             # consistency with files that are newer than they may expect.
@@ -895,14 +901,14 @@ class WebUI:
             if package:
                 serial = self.store.last_serial_for_package(package)
                 if serial is not None:
-                    self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+                    headers["X-PyPI-Last-Serial"] = str(serial)
 
                 possible_package = package
 
-        self.handler.send_header(
-            "Surrogate-Key",
-            "package pkg~%s" % safe_name(possible_package).lower()
-        )
+            if md5_digest:
+                headers["ETag"] = md5_digest
+
+        headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
@@ -915,7 +921,15 @@ class WebUI:
         #    internal;
         #    autoindex on;
         # }
-        self.handler.send_header("X-Accel-Redirect", self.config.raw_package_prefix + path)
+        if status[0] != 304:
+            headers["X-Accel-Redirect"] = self.config.raw_package_prefix + path
+
+        # I expect that nginx will do the right thing if it doesn't find the
+        # actual file when resolving the X-accel headers.
+        self.handler.send_response(*status)
+
+        for key, value in headers.items():
+            self.handler.send_header(key, value)
 
         self.handler.end_headers()
 
@@ -1391,7 +1405,7 @@ class WebUI:
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
         serial = self.store.changelog_last_serial() or 0
-        
+
         d = {
             'info': rpc.release_data(self.store, name, version),
             'urls': rpc.release_urls(self.store, name, version),
@@ -1407,7 +1421,8 @@ class WebUI:
         self.handler.send_header('Content-Disposition', 'inline')
         self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
         self.handler.send_header("Surrogate-Key", str("json pkg~%s" % safe_name(name).lower()))
-        self.handler.send_header("Cache-Control", "max-age=86400, public")
+        self.handler.send_header("Surrogate-Control", "max-age=86400")
+        self.handler.send_header("Cache-Control", "max-age=600, public")
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d, indent=4)
