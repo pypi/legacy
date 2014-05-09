@@ -50,7 +50,13 @@ class CacheControlMiddleware(object):
 
         def _start_response(status, headers, exc_info=None):
             script = environ.get("SCRIPT_NAME", None)
-            if script in set(["/simple", "/serversig", "/packages"]):
+            if script in set(["/simple", "/serversig"]):
+                # Cache for a day in Fastly, but 10 minutes in browsers
+                headers += [
+                    ("Surrogate-Control", "max-age=86400"),
+                    ("Cache-Control", "max-age=600, public"),
+                ]
+            elif script in set(["/packages"]):
                 # Cache for a day
                 headers += [("Cache-Control", "max-age=86400, public")]
             elif script in set(["/mirrors", "/security"]):

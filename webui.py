@@ -1391,7 +1391,7 @@ class WebUI:
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
         serial = self.store.changelog_last_serial() or 0
-        
+
         d = {
             'info': rpc.release_data(self.store, name, version),
             'urls': rpc.release_urls(self.store, name, version),
@@ -1407,7 +1407,8 @@ class WebUI:
         self.handler.send_header('Content-Disposition', 'inline')
         self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
         self.handler.send_header("Surrogate-Key", str("json pkg~%s" % safe_name(name).lower()))
-        self.handler.send_header("Cache-Control", "max-age=86400, public")
+        self.handler.send_header("Surrogate-Control", "max-age=86400")
+        self.handler.send_header("Cache-Control", "max-age=600, public")
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d, indent=4)
