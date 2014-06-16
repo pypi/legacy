@@ -291,7 +291,7 @@ class WebUI:
         # configure logging
         if self.config.logfile or self.config.mail_logger:
             root = logging.getLogger()
-            root.setLevel(logging.DEBUG)
+            root.setLevel(logging.WARNING)
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
                 formatter = logging.Formatter(
