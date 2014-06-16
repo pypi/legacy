@@ -703,9 +703,11 @@ def verify(response, discovery_cache, find_association, nonce_seen):
         if nonce_seen(nonce):
             logger.error('Replay attack attempted')
             raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
+        logger.info('Nonce verified successfully')
     elif ns:
         logger.error('No nonce')
         raise NotAuthenticated(NotAuthenticated.MISSING_NONCE)
+    logger.info('Returning from verify. Signed: %s, claimed_id: %s', signed, claimed_id)
     return signed, claimed_id
 
 def parse_nonce(nonce):
