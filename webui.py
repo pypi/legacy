@@ -41,6 +41,8 @@ from openid.server import server as OpenIDServer
 # Raven for error reporting
 import raven
 import raven.utils.wsgi
+from raven.handlers.logging import SentryHandler
+from raven.conf import setup_logging
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
@@ -289,7 +291,7 @@ class WebUI:
         self.url_path = path
 
         # configure logging
-        if self.config.logfile or self.config.mail_logger:
+        if self.config.logfile or self.config.mail_logger or self.config.sentry_dsn:
             root = logging.getLogger()
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
@@ -313,6 +315,8 @@ class WebUI:
                                                    send_empty_entries=False,
                                                    flood_level=10)
                 root.handlers.append(hdlr)
+            if self.config.sentry_dsn:
+                setup_logging(SentryHandler(self.sentry_client))
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
