@@ -2851,8 +2851,6 @@ class WebUI:
                 3. updating existing user details for currently authed user
         '''
         message = ''
-        logger = logging.getLogger(__name__)
-        logger.info('Called user()')
 
         info = {}
         for param in 'name password email otk confirm gpg_keyid'.split():
