@@ -700,11 +700,6 @@ def verify(response, discovery_cache, find_association, nonce_seen):
     # Check the nonce. OpenID 1.1 doesn't have them
     if 'openid.response_nonce' in response:
         nonce = response['openid.response_nonce'][0]
-        timestamp = parse_nonce(nonce)
-        if _total_seconds(datetime.datetime.utcnow() - timestamp) > 10:
-            # allow for at most 10s transmission time and time shift
-            logger.error('Delay (attack?) attempted')
-            raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
         if nonce_seen(nonce):
             logger.error('Replay attack attempted')
             raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
