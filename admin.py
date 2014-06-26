@@ -267,7 +267,8 @@ def nuke_nested_lists(store, confirm=False):
                 z = zipfile.ZipFile(path)
                 for i in z.infolist():
                     if not i.filename.endswith('.py'): continue
-                    if 'def print_lol' or 'def print_lvl' in z.read(i.filename):
+                    src = z.read(i.filename)
+                    if 'def print_lol' in src or 'def print_lvl' in src:
                         hits[name] = summary
             elif path.endswith('.tar.gz'):
                 z = gzip.GzipFile(path)
@@ -275,7 +276,8 @@ def nuke_nested_lists(store, confirm=False):
                 for i in t.getmembers():
                     if not i.name.endswith('.py'): continue
                     f = t.extractfile(i.name)
-                    if 'def print_lol' or 'def print_lvl' in f.read():
+                    src = f.read()
+                    if 'def print_lol' in src or 'def print_lvl' in src:
                         hits[name] = summary
     for name in hits:
         if confirm:
