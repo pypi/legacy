@@ -41,6 +41,7 @@ from openid.server import server as OpenIDServer
 # Raven for error reporting
 import raven
 import raven.utils.wsgi
+from raven.handlers.logging import SentryHandler
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
@@ -289,8 +290,9 @@ class WebUI:
         self.url_path = path
 
         # configure logging
-        if self.config.logfile or self.config.mail_logger:
+        if self.config.logfile or self.config.mail_logger or self.config.sentry_dsn:
             root = logging.getLogger()
+            root.setLevel(logging.WARNING)
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
                 formatter = logging.Formatter(
@@ -313,6 +315,8 @@ class WebUI:
                                                    send_empty_entries=False,
                                                    flood_level=10)
                 root.handlers.append(hdlr)
+            if self.config.sentry_dsn:
+                root.handlers.append(SentryHandler(self.sentry_client))
 
     def run(self):
         ''' Run the request, handling all uncaught errors and finishing off
@@ -880,14 +884,20 @@ class WebUI:
         if len(parts) < 5 and not path.endswith("/"):
             raise Redirect("/packages" + path + "/")
 
-        # I expect that nginx will do the right thing if it doesn't find the
-        # actual file when resolving the X-accel headers.
-        self.handler.send_response(200, 'OK')
-
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
 
+        headers = {}
+        status = (200, "OK")
+
         if filename:
+            md5_digest = self.store.get_digest_from_filename(filename)
+
+            if md5_digest:
+                headers["ETag"] = md5_digest
+                if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
+                    status = (304, "Not Modified")
+
             # Make sure that we associate the delivered file with the serial this
             # is valid for. Intended to support mirrors to more easily achieve
             # consistency with files that are newer than they may expect.
@@ -895,14 +905,14 @@ class WebUI:
             if package:
                 serial = self.store.last_serial_for_package(package)
                 if serial is not None:
-                    self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+                    headers["X-PyPI-Last-Serial"] = str(serial)
 
                 possible_package = package
 
-        self.handler.send_header(
-            "Surrogate-Key",
-            "package pkg~%s" % safe_name(possible_package).lower()
-        )
+            if md5_digest:
+                headers["ETag"] = md5_digest
+
+        headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
         # we expect nginx to have configured a location named
         # '/packages_raw/...' that aliases the original path correctly, see
@@ -915,7 +925,15 @@ class WebUI:
         #    internal;
         #    autoindex on;
         # }
-        self.handler.send_header("X-Accel-Redirect", self.config.raw_package_prefix + path)
+        if status[0] != 304:
+            headers["X-Accel-Redirect"] = self.config.raw_package_prefix + path
+
+        # I expect that nginx will do the right thing if it doesn't find the
+        # actual file when resolving the X-accel headers.
+        self.handler.send_response(*status)
+
+        for key, value in headers.items():
+            self.handler.send_header(key, value)
 
         self.handler.end_headers()
 
@@ -1387,19 +1405,28 @@ class WebUI:
         '''Return JSON rendering of a package.
         '''
         info, name, version = self._get_latest_pkg_info(name, version)
+
+        package_releases = self.store.get_package_releases(name)
+        releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
+        serial = self.store.changelog_last_serial() or 0
+
         d = {
             'info': rpc.release_data(self.store, name, version),
             'urls': rpc.release_urls(self.store, name, version),
+            'releases': releases,
         }
         for url in d['urls']:
             url['upload_time'] = url['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
+        for release, release_files in d['releases'].iteritems():
+            for file in release_files:
+                file['upload_time'] = file['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('application/json; charset="UTF-8"')
-        #filename = '%s-%s.json'%(name.encode('ascii', 'replace'),
-        #    version.encode('ascii', 'replace'))
-        #self.handler.send_header('Content-Disposition',
-        #    'attachment; filename=%s'%filename)
         self.handler.send_header('Content-Disposition', 'inline')
+        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
+        self.handler.send_header("Surrogate-Key", str("json pkg~%s" % safe_name(name).lower()))
+        self.handler.send_header("Surrogate-Control", "max-age=86400")
+        self.handler.send_header("Cache-Control", "max-age=600, public")
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d, indent=4)
