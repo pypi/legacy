@@ -1688,6 +1688,13 @@ SET client_min_messages = warning;
 SET search_path = public, pg_catalog;
 
 --
+-- Special "deleted user" to put into journals when users are deleted
+--
+INSERT INTO accounts_user (password, last_login, is_superuser, username, name,
+    is_staff, is_active, date_joined)
+VALUES ('!', now(), false, 'deleted-user', 'deleted user', false, false, now());
+
+--
 -- Data for Name: trove_classifiers; Type: TABLE DATA; Schema: public; Owner: -
 --
 
