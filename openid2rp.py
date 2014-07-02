@@ -635,7 +635,7 @@ def _total_seconds(td):
 
 def verify(response, discovery_cache, find_association, nonce_seen):
     logger = logging.getLogger(__name__)
-    logging.info('Starting OpenID verification');
+    logger.info('Starting OpenID verification')
     response = _prepare_response(response)
     if 'openid.ns' in response:
         ns = response['openid.ns'][0]
