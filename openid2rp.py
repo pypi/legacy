@@ -9,6 +9,7 @@
 import urlparse, urllib, httplib, time, cgi, HTMLParser
 import cStringIO, base64, hmac, hashlib, datetime, re, random
 import itertools, cPickle, sys
+import logging
 
 try:
     from xml.etree import ElementTree
@@ -633,17 +634,22 @@ def _total_seconds(td):
     return td.days*24*3600 + td.seconds
 
 def verify(response, discovery_cache, find_association, nonce_seen):
+    logger = logging.getLogger(__name__)
+    logger.info('Starting OpenID verification')
     response = _prepare_response(response)
     if 'openid.ns' in response:
         ns = response['openid.ns'][0]
         if ns != 'http://specs.openid.net/auth/2.0':
+            logger.info('Not OpenID 2.0')
             raise NotAuthenticated(NotAuthenticate.UNSUPPORTED_VERSION)
     else:
         ns = None
     mode = response['openid.mode'][0]
     if mode == 'cancel':
+        logger.info('OpenID Cancelled')
         raise NotAuthenticated(NotAuthenticated.CANCELLED)
     if mode != 'id_res':
+        logger.info('OpenID not id_res')
         raise NotAuthenticated(NotAuthenticated.UNEXPECTED_MODE, mode)
     # Establish claimed ID
     if 'openid.claimed_id' in response:
@@ -652,23 +658,30 @@ def verify(response, discovery_cache, find_association, nonce_seen):
         fragment = claimed_id.find('#')
         if fragment != -1:
             claimed_id = claimed_id[:fragment]
+        logger.info('Claimed_id: %s' % claimed_id)
     elif 'openid1' in response:
         claimed_id = response['openid1'][0]
+        logger.info('OpenID1 claimed_id: %s' % claimed_id)
     else:
+        logger.info('OpenID Claimed ID missing')
         raise NotAuthenticated(NotAuthenticated.CLAIMED_ID_MISSING)
     discovered = discovery_cache(claimed_id)
     if not discovered:
+        logger.info('OpenID claimed_id not in cache')
         discovered = discover(claimed_id)
         if not discovered:
+            logger.info('OpenID discovery failed')
             raise NotAuthenticated(NotAuthenticated.DISCOVERY_FAILED, claimed_id)
     services, op_endpoint, op_local = discovered
     # For a provider-allocated claimed_id, there will be no op_local ID,
     # and there is no point checking it.
     if op_local and op_local != response['openid.identity'][0]:
+        logger.info('Discovered and asserted identifiers differ')
         raise NotAuthenticated('Discovered and asserted local identifiers differ')
     # For OpenID 1.1, op_endpoint may not be included in the response
     if ('openid.op_endpoint' in response and
         op_endpoint != response['openid.op_endpoint'][0]):
+        logger.info('OpenID1 endpoint inconsistent')
         raise NotAuthenticated(NotAuthenticated.INCONSISTENT_IDS)
     # XXX verify protocol version, verify claimed_id wrt. original request,
     # verify return_to URL
@@ -682,17 +695,19 @@ def verify(response, discovery_cache, find_association, nonce_seen):
         verify_signature_directly(op_endpoint, response)
         signed = response['openid.signed'][0].split(',')
 
+    logger.info('OpenID signed: %s' % signed)
+
     # Check the nonce. OpenID 1.1 doesn't have them
     if 'openid.response_nonce' in response:
         nonce = response['openid.response_nonce'][0]
-        timestamp = parse_nonce(nonce)
-        if _total_seconds(datetime.datetime.utcnow() - timestamp) > 10:
-            # allow for at most 10s transmission time and time shift
-            raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
         if nonce_seen(nonce):
+            logger.info('Replay attack attempted')
             raise NotAuthenticated(NotAuthenticated.REPLAY_ATTACK)
+        logger.info('Nonce verified successfully')
     elif ns:
+        logger.info('No nonce')
         raise NotAuthenticated(NotAuthenticated.MISSING_NONCE)
+    logger.info('Returning from verify. Signed: %s, claimed_id: %s', signed, claimed_id)
     return signed, claimed_id
 
 def parse_nonce(nonce):

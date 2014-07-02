@@ -1855,7 +1855,7 @@ class Store:
                      (user,))
         # point all journal entries to the "deleted user"
         safe_execute(cursor,
-                     '''update journals set submitted_by='deleted user' where submitted_by=%s''',
+                     '''update journals set submitted_by='deleted-user' where submitted_by=%s''',
                      (user,))
         # delete all cookies
         safe_execute(cursor,
