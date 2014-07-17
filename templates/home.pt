@@ -26,8 +26,6 @@ To use a package from this index either
 "<a href="https://pip.pypa.io/">pip</a> install <i>package</i>"
 (<a href="https://pip.pypa.io/en/latest/installing.html">get pip</a>)
 or download, unpack and "python setup.py install" it.
-<a tal:attributes="href string:${app/config/url}?%3Aaction=browse">Browse all packages</a>
-or use the search box above.
 </p>
 </div>
 
