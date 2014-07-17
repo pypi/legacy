@@ -17,47 +17,26 @@ or
 links.
 </p>
 
-<div id="document-navigation" style="margin-left: 0px; width: 50%; float: left; display: inline; padding: 4px;">
-<b>Package documentation is now at pythonhosted.org</b>
-<p style="margin-bottom: 0px">
-Package documentation is hosted on its own domain,
-<b>pythonhosted.org</b> (it was at packages.python.org and that domain will
-still work and automatically redirect to the new documentation home.)
-</p>
-</div>
-
 <br clear="both" />
 
 <div id="document-navigation" style="margin-left: 0px; width: 30%; float: left; display: inline; padding: 4px;">
 <b>Get Packages</b>
 <p style="margin-bottom: 0px">
 To use a package from this index either
-"<a href="http://www.pip-installer.org/en/latest/installing.html">pip</a> install <i>package</i>"
-(<a href="http://www.pip-installer.org/en/latest/installing.html">get pip</a>)
+"<a href="https://pip.pypa.io/">pip</a> install <i>package</i>"
+(<a href="https://pip.pypa.io/en/latest/installing.html">get pip</a>)
 or download, unpack and "python setup.py install" it.
 <a tal:attributes="href string:${app/config/url}?%3Aaction=browse">Browse all packages</a>
 or use the search box above.
 </p>
-
-<!--
-  <form id="searchform" method="get" name="searchform" action="./files/page.html"
-        style="margin-top: 0px; margin-left: 2px; margin-bottom: 4px;">
-    <input type="hidden" name=":action" value="search">
-    <div id="search">
-      <input class="input-text" id="term" name="term" style="width: 70%">
-      <input class="input-button" type="submit" name="submit" value="search" id="submit">
-    </div>
-  </form>
--->
 </div>
 
 <div id="document-navigation" style="width: 30%; float: left; display: inline; padding: 4px;">
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
 Submit packages with
-"<a href="http://docs.python.org/3/distutils/packageindex.html" class="vt-p">python setup.py upload</a>"
-(full <a href="http://docs.python.org/3/distutils/packageindex.html">tutorial</a>).
-The index also <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
+"<a href="https://packaging.python.org/en/latest/tutorial.html#uploading-your-project-to-pypi" class="vt-p">python setup.py upload</a>".
+The index <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
 You may also use the <a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
 You must <a tal:attributes="href string:${app/config/url}?%3Aaction=register_form">register</a>.
 Testing? Use <a href="http://wiki.python.org/moin/TestPyPI" class="vt-p">testpypi</a>.
@@ -74,7 +53,7 @@ use the
 <a href="http://wiki.python.org/moin/PyPiXmlRpc">XML-RPC</a> or
 <a href="http://www.python.org/dev/peps/pep-0301/">HTTP</a>
 interfaces.
-Use the <a href="http://pypi.python.org/mirrors" class="vt-p">mirror infrastructure</a> to download even if the primary site is unavailable.
+Use <a href="https://packaging.python.org/en/latest/deployment.html#pypi-mirrors-and-caches" class="vt-p">local mirroring or caching</a> to make installation more robust.
 </p>
 </div>
 
