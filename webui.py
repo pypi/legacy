@@ -111,7 +111,6 @@ class MultipleReleases(Exception):
 __version__ = '1.1'
 
 providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/'),
              ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
              )
 
