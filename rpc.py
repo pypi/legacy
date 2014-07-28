@@ -21,7 +21,11 @@ from fncache import RedisLru
 root = os.path.dirname(os.path.abspath(__file__))
 print root
 conf = config.Config(os.path.join(root, "config.ini"))
-cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
+
+if conf.cache_redis_url is None:
+    cache_redis = None
+else:
+    cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
 
 package_tag_lru = RedisLru(cache_redis, expires=60, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
 cache_by_pkg = package_tag_lru.decorator

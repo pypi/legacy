@@ -76,7 +76,10 @@ class Config:
 
         self.queue_redis_url = c.get('database', 'queue_redis_url')
         self.count_redis_url = c.get('database', 'count_redis_url')
-        self.cache_redis_url = c.get('database', 'cache_redis_url')
+        if c.has_option('database', 'cache_redis_url'):
+            self.cache_redis_url = c.get('database', 'cache_redis_url')
+        else:
+            self.cache_redis_url = None
 
         self.sentry_dsn = c.get('sentry', 'dsn')
 
