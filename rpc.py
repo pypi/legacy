@@ -27,7 +27,8 @@ if conf.cache_redis_url is None:
 else:
     cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
 
-package_tag_lru = RedisLru(cache_redis, expires=60, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
+# Note: slice object is to cut off the instance of Store that would be passed along
+package_tag_lru = RedisLru(cache_redis, expires=86400, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
 cache_by_pkg = package_tag_lru.decorator
 
 class RequestHandler(SimpleXMLRPCDispatcher):
