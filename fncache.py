@@ -1,4 +1,15 @@
 
+"""
+modified from https://gist.githubusercontent.com/kwarrick/4247343/raw/ca961ac3429777350a0256e39944135987012834/fncache.py
+
+  - Built an object rather than pure function
+  - Modified to use redis pipelining
+  - Modified to allow purging
+
+credit: Kevin Warrick <kwarrick@uga.edu>
+
+"""
+
 import json
 from functools import wraps
 
