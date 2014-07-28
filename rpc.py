@@ -19,7 +19,6 @@ from store import dependency
 from fncache import RedisLru
 
 root = os.path.dirname(os.path.abspath(__file__))
-print root
 conf = config.Config(os.path.join(root, "config.ini"))
 
 if conf.cache_redis_url is None:
@@ -180,7 +179,6 @@ def browse(store, categories):
     if not isinstance(categories, list):
         raise TypeError, "Parameter categories must be a list"
     classifier_ids = store.get_classifier_ids(categories)
-    print classifier_ids
     if len(classifier_ids) != len(categories):
         for c in categories:
             if c not in classifier_ids:
