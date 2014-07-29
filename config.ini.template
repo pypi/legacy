@@ -9,6 +9,7 @@ name = pypi
 ; Redis
 queue_redis_url = redis://localhost:6379/0
 count_redis_url = redis://localhost:6379/1
+cache_redis_url = redis://localhost:6379/2
 
 ; Storage Directories
 files_dir = /MacDev/svn.python.org/pypi-pep345/files

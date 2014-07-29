@@ -2518,15 +2518,15 @@ class Store:
         self._changed_packages.add(package)
 
     def _invalidate_cache(self):
-        if self.config.fastly_api_key:
-            # Build up a list of tags we want to purge
-            tags = []
-            for pkg in self._changed_packages:
-                if pkg is None:
-                    tags += ["simple-index"]
-                else:
-                    tags += ["pkg~%s" % safe_name(pkg).lower()]
+        # Build up a list of tags we want to purge
+        tags = []
+        for pkg in self._changed_packages:
+            if pkg is None:
+                tags += ["simple-index"]
+            else:
+                tags += ["pkg~%s" % safe_name(pkg).lower()]
 
+        if self.config.fastly_api_key:
             # We only need to bother to enqueue a task if we have something
             #   to purge
             if tags:
@@ -2536,7 +2536,14 @@ class Store:
                             self.config.fastly_api_key,
                             self.config.fastly_service_id,
                             tags,
-                        )
+                    )
+
+        if self.config.cache_redis_url:
+            if tags:
+                self.enqueue(tasks.purge_redis_cache,
+                             self.config.cache_redis_url,
+                             tags,
+                    )
 
         # Empty our changed packages
         self._changed_packages = set()
