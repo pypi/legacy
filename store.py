@@ -948,7 +948,10 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'select autohide from packages where name=%s',
                      [name])
-        return cursor.fetchall()[0][0]
+        row = cursor.fetchone()
+        if row is None:
+            return False
+        return row[0]
 
     def set_package_autohide(self, name, value):
         cursor = self.get_cursor()
