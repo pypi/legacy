@@ -1,7 +1,18 @@
 import urlparse
 
+import redis
 import requests
 
+from fncache import RedisLru
+
+def purge_redis_cache(cache_redis_url, tags):
+    cache_redis = redis.StrictRedis.from_url(cache_redis_url)
+    lru_cache = RedisLru(cache_redis) 
+
+    all_tags = set(tags)
+    for tag in set(all_tags):
+        print tag
+        lru_cache.purge(tag)
 
 def purge_fastly_tags(domain, api_key, service_id, tags):
     session = requests.session()

@@ -1,3 +1,4 @@
+import os
 import sys
 import xmlrpclib
 import traceback
@@ -9,8 +10,25 @@ from cStringIO import StringIO
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 from collections import defaultdict
 
+import redis
+
 # local imports
+import config
+
 from store import dependency
+from fncache import RedisLru
+
+root = os.path.dirname(os.path.abspath(__file__))
+conf = config.Config(os.path.join(root, "config.ini"))
+
+if conf.cache_redis_url is None:
+    cache_redis = None
+else:
+    cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
+
+# Note: slice object is to cut off the instance of Store that would be passed along
+package_tag_lru = RedisLru(cache_redis, expires=86400, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
+cache_by_pkg = package_tag_lru.decorator
 
 class RequestHandler(SimpleXMLRPCDispatcher):
     """A request dispatcher for the PyPI XML-RPC API."""
@@ -81,10 +99,12 @@ def package_hosting_mode(store, package_name):
     """Returns the hosting mode for a given package."""
     return store.get_package_hosting_mode(package_name)
 
+@cache_by_pkg
 def release_downloads(store, package_name, version):
     '''Return download count for given release.'''
     return store.get_release_downloads(package_name, version)
 
+@cache_by_pkg
 def package_roles(store, package_name):
     '''Return associated users and package roles.'''
     result = store.get_package_roles(package_name)
@@ -99,10 +119,10 @@ def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
 
-
 def list_packages_with_serial(store):
     return store.get_packages_with_serial()
 
+@cache_by_pkg
 def package_releases(store, package_name, show_hidden=False):
     if show_hidden:
         hidden = None
@@ -126,6 +146,7 @@ def release_urls(store, package_name, version):
 package_urls = release_urls     # "deprecated"
 
 
+@cache_by_pkg
 def release_data(store, package_name, version):
     info = store.get_package(package_name, version)
     if not info:
@@ -143,7 +164,10 @@ def release_data(store, package_name, version):
     info['release_url'] = 'http://pypi.python.org/pypi/%s/%s' % (package_name,
         version)
     info['docs_url'] = store.docs_url(package_name)
-    info['downloads'] = store.download_counts(package_name)
+    try:
+        info['downloads'] = store.download_counts(package_name)
+    except redis.exceptions.ConnectionError as conn_fail:
+        info['downloads'] = {'last_month': 0, 'last_week': 0, 'last_day': 0}
     return info
 package_data = release_data     # "deprecated"
 
@@ -155,7 +179,6 @@ def browse(store, categories):
     if not isinstance(categories, list):
         raise TypeError, "Parameter categories must be a list"
     classifier_ids = store.get_classifier_ids(categories)
-    print classifier_ids
     if len(classifier_ids) != len(categories):
         for c in categories:
             if c not in classifier_ids:
