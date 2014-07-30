@@ -9,7 +9,7 @@
 
 <p>To upload files to this index, you have two options:</p>
 <p id="submitheader">1. Use the setup.py "<a
-href="http://www.python.org/doc/dist/package-upload.html">upload</a>" command.</p>
+href="https://packaging.python.org/en/latest/tutorial.html#uploading-your-project-to-pypi">upload</a>" command.</p>
 
 <p id="submitheader">2. Or enter the information manually:</p>
 <form tal:attributes="action app/url_path" method="POST"
