@@ -38,7 +38,7 @@ def is_distutils_file(content, filename, filetype):
         if filetype != 'bdist_msi':
             return False
 
-        if not content.startswith('\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3E\x00\x03\x00\xFE\xFF\x09\x00\x06'): # from magic file
+        if not content.startswith('\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1'): # from magic file
             return False
 
     elif filename.endswith('.zip') or filename.endswith('.egg'):
