@@ -745,13 +745,30 @@ class WebUI:
         rpc.handle_request(self)
 
     def simple_body(self, path):
+        # Check to see if we're using the normalized name or not.
+        if path != safe_name(path).lower():
+            names = self.store.find_package(path)
+            if names:
+                target_url = "/".join([
+                    self.config.simple_script,
+                    safe_name(path).lower(),
+                ])
+                raise Redirect, target_url
+            else:
+                raise NotFound, path + " does not have any releases"
+
         urls = self.store.get_package_urls(path, relative="../../packages")
         if urls is None:
-            # check for normalized name
             names = self.store.find_package(path)
-            if names and names[0] != path:
-                raise Redirect, self.config.simple_script + '/' + names[0]
+            if names:
+                urls = self.store.get_package_urls(
+                    names[0],
+                    relative="../../packages",
+                )
+
+        if urls is None:
             raise NotFound, path + " does not have any releases"
+
         html = []
         html.append("""<html><head><title>Links for %s</title><meta name="api-version" value="2" /></head>"""
                     % cgi.escape(path))
@@ -815,7 +832,7 @@ class WebUI:
 
             html.extend(
                 "<a href='%s'>%s</a><br/>\n" % (
-                    urllib.quote(name),
+                    urllib.quote(safe_name(name).lower()),
                     cgi.escape(name),
                 )
                 for name in self.store.get_packages_utf8()
@@ -845,6 +862,12 @@ class WebUI:
             raise NotFound(path)
 
         html = self.simple_body(path)
+
+        # Make sure we're using the cannonical name.
+        names = self.store.find_package(path)
+        if names:
+            path = names[0]
+
         serial = self.store.last_serial_for_package(path)
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/html; charset=utf-8')
