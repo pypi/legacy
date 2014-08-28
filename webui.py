@@ -832,8 +832,8 @@ class WebUI:
 
             html.extend(
                 "<a href='%s'>%s</a><br/>\n" % (
-                    urllib.quote(name),
-                    cgi.escape(safe_name(name).lower()),
+                    urllib.quote(safe_name(name).lower()),
+                    cgi.escape(name),
                 )
                 for name in self.store.get_packages_utf8()
             )
