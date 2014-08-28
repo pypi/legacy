@@ -862,6 +862,12 @@ class WebUI:
             raise NotFound(path)
 
         html = self.simple_body(path)
+
+        if path != safe_name(path).lower():
+            names = self.store.find_package(path)
+            if names:
+                path = names[0]
+
         serial = self.store.last_serial_for_package(path)
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/html; charset=utf-8')
