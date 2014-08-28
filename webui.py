@@ -863,10 +863,10 @@ class WebUI:
 
         html = self.simple_body(path)
 
-        if path != safe_name(path).lower():
-            names = self.store.find_package(path)
-            if names:
-                path = names[0]
+        # Make sure we're using the cannonical name.
+        names = self.store.find_package(path)
+        if names:
+            path = names[0]
 
         serial = self.store.last_serial_for_package(path)
         self.handler.send_response(200, 'OK')
