@@ -1335,6 +1335,17 @@ class WebUI:
                 name = self.form['name']
             except KeyError:
                 raise NotFound, 'no package name supplied'
+
+        # Make sure that our package name is correct
+        names = self.store.find_package(name)
+        if names and names[0] != name:
+            parts = ["pypi", names[0]]
+            if version is None:
+                version = self.form.get("version")
+            if version is not None:
+                parts.append(version)
+            raise Redirect, "/%s/json" % "/".join(parts)
+
         if version is None:
             if self.form.get('version'):
                 version = self.form['version']
