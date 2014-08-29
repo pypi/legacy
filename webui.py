@@ -1335,6 +1335,17 @@ class WebUI:
                 name = self.form['name']
             except KeyError:
                 raise NotFound, 'no package name supplied'
+
+        # Make sure that our package name is correct
+        names = self.store.find_package(name)
+        if names and names[0] != name:
+            parts = ["pypi", names[0]]
+            if version is None:
+                version = self.form.get("version")
+            if version is not None:
+                parts.append(version)
+            raise Redirect, "/%s/json" % "/".join(parts)
+
         if version is None:
             if self.form.get('version'):
                 version = self.form['version']
@@ -1426,19 +1437,7 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return JSON rendering of a package.
         '''
-        try:
-            info, fname, fversion = self._get_latest_pkg_info(name, version)
-        except NotFound:
-            names = self.store.find_package(name)
-            if names and names[0] != name:
-                parts = ["pypi", names[0]]
-                if version is not None:
-                    parts.append(version)
-                raise Redirect, "/%s" & "/".join(parts)
-            else:
-                raise
-        else:
-            name, version = fname, fversion
+        info, fname, fversion = self._get_latest_pkg_info(name, version)
 
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
