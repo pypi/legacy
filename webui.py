@@ -1426,7 +1426,17 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return JSON rendering of a package.
         '''
-        info, name, version = self._get_latest_pkg_info(name, version)
+        try:
+            info, name, version = self._get_latest_pkg_info(name, version)
+        except NotFound:
+            names = self.store.find_package(name)
+            if names and names[0] != name:
+                parts = ["pypi", names[0]]
+                if version is not None:
+                    parts.append(version)
+                raise Redirect, "/%s" & "/".join(parts)
+            else:
+                raise
 
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
