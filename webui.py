@@ -1437,7 +1437,7 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return JSON rendering of a package.
         '''
-        info, fname, fversion = self._get_latest_pkg_info(name, version)
+        info, name, version = self._get_latest_pkg_info(name, version)
 
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
