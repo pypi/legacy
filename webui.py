@@ -1427,7 +1427,7 @@ class WebUI:
         '''Return JSON rendering of a package.
         '''
         try:
-            info, name, version = self._get_latest_pkg_info(name, version)
+            info, fname, fversion = self._get_latest_pkg_info(name, version)
         except NotFound:
             names = self.store.find_package(name)
             if names and names[0] != name:
@@ -1437,6 +1437,8 @@ class WebUI:
                 raise Redirect, "/%s" & "/".join(parts)
             else:
                 raise
+        else:
+            name, version = fname, fversion
 
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
