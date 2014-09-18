@@ -706,9 +706,9 @@ class WebUI:
 
         authtype, auth = auth.split(None, 1)
         try:
-            un, pw = base64.decodestring(auth).split(':')
+            un, pw = base64.decodestring(auth).split(':', 1)
         except (binascii.Error, ValueError):
-            # Invalid base64, or not exactly one colon
+            # Invalid base64, or no colon
             un = pw = ''
         if not self.store.has_user(un):
             return
