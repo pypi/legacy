@@ -591,6 +591,8 @@ class WebUI:
             return self.security()
         if script_name == '/daytime':
             return self.daytime()
+        if script_name == '/serial':
+            return self.current_serial()
         if script_name == '/id':
             return self.run_id()
 
@@ -706,9 +708,9 @@ class WebUI:
 
         authtype, auth = auth.split(None, 1)
         try:
-            un, pw = base64.decodestring(auth).split(':')
+            un, pw = base64.decodestring(auth).split(':', 1)
         except (binascii.Error, ValueError):
-            # Invalid base64, or not exactly one colon
+            # Invalid base64, or no colon
             un = pw = ''
         if not self.store.has_user(un):
             return
@@ -3299,6 +3301,14 @@ class WebUI:
         options = {'title': 'PyPI Security'}
         self.write_template('security.pt', **options)
 
+    def current_serial(self):
+        # Provide an endpoint for quickly determining the current serial
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/plain')
+        self.handler.end_headers()
+        serial = self.store.changelog_last_serial() or 0
+        self.wfile.write(str(serial))
+        
     def daytime(self):
         # Mirrors are supposed to provide /last-modified,
         # but it doesn't make sense to do so for the master server
