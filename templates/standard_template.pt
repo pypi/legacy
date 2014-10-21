@@ -26,6 +26,10 @@
        <link rel="stylesheet" href="/static/css/pypi.css" type="text/css"/>
        <link media="screen" rel="stylesheet" href="/static/css/pypi-screen.css" type="text/css"/>
 
+       <tal:x tal:condition="python:'testpypi' not in app.config.url">
+       <meta name="google-site-verification" content="NSgF04qslVV4P7nymxJDSkWVK09zfdPTxgZfU3dNSoQ" />
+       </tal:x>
+
        <metal:slot define-slot="head" />
 
        <style type="text/css">
