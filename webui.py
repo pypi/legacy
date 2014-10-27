@@ -591,6 +591,8 @@ class WebUI:
             return self.security()
         if script_name == '/daytime':
             return self.daytime()
+        if script_name == '/serial':
+            return self.current_serial()
         if script_name == '/id':
             return self.run_id()
 
@@ -706,9 +708,9 @@ class WebUI:
 
         authtype, auth = auth.split(None, 1)
         try:
-            un, pw = base64.decodestring(auth).split(':')
+            un, pw = base64.decodestring(auth).split(':', 1)
         except (binascii.Error, ValueError):
-            # Invalid base64, or not exactly one colon
+            # Invalid base64, or no colon
             un = pw = ''
         if not self.store.has_user(un):
             return
@@ -745,13 +747,30 @@ class WebUI:
         rpc.handle_request(self)
 
     def simple_body(self, path):
+        # Check to see if we're using the normalized name or not.
+        if path != safe_name(path).lower():
+            names = self.store.find_package(path)
+            if names:
+                target_url = "/".join([
+                    self.config.simple_script,
+                    safe_name(path).lower(),
+                ])
+                raise Redirect, target_url
+            else:
+                raise NotFound, path + " does not have any releases"
+
         urls = self.store.get_package_urls(path, relative="../../packages")
         if urls is None:
-            # check for normalized name
             names = self.store.find_package(path)
-            if names and names[0] != path:
-                raise Redirect, self.config.simple_script + '/' + names[0]
+            if names:
+                urls = self.store.get_package_urls(
+                    names[0],
+                    relative="../../packages",
+                )
+
+        if urls is None:
             raise NotFound, path + " does not have any releases"
+
         html = []
         html.append("""<html><head><title>Links for %s</title><meta name="api-version" value="2" /></head>"""
                     % cgi.escape(path))
@@ -815,7 +834,7 @@ class WebUI:
 
             html.extend(
                 "<a href='%s'>%s</a><br/>\n" % (
-                    urllib.quote(name),
+                    urllib.quote(safe_name(name).lower()),
                     cgi.escape(name),
                 )
                 for name in self.store.get_packages_utf8()
@@ -845,6 +864,12 @@ class WebUI:
             raise NotFound(path)
 
         html = self.simple_body(path)
+
+        # Make sure we're using the cannonical name.
+        names = self.store.find_package(path)
+        if names:
+            path = names[0]
+
         serial = self.store.last_serial_for_package(path)
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/html; charset=utf-8')
@@ -1312,6 +1337,17 @@ class WebUI:
                 name = self.form['name']
             except KeyError:
                 raise NotFound, 'no package name supplied'
+
+        # Make sure that our package name is correct
+        names = self.store.find_package(name)
+        if names and names[0] != name:
+            parts = ["pypi", names[0]]
+            if version is None:
+                version = self.form.get("version")
+            if version is not None:
+                parts.append(version)
+            raise Redirect, "/%s/json" % "/".join(parts)
+
         if version is None:
             if self.form.get('version'):
                 version = self.form['version']
@@ -3265,6 +3301,14 @@ class WebUI:
         options = {'title': 'PyPI Security'}
         self.write_template('security.pt', **options)
 
+    def current_serial(self):
+        # Provide an endpoint for quickly determining the current serial
+        self.handler.send_response(200, 'OK')
+        self.handler.set_content_type('text/plain')
+        self.handler.end_headers()
+        serial = self.store.changelog_last_serial() or 0
+        self.wfile.write(str(serial))
+        
     def daytime(self):
         # Mirrors are supposed to provide /last-modified,
         # but it doesn't make sense to do so for the master server
