@@ -239,36 +239,34 @@
         sp.summary({
           // <![CDATA[
           success: function(data) {
-            if (data.incidents.length > 0) {
-              var div = document.getElementById('statusdiv');
-              var reports = "</br><h4 id='statusbox'>Status</h4>\n";
-              var outage = 0;
-              var maintenance = 0;
-              for (i in data.incidents) {
-                var incident = data.incidents[i];
-                var message, status = incident.status;
-                if (status === 'scheduled') {
-                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' scheduled.</a></li>\n';
-                  reports += message;
-                  maintenance += 1;
-                } else if (status === 'in_progress') {
-                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' is currently in progress.' + '</a></li>\n';
-                  reports += message;
-                  maintenance += 1;
-                } else if (status !== 'resolved' && status !== 'postmortem' && status !== 'completed') {
-                  message = '<li><a href="' + incident.shortlink + '">' + incident.name + ': ' + incident.status + '</a></li>\n';
-                  reports += message;
-                  outage += 1;
-                }
+            var div = document.getElementById('statusdiv');
+            var reports = "</br><h4 id='statusbox'>Status</h4>\n";
+            var outage = 0;
+            var maintenance = 0;
+            for (i in data.incidents) {
+              var incident = data.incidents[i];
+              var message, status = incident.status;
+              if (status === 'scheduled') {
+                message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' scheduled.</a></li>\n';
+                reports += message;
+                maintenance += 1;
+              } else if (status === 'in_progress') {
+                message = '<li><a href="' + incident.shortlink + '">' + incident.name + ' is currently in progress.' + '</a></li>\n';
+                reports += message;
+                maintenance += 1;
+              } else if (status !== 'resolved' && status !== 'postmortem' && status !== 'completed') {
+                message = '<li><a href="' + incident.shortlink + '">' + incident.name + ': ' + incident.status + '</a></li>\n';
+                reports += message;
+                outage += 1;
               }
-              if (outage + maintenance === 0) {
-                reports += "<li><a href='http://status.python.org'>Nothing to report</a></li>";
-              }
-              div.innerHTML=reports;
-              if (outage > 0) {
-                var statusbox = document.getElementById("statusbox");
-                statusbox.style.background = '#FC234A';
-              }
+            }
+            if (outage + maintenance === 0) {
+              reports += "<li><a href='http://status.python.org'>Nothing to report</a></li>";
+            }
+            div.innerHTML=reports;
+            if (outage > 0) {
+              var statusbox = document.getElementById("statusbox");
+              statusbox.style.background = '#FC234A';
             }
           }
           // ]]>
