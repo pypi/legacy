@@ -232,13 +232,13 @@
       </script>
       </tal:x>
 
-      <script type="text/javascript" src="//statuspage-production.s3.amazonaws.com/se.js">
+      <script type="text/javascript" src="//statuspage-production.s3.amazonaws.com/se-v2.js">
       </script>
       <script type="text/javascript">
-        window.fetchStatusPage({
-          pageId: '<span tal:replace="string:${app/config/statuspage_id}">foo</span>',
+        var sp = new StatusPage.page({ page : '<span tal:replace="string:${app/config/statuspage_id}">foo</span>' });
+        sp.summary({
           // <![CDATA[
-          successCallback: function(data) {
+          success: function(data) {
             if (data.incidents.length > 0) {
               var div = document.getElementById('statusdiv');
               var reports = "</br><h4 id='statusbox'>Status</h4>\n";
