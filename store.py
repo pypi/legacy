@@ -1363,7 +1363,6 @@ class Store:
 
         safe_execute(cursor, 'delete from description_urls where name=%s', (name,))
         safe_execute(cursor, 'delete from releases where name=%s', (name,))
-        safe_execute(cursor, 'delete from journals where name=%s', (name,))
         safe_execute(cursor, 'delete from roles where package_name=%s', (name,))
         safe_execute(cursor, 'delete from packages where name=%s', (name,))
 
