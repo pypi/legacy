@@ -2119,6 +2119,8 @@ class WebUI:
             raise FormError, message
 
         name = data['name']
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
         version = data['version']
 
         # make sure the user has permission to do stuff
