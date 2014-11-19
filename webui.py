@@ -2071,6 +2071,9 @@ class WebUI:
         name = data['name']
         version = data['version']
 
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
+
         # don't hide by default
         if not data.has_key('_pypi_hidden'):
             data['_pypi_hidden'] = '0'
@@ -2331,6 +2334,9 @@ class WebUI:
         if self.form.has_key('submit_remove'):
             return self.remove_pkg()
 
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
+
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or
@@ -2586,6 +2592,9 @@ class WebUI:
             version = parameters['version']
         if not name or not version:
             raise FormError, 'Name and version are required'
+
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
