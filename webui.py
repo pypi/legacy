@@ -3310,7 +3310,7 @@ class WebUI:
         self.handler.end_headers()
         serial = self.store.changelog_last_serial() or 0
         self.wfile.write(str(serial))
-        
+
     def daytime(self):
         # Mirrors are supposed to provide /last-modified,
         # but it doesn't make sense to do so for the master server
