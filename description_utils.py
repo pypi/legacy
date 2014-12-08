@@ -6,7 +6,6 @@ import bz2
 import StringIO
 import cgi
 import urlparse
-import markdown
 
 from docutils import io, readers
 from docutils.core import publish_doctree, Publisher
@@ -100,7 +99,7 @@ ALLOWED_SCHEMES = '''file ftp gopher hdl http https imap mailto mms news nntp
 prospero rsync rtsp rtspu sftp shttp sip sips snews svn svn+ssh telnet
 wais irc'''.split()
 
-def processDescription(source, output_encoding='unicode', format='rst'):
+def processDescription(source, output_encoding='unicode'):
     """Given an source string, returns an HTML fragment as a string.
 
     The return value is the contents of the <body> tag.
@@ -110,7 +109,6 @@ def processDescription(source, output_encoding='unicode', format='rst'):
     - `source`: A multi-line text string; required.
     - `output_encoding`: The desired encoding of the output.  If a Unicode
       string is desired, use the default value of "unicode" .
-    - `format`: The format of the input. Support choices are 'rst' (reStructuredText) or 'markdown'
     """
     # Dedent all lines of `source`.
     source = trim_docstring(source)
@@ -128,9 +126,6 @@ def processDescription(source, output_encoding='unicode', format='rst'):
     parts = None
 
     try:
-        if format == "markdown":
-            return markdown.html(source)
-
         # Convert reStructuredText to HTML using Docutils.
         document = publish_doctree(source=source,
             settings_overrides=settings_overrides)
@@ -204,12 +199,7 @@ def extractPackageReadme(content, filename, filetype):
                 ext = 'txt'
             if name.upper() != 'README':
                 continue
-
-            if ext in ('rst', 'txt'):
-                format = "rst"
-            elif ext in ('md', 'markdown'):
-                format = "markdown"
-            else:
+            if ext not in ('txt', 'rst', 'md'):
                 return
 
             # grab the content and parse if it's something we might understand,
@@ -220,7 +210,7 @@ def extractPackageReadme(content, filename, filetype):
             text = text.decode('utf-8', 'replace').encode('utf-8')
 
             if text:
-                return text, processDescription(text, format=format)
+                return text, processDescription(text)
 
     elif (filename.endswith('.tar.gz') or filename.endswith('.tgz') or
             filename.endswith('.tar.bz2') or filename.endswith('.tbz2')):
