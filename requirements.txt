@@ -4,6 +4,7 @@ Pygments==1.6
 defusedxml==0.4.1
 docutils==0.11
 itsdangerous==0.23
+Markdown==2.4.1
 passlib==1.6.2
 psycopg2==2.5.1
 py-bcrypt==0.4
