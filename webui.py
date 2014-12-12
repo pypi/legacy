@@ -821,6 +821,7 @@ class WebUI:
         return best_enc
 
     def run_simple(self):
+        self.store.set_read_only()
         path = self.env.get('PATH_INFO')
 
         if not path:
@@ -880,6 +881,7 @@ class WebUI:
         self.wfile.write(html)
 
     def run_simple_sign(self):
+        self.store.set_read_only()
         path = self.env.get('PATH_INFO')
         if not path.endswith('/'):
             raise Redirect, self.config.simple_sign_script+path+'/'
@@ -902,6 +904,7 @@ class WebUI:
         self.wfile.write(sig)
 
     def packages(self):
+        self.store.set_read_only()
         path = self.env.get('PATH_INFO')
         parts = path.split("/")
 
@@ -1439,6 +1442,7 @@ class WebUI:
     def json(self, name=None, version=None):
         '''Return JSON rendering of a package.
         '''
+        self.store.set_read_only()
         info, name, version = self._get_latest_pkg_info(name, version)
 
         package_releases = self.store.get_package_releases(name)
