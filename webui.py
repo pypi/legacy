@@ -1333,7 +1333,7 @@ class WebUI:
 
         self.role_form()
 
-    def _get_latest_pkg_info(self, name, version):
+    def _get_latest_pkg_info(self, name, version, hidden=False):
         # get the appropriate package info from the database
         if name is None:
             try:
@@ -1355,7 +1355,7 @@ class WebUI:
             if self.form.get('version'):
                 version = self.form['version']
             else:
-                l = self.store.get_latest_release(name, hidden=False)
+                l = self.store.get_latest_release(name, hidden=hidden)
                 try:
                     version = l[0][1]
                 except IndexError:
@@ -1443,7 +1443,7 @@ class WebUI:
         '''Return JSON rendering of a package.
         '''
         self.store.set_read_only()
-        info, name, version = self._get_latest_pkg_info(name, version)
+        info, name, version = self._get_latest_pkg_info(name, version, hidden=None)
 
         package_releases = self.store.get_package_releases(name)
         releases = dict((release['version'], rpc.release_urls(self.store, release['name'], release['version'])) for release in package_releases)
