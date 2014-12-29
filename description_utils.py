@@ -42,8 +42,8 @@ from pygments.lexers import get_lexer_by_name, TextLexer
 class Pygments(Directive):
     """ Source code syntax hightlighting.
     """
-    required_arguments = 1
-    optional_arguments = 0
+    required_arguments = 0
+    optional_arguments = 1
     final_argument_whitespace = True
     option_spec = dict([(key, directives.flag) for key in VARIANTS])
     has_content = True
@@ -52,7 +52,7 @@ class Pygments(Directive):
         self.assert_has_content()
         try:
             lexer = get_lexer_by_name(self.arguments[0])
-        except ValueError:
+        except (ValueError, IndexError):
             # no lexer found - use the text one instead of an exception
             lexer = TextLexer()
         # take an arbitrary option if more than one is given
