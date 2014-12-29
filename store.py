@@ -2477,6 +2477,17 @@ class Store:
         cursor = self._cursor = self._conn.cursor()
         self._changed_packages = set()
 
+    def set_read_only(self):
+        safe_execute(
+            self.get_cursor(),
+            """
+            SET TRANSACTION
+                ISOLATION LEVEL SERIALIZABLE
+                READ ONLY
+                DEFERRABLE
+            """,
+        )
+
     def oid_store(self):
         if self.config.database_driver == 'sqlite3':
             return openid.store.sqlstore.SQLiteStore(self._conn)
