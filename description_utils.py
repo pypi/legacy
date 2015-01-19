@@ -172,7 +172,7 @@ def processDescription(source, output_encoding='unicode'):
 def extractPackageReadme(content, filename, filetype):
     '''Extract the README from a file and attempt to turn it into HTML.
 
-    Return the source text and html version or emty strings in either case if
+    Return the source text and html version or empty strings in either case if
     extraction fails.
     '''
     text = html = ''
