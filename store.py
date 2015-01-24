@@ -2049,7 +2049,13 @@ class Store:
         l = []
         for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
-            size = self.package_fs.getsize(path)
+            try:
+                size = self.package_fs.getsize(path)
+            fs.errors.ResourceNotFoundError:
+                if show_missing:
+                    size = 0
+                else:
+                    continue
             has_sig = self.package_fs.exists(path + ".asc")
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
