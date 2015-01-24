@@ -939,6 +939,8 @@ class WebUI:
                     file_data = self.package_fs.getcontents(path, "rb")
                 except fs.errors.ResourceNotFoundError:
                     status = (404, "Not Found")
+                else:
+                    headers["Content-Type"] = "application/octet-stream"
 
         headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
