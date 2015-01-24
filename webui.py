@@ -2737,6 +2737,8 @@ class WebUI:
                 filetype, pyversion, comment, filename, signature)
         except IntegrityError, e:
             raise FormError, 'Duplicate file upload detected.'
+        except store.PreviouslyUsedFilename:
+            raise FormError, "This filename has previously been used, you should use a different version."
 
         self.store.changed()
 

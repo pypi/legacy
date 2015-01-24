@@ -33,6 +33,20 @@ import fs.errors
 import tasks
 import pkg_resources
 
+
+try:
+    import psycopg2
+    OperationalError = psycopg2.OperationalError
+    IntegrityError = psycopg2.IntegrityError
+except ImportError:
+    class OperationalError(Exception):
+        pass
+
+
+class PreviouslyUsedFilename(Exception):
+    pass
+
+
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
 # back on the old version
@@ -2014,13 +2028,22 @@ class Store:
     def add_file(self, name, version, content, md5_digest, filetype,
             pyversion, comment, filename, signature):
         '''Add to the database and store the content to disk.'''
-        # add database entry
         cursor = self.get_cursor()
+        # add database entry
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest, upload_time) values
             (%s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
+
+        # Add an entry to the file registry
+        try:
+            sql = """ INSERT INTO file_registry (filename)
+                      VALUES (%s)
+                  """
+            safe_execute(cursor, sql, (filename,))
+        except IntegrityError:
+            raise PreviouslyUsedFilename
 
         # store file to disk
         filepath = self.gen_file_path(pyversion, name, filename)
