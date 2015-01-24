@@ -38,6 +38,8 @@ import raven
 import raven.utils.wsgi
 from raven.handlers.logging import SentryHandler
 
+import packaging.version
+
 # Filesystem Handling
 import fs.errors
 import fs.multifs
@@ -2276,6 +2278,26 @@ class WebUI:
         # mentiond in documentation; ensure name and version are valid for URLs
         if re.search('[<>%#"]', data['name'] + data['version']):
             raise ValueError('Invalid package name or version (URL safety)')
+
+        # Parse our version
+        parsed_version = packaging.version.parse(data["version"])
+
+        # Make sure that our version is a valid PEP 440 version
+        if data["version"].strip() != data["version"]:
+            raise ValueError(
+                "Invalid version, cannot have leading or trailing whitespace."
+            )
+
+        if not isinstance(parsed_version, packaging.version.Version):
+            raise ValueError(
+                "Invalid version, cannot be parsed as a valid PEP 440 version."
+            )
+
+        # Make sure that our version does not have a local version.
+        if parsed_version.local is not None:
+            raise ValueError(
+                "Invalid version, cannot use PEP 440 local versions on PyPI."
+            )
 
         # check requires and obsoletes
         def validate_version_predicates(col, sequence):
