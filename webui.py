@@ -2619,6 +2619,11 @@ class WebUI:
         if name.lower() in ('requirements.txt', 'rrequirements.txt'):
             raise Forbidden, "Package name '%s' invalid" % name
 
+        # Get the "real" name
+        possible_names = self.store.find_package(name)
+        if possible_names and possible_names[0] != name:
+            name = possible_names[0]
+
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or

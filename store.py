@@ -1006,8 +1006,7 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, '''update releases set description=%s,
             description_html='', description_from_readme=%s where name=%s
-            and version=%s''', [desc_text, desc_html, from_readme, name,
-            version])
+            and version=%s''', [desc_text, from_readme, name, version])
 
         self._add_invalidation(name)
 
@@ -1767,10 +1766,6 @@ class Store:
             user_name = self.username
         if user_name is None:
             return 0
-        if package_name is not None:
-            package_names = self.find_package(package_name)
-            if package_names and package_names[0] != package_name:
-                package_name = package_names[0]
         sql = '''select count(*) from roles where user_name=%s and
             role_name=%s and (package_name=%s or package_name is NULL)'''
         cursor = self.get_cursor()
