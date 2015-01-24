@@ -1335,10 +1335,7 @@ class Store:
         for file in self.list_files(name, version):
             path = self.gen_file_path(file['python_version'], name,
                 file['filename'])
-            try:
-                self.package_fs.remove(path)
-            except fs.error.ResourceNotFoundError:
-                pass
+            self.package_fs.remove(path)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
