@@ -241,7 +241,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None):
+    def __init__(self, config, queue=None, redis=None, package_fs=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -257,6 +257,8 @@ class Store:
 
         self.queue = queue
         self.count_redis = redis
+
+        self.package_fs = package_fs
 
         self._changed_packages = set()
 
@@ -1329,8 +1331,9 @@ class Store:
 
         # delete the files
         for file in self.list_files(name, version):
-            os.remove(self.gen_file_path(file['python_version'], name,
-                file['filename']))
+            path = self.gen_file_path(file['python_version'], name,
+                file['filename'])
+            self.package_fs.remove(path)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1353,7 +1356,7 @@ class Store:
         cursor = self.get_cursor()
         for release in self.get_package_releases(name):
             for file in self.list_files(name, release['version']):
-                os.remove(self.gen_file_path(file['python_version'], name,
+                self.package_fs.remove(self.gen_file_path(file['python_version'], name,
                     file['filename']))
 
         # delete ancillary table entries
@@ -1390,12 +1393,11 @@ class Store:
         for pyversion, filename in cursor.fetchall():
             oldname = self.gen_file_path(pyversion, old, filename)
             newname = self.gen_file_path(pyversion, new, filename)
-            if not os.path.exists(oldname):
+            if not self.package_fs.exists(oldname):
                 continue
             dirpath = os.path.split(newname)[0]
-            if not os.path.exists(dirpath):
-                os.makedirs(dirpath)
-            os.rename(oldname, newname)
+            self.package_fs.makedir(dirpath, recursive=True,  allow_recreate=True)
+            self.package_fs.rename(oldname, newname)
 
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
@@ -2005,8 +2007,7 @@ class Store:
 
     def gen_file_path(self, pyversion, name, filename):
         '''Generate the path to the file on disk.'''
-        return os.path.join(self.config.database_files_dir, pyversion,
-            name[0], name, filename)
+        return os.path.join(pyversion, name[0], name, filename)
 
     def add_file(self, name, version, content, md5_digest, filetype,
             pyversion, comment, filename, signature):
@@ -2022,21 +2023,14 @@ class Store:
         # store file to disk
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-        f = open(filepath, 'wb')
-        try:
+        self.package_fs.makedir(dirpath, recursive=True, allow_recreate=True)
+        with self.package_fs.open(filepath, "wb") as f:
             f.write(content)
-        finally:
-            f.close()
 
         # Store signature next to the file
         if signature:
-            f = open(filepath + ".asc", "wb")
-            try:
+            with self.package_fs.open(filepath + ".asc", "wb") as fp:
                 f.write(signature)
-            finally:
-                f.close()
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2055,16 +2049,8 @@ class Store:
         l = []
         for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
-            try:
-                size = os.stat(path)[stat.ST_SIZE]
-            except OSError, error:
-                if error.errno != errno.ENOENT: raise
-
-                if show_missing:
-                    size = 0
-                else:
-                    continue
-            has_sig = os.path.exists(path+'.asc')
+            size = self.package_fs.getsize(path)
+            has_sig = self.package_fs.exists(path + ".asc")
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
         return l
@@ -2089,16 +2075,10 @@ class Store:
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
-        os.remove(filepath)
-        if os.path.exists(filepath+'.asc'):
-            os.remove(filepath+'.asc')
-        while True:
-            if os.listdir(dirpath):
-                break
-            if dirpath == self.config.database_files_dir:
-                break
-            os.rmdir(dirpath)
-            dirpath = os.path.split(dirpath)[0]
+        self.package_fs.remove(filepath)
+        if self.package_fs.exists(filepath + ".asc"):
+            self.package_fs.remove(filepath + ".asc")
+        self.package_fs.removedir(dirpath, recursive=True)
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
@@ -2140,23 +2120,6 @@ class Store:
                 return '/'.join([self.config.package_docs_url, name] + sub)
         return ''
 
-    def update_upload_times(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor,
-                     "select python_version, name, filename from release_files "
-                     "where upload_time is null")
-        for pyversion, name, filename in cursor.fetchall():
-            fn = self.gen_file_path(pyversion, name, filename)
-            try:
-                st = os.stat(fn)
-            except OSError:
-                continue
-            date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(st.st_mtime))
-            safe_execute(cursor, "update release_files "
-            "set upload_time=%s where python_version=%s and name=%s "
-            "and filename = %s", (date, pyversion, name, filename))
-
-            self._add_invalidation(name)
     #
     # Mirrors managment
     #
