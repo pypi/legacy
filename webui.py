@@ -28,11 +28,6 @@ except ImportError:
     class OperationalError(Exception):
         pass
 
-# Importing M2Crypto patches urllib; don't let them do that
-orig = urllib.URLopener.open_https.im_func
-from M2Crypto import DSA
-urllib.URLopener.open_https = orig
-
 # OpenId provider imports
 OPENID_FILESTORE = '/tmp/openid-filestore'
 
@@ -881,27 +876,13 @@ class WebUI:
         self.wfile.write(html)
 
     def run_simple_sign(self):
-        self.store.set_read_only()
-        path = self.env.get('PATH_INFO')
-        if not path.endswith('/'):
-            raise Redirect, self.config.simple_sign_script+path+'/'
-        path = path[1:-1]
-        if '/' in path:
-            raise NotFound, path
-        html = self.simple_body(path)
-        serial = self.store.last_serial_for_package(path)
-        if not self.privkey:
-            self.privkey = DSA.load_key(os.path.join(self.config.key_dir, 'privkey'))
-
-        digest = hashlib.sha1(html).digest()
-
-        sig = self.privkey.sign_asn1(digest)
-        self.handler.send_response(200, 'OK')
-        self.handler.set_content_type('application/octet-stream')
-        self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
-        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
-        self.handler.end_headers()
-        self.wfile.write(sig)
+        raise NotFound(
+            "The Simple Sign API has been deprecated and removed. If you're "
+            "mirroring PyPI with bandersnatch then please upgrade to 1.7+. "
+            "If you're mirroring PyPI with pep381client then please switch to "
+            "bandersnatch. Otherwise contact the maintainer of your software "
+            "and inform them of PEP 464."
+        )
 
     def packages(self):
         self.store.set_read_only()
