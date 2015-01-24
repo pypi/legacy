@@ -27,11 +27,12 @@ import requests
 import urlparse
 import time
 from functools import wraps
+import itertools
 
 import fs.errors
 
 import tasks
-import pkg_resources
+import packaging.version
 
 
 try:
@@ -105,6 +106,24 @@ keep_trove = True
 def normalize_package_name(n):
     "Return lower-cased version of safe_name of n."
     return safe_name(n).lower()
+
+
+def normalize_version_number(v):
+    parsed = packaging.version.parse(v)
+    if isinstance(parsed, packaging.version.Version):
+        # We need to normalize the version, however we can't simply use the
+        # str() of the parsed version because we want to remove all of the
+        # trailing zeros for this.
+        parts = parsed.base_version.split("!")
+        parts[-1] = ".".join(reversed(list(itertools.dropwhile(lambda x: int(x) == 0, reversed(parts[-1].split("."))))))
+        fixed_base = "!".join(parts)
+
+        # Now that we have the base_version, we need to add the rest of our
+        # version pieces.
+        return fixed_base + str(parsed)[len(parsed.base_version):]
+    else:
+        return str(parsed)
+
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
@@ -582,7 +601,7 @@ class Store:
 
         sorted_versions = sorted(
             all_versions,
-            key=lambda x: pkg_resources.parse_version(x[0]),
+            key=lambda x: packaging.version.parse(x[0]),
         )
 
         new_order = 0
