@@ -28,6 +28,8 @@ import urlparse
 import time
 from functools import wraps
 
+import fs.errors
+
 import tasks
 import pkg_resources
 
