@@ -2086,7 +2086,8 @@ class Store:
         self.package_fs.remove(filepath)
         if self.package_fs.exists(filepath + ".asc"):
             self.package_fs.remove(filepath + ".asc")
-        self.package_fs.removedir(dirpath, recursive=True)
+        if self.package_fs.isdirempty(dirpath):
+            self.package_fs.removedir(dirpath, recursive=True)
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
