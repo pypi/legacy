@@ -907,52 +907,59 @@ class WebUI:
 
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
-        file_data = None
+        file_handle = None
 
         headers = {}
         status = (200, "OK")
 
-        if filename:
-            md5_digest = self.store.get_digest_from_filename(filename)
+        try:
+            if filename:
+                md5_digest = self.store.get_digest_from_filename(filename)
 
-            if md5_digest:
-                headers["ETag"] = md5_digest
-                if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
-                    status = (304, "Not Modified")
+                if md5_digest:
+                    headers["ETag"] = md5_digest
+                    if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
+                        status = (304, "Not Modified")
 
-            # Make sure that we associate the delivered file with the serial this
-            # is valid for. Intended to support mirrors to more easily achieve
-            # consistency with files that are newer than they may expect.
-            package = self.store.get_package_from_filename(filename)
-            if package:
-                serial = self.store.last_serial_for_package(package)
-                if serial is not None:
-                    headers["X-PyPI-Last-Serial"] = str(serial)
+                # Make sure that we associate the delivered file with the serial this
+                # is valid for. Intended to support mirrors to more easily achieve
+                # consistency with files that are newer than they may expect.
+                package = self.store.get_package_from_filename(filename)
+                if package:
+                    serial = self.store.last_serial_for_package(package)
+                    if serial is not None:
+                        headers["X-PyPI-Last-Serial"] = str(serial)
 
-                possible_package = package
+                    possible_package = package
 
-            if md5_digest:
-                headers["ETag"] = md5_digest
+                if md5_digest:
+                    headers["ETag"] = md5_digest
 
-            if status[0] != 304:
-                try:
-                    file_data = self.package_fs.getcontents(path, "rb")
-                except fs.errors.ResourceNotFoundError:
-                    status = (404, "Not Found")
-                else:
-                    headers["Content-Type"] = "application/octet-stream"
+                if status[0] != 304:
+                    try:
+                        file_handle = self.package_fs.open(path, "rb")
+                    except fs.errors.ResourceNotFoundError:
+                        status = (404, "Not Found")
+                    else:
+                        headers["Content-Type"] = "application/octet-stream"
 
-        headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
+            headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
-        self.handler.send_response(*status)
+            self.handler.send_response(*status)
 
-        for key, value in headers.items():
-            self.handler.send_header(key, value)
+            for key, value in headers.items():
+                self.handler.send_header(key, value)
 
-        self.handler.end_headers()
+            self.handler.end_headers()
 
-        if file_data is not None:
-            self.wfile.write(file_data)
+            if file_handle is not None:
+                data = file_handle.read(8192)
+                while data:
+                    self.wfile.write(data)
+                    data = file_handle.read(8192)
+        finally:
+            if file_handle is not None:
+                file_handle.close()
 
     def run_id(self):
         path = self.env.get('PATH_INFO')
