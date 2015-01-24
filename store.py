@@ -2051,7 +2051,7 @@ class Store:
             path = self.gen_file_path(pv, name, fn)
             try:
                 size = self.package_fs.getsize(path)
-            fs.errors.ResourceNotFoundError:
+            except fs.errors.ResourceNotFoundError:
                 if show_missing:
                     size = 0
                 else:
