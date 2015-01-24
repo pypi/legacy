@@ -2029,7 +2029,7 @@ class Store:
 
         # Store signature next to the file
         if signature:
-            with self.package_fs.open(filepath + ".asc", "wb") as fp:
+            with self.package_fs.open(filepath + ".asc", "wb") as f:
                 f.write(signature)
 
         # add journal entry
