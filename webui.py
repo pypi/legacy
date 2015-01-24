@@ -38,6 +38,11 @@ import raven
 import raven.utils.wsgi
 from raven.handlers.logging import SentryHandler
 
+# Filesystem Handling
+import fs.errors
+import fs.multifs
+import fs.osfs
+
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
@@ -256,11 +261,18 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
+        # Create our package filesystem
+        self.package_fs = fs.multifs.MultiFS()
+        self.package_fs.addfs(
+            "local", fs.osfs.OSFS(self.config.database_files_dir),
+            write=True,
+        )
+
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
-            fs = cgi.FieldStorage(fp=handler.rfile, environ=env)
+            fstorage = cgi.FieldStorage(fp=handler.rfile, environ=env)
             try:
-                self.form = decode_form(fs)
+                self.form = decode_form(fstorage)
             except UnicodeDecodeError:
                 self.failed = "Form data is not correctly encoded in UTF-8"
         else:
@@ -324,6 +336,7 @@ class WebUI:
             self.config,
             queue=self.queue,
             redis=self.count_redis,
+            package_fs=self.package_fs,
         )
         try:
             try:
@@ -894,6 +907,7 @@ class WebUI:
 
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
+        file_data = None
 
         headers = {}
         status = (200, "OK")
@@ -920,30 +934,25 @@ class WebUI:
             if md5_digest:
                 headers["ETag"] = md5_digest
 
+            if status[0] != 304:
+                try:
+                    file_data = self.package_fs.getcontents(path, "rb")
+                except fs.errors.ResourceNotFoundError:
+                    status = (404, "Not Found")
+                else:
+                    headers["Content-Type"] = "application/octet-stream"
+
         headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
-        # we expect nginx to have configured a location named
-        # '/packages_raw/...' that aliases the original path correctly, see
-        # http://wiki.nginx.org/X-accel and http://wiki.nginx.org/XSendfile for
-        # details.
-        # Sample: (note the missing slash on the alias!)
-        # location /packages_raw {
-        #    alias /path/to/packages/dir;
-        #    add_header X-PYPI-LAST-SERIAL $upstream_http_x_pypi_last_serial;
-        #    internal;
-        #    autoindex on;
-        # }
-        if status[0] != 304:
-            headers["X-Accel-Redirect"] = self.config.raw_package_prefix + path
-
-        # I expect that nginx will do the right thing if it doesn't find the
-        # actual file when resolving the X-accel headers.
         self.handler.send_response(*status)
 
         for key, value in headers.items():
             self.handler.send_header(key, value)
 
         self.handler.end_headers()
+
+        if file_data is not None:
+            self.wfile.write(file_data)
 
     def run_id(self):
         path = self.env.get('PATH_INFO')
