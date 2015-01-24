@@ -45,6 +45,8 @@ import fs.errors
 import fs.multifs
 import fs.osfs
 
+import readme.rst
+
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
@@ -1646,7 +1648,7 @@ class WebUI:
 #        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
         columns = ('name version author author_email maintainer '
                    'maintainer_email home_page requires_python download_url '
-                   'summary license description description_html keywords '
+                   'summary license description keywords '
                    'platform bugtrack_url').split()
 
         release = {'description_html': ''}
@@ -1657,10 +1659,6 @@ class WebUI:
             if isinstance(value, basestring) and value.strip() in (
                     'UNKNOWN', '<p>UNKNOWN</p>'): continue
             if column in ('name', 'version'): continue
-            if column == 'description':
-                # fallback if no description_html
-                release['description_html'] = '<p>%s</p>'%newline_to_br(
-                    cgi.escape(value))
             elif column.endswith('_email'):
                 column = column[:column.find('_')]
                 if release.has_key(column):
@@ -1677,6 +1675,15 @@ class WebUI:
                 bugtrack_url = value
             value = info[column]
             release[column] = value
+
+        if release.get("description"):
+            # Render the project description
+            description_html, rendered = readme.rst.render(release["description"])
+
+            if not rendered:
+                description_html = description_html.replace("\n", "<br>")
+
+            release["description_html"] = description_html
 
         roles = {}
         for role, user in self.store.get_package_roles(name):
@@ -2733,11 +2740,11 @@ class WebUI:
         # Determine whether we could use a README to fill out a missing
         # description
         if not description:
-            description, desc_html = extractPackageReadme(content,
-                filename, filetype)
+            description = extractPackageReadme(content, filename, filetype)
             if description:
-                self.store.set_description(name, version, description, desc_html,
-                    from_readme=True)
+                self.store.set_description(
+                    name, version, description, from_readme=True,
+                )
 
         # digest content
         m = hashlib.md5()

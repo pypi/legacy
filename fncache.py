@@ -11,7 +11,10 @@ credit: Kevin Warrick <kwarrick@uga.edu>
 """
 
 import json
+import redis
+
 from functools import wraps
+
 
 class RedisLru(object):
     """
@@ -78,7 +81,7 @@ class RedisLru(object):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if self.conn is None:
-                return func(*args, **kwargs) 
+                return func(*args, **kwargs)
             else:
                 try:
                     items = args + tuple(sorted(kwargs.items()))
