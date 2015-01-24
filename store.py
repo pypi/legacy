@@ -17,7 +17,6 @@ except ImportError:
 from defusedxml import ElementTree
 import trove, openid2rp
 from mini_pkg_resources import safe_name
-from description_utils import processDescription
 # csrf modules
 import hmac
 from base64 import b64encode
@@ -454,10 +453,6 @@ class Store:
                 if not info.has_key(k):
                     continue
                 if k not in specials and info.get(k, None) != v:
-                    if k == 'description':
-                        cols.append('description_html')
-                        html = processDescription(info[k])
-                        vals.append(html)
                     old.append(k)
                     cols.append(k)
                     vals.append(info[k])
@@ -515,11 +510,7 @@ class Store:
             # figure the ordering
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
-            # ReST-format the description
-            if info.has_key('description'):
-                info['description_html'] = html = processDescription(info['description'])
-            else:
-                info['description_html'] = ''
+            info['description_html'] = ''
 
             # perform the insert
             cols = ('name version author author_email maintainer '
@@ -675,7 +666,7 @@ class Store:
 
     _Package = FastResultRow('''name stable_version version author author_email
             maintainer maintainer_email home_page license summary description
-            description_html keywords platform requires_python download_url
+            keywords platform requires_python download_url
             _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
             cheesecake_documentation_id! cheesecake_code_kwalitee_id! bugtrack_url!''')
     def get_package(self, name, version):
@@ -686,7 +677,7 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
-                  license, summary, description, description_html, keywords,
+                  license, summary, description, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
                   _pypi_hidden,
                   cheesecake_installability_id,
@@ -1010,11 +1001,11 @@ class Store:
         self.add_journal_entry(name, None, "update hosting_mode", date,
                                                     self.username, self.userip)
 
-    def set_description(self, name, version, desc_text, desc_html,
+    def set_description(self, name, version, desc_text,
             from_readme=False):
         cursor = self.get_cursor()
         safe_execute(cursor, '''update releases set description=%s,
-            description_html=%s, description_from_readme=%s where name=%s
+            description_html='', description_from_readme=%s where name=%s
             and version=%s''', [desc_text, desc_html, from_readme, name,
             version])
 
@@ -1320,40 +1311,12 @@ class Store:
 
         self._add_invalidation(name)
 
-    def updateurls(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor, '''select name, version, description_html from
-                releases where description_html is not null''')
-        for name, version, desc in cursor.fetchall():
-            urls = get_description_urls(desc)
-            self.update_description_urls(name, version, urls)
-
-    def updateurls2(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select name, version, url from description_urls')
-        for name, version, url in cursor.fetchall():
-            url2 = xmlescape(url)
-            if url==url2:continue
-            safe_execute(cursor, 'update description_urls set url=%s where name=%s and version=%s and url=%s',
-                         (url2, name, version, url))
-
-        self._add_invalidation(name)
-
     def update_normalized_text(self):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name from packages')
         for name, in cursor.fetchall():
             safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
                          [normalize_package_name(name), name])
-
-        self._add_invalidation(name)
-
-    def update_description_html(self, name):
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select version,description from releases where name=%s', (name,))
-        for version, description in cursor.fetchall():
-            safe_execute(cursor, 'update releases set description_html=%s where name=%s and version=%s',
-                         (processDescription(description), name, version))
 
         self._add_invalidation(name)
 
@@ -2804,20 +2767,11 @@ if __name__ == '__main__':
     elif sys.argv[2] == 'checktrove':
         store.check_trove()
         store.commit()
-    elif sys.argv[2] == 'updateurls':
-        store.updateurls()
-        store.commit()
-    elif sys.argv[2] == 'updateurls2':
-        store.updateurls2()
-        store.commit()
     elif sys.argv[2] == 'update_normalized_text':
         store.update_normalized_text()
         store.commit()
     elif sys.argv[2] == 'update_upload_times':
         store.update_upload_times()
-        store.commit()
-    elif sys.argv[2] == 'update_html':
-        store.update_description_html(sys.argv[3])
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]
