@@ -14,7 +14,7 @@ python-dateutil==2.4.0
 python-openid==2.2.5
 pytz==2014.10
 raven==5.1.1
-readme==0.4.1
+readme==0.4.2
 redis==2.10.3
 requests==2.5.1
 rq==0.4.6
