@@ -3,6 +3,14 @@ import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, shutil
 import zipfile, gzip, tarfile
 #sys.path.append('/usr/local/pypi/lib')
 
+# Filesystem Handling
+import fs.errors
+import fs.multifs
+import fs.osfs
+
+import redis
+import rq
+
 prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
 
@@ -290,7 +298,20 @@ def nuke_nested_lists(store, confirm=False):
 
 if __name__ == '__main__':
     config = config.Config(CONFIG_FILE)
-    st = store.Store(config)
+
+    if config.queue_redis_url:
+        queue_redis = redis.Redis.from_url(config.queue_redis_url)
+        queue = rq.Queue(connection=queue_redis)
+    else:
+        queue = None
+
+    package_fs = fs.multifs.MultiFS()
+    package_fs.addfs(
+        "local", fs.osfs.OSFS(config.database_files_dir),
+        write=True,
+    )
+
+    st = store.Store(config, queue=queue, package_fs=package_fs)
     st.open()
     command = sys.argv[1]
     args = (st, ) + tuple(sys.argv[2:])

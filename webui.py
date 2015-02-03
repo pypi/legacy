@@ -920,7 +920,7 @@ class WebUI:
             md5_digest = self.store.get_digest_from_filename(filename)
 
             if md5_digest:
-                headers["ETag"] = md5_digest
+                headers["ETag"] = '"%s"' % md5_digest
                 if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
                     status = (304, "Not Modified")
 
@@ -936,7 +936,7 @@ class WebUI:
                 possible_package = package
 
             if md5_digest:
-                headers["ETag"] = md5_digest
+                headers["ETag"] = '"%s"' % md5_digest
 
             if status[0] != 304:
                 try:
