@@ -300,14 +300,14 @@ if __name__ == '__main__':
     config = config.Config(CONFIG_FILE)
 
     if config.queue_redis_url:
-        queue_redis = redis.Redis.from_url(self.config.queue_redis_url)
+        queue_redis = redis.Redis.from_url(config.queue_redis_url)
         queue = rq.Queue(connection=queue_redis)
     else:
         queue = None
 
     package_fs = fs.multifs.MultiFS()
     package_fs.addfs(
-        "local", fs.osfs.OSFS(self.config.database_files_dir),
+        "local", fs.osfs.OSFS(config.database_files_dir),
         write=True,
     )
 
