@@ -28,11 +28,6 @@ except ImportError:
     class OperationalError(Exception):
         pass
 
-# Importing M2Crypto patches urllib; don't let them do that
-orig = urllib.URLopener.open_https.im_func
-from M2Crypto import DSA
-urllib.URLopener.open_https = orig
-
 # OpenId provider imports
 OPENID_FILESTORE = '/tmp/openid-filestore'
 
@@ -42,6 +37,15 @@ from openid.server import server as OpenIDServer
 import raven
 import raven.utils.wsgi
 from raven.handlers.logging import SentryHandler
+
+import packaging.version
+
+# Filesystem Handling
+import fs.errors
+import fs.multifs
+import fs.osfs
+
+import readme.rst
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
@@ -261,11 +265,18 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
+        # Create our package filesystem
+        self.package_fs = fs.multifs.MultiFS()
+        self.package_fs.addfs(
+            "local", fs.osfs.OSFS(self.config.database_files_dir),
+            write=True,
+        )
+
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
-            fs = cgi.FieldStorage(fp=handler.rfile, environ=env)
+            fstorage = cgi.FieldStorage(fp=handler.rfile, environ=env)
             try:
-                self.form = decode_form(fs)
+                self.form = decode_form(fstorage)
             except UnicodeDecodeError:
                 self.failed = "Form data is not correctly encoded in UTF-8"
         else:
@@ -329,6 +340,7 @@ class WebUI:
             self.config,
             queue=self.queue,
             redis=self.count_redis,
+            package_fs=self.package_fs,
         )
         try:
             try:
@@ -881,27 +893,13 @@ class WebUI:
         self.wfile.write(html)
 
     def run_simple_sign(self):
-        self.store.set_read_only()
-        path = self.env.get('PATH_INFO')
-        if not path.endswith('/'):
-            raise Redirect, self.config.simple_sign_script+path+'/'
-        path = path[1:-1]
-        if '/' in path:
-            raise NotFound, path
-        html = self.simple_body(path)
-        serial = self.store.last_serial_for_package(path)
-        if not self.privkey:
-            self.privkey = DSA.load_key(os.path.join(self.config.key_dir, 'privkey'))
-
-        digest = hashlib.sha1(html).digest()
-
-        sig = self.privkey.sign_asn1(digest)
-        self.handler.send_response(200, 'OK')
-        self.handler.set_content_type('application/octet-stream')
-        self.handler.send_header("Surrogate-Key", "simple pkg~%s" % safe_name(path).lower())
-        self.handler.send_header("X-PYPI-LAST-SERIAL", str(serial))
-        self.handler.end_headers()
-        self.wfile.write(sig)
+        raise NotFound(
+            "The Simple Sign API has been deprecated and removed. If you're "
+            "mirroring PyPI with bandersnatch then please upgrade to 1.7+. "
+            "If you're mirroring PyPI with pep381client then please switch to "
+            "bandersnatch. Otherwise contact the maintainer of your software "
+            "and inform them of PEP 464."
+        )
 
     def packages(self):
         self.store.set_read_only()
@@ -913,6 +911,7 @@ class WebUI:
 
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
+        file_data = None
 
         headers = {}
         status = (200, "OK")
@@ -921,7 +920,7 @@ class WebUI:
             md5_digest = self.store.get_digest_from_filename(filename)
 
             if md5_digest:
-                headers["ETag"] = md5_digest
+                headers["ETag"] = '"%s"' % md5_digest
                 if md5_digest == self.env.get("HTTP_IF_NONE_MATCH"):
                     status = (304, "Not Modified")
 
@@ -937,32 +936,27 @@ class WebUI:
                 possible_package = package
 
             if md5_digest:
-                headers["ETag"] = md5_digest
+                headers["ETag"] = '"%s"' % md5_digest
+
+            if status[0] != 304:
+                try:
+                    file_data = self.package_fs.getcontents(path, "rb")
+                except fs.errors.ResourceNotFoundError:
+                    status = (404, "Not Found")
+                else:
+                    headers["Content-Type"] = "application/octet-stream"
 
         headers["Surrogate-Key"] = "package pkg~%s" % safe_name(possible_package).lower()
 
-        # we expect nginx to have configured a location named
-        # '/packages_raw/...' that aliases the original path correctly, see
-        # http://wiki.nginx.org/X-accel and http://wiki.nginx.org/XSendfile for
-        # details.
-        # Sample: (note the missing slash on the alias!)
-        # location /packages_raw {
-        #    alias /path/to/packages/dir;
-        #    add_header X-PYPI-LAST-SERIAL $upstream_http_x_pypi_last_serial;
-        #    internal;
-        #    autoindex on;
-        # }
-        if status[0] != 304:
-            headers["X-Accel-Redirect"] = self.config.raw_package_prefix + path
-
-        # I expect that nginx will do the right thing if it doesn't find the
-        # actual file when resolving the X-accel headers.
         self.handler.send_response(*status)
 
         for key, value in headers.items():
             self.handler.send_header(key, value)
 
         self.handler.end_headers()
+
+        if file_data is not None:
+            self.wfile.write(file_data)
 
     def run_id(self):
         path = self.env.get('PATH_INFO')
@@ -1654,7 +1648,7 @@ class WebUI:
 #        columns = 'name version author author_email maintainer maintainer_email home_page download_url summary license description description_html keywords platform cheesecake_installability_id cheesecake_documentation_id cheesecake_code_kwalitee_id'.split()
         columns = ('name version author author_email maintainer '
                    'maintainer_email home_page requires_python download_url '
-                   'summary license description description_html keywords '
+                   'summary license description keywords '
                    'platform bugtrack_url').split()
 
         release = {'description_html': ''}
@@ -1665,10 +1659,6 @@ class WebUI:
             if isinstance(value, basestring) and value.strip() in (
                     'UNKNOWN', '<p>UNKNOWN</p>'): continue
             if column in ('name', 'version'): continue
-            if column == 'description':
-                # fallback if no description_html
-                release['description_html'] = '<p>%s</p>'%newline_to_br(
-                    cgi.escape(value))
             elif column.endswith('_email'):
                 column = column[:column.find('_')]
                 if release.has_key(column):
@@ -1685,6 +1675,15 @@ class WebUI:
                 bugtrack_url = value
             value = info[column]
             release[column] = value
+
+        if release.get("description"):
+            # Render the project description
+            description_html, rendered = readme.rst.render(release["description"])
+
+            if not rendered:
+                description_html = description_html.replace("\n", "<br>")
+
+            release["description_html"] = description_html
 
         roles = {}
         for role, user in self.store.get_package_roles(name):
@@ -2288,6 +2287,26 @@ class WebUI:
         if re.search('[<>%#"]', data['name'] + data['version']):
             raise ValueError('Invalid package name or version (URL safety)')
 
+        # Parse our version
+        parsed_version = packaging.version.parse(data["version"])
+
+        # Make sure that our version is a valid PEP 440 version
+        if data["version"].strip() != data["version"]:
+            raise ValueError(
+                "Invalid version, cannot have leading or trailing whitespace."
+            )
+
+        if not isinstance(parsed_version, packaging.version.Version):
+            raise ValueError(
+                "Invalid version, cannot be parsed as a valid PEP 440 version."
+            )
+
+        # Make sure that our version does not have a local version.
+        if parsed_version.local is not None:
+            raise ValueError(
+                "Invalid version, cannot use PEP 440 local versions on PyPI."
+            )
+
         # check requires and obsoletes
         def validate_version_predicates(col, sequence):
             try:
@@ -2601,6 +2620,11 @@ class WebUI:
         if name.lower() in ('requirements.txt', 'rrequirements.txt'):
             raise Forbidden, "Package name '%s' invalid" % name
 
+        # Get the "real" name
+        possible_names = self.store.find_package(name)
+        if possible_names and possible_names[0] != name:
+            name = possible_names[0]
+
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
                 self.store.has_role('Admin', name) or
@@ -2722,11 +2746,11 @@ class WebUI:
         # Determine whether we could use a README to fill out a missing
         # description
         if not description:
-            description, desc_html = extractPackageReadme(content,
-                filename, filetype)
+            description = extractPackageReadme(content, filename, filetype)
             if description:
-                self.store.set_description(name, version, description, desc_html,
-                    from_readme=True)
+                self.store.set_description(
+                    name, version, description, from_readme=True,
+                )
 
         # digest content
         m = hashlib.md5()
@@ -2748,6 +2772,8 @@ class WebUI:
                 filetype, pyversion, comment, filename, signature)
         except IntegrityError, e:
             raise FormError, 'Duplicate file upload detected.'
+        except store.PreviouslyUsedFilename:
+            raise FormError, "This filename has previously been used, you should use a different version."
 
         self.store.changed()
 

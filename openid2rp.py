@@ -423,7 +423,7 @@ def associate(services, url):
         del data['openid.ns']
     res = urllib.urlopen(url, b(urllib.urlencode(data)))
     if res.getcode() != 200:
-        raise ValueError, "OpenID provider refuses connection with status %d" % res.getcode()
+        raise ValueError("OpenID provider refuses connection with status %s" % res.getcode())
     data = parse_response(res.read())
     if 'error' in data:
         raise ValueError, "associate failed: "+data['error']

@@ -57,8 +57,12 @@ class CacheControlMiddleware(object):
                     ("Cache-Control", "max-age=600, public"),
                 ]
             elif script in set(["/packages"]):
-                # Cache for a day
-                headers += [("Cache-Control", "max-age=86400, public")]
+                if status[:3] in ["200", "304"]:
+                    # Cache for a year
+                    headers += [("Cache-Control", "max-age=31557600, public")]
+                else:
+                    # Cache for an hour
+                    headers += [("Cache-Control", "max-age=3600, public")]
             elif script in set(["/mirrors", "/security"]):
                 # Cache these for a week
                 headers += [("Cache-Control", "max-age=604800, public")]

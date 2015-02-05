@@ -152,7 +152,8 @@ def release_data(store, package_name, version):
     if not info:
         return {}
     info = info.as_dict()
-    del info['description_html']
+    if "description_html" in info:
+        del info['description_html']
     dependencies = defaultdict(list)
     for kind, specifier in store.get_release_dependencies(package_name, version):
         dependencies[dependency.by_val[kind]].append(specifier)

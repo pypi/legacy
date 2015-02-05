@@ -17,7 +17,6 @@ except ImportError:
 from defusedxml import ElementTree
 import trove, openid2rp
 from mini_pkg_resources import safe_name
-from description_utils import processDescription
 # csrf modules
 import hmac
 from base64 import b64encode
@@ -27,9 +26,26 @@ import requests
 import urlparse
 import time
 from functools import wraps
+import itertools
+
+import fs.errors
 
 import tasks
-import pkg_resources
+import packaging.version
+
+
+try:
+    import psycopg2
+    OperationalError = psycopg2.OperationalError
+    IntegrityError = psycopg2.IntegrityError
+except ImportError:
+    class OperationalError(Exception):
+        pass
+
+
+class PreviouslyUsedFilename(Exception):
+    pass
+
 
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
@@ -89,6 +105,24 @@ keep_trove = True
 def normalize_package_name(n):
     "Return lower-cased version of safe_name of n."
     return safe_name(n).lower()
+
+
+def normalize_version_number(v):
+    parsed = packaging.version.parse(v)
+    if isinstance(parsed, packaging.version.Version):
+        # We need to normalize the version, however we can't simply use the
+        # str() of the parsed version because we want to remove all of the
+        # trailing zeros for this.
+        parts = parsed.base_version.split("!")
+        parts[-1] = ".".join(reversed(list(itertools.dropwhile(lambda x: int(x) == 0, reversed(parts[-1].split("."))))))
+        fixed_base = "!".join(parts)
+
+        # Now that we have the base_version, we need to add the rest of our
+        # version pieces.
+        return fixed_base + str(parsed)[len(parsed.base_version):]
+    else:
+        return str(parsed)
+
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
@@ -241,7 +275,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None):
+    def __init__(self, config, queue=None, redis=None, package_fs=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -257,6 +291,8 @@ class Store:
 
         self.queue = queue
         self.count_redis = redis
+
+        self.package_fs = package_fs
 
         self._changed_packages = set()
 
@@ -417,10 +453,6 @@ class Store:
                 if not info.has_key(k):
                     continue
                 if k not in specials and info.get(k, None) != v:
-                    if k == 'description':
-                        cols.append('description_html')
-                        html = processDescription(info[k])
-                        vals.append(html)
                     old.append(k)
                     cols.append(k)
                     vals.append(info[k])
@@ -478,11 +510,7 @@ class Store:
             # figure the ordering
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
-            # ReST-format the description
-            if info.has_key('description'):
-                info['description_html'] = html = processDescription(info['description'])
-            else:
-                info['description_html'] = ''
+            info['description_html'] = ''
 
             # perform the insert
             cols = ('name version author author_email maintainer '
@@ -564,7 +592,7 @@ class Store:
 
         sorted_versions = sorted(
             all_versions,
-            key=lambda x: pkg_resources.parse_version(x[0]),
+            key=lambda x: packaging.version.parse(x[0]),
         )
 
         new_order = 0
@@ -638,7 +666,7 @@ class Store:
 
     _Package = FastResultRow('''name stable_version version author author_email
             maintainer maintainer_email home_page license summary description
-            description_html keywords platform requires_python download_url
+            keywords platform requires_python download_url
             _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
             cheesecake_documentation_id! cheesecake_code_kwalitee_id! bugtrack_url!''')
     def get_package(self, name, version):
@@ -649,7 +677,7 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select packages.name as name, stable_version, version, author,
                   author_email, maintainer, maintainer_email, home_page,
-                  license, summary, description, description_html, keywords,
+                  license, summary, description, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
                   _pypi_hidden,
                   cheesecake_installability_id,
@@ -973,13 +1001,12 @@ class Store:
         self.add_journal_entry(name, None, "update hosting_mode", date,
                                                     self.username, self.userip)
 
-    def set_description(self, name, version, desc_text, desc_html,
+    def set_description(self, name, version, desc_text,
             from_readme=False):
         cursor = self.get_cursor()
         safe_execute(cursor, '''update releases set description=%s,
-            description_html=%s, description_from_readme=%s where name=%s
-            and version=%s''', [desc_text, desc_html, from_readme, name,
-            version])
+            description_html='', description_from_readme=%s where name=%s
+            and version=%s''', [desc_text, from_readme, name, version])
 
         self._add_invalidation(name)
 
@@ -1283,40 +1310,12 @@ class Store:
 
         self._add_invalidation(name)
 
-    def updateurls(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor, '''select name, version, description_html from
-                releases where description_html is not null''')
-        for name, version, desc in cursor.fetchall():
-            urls = get_description_urls(desc)
-            self.update_description_urls(name, version, urls)
-
-    def updateurls2(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select name, version, url from description_urls')
-        for name, version, url in cursor.fetchall():
-            url2 = xmlescape(url)
-            if url==url2:continue
-            safe_execute(cursor, 'update description_urls set url=%s where name=%s and version=%s and url=%s',
-                         (url2, name, version, url))
-
-        self._add_invalidation(name)
-
     def update_normalized_text(self):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select name from packages')
         for name, in cursor.fetchall():
             safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
                          [normalize_package_name(name), name])
-
-        self._add_invalidation(name)
-
-    def update_description_html(self, name):
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select version,description from releases where name=%s', (name,))
-        for version, description in cursor.fetchall():
-            safe_execute(cursor, 'update releases set description_html=%s where name=%s and version=%s',
-                         (processDescription(description), name, version))
 
         self._add_invalidation(name)
 
@@ -1329,8 +1328,9 @@ class Store:
 
         # delete the files
         for file in self.list_files(name, version):
-            os.remove(self.gen_file_path(file['python_version'], name,
-                file['filename']))
+            path = self.gen_file_path(file['python_version'], name,
+                file['filename'])
+            self.package_fs.remove(path)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1353,7 +1353,7 @@ class Store:
         cursor = self.get_cursor()
         for release in self.get_package_releases(name):
             for file in self.list_files(name, release['version']):
-                os.remove(self.gen_file_path(file['python_version'], name,
+                self.package_fs.remove(self.gen_file_path(file['python_version'], name,
                     file['filename']))
 
         # delete ancillary table entries
@@ -1390,12 +1390,11 @@ class Store:
         for pyversion, filename in cursor.fetchall():
             oldname = self.gen_file_path(pyversion, old, filename)
             newname = self.gen_file_path(pyversion, new, filename)
-            if not os.path.exists(oldname):
+            if not self.package_fs.exists(oldname):
                 continue
             dirpath = os.path.split(newname)[0]
-            if not os.path.exists(dirpath):
-                os.makedirs(dirpath)
-            os.rename(oldname, newname)
+            self.package_fs.makedir(dirpath, recursive=True,  allow_recreate=True)
+            self.package_fs.rename(oldname, newname)
 
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
@@ -2005,38 +2004,39 @@ class Store:
 
     def gen_file_path(self, pyversion, name, filename):
         '''Generate the path to the file on disk.'''
-        return os.path.join(self.config.database_files_dir, pyversion,
-            name[0], name, filename)
+        return os.path.join(pyversion, name[0], name, filename)
 
     def add_file(self, name, version, content, md5_digest, filetype,
             pyversion, comment, filename, signature):
         '''Add to the database and store the content to disk.'''
-        # add database entry
         cursor = self.get_cursor()
+        # add database entry
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest, upload_time) values
             (%s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest))
 
+        # Add an entry to the file registry
+        try:
+            sql = """ INSERT INTO file_registry (filename)
+                      VALUES (%s)
+                  """
+            safe_execute(cursor, sql, (filename,))
+        except IntegrityError:
+            raise PreviouslyUsedFilename
+
         # store file to disk
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-        f = open(filepath, 'wb')
-        try:
+        self.package_fs.makedir(dirpath, recursive=True, allow_recreate=True)
+        with self.package_fs.open(filepath, "wb") as f:
             f.write(content)
-        finally:
-            f.close()
 
         # Store signature next to the file
         if signature:
-            f = open(filepath + ".asc", "wb")
-            try:
+            with self.package_fs.open(filepath + ".asc", "wb") as f:
                 f.write(signature)
-            finally:
-                f.close()
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2056,15 +2056,13 @@ class Store:
         for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
             try:
-                size = os.stat(path)[stat.ST_SIZE]
-            except OSError, error:
-                if error.errno != errno.ENOENT: raise
-
+                size = self.package_fs.getsize(path)
+            except fs.errors.ResourceNotFoundError:
                 if show_missing:
                     size = 0
                 else:
                     continue
-            has_sig = os.path.exists(path+'.asc')
+            has_sig = self.package_fs.exists(path + ".asc")
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
         return l
@@ -2089,16 +2087,11 @@ class Store:
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
-        os.remove(filepath)
-        if os.path.exists(filepath+'.asc'):
-            os.remove(filepath+'.asc')
-        while True:
-            if os.listdir(dirpath):
-                break
-            if dirpath == self.config.database_files_dir:
-                break
-            os.rmdir(dirpath)
-            dirpath = os.path.split(dirpath)[0]
+        self.package_fs.remove(filepath)
+        if self.package_fs.exists(filepath + ".asc"):
+            self.package_fs.remove(filepath + ".asc")
+        if self.package_fs.isdirempty(dirpath):
+            self.package_fs.removedir(dirpath, recursive=True)
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
@@ -2140,23 +2133,6 @@ class Store:
                 return '/'.join([self.config.package_docs_url, name] + sub)
         return ''
 
-    def update_upload_times(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor,
-                     "select python_version, name, filename from release_files "
-                     "where upload_time is null")
-        for pyversion, name, filename in cursor.fetchall():
-            fn = self.gen_file_path(pyversion, name, filename)
-            try:
-                st = os.stat(fn)
-            except OSError:
-                continue
-            date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(st.st_mtime))
-            safe_execute(cursor, "update release_files "
-            "set upload_time=%s where python_version=%s and name=%s "
-            "and filename = %s", (date, pyversion, name, filename))
-
-            self._add_invalidation(name)
     #
     # Mirrors managment
     #
@@ -2790,20 +2766,11 @@ if __name__ == '__main__':
     elif sys.argv[2] == 'checktrove':
         store.check_trove()
         store.commit()
-    elif sys.argv[2] == 'updateurls':
-        store.updateurls()
-        store.commit()
-    elif sys.argv[2] == 'updateurls2':
-        store.updateurls2()
-        store.commit()
     elif sys.argv[2] == 'update_normalized_text':
         store.update_normalized_text()
         store.commit()
     elif sys.argv[2] == 'update_upload_times':
         store.update_upload_times()
-        store.commit()
-    elif sys.argv[2] == 'update_html':
-        store.update_description_html(sys.argv[3])
         store.commit()
     else:
         print "UNKNOWN COMMAND", sys.argv[2]
