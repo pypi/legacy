@@ -2075,7 +2075,8 @@ class WebUI:
         name = data['name']
         version = data['version']
 
-        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+        if name.lower() in ('requirements.txt', 'rrequirements.txt',
+                'requirements-txt', 'rrequirements-txt'):
             raise Forbidden, "Package name '%s' invalid" % name
 
         # don't hide by default
