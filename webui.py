@@ -2425,10 +2425,10 @@ class WebUI:
                 version = [self.form['version']]
             cv = cgi.escape(', '.join(version))
             s = len(version)>1 and 's' or ''
-            desc = 'release%s %s of package %s.'%(s, cv, cn)
+            desc = 'release%s %s of project %s.'%(s, cv, cn)
         else:
             version = []
-            desc = 'all information about package %s.'%cn
+            desc = '<b>all</b> information about <b>and all releases of</b> project %s.'%cn
 
         # make sure the user has permission to do stuff
         if not (self.store.has_role('Owner', name) or
@@ -2454,10 +2454,10 @@ class WebUI:
             self.ok_message='Removal cancelled'
 
         else:
-            message = '''You are about to remove %s<br />
+            message = '''You are about to remove the project %s from PyPI<br />
                 This action <em>cannot be undone</em>!<br />
-                <br>
-                Consider that removing this file may break people's system builds.<br />
+                <br />
+                Consider that removing this may break people's system builds.<br />
                 Are you <strong>sure</strong>?'''%desc
 
             fields = [
