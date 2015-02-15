@@ -8,20 +8,13 @@
 <p tal:replace="structure app/release_nav" />
 
 <p>
-  Each package may have a release for each version of the
-  package that is released. You may use this form to hide releases
+  Each project may have a release for each version of the
+  project that is released. You may use this form to hide releases
   from users.
 </p>
 
 <p>Administer the <a tal:attributes="href string:${app/url_path}?:action=role_form&amp;package_name=${app/form/name}">Role</a>
-assigned to users for this package.</p>
-
-<p>
-<form tal:attributes="action app/url_path" method="POST">
- <input type="hidden" name=":action" value="remove_pkg" />
- <input type="hidden" name="name" tal:attributes="value data/name" />
- <input id="remove_completely_submit" type="submit" value="Remove this package completely" />
-</form>
+assigned to users for this project.</p>
 </p>
 <p>Alternatively, you may edit the information about each release:</p>
 <form tal:attributes="action app/url_path" method="POST">
@@ -72,7 +65,7 @@ assigned to users for this package.</p>
 </form>
 
 <p>By default, each new release will hide all other release from the
-regular display. If you want to select yourself which packages to hide,
+regular display. If you want to select yourself which projects to hide,
 uncheck the button below</p>
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
@@ -102,6 +95,18 @@ Only static pages are supported. The zip file must have a top-level
 <input size="40" type="file" name="content" />
 <input type="submit" value="Upload Documentation" />
 </form>
+
+<p></p>
+
+<div class="delete-project">
+<p>Do <b>NOT</b> use this button.</p>
+<p>There is <b>no undo</b>.</p>
+<form tal:attributes="action app/url_path" method="POST">
+ <input type="hidden" name=":action" value="remove_pkg" />
+ <input type="hidden" name="name" tal:attributes="value data/name" />
+ <input id="remove_completely_submit" type="submit" value="Remove this project completely" />
+</form>
+</div>
 
 </metal:fill>
 </html>

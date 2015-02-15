@@ -295,3 +295,10 @@ margin-top:3px;
 #document-navigation a:visited {
   text-decoration: underline;
 }
+
+.delete-project {
+    margin: 3em 1em;
+    border: thin solid red;
+    background: #ffeeee;
+    padding: 1em;
+}
