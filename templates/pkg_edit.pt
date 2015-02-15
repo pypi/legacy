@@ -15,7 +15,7 @@
 
 <p>Administer the <a tal:attributes="href string:${app/url_path}?:action=role_form&amp;package_name=${app/form/name}">Role</a>
 assigned to users for this project.</p>
-</p>
+
 <p>Alternatively, you may edit the information about each release:</p>
 <form tal:attributes="action app/url_path" method="POST">
  <input type="hidden" name=":action" value="pkg_edit" />
