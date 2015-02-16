@@ -51,7 +51,7 @@ import readme.rst
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
-from description_utils import extractPackageReadme
+from description_utils import extractPackageReadme, trim_docstring
 import oauth
 
 esc = cgi.escape
@@ -2064,6 +2064,10 @@ class WebUI:
             if not isinstance(classifiers, types.ListType):
                 classifiers = [classifiers]
             data['classifiers'] = classifiers
+
+        # Trim docstrings
+        if "description" in data:
+            data["description"] = trim_docstring(data["description"])
 
         # validate the data
         try:
