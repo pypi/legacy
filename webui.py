@@ -352,7 +352,7 @@ class WebUI:
                 self.inner_run()
             except NotFound, err:
                 self.fail('Not Found (%s)' % err, code=404)
-            except Gone as exc:
+            except Gone, err:
                 self.fail('Gone (%s)' % err, code=410)
             except Unauthorised, message:
                 message = str(message)
