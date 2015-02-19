@@ -91,6 +91,8 @@ packages_path_to_package_name = re.compile(
 
 class NotFound(Exception):
     pass
+class Gone(Exception):
+    pass
 class Unauthorised(Exception):
     pass
 class Forbidden(Exception):
@@ -350,6 +352,8 @@ class WebUI:
                 self.inner_run()
             except NotFound, err:
                 self.fail('Not Found (%s)' % err, code=404)
+            except Gone as exc:
+                self.fail('Gone (%s)' % err, code=410)
             except Unauthorised, message:
                 message = str(message)
                 if not message:
@@ -893,7 +897,7 @@ class WebUI:
         self.wfile.write(html)
 
     def run_simple_sign(self):
-        raise NotFound(
+        raise Gone(
             "The Simple Sign API has been deprecated and removed. If you're "
             "mirroring PyPI with bandersnatch then please upgrade to 1.7+. "
             "If you're mirroring PyPI with pep381client then please switch to "
