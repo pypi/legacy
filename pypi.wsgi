@@ -50,7 +50,7 @@ class CacheControlMiddleware(object):
 
         def _start_response(status, headers, exc_info=None):
             script = environ.get("SCRIPT_NAME", None)
-            if script in set(["/simple", "/serversig"]):
+            if script in set(["/simple"]):
                 # Cache for a day in Fastly, but 10 minutes in browsers
                 headers += [
                     ("Surrogate-Control", "max-age=86400"),
