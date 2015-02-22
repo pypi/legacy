@@ -271,6 +271,9 @@ def nuke_nested_lists(store, confirm=False):
             continue
         for f in store.list_files(name, version):
             path = store.gen_file_path(f['python_version'], name, f['filename'])
+            if not os.path.exists(path):
+                print "PACKAGE %s FILE %s MISSING" % (name, path)
+                continue
             if path.endswith('.zip'):
                 z = zipfile.ZipFile(path)
                 for i in z.infolist():
