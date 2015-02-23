@@ -259,7 +259,8 @@ def show_user(store, name):
 def nuke_nested_lists(store, confirm=False):
     c = store.get_cursor()
     c.execute("""select name, version, summary from releases
-        where lower(summary) like '%nested lists%' or
+        where lower(name) like '%nester%' or
+        lower(summary) like '%nested lists%' or
         lower(summary) like '%geschachtelter listen%'""")
     hits = {}
     for name, version, summary in c.fetchall():
