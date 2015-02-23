@@ -272,18 +272,20 @@ def nuke_nested_lists(store, confirm=False):
             continue
         for f in store.list_files(name, version):
             path = store.gen_file_path(f['python_version'], name, f['filename'])
-            if not os.path.exists(path):
+            if not store.package_fs.exists(path):
                 print "PACKAGE %s FILE %s MISSING" % (name, path)
                 continue
+            contents = StringIO.StringIO(store.package_fs.getcontents(path))
             if path.endswith('.zip'):
-                z = zipfile.ZipFile(path)
+                z = zipfile.ZipFile(contents)
                 for i in z.infolist():
-                    if not i.filename.endswith('.py'): continue
+                    if not i.filename.endswith('.py'):
+                        continue
                     src = z.read(i.filename)
                     if 'def print_lol' in src or 'def print_lvl' in src:
                         hits[name] = summary
             elif path.endswith('.tar.gz'):
-                z = gzip.GzipFile(path)
+                z = gzip.GzipFile(path, fileobj=contents)
                 t = tarfile.TarFile(fileobj=z)
                 for i in t.getmembers():
                     if not i.name.endswith('.py'): continue
