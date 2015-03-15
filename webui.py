@@ -309,6 +309,7 @@ class WebUI:
             # I give no shits about getting distutils2 warnings
             d2_logger = getLogger('distutils2')
             d2_logger.setLevel(logging.ERROR)
+            d2_logger.propagate = False
 
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
