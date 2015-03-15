@@ -305,6 +305,11 @@ class WebUI:
         if self.config.logfile or self.config.mail_logger or self.config.sentry_dsn:
             root = logging.getLogger()
             root.setLevel(logging.WARNING)
+
+            # I give no shits about getting distutils2 warnings
+            d2_logger = logging.getLogger('distutils2')
+            d2_logger.setLevel(logging.ERROR)
+
             if self.config.logfile:
                 hdlr = logging.FileHandler(self.config.logfile)
                 formatter = logging.Formatter(
