@@ -357,8 +357,8 @@ class WebUI:
                 self.inner_run()
             except NotFound, err:
                 self.fail('Not Found (%s)' % err, code=404)
-            except Gone as exc:
-                self.fail('Gone (%s)' % err, code=410)
+            except Gone, err:
+                self.fail('Gone (%s)' % err, code=410, headers={"Cache-Control": "max-age=31557600, public"})
             except Unauthorised, message:
                 message = str(message)
                 if not message:
