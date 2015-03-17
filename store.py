@@ -27,6 +27,7 @@ import urlparse
 import time
 from functools import wraps
 import itertools
+import readme.rst
 
 import fs.errors
 
@@ -433,7 +434,9 @@ class Store:
         message = None
         relationships = defaultdict(set)
         old_cifiers = []
-        html = None
+        html, rendered = readme.rst.render(info['description'])
+        if not rendered:
+            html = None
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
