@@ -67,6 +67,9 @@ class CacheControlMiddleware(object):
                 # Cache these for a week
                 headers += [("Cache-Control", "max-age=604800, public")]
 
+            # http://www.gnuterrypratchett.com/
+            headers += [("X-Clacks-Overhead", "GNU Terry Pratchett")]
+
             return start_response(status, headers, exc_info)
 
         return self.app(environ, _start_response)
