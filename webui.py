@@ -1469,6 +1469,7 @@ class WebUI:
         self.handler.send_header("Surrogate-Key", str("json pkg~%s" % safe_name(name).lower()))
         self.handler.send_header("Surrogate-Control", "max-age=86400")
         self.handler.send_header("Cache-Control", "max-age=600, public")
+        self.handler.send_header("Access-Control-Allow-Origin", "*")
         self.handler.end_headers()
         # write the JSONP extra crap if necessary
         s = json.dumps(d, indent=4)
