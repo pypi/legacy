@@ -54,7 +54,7 @@ assigned to users for this project.</p>
 
  <tr>
   <td id="last">
-   <input type="button" name="submit_remove" value="Remove" />
+   <input type="submit" name="submit_remove" value="Remove" />
   </td>
   <td id="last"> </td>
   <td id="last" colspan="5">
@@ -104,7 +104,7 @@ Only static pages are supported. The zip file must have a top-level
 <form tal:attributes="action app/url_path" method="POST">
  <input type="hidden" name=":action" value="remove_pkg" />
  <input type="hidden" name="name" tal:attributes="value data/name" />
- <input id="remove_completely_submit" type="button" value="Remove this project completely" />
+ <input id="remove_completely_submit" type="submit" value="Remove this project completely" />
 </form>
 </div>
 
