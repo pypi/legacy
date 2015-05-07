@@ -288,7 +288,11 @@ class WebUI:
         if self.database_files_bucket is not None:
             self.package_fs.addfs(
                 "s3",
-                NoDirS3FS(bucket=self.database_files_bucket),
+                NoDirS3FS(
+                    bucket=self.config.database_files_bucket,
+                    aws_access_key=self.config.database_aws_access_key_id,
+                    aws_secret_key=self.config.database_aws_secret_access_key,
+                ),
                 write=True,
             )
 
