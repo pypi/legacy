@@ -33,6 +33,12 @@ class Config:
             self.database_port = c.getint('database', 'port')
         else:
             self.database_port = None
+
+        if c.has_option("database", "files_bucket"):
+            self.database_files_bucket = c.get("database", "files_bucket")
+        else:
+            self.database_files_bucket = None
+
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):
@@ -70,7 +76,7 @@ class Config:
         self.reset_secret = c.get('webui', 'reset_secret')
 
         self.logfile = c.get('logging', 'file')
-        self.mail_logger = c.get('logging', 'mail_logger') 
+        self.mail_logger = c.get('logging', 'mail_logger')
         self.fromaddr = c.get('logging', 'fromaddr')
         self.toaddrs = c.get('logging', 'toaddrs').split(',')
 

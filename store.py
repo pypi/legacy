@@ -2033,13 +2033,11 @@ class Store:
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
         self.package_fs.makedir(dirpath, recursive=True, allow_recreate=True)
-        with self.package_fs.open(filepath, "wb") as f:
-            f.write(content)
+        self.package_fs.setcontents(filepath, content)
 
         # Store signature next to the file
         if signature:
-            with self.package_fs.open(filepath + ".asc", "wb") as f:
-                f.write(signature)
+            self.package_fs.setcontents(filepath + ".asc", signature)
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())

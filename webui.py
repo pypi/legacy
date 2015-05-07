@@ -44,6 +44,7 @@ import packaging.version
 import fs.errors
 import fs.multifs
 import fs.osfs
+import fs.s3fs
 
 import readme.rst
 
@@ -227,6 +228,16 @@ def decode_form(form):
             d[k] = transmute(v)
     return d
 
+
+class NoDirS3FS(S3FS):
+
+    def makedir(self, *args, **kwargs):
+        pass  # Noop this, S3 doesn't need directories
+
+    def removedir(self, *args, **kwargs):
+        pass  # Noop this, S3 doesn't need directories
+
+
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
@@ -270,9 +281,16 @@ class WebUI:
         # Create our package filesystem
         self.package_fs = fs.multifs.MultiFS()
         self.package_fs.addfs(
-            "local", fs.osfs.OSFS(self.config.database_files_dir),
-            write=True,
+            "local",
+            fs.osfs.OSFS(self.config.database_files_dir),
+            write=(True if self.database_files_bucket is None else False)
         )
+        if self.database_files_bucket is not None:
+            self.package_fs.addfs(
+                "s3",
+                NoDirS3FS(bucket=self.database_files_bucket),
+                write=True,
+            )
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
