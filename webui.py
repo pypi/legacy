@@ -229,6 +229,20 @@ def decode_form(form):
     return d
 
 
+class MultiWriteFS(fs.multifs.MultiFS):
+
+    @fs.multifs.synchronize
+    def remove(self, path):
+        found = False
+        for fs in self:
+            if fs.exists(path):
+                found = True
+                fs.remove(path)
+
+        if not found:
+            raise fs.multifs.ResourceNotFoundError(path)
+
+
 class NoDirS3FS(fs.s3fs.S3FS):
 
     def makedir(self, *args, **kwargs):
@@ -279,7 +293,7 @@ class WebUI:
         self.failed = None # error message if initialization already produced a failure
 
         # Create our package filesystem
-        self.package_fs = fs.multifs.MultiFS()
+        self.package_fs = MultiWriteFS()
         self.package_fs.addfs(
             "local",
             fs.osfs.OSFS(self.config.database_files_dir),
