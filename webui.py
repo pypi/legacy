@@ -283,9 +283,9 @@ class WebUI:
         self.package_fs.addfs(
             "local",
             fs.osfs.OSFS(self.config.database_files_dir),
-            write=(True if self.database_files_bucket is None else False)
+            write=(True if self.config.database_files_bucket is None else False)
         )
-        if self.database_files_bucket is not None:
+        if self.config.database_files_bucket is not None:
             self.package_fs.addfs(
                 "s3",
                 NoDirS3FS(
