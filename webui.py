@@ -229,7 +229,7 @@ def decode_form(form):
     return d
 
 
-class NoDirS3FS(S3FS):
+class NoDirS3FS(fs.s3fs.S3FS):
 
     def makedir(self, *args, **kwargs):
         pass  # Noop this, S3 doesn't need directories
