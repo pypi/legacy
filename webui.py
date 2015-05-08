@@ -2902,7 +2902,10 @@ class WebUI:
         if 'index.html' not in members:
             raise FormError, 'Error: top-level "index.html" missing in the zipfile'
 
-        self.store.lock_docs(name)
+        try:
+            self.store.lock_docs(name)
+        except store.LockedException:
+            raise FormError, "Error: Another doc upload is in progress."
 
         # Assume the file is valid; remove any previous data
         if self.docs_fs.exists(name):

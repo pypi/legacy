@@ -48,6 +48,10 @@ class PreviouslyUsedFilename(Exception):
     pass
 
 
+class LockedException(Exception):
+    pass
+
+
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
 # back on the old version
@@ -2120,8 +2124,11 @@ class Store:
     def lock_docs(self, name):
         doc_id = int(hashlib.sha256(name).hexdigest()[:8].encode("hex"), 16)
         cursor = self.get_cursor()
-        sql = "SELECT pg_advisory_xact_lock(%s)"
+        sql = "SELECT pg_try_advisory_xact_lock(%s)"
         safe_execute(cursor, sql, (doc_id,))
+        row = cursor.fetchone()
+        if not row[0]:
+            raise LockedException
 
     def log_docs(self, name, version):
         cursor = self.get_cursor()
