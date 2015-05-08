@@ -49,6 +49,11 @@ class Config:
         else:
             self.database_files_bucket = None
 
+        if c.has_option("database", "docs_bucket"):
+            self.database_docs_bucket = c.get("database", "docs_bucket")
+        else:
+            self.database_docs_bucket = None
+
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):
