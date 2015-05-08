@@ -233,7 +233,7 @@ class MultiWriteFS(fs.multifs.MultiFS):
 
     @fs.multifs.synchronize
     def remove(self, path):
-        raise FormError, "Deleting files has been disabled."
+        # raise FormError, "Deleting files has been disabled."
 
         found = False
         for fs in self:
@@ -295,22 +295,31 @@ class WebUI:
         self.failed = None # error message if initialization already produced a failure
 
         # Create our package filesystem
-        self.package_fs = MultiWriteFS()
-        self.package_fs.addfs(
-            "local",
-            fs.osfs.OSFS(self.config.database_files_dir),
-            write=(True if self.config.database_files_bucket is None else False)
-        )
+        # self.package_fs = MultiWriteFS()
+        # self.package_fs.addfs(
+        #     "local",
+        #     fs.osfs.OSFS(self.config.database_files_dir),
+        #     write=(True if self.config.database_files_bucket is None else False)
+        # )
+        # if self.config.database_files_bucket is not None:
+        #     self.package_fs.addfs(
+        #         "s3",
+        #         NoDirS3FS(
+        #             bucket=self.config.database_files_bucket,
+        #             aws_access_key=self.config.database_aws_access_key_id,
+        #             aws_secret_key=self.config.database_aws_secret_access_key,
+        #         ),
+        #         write=True,
+        #     )
+
         if self.config.database_files_bucket is not None:
-            self.package_fs.addfs(
-                "s3",
-                NoDirS3FS(
-                    bucket=self.config.database_files_bucket,
-                    aws_access_key=self.config.database_aws_access_key_id,
-                    aws_secret_key=self.config.database_aws_secret_access_key,
-                ),
-                write=True,
+            self.package_fs = NoDirS3FS(
+                bucket=self.config.database_files_bucket,
+                aws_access_key=self.config.database_aws_access_key_id,
+                aws_secret_key=self.config.database_aws_secret_access_key,
             )
+        else:
+            self.package_fs = fs.osfs.OSFS(self.config.database_files_dir)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
