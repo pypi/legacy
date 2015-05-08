@@ -233,7 +233,7 @@ class MultiWriteFS(fs.multifs.MultiFS):
 
     @fs.multifs.synchronize
     def remove(self, path):
-        raise FormError "Deleting files has been disabled."
+        raise FormError, "Deleting files has been disabled."
 
         found = False
         for fs in self:
