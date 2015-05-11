@@ -321,6 +321,15 @@ class WebUI:
         else:
             self.package_fs = fs.osfs.OSFS(self.config.database_files_dir)
 
+        if self.config.database_docs_bucket is not None:
+            self.docs_fs = NoDirS3FS(
+                bucket=self.config.database_docs_bucket,
+                aws_access_key=self.config.database_aws_access_key_id,
+                aws_secret_key=self.config.database_aws_secret_access_key,
+            )
+        else:
+            self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
+
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
             fstorage = cgi.FieldStorage(fp=handler.rfile, environ=env)
@@ -395,6 +404,7 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_fs=self.package_fs,
+            docs_fs=self.docs_fs,
         )
         try:
             try:
@@ -2892,27 +2902,33 @@ class WebUI:
         if 'index.html' not in members:
             raise FormError, 'Error: top-level "index.html" missing in the zipfile'
 
+        try:
+            self.store.lock_docs(name)
+        except store.LockedException:
+            raise FormError, "Error: Another doc upload is in progress."
+
         # Assume the file is valid; remove any previous data
-        path = os.path.join(self.config.database_docs_dir,
-                            name.encode('utf8'), "")
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.mkdir(path)
+        if self.docs_fs.exists(name):
+            for dirname, files in self.docs_fs.walk(name, search="depth"):
+                for filename in files:
+                    self.docs_fs.remove(os.path.join(dirname, filename))
+                self.docs_fs.removedir(dirname)
+
         try:
             for fname in members:
-                fpath = os.path.normpath(os.path.join(path, fname))
+                fpath = os.path.normpath(os.path.join(name, fname))
                 if not fpath.startswith(path):
                     raise ValueError, "invalid path name:"+fname
-                if fname.endswith("/"):
-                    if not os.path.isdir(fpath):
-                        os.mkdir(fpath)
-                    continue
-                upperdirs = os.path.dirname(fpath)
-                if not os.path.exists(upperdirs):
-                    os.makedirs(upperdirs)
-                outfile = open(os.path.join(path, fname), "wb")
-                outfile.write(data.read(fname))
-                outfile.close()
+
+                self.docs_fs.makedir(
+                    os.path.dirname(fpath),
+                    recursive=True, allow_recreate=True,
+                )
+
+                self.docs_fs.setcontents(
+                    os.path.join(name, fname),
+                    data.read(fname),
+                )
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
