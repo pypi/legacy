@@ -15,6 +15,7 @@ from xml.etree import cElementTree
 import itsdangerous
 import redis
 import rq
+import boto.s3
 
 try:
     import json
