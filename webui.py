@@ -15,6 +15,7 @@ from xml.etree import cElementTree
 import itsdangerous
 import redis
 import rq
+import boto.s3
 
 try:
     import json
@@ -246,6 +247,18 @@ class MultiWriteFS(fs.multifs.MultiFS):
 
 
 class NoDirS3FS(fs.s3fs.S3FS):
+
+    @property
+    def _s3conn(self):
+        try:
+            (c,ctime) = self._tlocal.s3conn
+            if time.time() - ctime > 60:
+                raise AttributeError
+            return c
+        except AttributeError:
+            c = boto.s3.connect_to_region("us-west-2", *self._access_keys)
+            self._tlocal.s3conn = (c,time.time())
+            return c
 
     def makedir(self, *args, **kwargs):
         pass  # Noop this, S3 doesn't need directories
