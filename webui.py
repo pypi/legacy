@@ -294,7 +294,7 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
-        Create our package filesystem
+        # Create our package filesystem
         self.package_fs = MultiWriteFS()
         self.package_fs.addfs(
             "local",
