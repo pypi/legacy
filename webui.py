@@ -2927,10 +2927,9 @@ class WebUI:
                     recursive=True, allow_recreate=True,
                 )
 
-                self.docs_fs.setcontents(
-                    os.path.join(name, fname),
-                    data.read(fname),
-                )
+                self.docs_fs.setcontents(fpath, data.read(fname))
+                if hasattr(self.docs_fs, "makepublic"):
+                    self.docs_fs.makepublic(fpath)
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
