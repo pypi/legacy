@@ -256,7 +256,11 @@ class NoDirS3FS(fs.s3fs.S3FS):
                 raise AttributeError
             return c
         except AttributeError:
-            c = boto.s3.connect_to_region("us-west-2", *self._access_keys)
+            c = boto.s3.connect_to_region(
+                "us-west-2",
+                aws_access_key_id=self._access_keys[0],
+                aws_secret_access_key=self._access_keys[1],
+            )
             self._tlocal.s3conn = (c,time.time())
             return c
 
