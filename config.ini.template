@@ -11,7 +11,12 @@ queue_redis_url = redis://localhost:6379/0
 count_redis_url = redis://localhost:6379/1
 cache_redis_url = redis://localhost:6379/2
 
+; AWS
+; aws_access_key_id =
+; aws_secret_access_key =
+
 ; Storage Directories
+;files_bucket =
 files_dir = /MacDev/svn.python.org/pypi-pep345/files
 docs_dir = /MacDev/svn.python.org/pypi-pep345/docs
 
@@ -90,7 +95,7 @@ dsn =
 ;gid=pypi
 wsgi-file = pypi.wsgi
 socket = /tmp/pypi.sock
-;pidfile = /var/run/devpypi/pypi.pid 
+;pidfile = /var/run/devpypi/pypi.pid
 ;daemonize = 127.0.0.1:8224
 ;processes = 2
 harakiri = 60

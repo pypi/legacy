@@ -11,3 +11,4 @@ sshkeys_update
 privkey*
 pubkey*
 pypi.egg*
+.idea

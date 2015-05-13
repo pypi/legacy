@@ -48,6 +48,10 @@ class PreviouslyUsedFilename(Exception):
     pass
 
 
+class LockedException(Exception):
+    pass
+
+
 # we import both the old and new (PEP 386) methods of handling versions since
 # some version strings are not compatible with the new method and we can fall
 # back on the old version
@@ -276,7 +280,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_fs=None):
+    def __init__(self, config, queue=None, redis=None, package_fs=None, docs_fs=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -294,6 +298,7 @@ class Store:
         self.count_redis = redis
 
         self.package_fs = package_fs
+        self.docs_fs = docs_fs
 
         self._changed_packages = set()
 
@@ -2033,13 +2038,11 @@ class Store:
         filepath = self.gen_file_path(pyversion, name, filename)
         dirpath = os.path.split(filepath)[0]
         self.package_fs.makedir(dirpath, recursive=True, allow_recreate=True)
-        with self.package_fs.open(filepath, "wb") as f:
-            f.write(content)
+        self.package_fs.setcontents(filepath, content)
 
         # Store signature next to the file
         if signature:
-            with self.package_fs.open(filepath + ".asc", "wb") as f:
-                f.write(signature)
+            self.package_fs.setcontents(filepath + ".asc", signature)
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2118,6 +2121,15 @@ class Store:
             raise KeyError, 'invalid digest %r'%digest
         return self._File_Info(None, row)
 
+    def lock_docs(self, name):
+        doc_id = int(hashlib.sha256(name).hexdigest()[:8].encode("hex"), 16)
+        cursor = self.get_cursor()
+        sql = "SELECT pg_try_advisory_xact_lock(%s)"
+        safe_execute(cursor, sql, (doc_id,))
+        row = cursor.fetchone()
+        if not row[0]:
+            raise LockedException
+
     def log_docs(self, name, version):
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2130,9 +2142,8 @@ class Store:
         Returns the URL or '' if there are no docs.
         '''
         for sub in [[], ['html']]:
-            path = [self.config.database_docs_dir,
-                name.encode('utf8')] + sub + ['index.html']
-            if os.path.exists(os.path.join(*path)):
+            path = [name.encode('utf8')] + sub + ['index.html']
+            if self.docs_fs.exists(os.path.join(*path)):
                 return '/'.join([self.config.package_docs_url, name] + sub)
         return ''
 

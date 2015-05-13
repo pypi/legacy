@@ -44,6 +44,7 @@ import packaging.version
 import fs.errors
 import fs.multifs
 import fs.osfs
+import fs.s3fs
 
 import readme.rst
 
@@ -227,6 +228,32 @@ def decode_form(form):
             d[k] = transmute(v)
     return d
 
+
+class MultiWriteFS(fs.multifs.MultiFS):
+
+    @fs.multifs.synchronize
+    def remove(self, path):
+        # raise FormError, "Deleting files has been disabled."
+
+        found = False
+        for fs in self:
+            if fs.exists(path):
+                found = True
+                fs.remove(path)
+
+        if not found:
+            raise fs.multifs.ResourceNotFoundError(path)
+
+
+class NoDirS3FS(fs.s3fs.S3FS):
+
+    def makedir(self, *args, **kwargs):
+        pass  # Noop this, S3 doesn't need directories
+
+    def removedir(self, *args, **kwargs):
+        pass  # Noop this, S3 doesn't need directories
+
+
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
@@ -268,11 +295,40 @@ class WebUI:
         self.failed = None # error message if initialization already produced a failure
 
         # Create our package filesystem
-        self.package_fs = fs.multifs.MultiFS()
-        self.package_fs.addfs(
-            "local", fs.osfs.OSFS(self.config.database_files_dir),
-            write=True,
-        )
+        # self.package_fs = MultiWriteFS()
+        # self.package_fs.addfs(
+        #     "local",
+        #     fs.osfs.OSFS(self.config.database_files_dir),
+        #     write=(True if self.config.database_files_bucket is None else False)
+        # )
+        # if self.config.database_files_bucket is not None:
+        #     self.package_fs.addfs(
+        #         "s3",
+        #         NoDirS3FS(
+        #             bucket=self.config.database_files_bucket,
+        #             aws_access_key=self.config.database_aws_access_key_id,
+        #             aws_secret_key=self.config.database_aws_secret_access_key,
+        #         ),
+        #         write=True,
+        #     )
+
+        if self.config.database_files_bucket is not None:
+            self.package_fs = NoDirS3FS(
+                bucket=self.config.database_files_bucket,
+                aws_access_key=self.config.database_aws_access_key_id,
+                aws_secret_key=self.config.database_aws_secret_access_key,
+            )
+        else:
+            self.package_fs = fs.osfs.OSFS(self.config.database_files_dir)
+
+        if self.config.database_docs_bucket is not None:
+            self.docs_fs = NoDirS3FS(
+                bucket=self.config.database_docs_bucket,
+                aws_access_key=self.config.database_aws_access_key_id,
+                aws_secret_key=self.config.database_aws_secret_access_key,
+            )
+        else:
+            self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
@@ -348,6 +404,7 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_fs=self.package_fs,
+            docs_fs=self.docs_fs,
         )
         try:
             try:
@@ -2806,6 +2863,8 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
+        # raise FormError, "Documentation upload temporarily disabled"
+
         # can't perform CSRF check as this is invoked by tools
         #self.csrf_check()
 
@@ -2845,27 +2904,32 @@ class WebUI:
         if 'index.html' not in members:
             raise FormError, 'Error: top-level "index.html" missing in the zipfile'
 
+        try:
+            self.store.lock_docs(name)
+        except store.LockedException:
+            raise FormError, "Error: Another doc upload is in progress."
+
         # Assume the file is valid; remove any previous data
-        path = os.path.join(self.config.database_docs_dir,
-                            name.encode('utf8'), "")
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.mkdir(path)
+        if self.docs_fs.exists(name):
+            for dirname, files in self.docs_fs.walk(name, search="depth"):
+                for filename in files:
+                    self.docs_fs.remove(os.path.join(dirname, filename))
+                self.docs_fs.removedir(dirname)
+
         try:
             for fname in members:
-                fpath = os.path.normpath(os.path.join(path, fname))
-                if not fpath.startswith(path):
+                fpath = os.path.normpath(os.path.join(name, fname))
+                if not fpath.startswith(name):
                     raise ValueError, "invalid path name:"+fname
-                if fname.endswith("/"):
-                    if not os.path.isdir(fpath):
-                        os.mkdir(fpath)
-                    continue
-                upperdirs = os.path.dirname(fpath)
-                if not os.path.exists(upperdirs):
-                    os.makedirs(upperdirs)
-                outfile = open(os.path.join(path, fname), "wb")
-                outfile.write(data.read(fname))
-                outfile.close()
+
+                self.docs_fs.makedir(
+                    os.path.dirname(fpath),
+                    recursive=True, allow_recreate=True,
+                )
+
+                self.docs_fs.setcontents(fpath, data.read(fname))
+                if hasattr(self.docs_fs, "makepublic"):
+                    self.docs_fs.makepublic(fpath)
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
