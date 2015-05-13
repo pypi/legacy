@@ -2919,7 +2919,7 @@ class WebUI:
         try:
             for fname in members:
                 fpath = os.path.normpath(os.path.join(name, fname))
-                if not fpath.startswith(path):
+                if not fpath.startswith(name):
                     raise ValueError, "invalid path name:"+fname
 
                 self.docs_fs.makedir(
