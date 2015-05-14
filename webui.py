@@ -338,14 +338,14 @@ class WebUI:
         # else:
         #     self.package_fs = fs.osfs.OSFS(self.config.database_files_dir)
 
-        # if self.config.database_docs_bucket is not None:
-        #     self.docs_fs = NoDirS3FS(
-        #         bucket=self.config.database_docs_bucket,
-        #         aws_access_key=self.config.database_aws_access_key_id,
-        #         aws_secret_key=self.config.database_aws_secret_access_key,
-        #     )
-        # else:
-        self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
+        if self.config.database_docs_bucket is not None:
+            self.docs_fs = NoDirS3FS(
+                bucket=self.config.database_docs_bucket,
+                aws_access_key=self.config.database_aws_access_key_id,
+                aws_secret_key=self.config.database_aws_secret_access_key,
+            )
+        else:
+            self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':
