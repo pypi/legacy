@@ -2020,8 +2020,8 @@ class Store:
         cursor = self.get_cursor()
         # add database entry
         sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest, upload_time, size,
-            has_signature) values
+            packagetype, comment_text, filename, md5_digest, size,
+            has_signature, upload_time) values
             (%s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
             comment, filename, md5_digest, len(content), bool(signature)))
