@@ -2880,8 +2880,6 @@ class WebUI:
             raise Unauthorised, \
                 "You must be identified to edit package information"
 
-        raise FormError, "Documentation upload temporarily disabled"
-
         # can't perform CSRF check as this is invoked by tools
         #self.csrf_check()
 
