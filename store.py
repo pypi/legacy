@@ -280,7 +280,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_fs=None, docs_fs=None):
+    def __init__(self, config, queue=None, redis=None, package_fs=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -298,7 +298,6 @@ class Store:
         self.count_redis = redis
 
         self.package_fs = package_fs
-        self.docs_fs = docs_fs
 
         self._changed_packages = set()
 

@@ -403,7 +403,6 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_fs=self.package_fs,
-            docs_fs=self.docs_fs,
         )
         try:
             try:
