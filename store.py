@@ -2142,7 +2142,8 @@ class Store:
         sql = "SELECT has_docs FROM packages WHERE name = %s"
         safe_execute(cursor, sql, (name,))
         row = cursor.fetchone()
-        return row[0]
+        if row[0]:
+            return '/'.join([self.config.package_docs_url, name])
 
     #
     # Mirrors managment
