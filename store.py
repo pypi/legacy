@@ -280,7 +280,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_fs=None, docs_fs=None):
+    def __init__(self, config, queue=None, redis=None, package_fs=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -298,7 +298,6 @@ class Store:
         self.count_redis = redis
 
         self.package_fs = package_fs
-        self.docs_fs = docs_fs
 
         self._changed_packages = set()
 
@@ -2020,10 +2019,11 @@ class Store:
         cursor = self.get_cursor()
         # add database entry
         sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
+            packagetype, comment_text, filename, md5_digest, size,
+            has_signature, upload_time) values
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
-            comment, filename, md5_digest))
+            comment, filename, md5_digest, len(content), bool(signature)))
 
         # Add an entry to the file registry
         try:
@@ -2055,20 +2055,12 @@ class Store:
     def list_files(self, name, version, show_missing=False):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest, downloads, upload_time from release_files
+            filename, md5_digest, downloads, size, has_signature, upload_time
+            from release_files
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
-            path = self.gen_file_path(pv, name, fn)
-            try:
-                size = self.package_fs.getsize(path)
-            except fs.errors.ResourceNotFoundError:
-                if show_missing:
-                    size = 0
-                else:
-                    continue
-            has_sig = self.package_fs.exists(path + ".asc")
+        for pt, pv, ct, fn, m5, dn, size, has_sig, ut in cursor.fetchall():
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
         return l
@@ -2130,6 +2122,11 @@ class Store:
         if not row[0]:
             raise LockedException
 
+    def set_has_docs(self, name):
+        cursor = self.get_cursor()
+        sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
+        safe_execute(cursor, sql, (name,))
+
     def log_docs(self, name, version):
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2141,11 +2138,11 @@ class Store:
 
         Returns the URL or '' if there are no docs.
         '''
-        for sub in [[], ['html']]:
-            path = [name.encode('utf8')] + sub + ['index.html']
-            if self.docs_fs.exists(os.path.join(*path)):
-                return '/'.join([self.config.package_docs_url, name] + sub)
-        return ''
+        cursor = self.get_cursor()
+        sql = "SELECT has_docs FROM packages WHERE name = %s"
+        safe_execute(cursor, sql, (name,))
+        row = cursor.fetchone()
+        return row[0]
 
     #
     # Mirrors managment

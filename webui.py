@@ -311,24 +311,6 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
-        # Create our package filesystem
-        # self.package_fs = MultiWriteFS()
-        # self.package_fs.addfs(
-        #     "local",
-        #     fs.osfs.OSFS(self.config.database_files_dir),
-        #     write=(True if self.config.database_files_bucket is None else False)
-        # )
-        # if self.config.database_files_bucket is not None:
-        #     self.package_fs.addfs(
-        #         "s3",
-        #         NoDirS3FS(
-        #             bucket=self.config.database_files_bucket,
-        #             aws_access_key=self.config.database_aws_access_key_id,
-        #             aws_secret_key=self.config.database_aws_secret_access_key,
-        #         ),
-        #         write=True,
-        #     )
-
         if self.config.database_files_bucket is not None:
             self.package_fs = NoDirS3FS(
                 bucket=self.config.database_files_bucket,
@@ -421,7 +403,6 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_fs=self.package_fs,
-            docs_fs=self.docs_fs,
         )
         try:
             try:
@@ -2948,6 +2929,7 @@ class WebUI:
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
+        self.store.set_has_docs(name)
         self.store.log_docs(name, version)
         self.store.changed()
         raise Redirect("https://pythonhosted.org/%s/" % name)
