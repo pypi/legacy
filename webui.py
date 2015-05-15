@@ -311,14 +311,17 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
-        if self.config.database_files_bucket is not None:
-            self.package_fs = NoDirS3FS(
-                bucket=self.config.database_files_bucket,
-                aws_access_key=self.config.database_aws_access_key_id,
-                aws_secret_key=self.config.database_aws_secret_access_key,
-            )
-        else:
-            self.package_fs = fs.osfs.OSFS(self.config.database_files_dir)
+
+        self.s3conn = boto.s3.connect_to_region(
+            "us-west-2",
+            aws_access_key_id=self.config.database_aws_access_key_id,
+            aws_secret_access_key=self.config.database_aws_secret_access_key,
+        )
+
+        self.package_bucket = self.s3conn.get_bucket(
+            self.config.database_files_bucket,
+            validate=False,
+        )
 
         if self.config.database_docs_bucket is not None:
             self.docs_fs = NoDirS3FS(
@@ -402,7 +405,7 @@ class WebUI:
             self.config,
             queue=self.queue,
             redis=self.count_redis,
-            package_fs=self.package_fs,
+            package_bucket=self.package_bucket,
         )
         try:
             try:
@@ -1003,9 +1006,12 @@ class WebUI:
                 headers["ETag"] = '"%s"' % md5_digest
 
             if status[0] != 304:
+                key = self.package_bucket.get_key(path, validate=False)
                 try:
-                    file_data = self.package_fs.getcontents(path, "rb")
-                except fs.errors.ResourceNotFoundError:
+                    file_data = key.read()
+                except boto.exception.S3ResponseError as exc:
+                    if exc.error_code != "NoSuchKey":
+                        raise
                     status = (404, "Not Found")
                 else:
                     headers["Content-Type"] = "application/octet-stream"
@@ -2860,8 +2866,6 @@ class WebUI:
         if not self.authenticated:
             raise Unauthorised, \
                 "You must be identified to edit package information"
-
-        # raise FormError, "Documentation upload temporarily disabled"
 
         # can't perform CSRF check as this is invoked by tools
         #self.csrf_check()
