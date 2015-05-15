@@ -2125,7 +2125,7 @@ class Store:
 
     def set_has_docs(self, name):
         cursor = self.get_cursor()
-        sql = "UPDATE packages SET has_docs = t WHERE name = %s"
+        sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
         safe_execute(cursor, sql, (name,))
 
     def log_docs(self, name, version):
