@@ -978,7 +978,7 @@ class WebUI:
 
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
-        key = None
+        file_key = None
         file_chunk = None
 
         headers = {}
@@ -1007,9 +1007,9 @@ class WebUI:
                 headers["ETag"] = '"%s"' % md5_digest
 
             if status[0] != 304:
-                key = self.package_bucket.get_key(path, validate=False)
+                file_key = self.package_bucket.get_key(path, validate=False)
                 try:
-                    file_chunk = key.read(4096)
+                    file_chunk = file_key.read(4096)
                 except boto.exception.S3ResponseError as exc:
                     if exc.error_code != "NoSuchKey":
                         raise
@@ -1026,10 +1026,10 @@ class WebUI:
 
         self.handler.end_headers()
 
-        if key is not None and file_chunk is not None:
+        if file_key is not None and file_chunk is not None:
             while file_chunk:
                 self.wfile.write(file_chunk)
-                file_chunk = key.read(4096)
+                file_chunk = file_key.read(4096)
 
     def run_id(self):
         path = self.env.get('PATH_INFO')
