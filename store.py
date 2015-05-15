@@ -2142,7 +2142,10 @@ class Store:
         safe_execute(cursor, sql, (name,))
         row = cursor.fetchone()
         if row[0]:
-            return '/'.join([self.config.package_docs_url, name])
+            base = self.config.package_docs_url
+            if not base.endswith("/"):
+                base += "/"
+            return base + name + "/"
 
     #
     # Mirrors managment
