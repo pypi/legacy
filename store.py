@@ -2056,19 +2056,13 @@ class Store:
     def list_files(self, name, version, show_missing=False):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest, downloads, upload_time from release_files
+            filename, md5_digest, downloads, size, upload_time
+            from release_files
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        for pt, pv, ct, fn, m5, dn, ut in cursor.fetchall():
+        for pt, pv, ct, fn, m5, dn, size, ut in cursor.fetchall():
             path = self.gen_file_path(pv, name, fn)
-            try:
-                size = self.package_fs.getsize(path)
-            except fs.errors.ResourceNotFoundError:
-                if show_missing:
-                    size = 0
-                else:
-                    continue
             has_sig = self.package_fs.exists(path + ".asc")
             l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
