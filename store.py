@@ -2139,11 +2139,11 @@ class Store:
 
         Returns the URL or '' if there are no docs.
         '''
-        for sub in [[], ['html']]:
-            path = [name.encode('utf8')] + sub + ['index.html']
-            if self.docs_fs.exists(os.path.join(*path)):
-                return '/'.join([self.config.package_docs_url, name] + sub)
-        return ''
+        cursor = self.get_cursor()
+        sql = "SELECT has_docs FROM packages WHERE name = %s"
+        safe_execute(cursor, sql, (name,))
+        row = cursor.fetchone()
+        return row[0]
 
     #
     # Mirrors managment
