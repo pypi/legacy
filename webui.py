@@ -2932,6 +2932,7 @@ class WebUI:
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
+        self.store.set_has_docs(name)
         self.store.log_docs(name, version)
         self.store.changed()
         raise Redirect("https://pythonhosted.org/%s/" % name)

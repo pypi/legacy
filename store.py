@@ -2123,6 +2123,11 @@ class Store:
         if not row[0]:
             raise LockedException
 
+    def set_has_docs(self, name):
+        cursor = self.get_cursor()
+        sql = "UPDATE packages SET has_docs = t WHERE name = %s"
+        safe_execute(cursor, sql, (name,))
+
     def log_docs(self, name, version):
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
