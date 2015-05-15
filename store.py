@@ -280,7 +280,7 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_fs=None):
+    def __init__(self, config, queue=None, redis=None, package_bucket=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -297,7 +297,7 @@ class Store:
         self.queue = queue
         self.count_redis = redis
 
-        self.package_fs = package_fs
+        self.package_bucket = package_bucket
 
         self._changed_packages = set()
 
@@ -1334,10 +1334,12 @@ class Store:
         self._add_invalidation(name)
 
         # delete the files
+        to_delete = []
         for file in self.list_files(name, version):
             path = self.gen_file_path(file['python_version'], name,
                 file['filename'])
-            self.package_fs.remove(path)
+            to_delete.append(path)
+        self.package_bucket.delete_keys(to_delete)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1358,10 +1360,12 @@ class Store:
         ''' Delete an entire package from the database.
         '''
         cursor = self.get_cursor()
+        to_delete = []
         for release in self.get_package_releases(name):
             for file in self.list_files(name, release['version']):
-                self.package_fs.remove(self.gen_file_path(file['python_version'], name,
+                to_delete.append(self.gen_file_path(file['python_version'], name,
                     file['filename']))
+        self.package_bucket.delete_keys(to_delete)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1397,11 +1401,8 @@ class Store:
         for pyversion, filename in cursor.fetchall():
             oldname = self.gen_file_path(pyversion, old, filename)
             newname = self.gen_file_path(pyversion, new, filename)
-            if not self.package_fs.exists(oldname):
-                continue
-            dirpath = os.path.split(newname)[0]
-            self.package_fs.makedir(dirpath, recursive=True,  allow_recreate=True)
-            self.package_fs.rename(oldname, newname)
+            self.package_bucket.copy_key(newname, self.package_bucket.name, oldname)
+            self.package_bucket.delete_key(oldname)
 
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
@@ -2036,13 +2037,13 @@ class Store:
 
         # store file to disk
         filepath = self.gen_file_path(pyversion, name, filename)
-        dirpath = os.path.split(filepath)[0]
-        self.package_fs.makedir(dirpath, recursive=True, allow_recreate=True)
-        self.package_fs.setcontents(filepath, content)
+        k = self.package_bucket.new_key(filepath)
+        k.set_contents_from_string(content)
 
         # Store signature next to the file
         if signature:
-            self.package_fs.setcontents(filepath + ".asc", signature)
+            sk = self.package_bucket.new_key(filepath + ".asc")
+            sk.set_contents_from_string(signature)
 
         # add journal entry
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
@@ -2074,22 +2075,20 @@ class Store:
 
     def remove_file(self, digest):
         cursor = self.get_cursor()
-        sql = '''select python_version, name, version, filename from release_files
+        sql = '''select python_version, name, version, filename, has_sig
+            from release_files
             where md5_digest=%s'''
         safe_execute(cursor, sql, (digest, ))
         info = cursor.fetchone()
         if not info:
             raise KeyError, 'no such file'
-        pyversion, name, version, filename = info
+        pyversion, name, version, filename, has_sig = info
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
         filepath = self.gen_file_path(pyversion, name, filename)
-        dirpath = os.path.split(filepath)[0]
-        self.package_fs.remove(filepath)
-        if self.package_fs.exists(filepath + ".asc"):
-            self.package_fs.remove(filepath + ".asc")
-        if self.package_fs.isdirempty(dirpath):
-            self.package_fs.removedir(dirpath, recursive=True)
+        self.package_bucket.delete_key(filepath)
+        if has_sig:
+            self.package_bucket.delete_key(filepath + ".asc")
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
