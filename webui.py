@@ -978,7 +978,8 @@ class WebUI:
 
         filename = os.path.basename(path)
         possible_package = os.path.basename(os.path.dirname(path))
-        file_data = None
+        key = None
+        file_chunk = None
 
         headers = {}
         status = (200, "OK")
@@ -1008,7 +1009,7 @@ class WebUI:
             if status[0] != 304:
                 key = self.package_bucket.get_key(path, validate=False)
                 try:
-                    file_data = key.read()
+                    file_chunk = key.read(4096)
                 except boto.exception.S3ResponseError as exc:
                     if exc.error_code != "NoSuchKey":
                         raise
@@ -1025,8 +1026,10 @@ class WebUI:
 
         self.handler.end_headers()
 
-        if file_data is not None:
-            self.wfile.write(file_data)
+        if key is not None and file_chunk is not None:
+            while file_chunk:
+                self.wfile.write(file_chunk)
+                file_chunk = key.read(4096)
 
     def run_id(self):
         path = self.env.get('PATH_INFO')

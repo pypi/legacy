@@ -2075,7 +2075,7 @@ class Store:
 
     def remove_file(self, digest):
         cursor = self.get_cursor()
-        sql = '''select python_version, name, version, filename, has_sig
+        sql = '''select python_version, name, version, filename, has_signature
             from release_files
             where md5_digest=%s'''
         safe_execute(cursor, sql, (digest, ))
