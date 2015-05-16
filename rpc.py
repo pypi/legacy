@@ -10,6 +10,10 @@ from cStringIO import StringIO
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 from collections import defaultdict
 
+from perfmetrics import metric
+from perfmetrics import metricmethod
+from perfmetrics import set_statsd_client
+
 import redis
 
 # local imports
@@ -29,6 +33,10 @@ else:
 # Note: slice object is to cut off the instance of Store that would be passed along
 package_tag_lru = RedisLru(cache_redis, expires=86400, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
 cache_by_pkg = package_tag_lru.decorator
+
+STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
+set_statsd_client(STATSD_URI)
+
 
 class RequestHandler(SimpleXMLRPCDispatcher):
     """A request dispatcher for the PyPI XML-RPC API."""
@@ -58,6 +66,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_introspection_functions()
         self.register_multicall_functions()
 
+    @metricmethod
     def __call__(self, webui_obj):
         webui_obj.handler.send_response(200, 'OK')
         webui_obj.handler.send_header('Content-type', 'text/xml')
@@ -84,44 +93,53 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
         webui_obj.handler.wfile.write(response)
 
+    @metricmethod
     def _dispatch(self, method, params):
         if not method.startswith('system.'):
             # Add store to all of our own methods
             params = (self.store,)+tuple(params)
         return SimpleXMLRPCDispatcher._dispatch(self, method, params)
 
+    @metricmethod
     def system_multicall(self, call_list):
         if len(call_list) > 100:
             raise Fault, "multicall too large"
         return SimpleXMLRPCDispatcher.system_multicall(self, call_list)
 
+@metric
 def package_hosting_mode(store, package_name):
     """Returns the hosting mode for a given package."""
     return store.get_package_hosting_mode(package_name)
 
+@metric
 @cache_by_pkg
 def release_downloads(store, package_name, version):
     '''Return download count for given release.'''
     return store.get_release_downloads(package_name, version)
 
+@metric
 @cache_by_pkg
 def package_roles(store, package_name):
     '''Return associated users and package roles.'''
     result = store.get_package_roles(package_name)
     return [tuple(fields.values())for fields in result]
 
+@metric
 def user_packages(store, user):
     '''Return associated packages for user.'''
     result = store.get_user_packages(user)
     return [tuple(fields.values()) for fields in result]
 
+@metric
 def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
 
+@metric
 def list_packages_with_serial(store):
     return store.get_packages_with_serial()
 
+@metric
 @cache_by_pkg
 def package_releases(store, package_name, show_hidden=False):
     if show_hidden:
@@ -131,6 +149,7 @@ def package_releases(store, package_name, show_hidden=False):
     result = store.get_package_releases(package_name, hidden=hidden)
     return [row['version'] for row in result]
 
+@metric
 def release_urls(store, package_name, version):
     result = []
     for file in store.list_files(package_name, version):
@@ -146,6 +165,7 @@ def release_urls(store, package_name, version):
 package_urls = release_urls     # "deprecated"
 
 
+@metric
 @cache_by_pkg
 def release_data(store, package_name, version):
     info = store.get_package(package_name, version)
@@ -172,10 +192,12 @@ def release_data(store, package_name, version):
     return info
 package_data = release_data     # "deprecated"
 
+@metric
 def search(store, spec, operator='and'):
     spec['_pypi_hidden'] = 'FALSE'
     return [row.as_dict() for row in store.query_packages(spec, operator)]
 
+@metric
 def browse(store, categories):
     if not isinstance(categories, list):
         raise TypeError, "Parameter categories must be a list"
@@ -188,15 +210,18 @@ def browse(store, categories):
     packages, tally = store.browse(ids)
     return [(name, version) for name, version, desc in packages]
 
+@metric
 def updated_releases(store, since):
     result = store.updated_releases(since)
     return [(row['name'], row['version']) for row in result]
 
 
+@metric
 def changelog_last_serial(store):
     "return the last changelog event's serial"
     return store.changelog_last_serial()
 
+@metric
 def changelog(store, since, with_ids=False):
     result = []
     for row in store.changelog(since):
@@ -211,6 +236,7 @@ def changelog(store, since, with_ids=False):
         result.append(t)
     return result
 
+@metric
 def changelog_since_serial(store, since_serial):
     'return the changes since the nominated event serial (id)'
     result = []
@@ -224,9 +250,11 @@ def changelog_since_serial(store, since_serial):
             row['action'], row['id']))
     return result
 
+@metric
 def changed_packages(store, since):
     return store.changed_packages(since)
 
+@metric
 def post_cheesecake_for_release(store, name, version, score_data, password):
     if password != store.config.cheesecake_password:
         raise ValuError("Bad password.")
@@ -235,6 +263,7 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
     store.commit()
 
 
+@metric
 def top_packages(store, num=None):
     return store.top_packages(num=num)
 

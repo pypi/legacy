@@ -9,6 +9,7 @@ html5lib==0.99999
 itsdangerous==0.24
 packaging==15.1
 passlib==1.6.2
+perfmetrics==2.0
 psycopg2==2.6
 py-bcrypt==0.4
 python-dateutil==2.4.2
