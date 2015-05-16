@@ -662,8 +662,8 @@ class WebUI:
             return self.run_simple()
         if script_name and script_name == self.config.simple_sign_script:
             return self.run_simple_sign()
-        if script_name == '/packages':
-            return self.packages()
+        # if script_name == '/packages':
+        #     return self.packages()
         if script_name == '/mirrors':
             return self.mirrors()
         if script_name == '/security':
