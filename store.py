@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, time, hashlib, random, types, math, stat, errno
-import logging, string, datetime, calendar, binascii, urllib2, cgi
+import logging, string, datetime, calendar, binascii, urllib, urllib2, cgi
 import posixpath
 from collections import defaultdict
 import cPickle as pickle
@@ -273,6 +273,14 @@ def binary(cursor, bytes):
 
 class StorageError(Exception):
     pass
+
+
+def _format_es_fields(hit):
+    name = hit['fields']['name'][0]
+    version = hit['fields']['version'][0]
+    summary = hit['fields'].get('summary', [None])[0]
+    _pypi_hidden = hit['fields']['_pypi_hidden'][0]
+    return (name, version, summary, _pypi_hidden)
 
 class Store:
     ''' Store info about packages, and allow query and retrieval.
@@ -907,6 +915,49 @@ class Store:
             order by lower(name), _pypi_ordering'''%where
         safe_execute(cursor, sql)
         return Result(None, cursor.fetchall(), self._Query_Packages)
+
+    def search_packages(self, spec, operator='and'):
+        ''' Search for packages that match the spec.
+    
+            Return a list of (name, version, summary, _pypi_ordering) tuples.
+        '''
+        if self.config.database_releases_index_url is None or self.config.database_releases_index_name is None:
+            return self.query_packages(spec, operator=operator)
+        
+        if operator not in ('and', 'or'):
+            operator = 'and'
+    
+        hidden = False
+        if '_pypi_hidden' in spec:
+            if spec['_pypi_hidden'] in ('1', 1):
+                hidden = True
+    
+        terms = []
+        for k, v in spec.items():
+            if k not in ['name', 'version', 'author', 'author_email',
+                         'maintainer', 'maintainer_email',
+                         'home_page', 'license', 'summary',
+                         'description', 'keywords', 'platform',
+                         'download_url']:
+                continue
+    
+            if type(v) != type([]): v = [v]
+            terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
+    
+        join_string = ' %s '%(operator.upper())
+        query_params = {
+            'q': join_string.join(terms),
+            'fields': 'name,summary,version,_pypi_ordering,_pypi_hidden',
+            'sort': 'name,_pypi_ordering',
+            'size': '10000',
+            'type': 'phrase'
+        }
+        query_string = urllib.urlencode(query_params)
+    
+        index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
+        r = requests.get(index_url + '/release/_search?' + query_string)
+        results = [_format_es_fields(r) for r in r.json()['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
+        return Result(None, results, self._Query_Packages)
 
     _Classifiers = FastResultRow('classifier')
     def get_classifiers(self):

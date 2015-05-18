@@ -54,6 +54,16 @@ class Config:
         else:
             self.database_docs_bucket = None
 
+        if c.has_option("database", "releases_index_url"):
+            self.database_releases_index_url = c.get("database", "releases_index_url")
+        else:
+            self.database_releases_index_url = None
+
+        if c.has_option("database", "releases_index_name"):
+            self.database_releases_index_name = c.get("database", "releases_index_name")
+        else:
+            self.database_releases_index_name = None
+
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):
