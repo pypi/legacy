@@ -1888,7 +1888,7 @@ class WebUI:
             d_new = {}
             for col, score in columns:
                 spec = {'_pypi_hidden': False, col: t}
-                for r in self.store.query_packages(spec):
+                for r in self.store.search_packages(spec):
                     key = (r['name'], r['version'])
                     if d:
                         # must find current score in d
