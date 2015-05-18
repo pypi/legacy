@@ -279,6 +279,8 @@ def _format_es_fields(hit):
     name = hit['fields']['name'][0]
     version = hit['fields']['version'][0]
     summary = hit['fields'].get('summary', [None])[0]
+    if summary is not None:
+        summary = summary.encode('utf8')
     _pypi_hidden = hit['fields']['_pypi_hidden'][0]
     return (name, version, summary, _pypi_hidden)
 
