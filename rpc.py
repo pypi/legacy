@@ -195,7 +195,7 @@ package_data = release_data     # "deprecated"
 @metric
 def search(store, spec, operator='and'):
     spec['_pypi_hidden'] = 'FALSE'
-    return [row.as_dict() for row in store.query_packages(spec, operator)]
+    return [row.as_dict() for row in store.search_packages(spec, operator)]
 
 @metric
 def browse(store, categories):
