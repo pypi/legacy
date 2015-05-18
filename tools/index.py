@@ -19,6 +19,10 @@ import store
 CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
 
 conf = config.Config(CONFIG_FILE)
+
+if conf.database_releases_index_name is None or conf.database_releases_index_url is None:
+    sys.exit()
+
 store = store.Store(conf)
 store.open()
 
@@ -31,6 +35,6 @@ while True:
     break
   operations = []
   for release in releases:
-    operations.append(json.dumps({"index": {"_index": config.database_releases_index_name, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
+    operations.append(json.dumps({"index": {"_index": conf.database_releases_index_name, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
     operations.append(json.dumps(release))
-  r = requests.post(config.database_releases_index_url + "/_bulk", data="\n".join(operations))
+  r = requests.post(conf.database_releases_index_url + "/_bulk", data="\n".join(operations))
