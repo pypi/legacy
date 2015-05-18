@@ -1,7 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, re, time, hashlib, random, types, math, stat, errno
-import logging, string, datetime, calendar, binascii, urllib2, cgi
+import logging, string, datetime, calendar, binascii, urllib, urllib2, cgi
 import posixpath
 from collections import defaultdict
 import cPickle as pickle
@@ -944,14 +944,15 @@ class Store:
             if type(v) != type([]): v = [v]
             terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
     
-        join_string = '%%20%s%%20'%(operator.upper())
+        join_string = ' %s '%(operator.upper())
         query_params = {
             'q': join_string.join(terms),
             'fields': 'name,summary,version,_pypi_ordering,_pypi_hidden',
             'sort': 'name,_pypi_ordering',
-            'size': '10000'
+            'size': '10000',
+            'type': 'phrase'
         }
-        query_string = '&'.join(["%s=%s" % (k,v) for k, v in query_params.items()])
+        query_string = urllib.urlencode(query_params)
     
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         r = requests.get(index_url + '/release/_search?' + query_string)
