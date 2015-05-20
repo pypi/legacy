@@ -944,7 +944,10 @@ class Store:
                 continue
     
             if type(v) != type([]): v = [v]
-            terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
+            if k == 'name':
+                terms.extend(["(name_exact:%s OR name:*%s*)" % (s.encode('utf-8').lower(), s.encode('utf-8')) for s in v])
+            else:
+                terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
     
         join_string = ' %s '%(operator.upper())
         query_params = {
