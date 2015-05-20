@@ -36,5 +36,6 @@ while True:
   operations = []
   for release in releases:
     operations.append(json.dumps({"index": {"_index": conf.database_releases_index_name, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
+    release['name_exact'] = release['name'].lower()
     operations.append(json.dumps(release))
   r = requests.post(conf.database_releases_index_url + "/_bulk", data="\n".join(operations))
