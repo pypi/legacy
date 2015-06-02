@@ -10,6 +10,7 @@ import fs.osfs
 
 import redis
 import rq
+import boto.s3
 
 prefix = os.path.dirname(__file__)
 sys.path.insert(0, prefix)
