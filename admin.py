@@ -272,10 +272,11 @@ def nuke_nested_lists(store, confirm=False):
             continue
         for f in store.list_files(name, version):
             path = store.gen_file_path(f['python_version'], name, f['filename'])
-            if not store.package_fs.exists(path):
+            key = store.package_bucket.get_key(path)
+            if key is None:
                 print "PACKAGE %s FILE %s MISSING" % (name, path)
                 continue
-            contents = StringIO.StringIO(store.package_fs.getcontents(path))
+            contents = StringIO.StringIO(key.read())
             if path.endswith('.zip'):
                 z = zipfile.ZipFile(contents)
                 for i in z.infolist():
@@ -311,13 +312,18 @@ if __name__ == '__main__':
     else:
         queue = None
 
-    package_fs = fs.multifs.MultiFS()
-    package_fs.addfs(
-        "local", fs.osfs.OSFS(config.database_files_dir),
-        write=True,
+    s3conn = boto.s3.connect_to_region(
+        "us-west-2",
+        aws_access_key_id=self.config.database_aws_access_key_id,
+        aws_secret_access_key=self.config.database_aws_secret_access_key,
     )
 
-    st = store.Store(config, queue=queue, package_fs=package_fs)
+    package_bucket = self.s3conn.get_bucket(
+        self.config.database_files_bucket,
+        validate=False,
+    )
+
+    st = store.Store(config, queue=queue, package_bucket=package_bucket)
     st.open()
     command = sys.argv[1]
     args = (st, ) + tuple(sys.argv[2:])
