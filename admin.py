@@ -315,12 +315,12 @@ if __name__ == '__main__':
 
     s3conn = boto.s3.connect_to_region(
         "us-west-2",
-        aws_access_key_id=self.config.database_aws_access_key_id,
-        aws_secret_access_key=self.config.database_aws_secret_access_key,
+        aws_access_key_id=config.database_aws_access_key_id,
+        aws_secret_access_key=config.database_aws_secret_access_key,
     )
 
-    package_bucket = self.s3conn.get_bucket(
-        self.config.database_files_bucket,
+    package_bucket = s3conn.get_bucket(
+        config.database_files_bucket,
         validate=False,
     )
 
