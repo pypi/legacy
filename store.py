@@ -414,9 +414,9 @@ class Store:
         # see if we're inserting or updating a package
         if not self.has_package(name):
             # insert the new package entry
-            cols = 'name, normalized_name'
-            vals = '%s, %s'
-            args = (name, normalize_package_name(name))
+            cols = 'name'
+            vals = '%s'
+            args = (name,)
 
             # if a bugtracker url is provided then insert it too
             if 'bugtrack_url' in info:
@@ -643,7 +643,7 @@ class Store:
         '''Return names of packages that differ from name only in case.'''
         cursor = self.get_cursor()
         name = normalize_package_name(name)
-        sql = 'select name from packages where normalized_name=%s'
+        sql = 'select name from packages where normalize_pep426_name(name)=normalize_pep426_name(%s)'
         safe_execute(cursor, sql, (name, ))
         return [r[0] for r in cursor.fetchall()]
 
@@ -1371,15 +1371,6 @@ class Store:
 
         self._add_invalidation(name)
 
-    def update_normalized_text(self):
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select name from packages')
-        for name, in cursor.fetchall():
-            safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
-                         [normalize_package_name(name), name])
-
-        self._add_invalidation(name)
-
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
         '''
@@ -1444,8 +1435,8 @@ class Store:
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''update packages
-        set name=%s, normalized_name=%s where name=%s''',
-                     (new, normalize_package_name(new), old))
+        set name=%s, where name=%s''',
+                     (new, old))
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
         # move all files on disk
