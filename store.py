@@ -527,12 +527,10 @@ class Store:
             # figure the ordering
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
-            info['description_html'] = ''
-
             # perform the insert
             cols = ('name version author author_email maintainer '
                     'maintainer_email home_page license summary description '
-                    'description_html keywords platform requires_python '
+                    'keywords platform requires_python '
                     'download_url _pypi_ordering _pypi_hidden').split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
@@ -920,20 +918,20 @@ class Store:
 
     def search_packages(self, spec, operator='and'):
         ''' Search for packages that match the spec.
-    
+
             Return a list of (name, version, summary, _pypi_ordering) tuples.
         '''
         if self.config.database_releases_index_url is None or self.config.database_releases_index_name is None:
             return self.query_packages(spec, operator=operator)
-        
+
         if operator not in ('and', 'or'):
             operator = 'and'
-    
+
         hidden = False
         if '_pypi_hidden' in spec:
             if spec['_pypi_hidden'] in ('1', 1):
                 hidden = True
-    
+
         terms = []
         for k, v in spec.items():
             if k not in ['name', 'version', 'author', 'author_email',
@@ -942,13 +940,13 @@ class Store:
                          'description', 'keywords', 'platform',
                          'download_url']:
                 continue
-    
+
             if type(v) != type([]): v = [v]
             if k == 'name':
                 terms.extend(["(name_exact:%s OR name:*%s*)" % (s.encode('utf-8').lower(), s.encode('utf-8')) for s in v])
             else:
                 terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
-    
+
         join_string = ' %s '%(operator.upper())
         query_params = {
             'q': join_string.join(terms),
@@ -958,7 +956,7 @@ class Store:
             'type': 'phrase'
         }
         query_string = urllib.urlencode(query_params)
-    
+
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         r = requests.get(index_url + '/release/_search?' + query_string)
         results = [_format_es_fields(r) for r in r.json()['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
@@ -1068,7 +1066,7 @@ class Store:
             from_readme=False):
         cursor = self.get_cursor()
         safe_execute(cursor, '''update releases set description=%s,
-            description_html='', description_from_readme=%s where name=%s
+            description_from_readme=%s where name=%s
             and version=%s''', [desc_text, from_readme, name, version])
 
         self._add_invalidation(name)
