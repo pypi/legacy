@@ -97,6 +97,8 @@ class Gone(Exception):
     pass
 class Unauthorised(Exception):
     pass
+class UserNotFound(Exception):
+    pass
 class Forbidden(Exception):
     pass
 class Redirect(Exception):
@@ -111,7 +113,8 @@ class OpenIDError(Exception):
     pass
 class OAuthError(Exception):
     pass
-
+class BlockedIP(Exception):
+    pass
 class MultipleReleases(Exception):
     def __init__(self, releases):
         self.releases = releases
@@ -160,6 +163,11 @@ register</a>.</p>
 <p>If you have forgotten your password, you can have it
 <a href="%(url_path)s?:action=forgotten_password_form">reset for you</a>.</p>
 ''' + _prov
+
+blocked_ip_message = '''
+You have attempted too many logins from this IP address.  Please try again
+later.
+'''
 
 chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
@@ -302,6 +310,14 @@ class WebUI:
             self.queue = rq.Queue(connection=self.queue_redis)
         else:
             self.queue = None
+
+        # block redis is used to store blocked users, IPs, etc to prevent brute
+        # force attacks
+        if self.config.block_redis_url:
+            self.block_redis = redis.Redis.from_url(self.config.block_redis_url)
+        else:
+            self.block_redis = None
+
         self.env = env
         self.nav_current = None
         self.privkey = None
@@ -442,6 +458,9 @@ class WebUI:
                 self.handler.send_header('Location', e.args[0].encode("utf8"))
                 self.handler.send_header('Cache-Control', 'max-age=0')
                 self.handler.end_headers()
+            except BlockedIP:
+                msg = blocked_ip_message % self.__dict__
+                self.fail(msg, code=403, heading='Blocked IP')
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
@@ -694,7 +713,16 @@ class WebUI:
             # see if the user has provided a username/password
             auth = self.env.get('HTTP_CGI_AUTHORIZATION', '').strip()
             if auth:
-                self._handle_basic_auth(auth)
+                if not self._check_blocked_ip():
+                    try:
+                        self._handle_basic_auth(auth)
+                    except (Unauthorised, UserNotFound):
+                        # if either an invalid user or password was set,
+                        # increase the IP's failed login count
+                        self._failed_login_ip()
+                else:
+                    raise BlockedIP
+
             else:
                 un = self.env.get('SSH_USER', '')
                 if un and self.store.has_user(un):
@@ -792,7 +820,12 @@ class WebUI:
             # Invalid base64, or no colon
             un = pw = ''
         if not self.store.has_user(un):
-            return
+            raise UserNotFound
+
+        if self._check_blocked_user(un):
+            un = pw = ''
+            raise UserNotFound
+
 
         # Fetch the user from the database
         user = self.store.get_user(un)
@@ -803,6 +836,7 @@ class WebUI:
         # If our password didn't verify as ok then raise an
         #   error.
         if not ok:
+            self._failed_login_user(un)
             raise Unauthorised, 'Incorrect password'
 
         if new_hash:
@@ -818,6 +852,40 @@ class WebUI:
         last_login = user['last_login']
         update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
         self.store.set_user(un, self.remote_addr, update_last_login)
+
+    def _failed_login_ip(self):
+        if self.block_redis:
+            if not self.block_redis.exists(self.remote_addr):
+                self.block_redis.set(self.remote_addr, 1)
+                self.block_redis.expire(self.remote_addr,
+                                        int(self.config.blocked_timeout))
+            else:
+                self.block_redis.incr(self.remote_addr)
+
+    def _failed_login_user(self, username):
+        if self.block_redis:
+            if not self.block_redis.exists(username):
+                self.block_redis.set(username, 1)
+                self.block_redis.expire(username,
+                                        int(self.config.blocked_timeout))
+            else:
+                self.block_redis.incr(username)
+
+    def _check_blocked_ip(self):
+        if self.block_redis:
+            if (self.block_redis.exists(self.remote_addr) and
+                    int(self.block_redis.get(self.remote_addr)) >
+                    int(self.config.blocked_attempts)):
+                return True
+        return False
+
+    def _check_blocked_user(self, username):
+        if self.block_redis:
+            if (self.block_redis.exists(username) and
+                    int(self.block_redis.get(username)) >
+                    int(self.config.blocked_attempts)):
+                return True
+        return False
 
     def exception(self):
         FAIL
