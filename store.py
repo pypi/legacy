@@ -414,9 +414,9 @@ class Store:
         # see if we're inserting or updating a package
         if not self.has_package(name):
             # insert the new package entry
-            cols = 'name'
-            vals = '%s'
-            args = (name,)
+            cols = 'name, normalized_name'
+            vals = '%s, %s'
+            args = (name, normalize_package_name(name))
 
             # if a bugtracker url is provided then insert it too
             if 'bugtrack_url' in info:
@@ -527,10 +527,12 @@ class Store:
             # figure the ordering
             info['_pypi_ordering'] = self.fix_ordering(name, version)
 
+            info['description_html'] = ''
+
             # perform the insert
             cols = ('name version author author_email maintainer '
                     'maintainer_email home_page license summary description '
-                    'keywords platform requires_python '
+                    'description_html keywords platform requires_python '
                     'download_url _pypi_ordering _pypi_hidden').split()
             args = tuple([info.get(k, None) for k in cols])
             params = ','.join(['%s']*len(cols))
@@ -643,7 +645,7 @@ class Store:
         '''Return names of packages that differ from name only in case.'''
         cursor = self.get_cursor()
         name = normalize_package_name(name)
-        sql = 'select name from packages where normalize_pep426_name(name)=normalize_pep426_name(%s)'
+        sql = 'select name from packages where normalized_name=%s'
         safe_execute(cursor, sql, (name, ))
         return [r[0] for r in cursor.fetchall()]
 
@@ -918,20 +920,20 @@ class Store:
 
     def search_packages(self, spec, operator='and'):
         ''' Search for packages that match the spec.
-
+    
             Return a list of (name, version, summary, _pypi_ordering) tuples.
         '''
         if self.config.database_releases_index_url is None or self.config.database_releases_index_name is None:
             return self.query_packages(spec, operator=operator)
-
+        
         if operator not in ('and', 'or'):
             operator = 'and'
-
+    
         hidden = False
         if '_pypi_hidden' in spec:
             if spec['_pypi_hidden'] in ('1', 1):
                 hidden = True
-
+    
         terms = []
         for k, v in spec.items():
             if k not in ['name', 'version', 'author', 'author_email',
@@ -940,13 +942,13 @@ class Store:
                          'description', 'keywords', 'platform',
                          'download_url']:
                 continue
-
+    
             if type(v) != type([]): v = [v]
             if k == 'name':
                 terms.extend(["(name_exact:%s OR name:*%s*)" % (s.encode('utf-8').lower(), s.encode('utf-8')) for s in v])
             else:
                 terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
-
+    
         join_string = ' %s '%(operator.upper())
         query_params = {
             'q': join_string.join(terms),
@@ -956,7 +958,7 @@ class Store:
             'type': 'phrase'
         }
         query_string = urllib.urlencode(query_params)
-
+    
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         r = requests.get(index_url + '/release/_search?' + query_string)
         results = [_format_es_fields(r) for r in r.json()['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
@@ -1066,7 +1068,7 @@ class Store:
             from_readme=False):
         cursor = self.get_cursor()
         safe_execute(cursor, '''update releases set description=%s,
-            description_from_readme=%s where name=%s
+            description_html='', description_from_readme=%s where name=%s
             and version=%s''', [desc_text, from_readme, name, version])
 
         self._add_invalidation(name)
@@ -1371,6 +1373,15 @@ class Store:
 
         self._add_invalidation(name)
 
+    def update_normalized_text(self):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'select name from packages')
+        for name, in cursor.fetchall():
+            safe_execute(cursor, 'update packages set normalized_name=%s where name=%s',
+                         [normalize_package_name(name), name])
+
+        self._add_invalidation(name)
+
     def remove_release(self, name, version):
         ''' Delete a single release from the database.
         '''
@@ -1435,8 +1446,8 @@ class Store:
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         safe_execute(cursor, '''update packages
-        set name=%s, where name=%s''',
-                     (new, old))
+        set name=%s, normalized_name=%s where name=%s''',
+                     (new, normalize_package_name(new), old))
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
         # move all files on disk
