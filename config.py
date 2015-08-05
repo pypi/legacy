@@ -111,10 +111,6 @@ class Config:
             self.cache_redis_url = c.get('database', 'cache_redis_url')
         else:
             self.cache_redis_url = None
-        if c.has_option('database', 'block_redis_url'):
-            self.block_redis_url = c.get('database', 'block_redis_url')
-        else:
-            self.block_redis_url = None
 
         self.sentry_dsn = c.get('sentry', 'dsn')
 
@@ -139,10 +135,6 @@ class Config:
         if self.smtp_auth:
             self.smtp_login = c.get("smtp", "login")
             self.smtp_password = c.get("smtp", "password")
-
-        self.blocked_timeout = c.get("blocking", "blocked_timeout")
-        self.blocked_attempts = c.get("blocking", "blocked_attempts")
-
 
     def make_https(self):
         if self.url.startswith("http:"):
