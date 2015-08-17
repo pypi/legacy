@@ -642,7 +642,6 @@ class Store:
     def find_package(self, name):
         '''Return names of packages that differ from name only in case.'''
         cursor = self.get_cursor()
-        name = normalize_package_name(name)
         sql = 'select name from packages where normalize_pep426_name(name)=normalize_pep426_name(%s)'
         safe_execute(cursor, sql, (name, ))
         return [r[0] for r in cursor.fetchall()]
