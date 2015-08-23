@@ -2242,8 +2242,7 @@ class Store:
     def get_token(self, username):
         '''Return csrf current token for user.'''
         cursor = self.get_cursor()
-        sql = '''select token from csrf_tokens where name=%s
-                 and end_date > %s'''
+        sql = '''select token from csrf_tokens where name=%s'''
         now = datetime.datetime.now()
         safe_execute(cursor, sql, (username, now))
         token = cursor.fetchall()
