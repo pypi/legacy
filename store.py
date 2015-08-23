@@ -1259,34 +1259,20 @@ class Store:
         ''' Fetch "number" latest releases, youngest to oldest.
         '''
         cursor = self.get_cursor()
-        # After the limited query below, we still have to do
-        # filtering. Assume that doubling the number of records
-        # we look for will still allow for sufficient room for
-        # filtering out unneeded records. If this was wrong,
-        # try again without limit.
-        limit = ' limit %s' % (2*num)
-        # This query is designed to run from the journals_latest_releases
-        # index, doing a reverse index scan, then lookups in the releases
-        # table to find the description and whether the package is hidden.
-        # Postgres will only do that if the number of expected results
-        # is "small".
-        statement = '''
-             select j.name, j.version, j.submitted_date, r.summary
-             from (select name,version,submitted_date from journals
-             where version is not null and action='new release'
-             order by submitted_date desc %s) j, releases r
-             where  j.name=r.name and j.version=r.version
-             and not r._pypi_hidden order by j.submitted_date desc'''
-        #print ' '.join((statement % limit).split())
-        safe_execute(cursor, statement % limit)
-        result = Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Releases)
-        if len(result) == num:
-            return result
-        # try again without limit
-        safe_execute(cursor, statement % '')
-        return Result(None, self.get_unique(cursor.fetchall())[:num],
-                self._Latest_Releases)
+
+        query = """ SELECT name, version, created as submitted_date, summary
+                    FROM releases
+                    WHERE _pypi_hidden is false
+                    ORDER BY submitted_date DESC
+                    LIMIT %s
+                """ % num
+
+        safe_execute(cursor, query)
+        return Result(
+            None,
+            self.get_unique(cursor.fetchall()),
+            self._Latest_Releases,
+        )
 
     _Latest_Updates = FastResultRow('name version submitted_date! summary')
     def latest_updates(self, num=20):
