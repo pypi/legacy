@@ -2244,7 +2244,7 @@ class Store:
         cursor = self.get_cursor()
         sql = '''select token from csrf_tokens where name=%s'''
         now = datetime.datetime.now()
-        safe_execute(cursor, sql, (username, now))
+        safe_execute(cursor, sql, (username,))
         token = cursor.fetchall()
         if not token:
             return self.create_token(username)
