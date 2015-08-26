@@ -141,7 +141,8 @@ class Config:
             self.smtp_password = c.get("smtp", "password")
 
         self.blocked_timeout = c.get("blocking", "blocked_timeout")
-        self.blocked_attempts = c.get("blocking", "blocked_attempts")
+        self.blocked_attempts_user = c.get("blocking", "blocked_attempts_user")
+        self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
 
 
     def make_https(self):
