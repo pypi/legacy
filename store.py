@@ -448,9 +448,7 @@ class Store:
         message = None
         relationships = defaultdict(set)
         old_cifiers = []
-        html, rendered = readme.rst.render(info.get('description', ''))
-        if not rendered:
-            html = None
+        html = readme.rst.render(info.get('description', ''))
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
