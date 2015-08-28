@@ -121,5 +121,5 @@ service_id =
 ; IP/User Blocking
 [blocking]
 blocked_timeout = 600  ; in seconds
-blocked_attempts = 10
-
+blocked_attempts_ip = 10
+blocked_attempts_user = 1000

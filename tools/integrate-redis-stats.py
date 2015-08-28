@@ -17,7 +17,8 @@ sys.path = [root] + sys.path
 import store
 import config
 
-redis = redis.Redis()
+c = config.Config(os.path.join(root, "config.ini"))
+redis = redis.Redis.from_url(c.count_redis_url)
 
 # Get our search for the previous hour keys
 current = datetime.datetime.utcnow()
@@ -49,7 +50,6 @@ downloads = izip(
             )
 
 # Update the database
-c = config.Config(os.path.join(root, "config.ini"))
 store = store.Store(c)
 cursor = store.get_cursor()
 cursor.executemany(

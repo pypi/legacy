@@ -876,7 +876,7 @@ class WebUI:
         if self.block_redis:
             if (self.block_redis.exists(self.remote_addr) and
                     int(self.block_redis.get(self.remote_addr)) >
-                    int(self.config.blocked_attempts)):
+                    int(self.config.blocked_attempts_ip)):
                 return True
         return False
 
@@ -884,7 +884,7 @@ class WebUI:
         if self.block_redis:
             if (self.block_redis.exists(username) and
                     int(self.block_redis.get(username)) >
-                    int(self.config.blocked_attempts)):
+                    int(self.config.blocked_attempts_user)):
                 return True
         return False
 
