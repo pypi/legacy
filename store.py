@@ -744,9 +744,10 @@ class Store:
 
         # urls from description - this also now includes explicit URLs provided
         # through the web interface
-        for url in self.list_description_urls(name):
-            # assume that description urls are escaped
-            result.append((url['url'], None, url['url']))
+        if hosting_mode in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl"]:
+            for url in self.list_description_urls(name):
+                # assume that description urls are escaped
+                result.append((url['url'], None, url['url']))
 
         return sorted(file_urls) + sorted(result)
 
@@ -1048,7 +1049,8 @@ class Store:
         return cursor.fetchall()[0][0]
 
     def set_package_hosting_mode(self, name, value):
-        if value not in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl"]:
+        if value not in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl",
+                         "pypi-only"]:
             raise ValueError("Invalid value for hosting_mode")
 
         cursor = self.get_cursor()
