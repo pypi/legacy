@@ -19,24 +19,31 @@
     <input type="hidden" name="name" tal:attributes="value data/name" />
     <input type="hidden" name="version" tal:attributes="value data/version" />
 
+    <input tal:condition="python: data['hosting_mode'] != 'pypi-only'"
+        type="radio" name="hosting_mode" id="pypi-only" value="pypi-only" />
+    <input tal:condition="python: data['hosting_mode'] == 'pypi-only'"
+        type="radio" name="hosting_mode" id="pypi-only" value="pypi-only" checked="checked" />
+    <label for="pypi-only">Only allow files hosted on PyPI. This is the default, preferred, and will be the only available option.</label>
+<br/>
+
     <input tal:condition="python: data['hosting_mode'] != 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-explicit'"
         type="radio" name="hosting_mode" id="pypi-explicit" value="pypi-explicit" checked="checked" />
-    <label for="pypi-explicit">Do not extract URLs from the long description field -
-        only use URLs explicitly specified below and files uploaded to PyPI (this is preferred).</label>
+    <label for="pypi-explicit">DEPRECATED: Do not extract URLs from the long description field -
+        only use URLs explicitly specified below and files uploaded to PyPI.</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape'"
         type="radio" name="hosting_mode" id="pypi-scrape" value="pypi-scrape" checked="checked" />
-    <label for="pypi-scrape">Present URLs extracted from the long description field.</label>
+    <label for="pypi-scrape">DEPRECATED: Present URLs extracted from the long description field.</label>
 <br/>
     <input tal:condition="python: data['hosting_mode'] != 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" />
     <input tal:condition="python: data['hosting_mode'] == 'pypi-scrape-crawl'"
         type="radio" name="hosting_mode" id="pypi-scrape-crawl" value="pypi-scrape-crawl" checked="checked" />
-    <label for="pypi-scrape-crawl">As above but also ask tools to scrape
+    <label for="pypi-scrape-crawl">DEPRECATED: As above but also ask tools to scrape
         Homepage and Download URL (slow!)</label>
 <br/>
     <input type="submit" name="submit_hosting_mode" value="Change" />
