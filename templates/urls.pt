@@ -49,6 +49,7 @@
     <input type="submit" name="submit_hosting_mode" value="Change" />
 </form>
 
+<div tal:condition="python: data['hosting_mode'] != 'pypi-only'">
 <p><b>Additional File URLs</b></p>
 <form tal:attributes="action app/url_path" method="POST" enctype="multipart/form-data">
     <input type="hidden" name="name" tal:attributes="value data/name" />
@@ -109,6 +110,8 @@
     }
     // ]]>
 </script>
+
+</div>
 
 </metal:fill>
 </html>
