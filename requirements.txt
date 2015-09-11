@@ -1,4 +1,4 @@
-bleach==1.4.1
+bleach==1.4.2
 boto==2.38.0
 Distutils2==1.0a4
 Pygments==2.0.2
