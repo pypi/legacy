@@ -957,7 +957,8 @@ class Store:
 
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         r = requests.get(index_url + '/release/_search?' + query_string)
-        results = [_format_es_fields(r) for r in r.json()['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
+        data = r.json()
+        results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
         return Result(None, results, self._Query_Packages)
 
     _Classifiers = FastResultRow('classifier')

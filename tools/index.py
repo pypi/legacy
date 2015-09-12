@@ -30,7 +30,7 @@ cursor = store._conn.cursor(cursor_factory=RealDictCursor)
 
 cursor.execute("BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE")
 cursor.execute("SET statement_timeout = '600s'")
-cursor.execute("SELECT name, version, _pypi_ordering, _pypi_hidden, author, author_email, maintainer, maintainer_email, home_page, license, summary, description, keywords, platform, download_url FROM releases")
+cursor.execute("SELECT DISTINCT ON (name) name, version, _pypi_ordering, _pypi_hidden, author, author_email, maintainer, maintainer_email, home_page, license, summary, description, keywords, platform, download_url FROM releases ORDER BY name, _pypi_ordering DESC")
 while True:
   releases = cursor.fetchmany(10000)
   if len(releases) == 0:
