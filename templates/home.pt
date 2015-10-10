@@ -33,7 +33,7 @@ or download, unpack and "python setup.py install" it.
 <b>Package Authors</b>
 <p style="margin-bottom: 0px">
 Submit packages with
-"<a href="https://packaging.python.org/en/latest/tutorial.html#uploading-your-project-to-pypi" class="vt-p">python setup.py upload</a>".
+"<a href="https://packaging.python.org/en/latest/distributing.html#uploading-your-project-to-pypi" class="vt-p">python setup.py upload</a>".
 The index <a href="http://wiki.python.org/moin/PyPiHostingDocumentation">hosts package docs</a>.
 You may also use the <a tal:attributes="href string:${app/config/url}?%3Aaction=submit_form">web form</a>.
 You must <a tal:attributes="href string:${app/config/url}?%3Aaction=register_form">register</a>.
