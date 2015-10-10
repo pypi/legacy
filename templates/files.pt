@@ -50,6 +50,7 @@ href="https://packaging.python.org/en/latest/tutorial.html#uploading-your-projec
     <option value="3.2">3.2</option>
     <option value="3.3">3.3</option>
     <option value="3.4">3.4</option>
+    <option value="3.5">3.5</option>
    </select> (not needed for source distributions)
   </td>
  </tr>
