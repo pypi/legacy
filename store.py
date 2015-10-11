@@ -1420,8 +1420,7 @@ class Store:
         '''
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        safe_execute(cursor, '''update packages
-        set name=%s, where name=%s''',
+        safe_execute(cursor, '''update packages set name=%s where name=%s''',
                      (new, old))
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
