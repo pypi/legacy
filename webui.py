@@ -17,6 +17,11 @@ import redis
 import rq
 import boto.s3
 
+import urlparse
+
+import certifi
+import elasticsearch
+
 try:
     import json
 except ImportError:
@@ -312,6 +317,18 @@ class WebUI:
         else:
             self.queue = None
 
+        if self.config.elasticsearch_url:
+            p = urlparse.urlparse(self.config.elasticsearch_url)
+            qs = urlparse.parse_qs(p.query)
+            self.es = elasticsearch.Elasticsearch(
+                [urlparse.urlunparse(p[:2] + ("",) * 4)],
+                verify_certs=True,
+                ca_certs=certifi.where(),
+            )
+            self.es_index = p.path.strip("/")
+            self.es_shards = int(qs.get("shards", ["1"])[0])
+            self.es_replicas = int(qs.get("replicas", ["1"])[0])
+
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
         if self.config.block_redis_url:
@@ -423,6 +440,7 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_bucket=self.package_bucket,
+            es_client=self.es,
         )
         try:
             try:

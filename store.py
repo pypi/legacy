@@ -29,6 +29,8 @@ from functools import wraps
 import itertools
 import readme.rst
 
+from elasticsearch_dsl import Q, DocType, String, analyzer, MetaField
+
 import fs.errors
 
 import tasks
@@ -128,6 +130,48 @@ def normalize_version_number(v):
     else:
         return str(parsed)
 
+EmailAnalyzer = analyzer(
+    "email",
+    tokenizer="uax_url_email",
+    filter=["standard", "lowercase", "stop", "snowball"],
+)
+
+class Project(DocType):
+
+    name = String()
+    version = String(index="not_analyzed", multi=True)
+    summary = String(analyzer="snowball")
+    description = String(analyzer="snowball")
+    author = String()
+    author_email = String(analyzer=EmailAnalyzer)
+    maintainer = String()
+    maintainer_email = String(analyzer=EmailAnalyzer)
+    license = String()
+    home_page = String(index="not_analyzed")
+    download_url = String(index="not_analyzed")
+    keywords = String(analyzer="snowball")
+    platform = String(index="not_analyzed")
+
+    class Meta:
+        # disable the _all field to save some space
+        all = MetaField(enabled=False)
+
+def get_index(name, doc_types, *, using, shards=1, replicas=1):
+    index = Index(name, using=using)
+    for doc_type in doc_types:
+        index.doc_type(doc_type)
+    index.settings(number_of_shards=shards, number_of_replicas=replicas)
+    return index
+
+def es(client, index_name, shards, replicas):
+    index = get_index(
+        index_name,
+        set([Project]),
+        using=client,
+        shards=shards,
+        replicas=replicas,
+    )
+    return index.search()
 
 class ResultRow:
     '''Turn a tuple of row values into something that may be looked up by
@@ -275,22 +319,13 @@ class StorageError(Exception):
     pass
 
 
-def _format_es_fields(hit):
-    name = hit['fields']['name'][0]
-    version = hit['fields']['version'][0]
-    summary = hit['fields'].get('summary', [None])[0]
-    if summary is not None:
-        summary = summary.encode('utf8')
-    _pypi_hidden = hit['fields']['_pypi_hidden'][0]
-    return (name, version, summary, _pypi_hidden)
-
 class Store:
     ''' Store info about packages, and allow query and retrieval.
 
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_bucket=None):
+    def __init__(self, config, queue=None, redis=None, package_bucket=None, es=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -306,6 +341,8 @@ class Store:
 
         self.queue = queue
         self.count_redis = redis
+
+        self.es = es
 
         self.package_bucket = package_bucket
 
@@ -915,50 +952,43 @@ class Store:
         return Result(None, cursor.fetchall(), self._Query_Packages)
 
     def search_packages(self, spec, operator='and'):
-        ''' Search for packages that match the spec.
-
-            Return a list of (name, version, summary, _pypi_ordering) tuples.
-        '''
-        if self.config.database_releases_index_url is None or self.config.database_releases_index_name is None:
-            return self.query_packages(spec, operator=operator)
-
-        if operator not in ('and', 'or'):
-            operator = 'and'
-
-        hidden = False
-        if '_pypi_hidden' in spec:
-            if spec['_pypi_hidden'] in ('1', 1):
-                hidden = True
-
-        terms = []
-        for k, v in spec.items():
-            if k not in ['name', 'version', 'author', 'author_email',
-                         'maintainer', 'maintainer_email',
-                         'home_page', 'license', 'summary',
-                         'description', 'keywords', 'platform',
-                         'download_url']:
-                continue
-
-            if type(v) != type([]): v = [v]
-            if k == 'name':
-                terms.extend(["(name_exact:%s OR name:*%s*)" % (s.encode('utf-8').lower(), s.encode('utf-8')) for s in v])
-            else:
-                terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
-
-        join_string = ' %s '%(operator.upper())
-        query_params = {
-            'q': join_string.join(terms),
-            'fields': 'name,summary,version,_pypi_ordering,_pypi_hidden',
-            'sort': 'name,_pypi_ordering',
-            'size': '10000',
-            'type': 'phrase'
+        if operator not in {"and", "or"}:
+            raise ValueError("Invalid operator, must be one of 'and' or 'or'.")
+    
+        # Remove any invalid spec fields
+        spec = {
+            k: [v] if isinstance(v, str) else v
+            for k, v in spec.items()
+            if v and k in {
+                "name", "version", "author", "author_email", "maintainer",
+                "maintainer_email", "home_page", "license", "summary",
+                "description", "keywords", "platform", "download_url",
+            }
         }
-        query_string = urllib.urlencode(query_params)
-
-        index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
-        r = requests.get(index_url + '/release/_search?' + query_string)
-        data = r.json()
-        results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
+    
+        queries = []
+        for field, value in sorted(spec.items()):
+            q = None
+            for item in value:
+                if q is None:
+                    q = Q("match", **{field: item})
+                else:
+                    q |= Q("match", **{field: item})
+            queries.append(q)
+    
+        if operator == "and":
+            query = request.es.query("bool", must=queries)
+        else:
+            query = request.es.query("bool", should=queries)
+    
+        results = query[:1000].execute()
+    
+        results = [
+            {"name": r.name, "summary": r.summary, "version": v}
+            for r in results
+            for v in r.version
+            if v in spec.get("version", [v])
+        ]
         return Result(None, results, self._Query_Packages)
 
     _Classifiers = FastResultRow('classifier')
