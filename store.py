@@ -29,7 +29,7 @@ from functools import wraps
 import itertools
 import readme.rst
 
-from elasticsearch_dsl import Q, DocType, String, analyzer, MetaField
+from elasticsearch_dsl import Q, DocType, String, analyzer, MetaField, Index
 
 import fs.errors
 
@@ -156,7 +156,7 @@ class Project(DocType):
         # disable the _all field to save some space
         all = MetaField(enabled=False)
 
-def get_index(name, doc_types, *, using, shards=1, replicas=1):
+def get_index(name, doc_types, using, shards=1, replicas=1):
     index = Index(name, using=using)
     for doc_type in doc_types:
         index.doc_type(doc_type)
@@ -325,7 +325,8 @@ class Store:
         XXX update schema info ...
             Packages are unique by (name, version).
     '''
-    def __init__(self, config, queue=None, redis=None, package_bucket=None, es=None):
+    def __init__(self, config, queue=None, redis=None, package_bucket=None, es_client=None,
+                 es_index_name=None, es_shards=None, es_replicas=None):
         self.config = config
         self.username = None
         self.userip = None
@@ -342,7 +343,7 @@ class Store:
         self.queue = queue
         self.count_redis = redis
 
-        self.es = es
+        self.es = es(es_client, es_index_name, es_shards, es_replicas)
 
         self.package_bucket = package_bucket
 
@@ -900,7 +901,7 @@ class Store:
         cursor.execute('select count(*) from packages')
         return int(cursor.fetchone()[0])
 
-    _Query_Packages = FastResultRow('name version summary _pypi_ordering!')
+    _Query_Packages = FastResultRow('name version summary!')
     def query_packages(self, spec, operator='and'):
         ''' Find packages that match the spec.
 
@@ -954,7 +955,7 @@ class Store:
     def search_packages(self, spec, operator='and'):
         if operator not in {"and", "or"}:
             raise ValueError("Invalid operator, must be one of 'and' or 'or'.")
-    
+
         # Remove any invalid spec fields
         spec = {
             k: [v] if isinstance(v, str) else v
@@ -965,7 +966,7 @@ class Store:
                 "description", "keywords", "platform", "download_url",
             }
         }
-    
+
         queries = []
         for field, value in sorted(spec.items()):
             q = None
@@ -975,20 +976,22 @@ class Store:
                 else:
                     q |= Q("match", **{field: item})
             queries.append(q)
-    
+
         if operator == "and":
-            query = request.es.query("bool", must=queries)
+            query = self.es.query("bool", must=queries)
         else:
-            query = request.es.query("bool", should=queries)
-    
+            query = self.es.query("bool", should=queries)
+
         results = query[:1000].execute()
-    
+
         results = [
-            {"name": r.name, "summary": r.summary, "version": v}
+            (r.name, v, r.summary.encode('utf-8'))
             for r in results
             for v in r.version
             if v in spec.get("version", [v])
         ]
+        from pprint import pprint as pp
+        pp(results)
         return Result(None, results, self._Query_Packages)
 
     _Classifiers = FastResultRow('classifier')

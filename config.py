@@ -64,6 +64,11 @@ class Config:
         else:
             self.database_releases_index_name = None
 
+        if c.has_option("database", "elasticsearch_url"):
+            self.elasticsearch_url= c.get("database", "elasticsearch_url")
+        else:
+            self.elasticsearch_url = None
+
         self.database_files_dir = c.get('database', 'files_dir')
         self.database_docs_dir = c.get('database', 'docs_dir')
         if c.has_option('database', 'pubsubhubbub'):
