@@ -4021,13 +4021,15 @@ class WebUI:
         from oic import PyPIAdapter
         from authomatic.providers import oauth2
         import authomatic
+        import requests
+        import logging
         CONFIG = {
             'google': {
                 'id': 1,
                 'class_': oauth2.Google,
                 'consumer_key': self.config.google_consumer_id,
                 'consumer_secret': self.config.google_consumer_secret,
-                'scope': ['email'],
+                'scope': ['email', 'openid', 'profile'],
                 'redirect_uri': self.config.url+'?:action=openid_return',
                 'user_authorization_params': {
                     'openid.realm': self.config.url+'?:action=openid_return'
@@ -4035,12 +4037,21 @@ class WebUI:
             }
         }
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret="randodata")
+        authomatic = authomatic.Authomatic(config=CONFIG, secret="randodata", logging_level=logging.CRITICAL)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
         if result:
             if result.user:
                 result.user.update()
+                r = requests.get('https://www.googleapis.com/plus/v1/people/me/openIdConnect', 
+                                 headers={'Authorization': 'Bearer %s' % (result.user.credentials.token)})
             with open('/tmp/authlog', 'a') as f:
+                f.write(str(result.to_dict()))
+                f.write('\n')
                 f.write(result.to_json())
                 f.write('\n')
+                f.write(str(r.status_code))
+                f.write('\n')
+                f.write(str(r.json()))
+                f.write('\n')
+
         self.handler.end_headers()
