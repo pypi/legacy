@@ -123,3 +123,7 @@ service_id =
 blocked_timeout = 600  ; in seconds
 blocked_attempts_ip = 10
 blocked_attempts_user = 1000
+
+; Google OAuth 2
+client_id =
+client_secret =

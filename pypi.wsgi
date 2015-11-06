@@ -27,10 +27,13 @@ class Request:
         self.wfile = cStringIO.StringIO()
         self.config = config.Config(CONFIG_FILE)
         self.status = None
+        self.headers = []
+
+    def set_status(self, status):
+        self.status = status
 
     def send_response(self, code, message='no details available'):
-        if self.status is None:
-            self.status = '%s %s' % (code, message)
+        self.status = '%s %s' % (code, message)
         self.headers = []
 
     def send_header(self, keyword, value):
@@ -112,7 +115,7 @@ application = CacheControlMiddleware(application)
 # part of the PATH_INFO if it's valid and remove that part from the PATH_INFO
 def site_fake(app, environ, start_response):
     PATH_INFO = environ['PATH_INFO']
-    m = re.match('^/(pypi|simple|daytime|serversig|mirrors|id|oauth|'
+    m = re.match('^/(pypi|simple|daytime|serversig|mirrors|id|oauth|google_login|'
         'security|packages)(.*)', PATH_INFO)
     if not m:
         start_response("404 not found", [('Content-type', 'text/plain')])

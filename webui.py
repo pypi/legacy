@@ -695,6 +695,9 @@ class WebUI:
         if script_name == '/id':
             return self.run_id()
 
+        if script_name == '/google_login':
+            return self.google_login()
+
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
         try:
@@ -4015,12 +4018,16 @@ class WebUI:
     def google_login(self):
         from oic import PyPIAdapter
         from authomatic import Authomatic
+        from authomatic.providers import oauth2
         CONFIG = {
             'google': {
                 'class_': oauth2.Google,
-                'consumer_key': self.config.google_consumer_key,
+                'consumer_key': self.config.google_consumer_id,
                 'consumer_secret': self.config.google_consumer_secret,
                 'scope': ['email'],
             }
         }
-        authomatic.login(PyPIAdapter(self.config, self.handler, self.form), 'google')
+        self.handler.set_status('200 OK')
+        authomatic = Authomatic(config=CONFIG, secret="randodata")
+        print authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        self.handler.end_headers()
