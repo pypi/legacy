@@ -798,7 +798,7 @@ class WebUI:
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
-        exception'''.split():
+        google_login exception'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -4008,3 +4008,19 @@ class WebUI:
         message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
         self.write_plain(message)
 
+    #
+    # Google Login
+    #
+
+    def google_login(self):
+        from oic import PyPIAdapter
+        from authomatic import Authomatic
+        CONFIG = {
+            'google': {
+                'class_': oauth2.Google,
+                'consumer_key': self.config.google_consumer_key,
+                'consumer_secret': self.config.google_consumer_secret,
+                'scope': ['email'],
+            }
+        }
+        authomatic.login(PyPIAdapter(self.config, self.handler, self.form), 'google')

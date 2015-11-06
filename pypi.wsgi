@@ -26,9 +26,11 @@ class Request:
         self.rfile = cStringIO.StringIO(environ['wsgi.input'].read(length))
         self.wfile = cStringIO.StringIO()
         self.config = config.Config(CONFIG_FILE)
+        self.status = None
 
     def send_response(self, code, message='no details available'):
-        self.status = '%s %s' % (code, message)
+        if self.status is None:
+            self.status = '%s %s' % (code, message)
         self.headers = []
 
     def send_header(self, keyword, value):
