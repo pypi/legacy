@@ -801,7 +801,7 @@ class WebUI:
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
-        google_login exception'''.split():
+        exception'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -4017,10 +4017,11 @@ class WebUI:
 
     def google_login(self):
         from oic import PyPIAdapter
-        from authomatic import Authomatic
         from authomatic.providers import oauth2
+        import authomatic
         CONFIG = {
             'google': {
+                'id': 1,
                 'class_': oauth2.Google,
                 'consumer_key': self.config.google_consumer_id,
                 'consumer_secret': self.config.google_consumer_secret,
@@ -4028,6 +4029,9 @@ class WebUI:
             }
         }
         self.handler.set_status('200 OK')
-        authomatic = Authomatic(config=CONFIG, secret="randodata")
-        print authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret="randodata")
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        if result:
+            if result.user:
+                result.user.update()
         self.handler.end_headers()
