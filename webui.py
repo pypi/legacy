@@ -4023,6 +4023,8 @@ class WebUI:
         import authomatic
         import requests
         import logging
+        from browserid.jwt import parse
+
         CONFIG = {
             'google': {
                 'id': 1,
@@ -4036,22 +4038,17 @@ class WebUI:
                 }
             }
         }
+
         self.handler.set_status('200 OK')
         authomatic = authomatic.Authomatic(config=CONFIG, secret="randodata", logging_level=logging.CRITICAL)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
         if result:
             if result.user:
-                result.user.update()
-                r = requests.get('https://www.googleapis.com/plus/v1/people/me/openIdConnect', 
-                                 headers={'Authorization': 'Bearer %s' % (result.user.credentials.token)})
-            with open('/tmp/authlog', 'a') as f:
-                f.write(str(result.to_dict()))
-                f.write('\n')
-                f.write(result.to_json())
-                f.write('\n')
-                f.write(str(r.status_code))
-                f.write('\n')
-                f.write(str(r.json()))
-                f.write('\n')
+                content = result.user.data
+                payload = parse(content['id_token']).payload
+                openid_id = payload.get('openid_id', None)
+                if openid_id:
+                    # Migrate User
+                    pass
 
         self.handler.end_headers()
