@@ -3558,6 +3558,8 @@ class WebUI:
     def openid_return(self):
         '''Return from OpenID provider.'''
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
+        if 'state' in qs and 'code' in qs:
+            return self.google_login()
         if 'openid.mode' not in qs:
             # Not an indirect call: treat it as RP discovery
             return self.rp_discovery()
@@ -4026,6 +4028,10 @@ class WebUI:
                 'consumer_key': self.config.google_consumer_id,
                 'consumer_secret': self.config.google_consumer_secret,
                 'scope': ['email'],
+                'redirect_uri': self.config.url+'?:action=openid_return',
+                'user_authorization_params': {
+                    'openid.realm': self.config.url+'?:action=openid_return'
+                }
             }
         }
         self.handler.set_status('200 OK')
@@ -4034,4 +4040,7 @@ class WebUI:
         if result:
             if result.user:
                 result.user.update()
+            with open('/tmp/authlog', 'a') as f:
+                f.write(result.to_json())
+                f.write('\n')
         self.handler.end_headers()

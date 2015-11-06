@@ -19,7 +19,7 @@ class PyPIAdapter(BaseAdapter):
     @property
     def url(self):
         parse = urlparse.urlparse(self.config.url)
-        return urlparse.urlunparse(parse._replace(path="google_login"))
+        return urlparse.urlunparse(parse._replace(path="pypi", query=":action=openid_return"))
 
     @property
     def cookies(self):
