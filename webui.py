@@ -122,9 +122,7 @@ class MultipleReleases(Exception):
 
 __version__ = '1.1'
 
-providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
-             )
+providers = (('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/'),)
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
@@ -694,7 +692,6 @@ class WebUI:
             return self.current_serial()
         if script_name == '/id':
             return self.run_id()
-
         if script_name == '/google_login':
             return self.google_login()
 
@@ -4046,9 +4043,25 @@ class WebUI:
             if result.user:
                 content = result.user.data
                 payload = parse(content['id_token']).payload
-                openid_id = payload.get('openid_id', None)
-                if openid_id:
-                    # Migrate User
-                    pass
+                result_openid_id = payload.get('openid_id', None)
+                result_sub = payload.get('sub', None)
+                user = None
+                if result_sub:
+                    found_user = self.store.get_user_by_openid_sub(result_sub)
+                    if found_user:
+                        user = found_user
+                if user is None and result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        user = found_user
+                        self.store.migrate_to_openid_sub(user['name'], result_openid_id, result_sub)
+                        self.store.commit()
+                if user:
+                    self.username = user['name']
+                    self.loggedin = self.authenticated = True
+                    self.usercookie = self.store.create_cookie(self.username)
+                    self.store.get_token(self.username)
+
+                return self.home()
 
         self.handler.end_headers()
