@@ -16,6 +16,12 @@ try:
 except ImportError:
     from elementtree import ElementTree
 
+# OpenID Helpers to work around launchpad weirdness
+from openid.store.memstore import MemoryStore
+from openid.consumer.consumer import GenericConsumer
+from openid.consumer.discover import OpenIDServiceEndpoint
+from openid import oidutil
+
 # Don't use urllib2, since it breaks in 2.5
 # for https://login.launchpad.net//+xrds
 
@@ -422,9 +428,20 @@ def associate(services, url):
             data['openid.session_type'] = ''
         del data['openid.ns']
     res = urllib.urlopen(url, b(urllib.urlencode(data)))
-    if res.getcode() != 200:
-        raise ValueError("OpenID provider refuses connection with status %s" % res.getcode())
-    data = parse_response(res.read())
+    try:
+        if res.getcode() != 200:
+            raise ValueError("OpenID provider refuses connection with status %s" % res.getcode())
+        data = parse_response(res.read())
+    except ValueError:
+        endpoint = OpenIDServiceEndpoint.fromOPEndpointURL(url)
+        store = MemoryStore()
+        consumer = GenericConsumer(store)
+        assoc = consumer._requestAssociation(endpoint, data['openid.assoc_type'], data['openid.session_type'])
+        data = {
+            'assoc_handle': assoc.handle,
+            'expires_in': assoc.lifetime,
+            'mac_key': oidutil.toBase64(assoc.secret),
+        }
     if 'error' in data:
         raise ValueError, "associate failed: "+data['error']
     if url.startswith('http:'):
