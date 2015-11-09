@@ -19,6 +19,7 @@ except ImportError:
 # OpenID Helpers to work around launchpad weirdness
 from openid.store.memstore import MemoryStore
 from openid.consumer.consumer import GenericConsumer
+from openid.consumer.consumer import ServerError
 from openid.consumer.discover import OpenIDServiceEndpoint
 from openid import oidutil
 
@@ -406,7 +407,7 @@ def string_xor(s1, s2):
 def associate(services, url):
     '''Create an association (OpenID section 8) between RP and OP.
     Return response as a dictionary.'''
-    data = {
+    req_data = {
         'openid.ns':"http://specs.openid.net/auth/2.0",
         'openid.mode':"associate",
         'openid.assoc_type':"HMAC-SHA1",
@@ -414,20 +415,20 @@ def associate(services, url):
         }
     if url.startswith('http:'):
         # Use DH exchange
-        data['openid.session_type'] = "DH-SHA1"
+        req_data['openid.session_type'] = "DH-SHA1"
         # Private key: random number between 1 and dh_prime-1
         priv = random.randrange(1, dh_prime-1)
         # Public key: 2^priv mod prime
         pubkey = pow(2L, priv, dh_prime)
         dh_public_base64 = base64.b64encode(btwoc(pubkey))
         # No need to send key and generator
-        data['openid.dh_consumer_public'] = dh_public_base64
+        req_data['openid.dh_consumer_public'] = dh_public_base64
     if is_compat_1x(services):
         # 14.2.1: clear session_type in 1.1 compatibility mode
-        if data['openid.session_type'] == "no-encryption":
-            data['openid.session_type'] = ''
-        del data['openid.ns']
-    res = urllib.urlopen(url, b(urllib.urlencode(data)))
+        if req_data['openid.session_type'] == "no-encryption":
+            req_data['openid.session_type'] = ''
+        del req_data['openid.ns']
+    res = urllib.urlopen(url, b(urllib.urlencode(req_data)))
     try:
         if res.getcode() != 200:
             raise ValueError("OpenID provider refuses connection with status %s" % res.getcode())
@@ -436,12 +437,17 @@ def associate(services, url):
         endpoint = OpenIDServiceEndpoint.fromOPEndpointURL(url)
         store = MemoryStore()
         consumer = GenericConsumer(store)
-        assoc = consumer._requestAssociation(endpoint, data['openid.assoc_type'], data['openid.session_type'])
-        data = {
-            'assoc_handle': assoc.handle,
-            'expires_in': assoc.lifetime,
-            'mac_key': oidutil.toBase64(assoc.secret),
-        }
+        try:
+            assoc = consumer._requestAssociation(endpoint, req_data['openid.assoc_type'], req_data['openid.session_type'])
+            data = {
+                'assoc_handle': assoc.handle,
+                'expires_in': assoc.lifetime,
+                'mac_key': oidutil.toBase64(assoc.secret),
+            }
+        except ServerError:
+            data = {
+                'error': 'Server %s refused its suggested association type: session_type=%s, assoc_type=%s' % (url, req_data['openid.assoc_type'], req_data['openid.session_type']),
+            }
     if 'error' in data:
         raise ValueError, "associate failed: "+data['error']
     if url.startswith('http:'):
