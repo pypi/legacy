@@ -143,6 +143,8 @@ class Config:
         self.blocked_timeout = c.get("blocking", "blocked_timeout")
         self.blocked_attempts_user = c.get("blocking", "blocked_attempts_user")
         self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
+        self.google_consumer_id = c.get("google", "client_id")
+        self.google_consumer_secret = c.get("google", "client_secret")
 
 
     def make_https(self):

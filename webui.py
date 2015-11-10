@@ -122,9 +122,7 @@ class MultipleReleases(Exception):
 
 __version__ = '1.1'
 
-providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
-             )
+providers = (('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/'),)
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
@@ -694,6 +692,8 @@ class WebUI:
             return self.current_serial()
         if script_name == '/id':
             return self.run_id()
+        if script_name == '/google_login':
+            return self.google_login()
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -3555,6 +3555,8 @@ class WebUI:
     def openid_return(self):
         '''Return from OpenID provider.'''
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
+        if 'state' in qs and 'code' in qs:
+            return self.google_login()
         if 'openid.mode' not in qs:
             # Not an indirect call: treat it as RP discovery
             return self.rp_discovery()
@@ -4008,3 +4010,58 @@ class WebUI:
         message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
         self.write_plain(message)
 
+    #
+    # Google Login
+    #
+
+    def google_login(self):
+        from oic import PyPIAdapter
+        from authomatic.providers import oauth2
+        import authomatic
+        import requests
+        import logging
+        from browserid.jwt import parse
+
+        CONFIG = {
+            'google': {
+                'id': 1,
+                'class_': oauth2.Google,
+                'consumer_key': self.config.google_consumer_id,
+                'consumer_secret': self.config.google_consumer_secret,
+                'scope': ['email', 'openid', 'profile'],
+                'redirect_uri': self.config.url+'?:action=openid_return',
+                'user_authorization_params': {
+                    'openid.realm': self.config.url+'?:action=openid_return'
+                }
+            }
+        }
+
+        self.handler.set_status('200 OK')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret="randodata", logging_level=logging.CRITICAL)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        if result:
+            if result.user:
+                content = result.user.data
+                payload = parse(content['id_token']).payload
+                result_openid_id = payload.get('openid_id', None)
+                result_sub = payload.get('sub', None)
+                user = None
+                if result_sub:
+                    found_user = self.store.get_user_by_openid_sub(result_sub)
+                    if found_user:
+                        user = found_user
+                if user is None and result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        user = found_user
+                        self.store.migrate_to_openid_sub(user['name'], result_openid_id, result_sub)
+                        self.store.commit()
+                if user:
+                    self.username = user['name']
+                    self.loggedin = self.authenticated = True
+                    self.usercookie = self.store.create_cookie(self.username)
+                    self.store.get_token(self.username)
+
+                return self.home()
+
+        self.handler.end_headers()

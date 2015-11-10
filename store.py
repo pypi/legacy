@@ -1757,6 +1757,26 @@ class Store:
         safe_execute(cursor, sql, (openid,))
         return self._User(None, cursor.fetchone())
 
+    def get_user_by_openid_sub(self, openid_sub):
+        ''' Retrieve info about the user from the database, looked up by
+            email address.
+
+            Returns a mapping with the user info or None if there is no
+            such user.
+        '''
+        cursor = self.get_cursor()
+        sql = """SELECT username, password, email, key_id, last_login
+                    FROM accounts_user u
+                        LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
+                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
+                    WHERE u.username = (
+                                    SELECT name FROM openids WHERE sub = %s
+                                )
+        """
+
+        safe_execute(cursor, sql, (openid_sub,))
+        return self._User(None, cursor.fetchone())
+
     _Users = FastResultRow('name email')
     def get_users(self):
         ''' Fetch the complete list of users from the database.
@@ -2418,6 +2438,11 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'insert into openids(id, name) values(%s,%s)',
                      (openid, username))
+
+    def migrate_to_openid_sub(self, username, openid, openid_sub):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'update openids set sub=%s where id=%s and name=%s',
+                     (openid_sub, openid, username))
 
     def drop_openid(self, openid):
         cursor = self.get_cursor()
