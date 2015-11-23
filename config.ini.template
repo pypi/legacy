@@ -124,6 +124,12 @@ blocked_timeout = 600  ; in seconds
 blocked_attempts_ip = 10
 blocked_attempts_user = 1000
 
+; Authomatic
+[authomatic]
+secure = true
+secret = deadbeefdeadbeefdeadbeefdeadbeef
+
 ; Google OAuth 2
+[google]
 client_id =
 client_secret =
