@@ -3521,6 +3521,12 @@ class WebUI:
         '''Claim an OpenID.'''
         if not self.loggedin:
             return self.fail('You are not logged in')
+
+        if self.env['REQUEST_METHOD'] != "POST":
+            return self.fail('OpenID claim request must be a POST')
+
+        self.csrf_check()
+
         if 'openid_identifier' in self.form:
             kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
             if kind == 'xri':
