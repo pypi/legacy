@@ -4037,7 +4037,7 @@ class WebUI:
         }
 
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL)
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
         if result:
             if result.user:

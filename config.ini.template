@@ -126,6 +126,7 @@ blocked_attempts_user = 1000
 
 ; Authomatic
 [authomatic]
+secure = true
 secret = deadbeefdeadbeefdeadbeefdeadbeef
 
 ; Google OAuth 2

@@ -145,6 +145,7 @@ class Config:
         self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
 
         # Get Authomatic Secret
+        self.authomatic_secure = c.get("authomatic", "secure")
         self.authomatic_secret = c.get("authomatic", "secret")
 
         # Get Google OAuth2 Creds
