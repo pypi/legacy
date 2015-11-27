@@ -540,13 +540,6 @@ class Store:
             self.add_journal_entry(name, version, "new release", date,
                                                 self.username, self.userip)
 
-            # first person to add an entry may be considered owner - though
-            # make sure they don't already have the Role (this might just
-            # be a new version, or someone might have already given them
-            # the Role)
-            if not self.has_role('Owner', name):
-                self.add_role(self.username, 'Owner', name)
-
             # hide all other releases of this package if thus configured
             if self.get_package_autohide(name):
                 safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
