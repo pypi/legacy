@@ -669,7 +669,7 @@ class Store:
 
         return index
 
-    _Package = FastResultRow('''name stable_version version author author_email
+    _Package = FastResultRow('''name version author author_email
             maintainer maintainer_email home_page license summary description
             keywords platform requires_python download_url
             _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
@@ -680,7 +680,7 @@ class Store:
             Returns a mapping with the package info.
         '''
         cursor = self.get_cursor()
-        sql = '''select packages.name as name, stable_version, version, author,
+        sql = '''select packages.name as name, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
@@ -813,12 +813,12 @@ class Store:
 
         return [(p[0], p[1]) for p in cursor.fetchall()]
 
-    _Packages = FastResultRow('name stable_version')
+    _Packages = FastResultRow('name')
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name,stable_version from packages order by name')
+        safe_execute(cursor, 'select name from packages order by name')
         return Result(None, cursor.fetchall(), self._Packages)
 
     def get_packages_with_serial(self):
