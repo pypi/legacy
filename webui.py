@@ -741,7 +741,7 @@ class WebUI:
 
         # Now we have a username try running OAuth if necessary
         if script_name == '/oauth':
-            return self.run_oauth()
+            raise Gone, "OAuth has been disabled."
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
