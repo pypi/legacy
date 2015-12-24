@@ -907,14 +907,13 @@ class WebUI:
             else:
                 raise NotFound, path + " does not have any releases"
 
-        urls = self.store.get_package_urls(path, relative="../../packages")
-        if urls is None:
-            names = self.store.find_package(path)
-            if names:
-                urls = self.store.get_package_urls(
-                    names[0],
-                    relative="../../packages",
-                )
+        names = self.store.find_package(path)
+        if names:
+            name = names[0]
+        else:
+            raise NotFound, path + " does not exist"
+
+        urls = self.store.get_package_urls(name, relative="../../packages")
 
         if urls is None:
             raise NotFound, path + " does not have any releases"
