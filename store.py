@@ -700,30 +700,7 @@ class Store:
         Return list of (link, rel, label) or None if there are no releases.
         '''
         cursor = self.get_cursor()
-        result = []
         file_urls = []
-
-        # grab the list of releases
-        safe_execute(cursor, '''select version, home_page, download_url
-            from releases where name=%s''', (name,))
-        releases = list(cursor.fetchall())
-        if not releases:
-            return None
-
-        # grab the packages hosting_mode
-        hosting_mode = self.get_package_hosting_mode(name)
-
-        if hosting_mode in ["pypi-scrape-crawl", "pypi-scrape"]:
-            homerel = "homepage" if hosting_mode == "pypi-scrape-crawl" else "ext-homepage"
-            downloadrel = "download" if hosting_mode == "pypi-scrape-crawl" else "ext-download"
-
-            # homepage, download url
-            for version, home_page, download_url in releases:
-                # assume that home page and download URL are unescaped
-                if home_page and home_page != 'UNKNOWN':
-                    result.append((home_page, homerel, version + ' home_page'))
-                if download_url and download_url != 'UNKNOWN':
-                    result.append((download_url, downloadrel, version + ' download_url'))
 
         # uploaded files
         safe_execute(cursor, '''select filename, python_version, md5_digest
@@ -735,14 +712,7 @@ class Store:
                 "#md5=" + md5
             file_urls.append((url, "internal", fname))
 
-        # urls from description - this also now includes explicit URLs provided
-        # through the web interface
-        if hosting_mode in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl"]:
-            for url in self.list_description_urls(name):
-                # assume that description urls are escaped
-                result.append((url['url'], None, url['url']))
-
-        return sorted(file_urls) + sorted(result)
+        return sorted(file_urls)
 
     def get_uploaded_file_urls(self, name):
         cursor = self.get_cursor()
