@@ -6,14 +6,15 @@
   <metal:fill fill-slot="body">
     <form tal:attributes="action app/url_path" method="POST">
       <input type="hidden" name=":action" value="login_form" />
+      <input type="hidden" name="nonce" tal:attributes="value data/nonce"  />
       <table class="form">
     <tr>
       <th>Username:</th>
-      <td><input name="email" /></td>
+      <td><input name="username" /></td>
     </tr>
     <tr>
       <th>Password:</th>
-      <td><input name="password" /></td>
+      <td><input type="password" name="password" /></td>
     </tr>
     <tr>
       <td></td>
