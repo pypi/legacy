@@ -103,6 +103,8 @@ class Gone(Exception):
     pass
 class Unauthorised(Exception):
     pass
+class UnauthorisedForm(Exception):
+    pass
 class UserNotFound(Exception):
     pass
 class Forbidden(Exception):
@@ -461,6 +463,12 @@ class WebUI:
                 self.fail(message, code=401, heading='Login required',
                     content=msg, headers={'WWW-Authenticate':
                     'Basic realm="pypi"'})
+            except UnauthorisedForm, message:
+                message = str(message)
+                if not message:
+                    message = 'You must login to access this feature'
+                msg = unauth_message%self.__dict__
+                self.fail(message, code=401, content=msg)
             except Forbidden, message:
                 message = str(message)
                 self.fail(message, code=403, heading='Forbidden')
@@ -882,17 +890,32 @@ class WebUI:
 
     def login_form(self):
         if self.env['REQUEST_METHOD'] == "POST":
-            self.csrf_check()
-
+            nonce = self.form.get('nonce', '')
             username = self.form.get('username', '')
             password = self.form.get('password', '')
 
-            self._check_credentials(username, password)
+            cookies = dict([(k, v.value) for k, v in Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', '')).items()])
+            if nonce != cookies.get('login_nonce', None):
+                raise FormError, "Form Failure; reset form submission"
+
+            try:
+                self._check_credentials(username, password)
+            except UserNotFound:
+                raise UnauthorisedForm, 'Incorrect password'
+                self.home()
+
+            self.usercookie = self.store.create_cookie(self.username)
+            self.store.get_token(self.username)
+            self.loggedin = 1
+            self.home()
+
         elif self.env['REQUEST_METHOD'] == "GET":
-            self.write_template('login.pt', title="PyPI Login")
+            nonce = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(30))
+            headers = {'Set-Cookie': 'login_nonce=%s;secure' % (nonce)}
+            self.write_template('login.pt', title="PyPI Login",
+                                headers=headers, nonce=nonce)
         else:
             self.handler.send_response(405, 'Method Not Allowed')
-            
 
     def _failed_login_ip(self):
         if self.block_redis:
