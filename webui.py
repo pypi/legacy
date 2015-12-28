@@ -17,6 +17,11 @@ import redis
 import rq
 import boto.s3
 
+import urlparse
+
+import certifi
+import elasticsearch
+
 try:
     import json
 except ImportError:
@@ -310,6 +315,18 @@ class WebUI:
         else:
             self.queue = None
 
+        if self.config.elasticsearch_url:
+            p = urlparse.urlparse(self.config.elasticsearch_url)
+            qs = urlparse.parse_qs(p.query)
+            self.es = elasticsearch.Elasticsearch(
+                [urlparse.urlunparse(p[:2] + ("",) * 4)],
+                verify_certs=True,
+                ca_certs=certifi.where(),
+            )
+            self.es_index_name = p.path.strip("/")
+            self.es_shards = int(qs.get("shards", ["1"])[0])
+            self.es_replicas = int(qs.get("replicas", ["1"])[0])
+
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
         if self.config.block_redis_url:
@@ -421,6 +438,10 @@ class WebUI:
             queue=self.queue,
             redis=self.count_redis,
             package_bucket=self.package_bucket,
+            es_client=self.es,
+            es_index_name=self.es_index_name,
+            es_shards=self.es_shards,
+            es_replicas=self.es_replicas,
         )
         try:
             try:
@@ -741,7 +762,7 @@ class WebUI:
 
         # Now we have a username try running OAuth if necessary
         if script_name == '/oauth':
-            return self.run_oauth()
+            raise Gone, "OAuth has been disabled."
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -794,7 +815,7 @@ class WebUI:
         display register_form user user_form
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
-        role role_form list_classifiers login logout files urls
+        role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
@@ -926,14 +947,13 @@ class WebUI:
             else:
                 raise NotFound, path + " does not have any releases"
 
-        urls = self.store.get_package_urls(path, relative="../../packages")
-        if urls is None:
-            names = self.store.find_package(path)
-            if names:
-                urls = self.store.get_package_urls(
-                    names[0],
-                    relative="../../packages",
-                )
+        names = self.store.find_package(path)
+        if names:
+            name = names[0]
+        else:
+            raise NotFound, path + " does not exist"
+
+        urls = self.store.get_package_urls(name, relative="../../packages")
 
         if urls is None:
             raise NotFound, path + " does not have any releases"
@@ -1719,9 +1739,8 @@ class WebUI:
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
-  <a href="%s&amp;:action=urls">urls</a> |
   <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
-</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url, url)
+</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url)
 
     def quote_plus(self, data):
         return urllib.quote_plus(data)
@@ -1997,17 +2016,6 @@ class WebUI:
             if not d:
                 # no packages match
                 break
-
-        # record the max value of _pypi_ordering per package
-        max_ordering = {}
-        for score,r in d.values():
-            old_max = max_ordering.get(r['name'], -1)
-            max_ordering[r['name']] = max(old_max, r['_pypi_ordering'])
-
-        # drop old releases
-        for (name, version), (score, r) in d.items():
-            if max_ordering[name] != r['_pypi_ordering']:
-                del d[(name, version)]
 
         # now sort by score and name ordering
         l = []
@@ -2682,50 +2690,6 @@ class WebUI:
 
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
-
-    def urls(self):
-        """
-        List urls and handle changes.
-        """
-        name = self.form.get("name", None)
-        version = self.form.get("version", None)
-
-        if not name or not version:
-            self.fail(heading='Name and version are required',
-                message='Name and version are required')
-            return
-
-        if not (self.store.has_role('Maintainer', name) or
-                self.store.has_role('Admin', name) or
-                self.store.has_role('Owner', name)):
-            raise Forbidden("You do not have permission")
-
-        if "submit_hosting_mode" in self.form:
-            value = self.form["hosting_mode"]
-            self.store.set_package_hosting_mode(name, value)
-            self.store.changed()
-
-        elif "submit_remove" in self.form and "url-ids" in self.form:
-            urlids = self.form["url-ids"]
-            if not isinstance(urlids, list):
-                urlids = [urlids]
-
-            for url_id in urlids:
-                self.store.remove_description_url(url_id)
-
-            self.store.changed()
-
-        elif "submit_new_url" in self.form and "new-url" in self.form:
-            url = self.form["new-url"]
-            u = urlparse.urlparse(url)
-            if not u.fragment.startswith('md5='):
-                raise FormError('URL does not end with #md5=...')
-            self.store.add_description_url(name, version, url)
-            self.store.changed()
-
-        self.write_template("urls.pt", name=name, version=version,
-            hosting_mode=self.store.get_package_hosting_mode(name),
-            title="Urls for %s %s" % (name, version))
 
     def pretty_size(self, size):
         n = 0
