@@ -890,7 +890,8 @@ class WebUI:
 
         elif self.env['REQUEST_METHOD'] == "GET":
             nonce = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(30))
-            headers = {'Set-Cookie': 'login_nonce=%s;secure' % (nonce)}
+            headers = {'Set-Cookie': 'login_nonce=%s;secure' % (nonce),
+                       'X-FRAME-OPTIONS': 'DENY'}
             self.write_template('login.pt', title="PyPI Login",
                                 headers=headers, nonce=nonce)
         else:
