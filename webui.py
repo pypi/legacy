@@ -325,7 +325,7 @@ class WebUI:
                 verify_certs=True,
                 ca_certs=certifi.where(),
             )
-            self.es_index_name = p.path.strip("/")
+            self.es_index = p.path.strip("/")
             self.es_shards = int(qs.get("shards", ["1"])[0])
             self.es_replicas = int(qs.get("replicas", ["1"])[0])
 
@@ -441,9 +441,6 @@ class WebUI:
             redis=self.count_redis,
             package_bucket=self.package_bucket,
             es_client=self.es,
-            es_index_name=self.es_index_name,
-            es_shards=self.es_shards,
-            es_replicas=self.es_replicas,
         )
         try:
             try:
@@ -2039,6 +2036,17 @@ class WebUI:
             if not d:
                 # no packages match
                 break
+
+        # record the max value of _pypi_ordering per package
+        max_ordering = {}
+        for score,r in d.values():
+            old_max = max_ordering.get(r['name'], -1)
+            max_ordering[r['name']] = max(old_max, r['_pypi_ordering'])
+
+        # drop old releases
+        for (name, version), (score, r) in d.items():
+            if max_ordering[name] != r['_pypi_ordering']:
+                del d[(name, version)]
 
         # now sort by score and name ordering
         l = []
