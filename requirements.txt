@@ -3,11 +3,8 @@ bleach==1.4.2
 boto==2.38.0
 Distutils2==1.0a4
 Pygments==2.0.2
-certifi==2015.9.6.2
 defusedxml==0.4.1
 docutils==0.12
-elasticsearch-dsl==0.0.8
-elasticsearch==1.7.0
 fs==0.5.2
 html5lib==0.9999999
 itsdangerous==0.24
