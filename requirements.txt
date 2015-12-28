@@ -1,3 +1,4 @@
+authomatic==0.1.0post1
 bleach==1.4.2
 boto==2.38.0
 Distutils2==1.0a4
@@ -15,6 +16,7 @@ passlib==1.6.5
 perfmetrics==2.0
 psycopg2==2.6.1
 py-bcrypt==0.4
+pybrowserid==0.9.2
 python-dateutil==2.4.2
 python-openid==2.2.5
 pytz==2015.4
@@ -25,7 +27,7 @@ requests==2.7.0
 rq==0.5.5
 six==1.9.0
 times==0.7
-uWSGI==2.0.10
+uWSGI==2.0.11.2
 wsgiref==0.1.2
 zope.browser==2.1.0
 zope.component==4.2.2

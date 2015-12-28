@@ -112,7 +112,7 @@
       <a style="border: none;" tal:attributes="href prov/claim"><img width="16" height="16" tal:attributes="src prov/favicon; title prov/title; alt prov/title"/></a>
      </tal:block>
     or enter your ID explicitly:
-    <form>
+    <form tal:attributes="action app/url_path" method='POST'>
       <input type='hidden' name=':action' value='claim'/>
       <input name='openid_identifier' size='60'/>
       <input type='submit' value='Claim'/>

@@ -127,9 +127,7 @@ class MultipleReleases(Exception):
 
 __version__ = '1.1'
 
-providers = (('Google', 'https://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id'),
-             ('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/')
-             )
+providers = (('Launchpad', 'https://launchpad.net/@@/launchpad.png', 'https://login.launchpad.net/'),)
 
 # email sent to user indicating how they should complete their registration
 rego_message = '''Subject: Complete your PyPI registration
@@ -715,6 +713,8 @@ class WebUI:
             return self.current_serial()
         if script_name == '/id':
             return self.run_id()
+        if script_name == '/google_login':
+            return self.google_login()
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -762,7 +762,7 @@ class WebUI:
 
         # Now we have a username try running OAuth if necessary
         if script_name == '/oauth':
-            return self.run_oauth()
+            raise Gone, "OAuth has been disabled."
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -815,7 +815,7 @@ class WebUI:
         display register_form user user_form
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
-        role role_form list_classifiers login logout files urls
+        role role_form list_classifiers login logout files
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
@@ -928,14 +928,13 @@ class WebUI:
             else:
                 raise NotFound, path + " does not have any releases"
 
-        urls = self.store.get_package_urls(path, relative="../../packages")
-        if urls is None:
-            names = self.store.find_package(path)
-            if names:
-                urls = self.store.get_package_urls(
-                    names[0],
-                    relative="../../packages",
-                )
+        names = self.store.find_package(path)
+        if names:
+            name = names[0]
+        else:
+            raise NotFound, path + " does not exist"
+
+        urls = self.store.get_package_urls(name, relative="../../packages")
 
         if urls is None:
             raise NotFound, path + " does not have any releases"
@@ -1721,9 +1720,8 @@ class WebUI:
   <a href="%s&amp;:action=display">view</a> |
   <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
-  <a href="%s&amp;:action=urls">urls</a> |
   <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
-</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url, url)
+</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url)
 
     def quote_plus(self, data):
         return urllib.quote_plus(data)
@@ -2674,50 +2672,6 @@ class WebUI:
         self.write_template('files.pt', name=name, version=version,
             maintainer=maintainer, title="Files for %s %s"%(name, version))
 
-    def urls(self):
-        """
-        List urls and handle changes.
-        """
-        name = self.form.get("name", None)
-        version = self.form.get("version", None)
-
-        if not name or not version:
-            self.fail(heading='Name and version are required',
-                message='Name and version are required')
-            return
-
-        if not (self.store.has_role('Maintainer', name) or
-                self.store.has_role('Admin', name) or
-                self.store.has_role('Owner', name)):
-            raise Forbidden("You do not have permission")
-
-        if "submit_hosting_mode" in self.form:
-            value = self.form["hosting_mode"]
-            self.store.set_package_hosting_mode(name, value)
-            self.store.changed()
-
-        elif "submit_remove" in self.form and "url-ids" in self.form:
-            urlids = self.form["url-ids"]
-            if not isinstance(urlids, list):
-                urlids = [urlids]
-
-            for url_id in urlids:
-                self.store.remove_description_url(url_id)
-
-            self.store.changed()
-
-        elif "submit_new_url" in self.form and "new-url" in self.form:
-            url = self.form["new-url"]
-            u = urlparse.urlparse(url)
-            if not u.fragment.startswith('md5='):
-                raise FormError('URL does not end with #md5=...')
-            self.store.add_description_url(name, version, url)
-            self.store.changed()
-
-        self.write_template("urls.pt", name=name, version=version,
-            hosting_mode=self.store.get_package_hosting_mode(name),
-            title="Urls for %s %s" % (name, version))
-
     def pretty_size(self, size):
         n = 0
         while size > 1024:
@@ -3531,6 +3485,12 @@ class WebUI:
         '''Claim an OpenID.'''
         if not self.loggedin:
             return self.fail('You are not logged in')
+
+        if self.env['REQUEST_METHOD'] != "POST":
+            return self.fail('OpenID claim request must be a POST')
+
+        self.csrf_check()
+
         if 'openid_identifier' in self.form:
             kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
             if kind == 'xri':
@@ -3565,6 +3525,8 @@ class WebUI:
     def openid_return(self):
         '''Return from OpenID provider.'''
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
+        if 'state' in qs and 'code' in qs:
+            return self.google_login()
         if 'openid.mode' not in qs:
             # Not an indirect call: treat it as RP discovery
             return self.rp_discovery()
@@ -4018,3 +3980,58 @@ class WebUI:
         message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
         self.write_plain(message)
 
+    #
+    # Google Login
+    #
+
+    def google_login(self):
+        from oic import PyPIAdapter
+        from authomatic.providers import oauth2
+        import authomatic
+        import requests
+        import logging
+        from browserid.jwt import parse
+
+        CONFIG = {
+            'google': {
+                'id': 1,
+                'class_': oauth2.Google,
+                'consumer_key': self.config.google_consumer_id,
+                'consumer_secret': self.config.google_consumer_secret,
+                'scope': ['email', 'openid', 'profile'],
+                'redirect_uri': self.config.url+'?:action=openid_return',
+                'user_authorization_params': {
+                    'openid.realm': self.config.url+'?:action=openid_return'
+                }
+            }
+        }
+
+        self.handler.set_status('200 OK')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        if result:
+            if result.user:
+                content = result.user.data
+                payload = parse(content['id_token']).payload
+                result_openid_id = payload.get('openid_id', None)
+                result_sub = payload.get('sub', None)
+                user = None
+                if result_sub:
+                    found_user = self.store.get_user_by_openid_sub(result_sub)
+                    if found_user:
+                        user = found_user
+                if user is None and result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        user = found_user
+                        self.store.migrate_to_openid_sub(user['name'], result_openid_id, result_sub)
+                        self.store.commit()
+                if user:
+                    self.username = user['name']
+                    self.loggedin = self.authenticated = True
+                    self.usercookie = self.store.create_cookie(self.username)
+                    self.store.get_token(self.username)
+
+                return self.home()
+
+        self.handler.end_headers()

@@ -578,13 +578,6 @@ class Store:
             self.add_journal_entry(name, version, "new release", date,
                                                 self.username, self.userip)
 
-            # first person to add an entry may be considered owner - though
-            # make sure they don't already have the Role (this might just
-            # be a new version, or someone might have already given them
-            # the Role)
-            if not self.has_role('Owner', name):
-                self.add_role(self.username, 'Owner', name)
-
             # hide all other releases of this package if thus configured
             if self.get_package_autohide(name):
                 safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
@@ -714,7 +707,7 @@ class Store:
 
         return index
 
-    _Package = FastResultRow('''name stable_version version author author_email
+    _Package = FastResultRow('''name version author author_email
             maintainer maintainer_email home_page license summary description
             keywords platform requires_python download_url
             _pypi_ordering! _pypi_hidden! cheesecake_installability_id!
@@ -725,7 +718,7 @@ class Store:
             Returns a mapping with the package info.
         '''
         cursor = self.get_cursor()
-        sql = '''select packages.name as name, stable_version, version, author,
+        sql = '''select packages.name as name, version, author,
                   author_email, maintainer, maintainer_email, home_page,
                   license, summary, description, keywords,
                   platform, requires_python, download_url, _pypi_ordering,
@@ -745,30 +738,7 @@ class Store:
         Return list of (link, rel, label) or None if there are no releases.
         '''
         cursor = self.get_cursor()
-        result = []
         file_urls = []
-
-        # grab the list of releases
-        safe_execute(cursor, '''select version, home_page, download_url
-            from releases where name=%s''', (name,))
-        releases = list(cursor.fetchall())
-        if not releases:
-            return None
-
-        # grab the packages hosting_mode
-        hosting_mode = self.get_package_hosting_mode(name)
-
-        if hosting_mode in ["pypi-scrape-crawl", "pypi-scrape"]:
-            homerel = "homepage" if hosting_mode == "pypi-scrape-crawl" else "ext-homepage"
-            downloadrel = "download" if hosting_mode == "pypi-scrape-crawl" else "ext-download"
-
-            # homepage, download url
-            for version, home_page, download_url in releases:
-                # assume that home page and download URL are unescaped
-                if home_page and home_page != 'UNKNOWN':
-                    result.append((home_page, homerel, version + ' home_page'))
-                if download_url and download_url != 'UNKNOWN':
-                    result.append((download_url, downloadrel, version + ' download_url'))
 
         # uploaded files
         safe_execute(cursor, '''select filename, python_version, md5_digest
@@ -780,14 +750,7 @@ class Store:
                 "#md5=" + md5
             file_urls.append((url, "internal", fname))
 
-        # urls from description - this also now includes explicit URLs provided
-        # through the web interface
-        if hosting_mode in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl"]:
-            for url in self.list_description_urls(name):
-                # assume that description urls are escaped
-                result.append((url['url'], None, url['url']))
-
-        return sorted(file_urls) + sorted(result)
+        return sorted(file_urls)
 
     def get_uploaded_file_urls(self, name):
         cursor = self.get_cursor()
@@ -858,12 +821,12 @@ class Store:
 
         return [(p[0], p[1]) for p in cursor.fetchall()]
 
-    _Packages = FastResultRow('name stable_version')
+    _Packages = FastResultRow('name')
     def get_packages(self):
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name,stable_version from packages order by name')
+        safe_execute(cursor, 'select name from packages order by name')
         return Result(None, cursor.fetchall(), self._Packages)
 
     def get_packages_with_serial(self):
@@ -1790,6 +1753,26 @@ class Store:
         safe_execute(cursor, sql, (openid,))
         return self._User(None, cursor.fetchone())
 
+    def get_user_by_openid_sub(self, openid_sub):
+        ''' Retrieve info about the user from the database, looked up by
+            email address.
+
+            Returns a mapping with the user info or None if there is no
+            such user.
+        '''
+        cursor = self.get_cursor()
+        sql = """SELECT username, password, email, key_id, last_login
+                    FROM accounts_user u
+                        LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
+                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
+                    WHERE u.username = (
+                                    SELECT name FROM openids WHERE sub = %s
+                                )
+        """
+
+        safe_execute(cursor, sql, (openid_sub,))
+        return self._User(None, cursor.fetchone())
+
     _Users = FastResultRow('name email')
     def get_users(self):
         ''' Fetch the complete list of users from the database.
@@ -2451,6 +2434,11 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'insert into openids(id, name) values(%s,%s)',
                      (openid, username))
+
+    def migrate_to_openid_sub(self, username, openid, openid_sub):
+        cursor = self.get_cursor()
+        safe_execute(cursor, 'update openids set sub=%s where id=%s and name=%s',
+                     (openid_sub, openid, username))
 
     def drop_openid(self, openid):
         cursor = self.get_cursor()

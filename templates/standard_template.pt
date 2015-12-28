@@ -143,6 +143,7 @@
                         <a style="border: none;" tal:attributes="href prov/login"><img width="16" height="16" tal:attributes="src prov/favicon; title prov/title; alt prov/title"/></a>
                       </tal:block>
                     </li>
+                    <li><a href="/google_login">Login with Google<img width="16" height="16" src="https://www.google.com/favicon.ico" title="Google Login" alt="Google Login"></img></a></li>
                   </ul>
 
 		</tal:if-not-user>

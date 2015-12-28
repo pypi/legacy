@@ -149,6 +149,14 @@ class Config:
         self.blocked_attempts_user = c.get("blocking", "blocked_attempts_user")
         self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
 
+        # Get Authomatic Secret
+        self.authomatic_secure = c.get("authomatic", "secure")
+        self.authomatic_secret = c.get("authomatic", "secret")
+
+        # Get Google OAuth2 Creds
+        self.google_consumer_id = c.get("google", "client_id")
+        self.google_consumer_secret = c.get("google", "client_secret")
+
 
     def make_https(self):
         if self.url.startswith("http:"):
