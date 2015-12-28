@@ -877,11 +877,16 @@ class WebUI:
             if nonce != cookies.get('login_nonce', None):
                 raise FormError, "Form Failure; reset form submission"
 
-            try:
-                self._check_credentials(username, password)
-            except UserNotFound:
-                raise UnauthorisedForm, 'Incorrect password'
-                self.home()
+            if not self._check_blocked_ip():
+                try:
+                    self._check_credentials(username, password)
+                    self._handle_basic_auth(auth)
+                except (Unauthorised, UserNotFound):
+                    self._failed_login_ip()
+                    raise UnauthorisedForm, 'Incorrect password'
+                    self.home()
+            else:
+                raise BlockedIP
 
             self.usercookie = self.store.create_cookie(self.username)
             self.store.get_token(self.username)
