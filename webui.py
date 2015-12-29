@@ -880,7 +880,6 @@ class WebUI:
             if not self._check_blocked_ip():
                 try:
                     self._check_credentials(username, password)
-                    self._handle_basic_auth(auth)
                 except (Unauthorised, UserNotFound):
                     self._failed_login_ip()
                     raise UnauthorisedForm, 'Incorrect password'
