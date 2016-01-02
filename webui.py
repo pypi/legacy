@@ -98,6 +98,8 @@ class Gone(Exception):
     pass
 class Unauthorised(Exception):
     pass
+class UnauthorisedForm(Exception):
+    pass
 class UserNotFound(Exception):
     pass
 class Forbidden(Exception):
@@ -440,6 +442,12 @@ class WebUI:
                 self.fail(message, code=401, heading='Login required',
                     content=msg, headers={'WWW-Authenticate':
                     'Basic realm="pypi"'})
+            except UnauthorisedForm, message:
+                message = str(message)
+                if not message:
+                    message = 'You must login to access this feature'
+                msg = unauth_message%self.__dict__
+                self.fail(message, code=401, content=msg)
             except Forbidden, message:
                 message = str(message)
                 self.fail(message, code=403, heading='Forbidden')
@@ -798,7 +806,7 @@ class WebUI:
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
-        exception'''.split():
+        exception login_form'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -810,49 +818,88 @@ class WebUI:
         # commit any database changes
         self.store.commit()
 
-    def _handle_basic_auth(self, auth):
-        if not auth.lower().startswith('basic '):
-            return
+    def _check_credentials(self, username, password):
 
-        authtype, auth = auth.split(None, 1)
-        try:
-            un, pw = base64.decodestring(auth).split(':', 1)
-        except (binascii.Error, ValueError):
-            # Invalid base64, or no colon
-            un = pw = ''
-        if not self.store.has_user(un):
+        if not self.store.has_user(username):
             raise UserNotFound
 
-        if self._check_blocked_user(un):
-            un = pw = ''
+        if self._check_blocked_user(username):
+            username = password = ''
             raise UserNotFound
 
 
         # Fetch the user from the database
-        user = self.store.get_user(un)
+        user = self.store.get_user(username)
 
         # Verify the hash, and see if it needs migrated
-        ok, new_hash = self.config.passlib.verify_and_update(pw, user["password"])
+        ok, new_hash = self.config.passlib.verify_and_update(password, user["password"])
 
         # If our password didn't verify as ok then raise an
         #   error.
         if not ok:
-            self._failed_login_user(un)
+            self._failed_login_user(username)
             raise Unauthorised, 'Incorrect password'
 
         if new_hash:
             # The new hash needs to be stored for this user.
-            self.store.setpasswd(un, new_hash, hashed=True)
+            self.store.setpasswd(username, new_hash, hashed=True)
 
         # Login the user
-        self.username = un
+        self.username = username
         self.authenticated = True
 
         # Determine if we need to store the users last login,
         #   as we only want to do this once a minute.
         last_login = user['last_login']
         update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
-        self.store.set_user(un, self.remote_addr, update_last_login)
+        self.store.set_user(username, self.remote_addr, update_last_login)
+
+    def _handle_basic_auth(self, auth):
+        if not auth.lower().startswith('basic '):
+            return
+
+        authtype, auth = auth.split(None, 1)
+        try:
+            username, password = base64.decodestring(auth).split(':', 1)
+        except (binascii.Error, ValueError):
+            # Invalid base64, or no colon
+            username = password = ''
+
+        self._check_credentials(username, password)
+
+    def login_form(self):
+        if self.env['REQUEST_METHOD'] == "POST":
+            nonce = self.form.get('nonce', '')
+            username = self.form.get('username', '')
+            password = self.form.get('password', '')
+
+            cookies = dict([(k, v.value) for k, v in Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', '')).items()])
+            if nonce != cookies.get('login_nonce', None):
+                raise FormError, "Form Failure; reset form submission"
+
+            if not self._check_blocked_ip():
+                try:
+                    self._check_credentials(username, password)
+                except (Unauthorised, UserNotFound):
+                    self._failed_login_ip()
+                    raise UnauthorisedForm, 'Incorrect password'
+                    self.home()
+            else:
+                raise BlockedIP
+
+            self.usercookie = self.store.create_cookie(self.username)
+            self.store.get_token(self.username)
+            self.loggedin = 1
+            self.home()
+
+        elif self.env['REQUEST_METHOD'] == "GET":
+            nonce = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(30))
+            headers = {'Set-Cookie': 'login_nonce=%s;secure' % (nonce),
+                       'X-FRAME-OPTIONS': 'DENY'}
+            self.write_template('login.pt', title="PyPI Login",
+                                headers=headers, nonce=nonce)
+        else:
+            self.handler.send_response(405, 'Method Not Allowed')
 
     def _failed_login_ip(self):
         if self.block_redis:
