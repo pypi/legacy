@@ -2027,17 +2027,18 @@ class Store:
         '''Generate the path to the file on disk.'''
         return os.path.join(pyversion, name[0], name, filename)
 
-    def add_file(self, name, version, content, md5_digest, filetype,
-            pyversion, comment, filename, signature):
+    def add_file(self, name, version, content, md5_digest, sha256_digest,
+            filetype, pyversion, comment, filename, signature):
         '''Add to the database and store the content to disk.'''
         cursor = self.get_cursor()
         # add database entry
         sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest, size,
-            has_signature, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
+            packagetype, comment_text, filename, md5_digest, sha256_digest,
+            size, has_signature, upload_time) values
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
-            comment, filename, md5_digest, len(content), bool(signature)))
+            comment, filename, md5_digest, sha256_digest, len(content),
+            bool(signature)))
 
         # Add an entry to the file registry
         try:

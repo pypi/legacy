@@ -2905,6 +2905,9 @@ class WebUI:
         m.update(content)
         calc_digest = m.hexdigest()
 
+        sha256_m = hashlib.sha256()
+        sha256_m.update(content)
+
         if not md5_digest:
             md5_digest = calc_digest
         elif md5_digest != calc_digest:
@@ -2917,6 +2920,7 @@ class WebUI:
 
         try:
             self.store.add_file(name, version, content, md5_digest,
+                sha256_m.hexdigest().lower(),
                 filetype, pyversion, comment, filename, signature)
         except IntegrityError, e:
             raise FormError, 'Duplicate file upload detected.'
