@@ -2066,7 +2066,7 @@ class Store:
         k = self.package_bucket.new_key(filepath)
         k.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
         k.set_metadata("version", version)
-        k.set_metadata("package-type", packagetype)
+        k.set_metadata("package-type", filetype)
         k.set_metadata("python-version", pyversion)
         k.set_contents_from_string(content)
 
@@ -2075,7 +2075,7 @@ class Store:
             sk = self.package_bucket.new_key(filepath + ".asc")
             sk.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
             sk.set_metadata("version", version)
-            sk.set_metadata("package-type", packagetype)
+            sk.set_metadata("package-type", filetype)
             sk.set_metadata("python-version", pyversion)
             sk.set_contents_from_string(signature)
 
