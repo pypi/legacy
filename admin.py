@@ -272,7 +272,7 @@ def nuke_nested_lists(store, confirm=False):
             hits[name] = summary
             continue
         for f in store.list_files(name, version):
-            path = store.gen_file_path(f['python_version'], name, f['filename'])
+            path = f['path']
             key = store.package_bucket.get_key(path)
             if key is None:
                 print "PACKAGE %s FILE %s MISSING" % (name, path)

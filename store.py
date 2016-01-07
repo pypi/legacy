@@ -1330,9 +1330,7 @@ class Store:
         # delete the files
         to_delete = []
         for file in self.list_files(name, version):
-            path = self.gen_file_path(file['python_version'], name,
-                file['filename'])
-            to_delete.append(path)
+            to_delete.append(file['path'])
         self.package_bucket.delete_keys(to_delete)
 
         # delete ancillary table entries
@@ -1357,8 +1355,7 @@ class Store:
         to_delete = []
         for release in self.get_package_releases(name):
             for file in self.list_files(name, release['version']):
-                to_delete.append(self.gen_file_path(file['python_version'], name,
-                    file['filename']))
+                to_delete.append(file['path'])
         self.package_bucket.delete_keys(to_delete)
 
         # delete ancillary table entries
@@ -1388,12 +1385,17 @@ class Store:
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
         # move all files on disk
-        sql = '''select python_version, filename
+        sql = '''select id, python_version, filename, path
             from release_files where name=%s'''
         safe_execute(cursor, sql, (new,))
-        for pyversion, filename in cursor.fetchall():
-            oldname = self.gen_file_path(pyversion, old, filename)
+        for fid, pyversion, filename, path in cursor.fetchall():
+            oldname = path
             newname = self.gen_file_path(pyversion, new, filename)
+            safe_execute(
+                cursor,
+                "update release_files set path=%s where id=%s",
+                (newname, fid),
+            )
             self.package_bucket.copy_key(newname, self.package_bucket.name, oldname)
             self.package_bucket.delete_key(oldname)
 
@@ -2020,8 +2022,16 @@ class Store:
         '''Generate the URL for a given file download.'''
         if not prefix:
             prefix = self.config.files_url
-        return os.path.join(prefix, pyversion,
-                                       name[0], name, filename)
+
+        cursor = self.get_cursor()
+        safe_execute(
+            cursor,
+            "SELECT path FROM release_files WHERE filename = %s",
+            (filename,),
+        )
+        results = cursor.fetchall()
+        if results:
+            return os.path.join(prefix, results[0][0])
 
     def gen_file_path(self, pyversion, name, filename):
         '''Generate the path to the file on disk.'''
@@ -2068,17 +2078,18 @@ class Store:
             self.username, self.userip)
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
-    filename md5_digest size! has_sig! downloads! upload_time!''')
+    filename md5_digest path size! has_sig! downloads! upload_time!''')
     def list_files(self, name, version, show_missing=False):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest, downloads, size, has_signature, upload_time
+            filename, md5_digest, downloads, size, has_signature, path,
+            upload_time
             from release_files
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        for pt, pv, ct, fn, m5, dn, size, has_sig, ut in cursor.fetchall():
-            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, size, has_sig, dn, ut)))
+        for pt, pv, ct, fn, m5, dn, size, has_sig, path, ut in cursor.fetchall():
+            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, path, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
         return l
 
@@ -2091,17 +2102,17 @@ class Store:
 
     def remove_file(self, digest):
         cursor = self.get_cursor()
-        sql = '''select python_version, name, version, filename, has_signature
+        sql = '''select python_version, name, version, filename, has_signature,
+                 path
             from release_files
             where md5_digest=%s'''
         safe_execute(cursor, sql, (digest, ))
         info = cursor.fetchone()
         if not info:
             raise KeyError, 'no such file'
-        pyversion, name, version, filename, has_sig = info
+        pyversion, name, version, filename, has_sig, filepath = info
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
-        filepath = self.gen_file_path(pyversion, name, filename)
         self.package_bucket.delete_key(filepath)
         if has_sig:
             self.package_bucket.delete_key(filepath + ".asc")
