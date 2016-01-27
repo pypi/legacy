@@ -310,6 +310,7 @@ class Store:
         self.package_bucket = package_bucket
 
         self._changed_packages = set()
+        self._deleted_files = set()
 
     def enqueue(self, func, *args, **kwargs):
         if self.queue is None:
@@ -1331,7 +1332,7 @@ class Store:
         to_delete = []
         for file in self.list_files(name, version):
             to_delete.append(file['path'])
-        self.package_bucket.delete_keys(to_delete)
+        self._deleted_files |= set(to_delete)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1356,7 +1357,7 @@ class Store:
         for release in self.get_package_releases(name):
             for file in self.list_files(name, release['version']):
                 to_delete.append(file['path'])
-        self.package_bucket.delete_keys(to_delete)
+        self._deleted_files |= set(to_delete)
 
         # delete ancillary table entries
         for tab in ('files', 'dependencies', 'classifiers'):
@@ -1397,7 +1398,7 @@ class Store:
                 (newname, fid),
             )
             self.package_bucket.copy_key(newname, self.package_bucket.name, oldname)
-            self.package_bucket.delete_key(oldname)
+            self._deleted_files.add(oldname)
 
         self.add_journal_entry(new, None, "rename from %s" % old, date,
                                                     self.username, self.userip)
@@ -2121,9 +2122,9 @@ class Store:
         pyversion, name, version, filename, has_sig, filepath = info
         safe_execute(cursor, 'delete from release_files where md5_digest=%s',
             (digest, ))
-        self.package_bucket.delete_key(filepath)
+        self._deleted_files.add(filepath)
         if has_sig:
-            self.package_bucket.delete_key(filepath + ".asc")
+            self._deleted_files.add(filepath + ".asc")
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         self.add_journal_entry(name, version, "remove file %s" % filename,
                                             date, self.username, self.userip)
@@ -2505,6 +2506,7 @@ class Store:
 
         cursor = self._cursor = self._conn.cursor()
         self._changed_packages = set()
+        self._deleted_files = set()
 
     def set_read_only(self):
         safe_execute(
@@ -2532,6 +2534,7 @@ class Store:
             pass
         connection = None
         self._changed_packages = set()
+        self._deleted_files = set()
 
     def set_user(self, username, userip, update_last_login):
         ''' Set the user who is doing the changes.
@@ -2605,6 +2608,8 @@ class Store:
             return
         self._conn.commit()
         self._invalidate_cache()
+        self.package_bucket.delete_keys(self._deleted_files)
+        self._deleted_files = set()
 
     def rollback(self):
         if self._conn is None:
@@ -2612,6 +2617,7 @@ class Store:
         self._conn.rollback()
         self._cursor = None
         self._changed_packages = set()
+        self._deleted_files = set()
 
     def changed(self):
         '''A journalled change has been made. Notify listeners'''
