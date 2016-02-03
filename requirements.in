@@ -18,7 +18,7 @@ python-dateutil
 python-openid
 pytz
 raven
-readme
+readme_renderer
 redis
 requests[security]
 rq
