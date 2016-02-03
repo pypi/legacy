@@ -47,8 +47,8 @@ import fs.multifs
 import fs.osfs
 import fs.s3fs
 
-import readme.rst
-import readme.txt
+import readme_renderer.rst
+import readme_renderer.txt
 
 # local imports
 import store, config, versionpredicate, verify_filetype, rpc
@@ -1866,10 +1866,10 @@ class WebUI:
 
         if release.get("description"):
             # Render the project description
-            description_html = readme.rst.render(release["description"])
+            description_html = readme_renderer.rst.render(release["description"])
 
             if description_html is None:
-                description_html = readme.txt.render(release["description"])
+                description_html = readme_renderer.txt.render(release["description"])
 
             release["description_html"] = description_html
 
