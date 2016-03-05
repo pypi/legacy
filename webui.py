@@ -2882,7 +2882,7 @@ class WebUI:
             plats = wheel_info.group('plat').split('.')
             if set(plats) - set(["any", "win32", "win-amd64", "win_amd64", "win-ia64", "win_ia64"]):
                 for plat in plats:
-                    if plat.startswith("win") or plat.startswith("macosx"):
+                    if plat.startswith("win") or plat.startswith("macosx") or plat.startswith("manylinux"):
                         break
                 else:
                     raise FormError, "Binary wheel for an unsupported platform"
