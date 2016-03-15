@@ -280,6 +280,32 @@ class NoDirS3FS(fs.s3fs.S3FS):
         pass  # Noop this, S3 doesn't need directories
 
 
+# Wheel platform checking
+# These platforms can be handled by a simple static list:
+_allowed_platforms = {
+    "any",
+    "win32", "win_amd64", "win_ia64",
+    "manylinux1_x86_64", "manylinux1_i686",
+}
+# macosx is a little more complicated:
+_macosx_platform_re = re.compile("macosx_10_(\d+)+_(?P<arch>.*)")
+_macosx_arches = {
+    "ppc", "ppc64",
+    "i386", "x86_64",
+    "intel", "fat", "fat32", "fat64", "universal",
+}
+
+
+# Actual checking code;
+def _valid_platform_tag(platform_tag):
+    if platform_tag in _allowed_platforms:
+        return True
+    m = _macosx_platform_re.match(platform_tag)
+    if m and m.group("arch") in _macosx_arches:
+        return True
+    return False
+
+
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
         access to the user via rfile and wfile, and a few convenience
@@ -2880,11 +2906,8 @@ class WebUI:
         if filename.endswith(".whl"):
             wheel_info = wheel_file_re.match(filename)
             plats = wheel_info.group('plat').split('.')
-            if set(plats) - set(["any", "win32", "win-amd64", "win_amd64", "win-ia64", "win_ia64"]):
-                for plat in plats:
-                    if plat.startswith("win") or plat.startswith("macosx"):
-                        break
-                else:
+            for plat in plats:
+                if not _valid_platform_tag(plat):
                     raise FormError, "Binary wheel for an unsupported platform"
 
         # Check whether signature is ASCII-armored
