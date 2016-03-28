@@ -80,6 +80,25 @@ class CacheControlMiddleware(object):
         return self.app(environ, _start_response)
 
 
+class SecurityHeaderMiddleware(object):
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+
+        def _start_response(status, headers, exc_info=None):
+            headers += [
+                ("X-Frame-Options", "deny"),
+                ("X-XSS-Protection", "1; mode=block"),
+                ("X-Content-Type-Options", "nosniff"),
+            ]
+
+            return start_response(status, headers, exc_info)
+
+        return self.app(environ, _start_response)
+
+
 def debug(environ, start_response):
     if environ['PATH_INFO'].startswith("/auth") and \
            "HTTP_AUTHORIZATION" not in environ:
@@ -109,6 +128,10 @@ def application(environ, start_response):
 
 # Handle Caching at the WSGI layer
 application = CacheControlMiddleware(application)
+
+
+# Add some Security Headers to every response
+application = SecurityHeaderMiddleware(application)
 
 
 # pretend to be like the UWSGI configuration - set SCRIPT_NAME to the first
