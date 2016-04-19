@@ -1400,7 +1400,11 @@ class Store:
                 "update release_files set path=%s where id=%s",
                 (newname, fid),
             )
-            self.package_bucket.copy_key(newname, self.package_bucket.name, oldname)
+            self.package_bucket.copy_key(
+                os.path.join("packages", newname),
+                self.package_bucket.name,
+                os.path.join("packages", oldname),
+            )
             self._deleted_files.add(oldname)
 
         self.add_journal_entry(new, None, "rename from %s" % old, date,
@@ -2040,7 +2044,7 @@ class Store:
     def gen_file_path(self, digest, filename):
         '''Generate the path to the file on disk.'''
 
-        return os.path.join("packages", digest[:2], digest[2:4], digest[4:], filename)
+        return os.path.join(digest[:2], digest[2:4], digest[4:], filename)
 
     def add_file(self, name, version, content, md5_digest, sha256_digest,
             blake2_256_digest,
@@ -2070,7 +2074,7 @@ class Store:
             raise PreviouslyUsedFilename
 
         # store file to disk
-        k = self.package_bucket.new_key(filepath)
+        k = self.package_bucket.new_key(os.path.join("packages", filepath))
         k.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
         k.set_metadata("version", version)
         k.set_metadata("package-type", filetype)
@@ -2079,7 +2083,7 @@ class Store:
 
         # Store signature next to the file
         if signature:
-            sk = self.package_bucket.new_key(filepath + ".asc")
+            sk = self.package_bucket.new_key(os.path.join("packages", filepath + ".asc"))
             sk.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
             sk.set_metadata("version", version)
             sk.set_metadata("package-type", filetype)
@@ -2614,7 +2618,10 @@ class Store:
             return
         self._conn.commit()
         self._invalidate_cache()
-        self.package_bucket.delete_keys(self._deleted_files)
+        self.package_bucket.delete_keys(
+            list(self._deleted_files) +
+            [os.path.join("packages", f) for f in self._deleted_files]
+        )
         self._deleted_files = set()
 
     def rollback(self):
