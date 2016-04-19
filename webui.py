@@ -2934,7 +2934,7 @@ class WebUI:
         sha256_m.update(content)
 
         blake2_256_m = blake2b(digest_size=32)
-        blake_256_m.update(content)
+        blake2_256_m.update(content)
 
         if not md5_digest:
             md5_digest = calc_digest
