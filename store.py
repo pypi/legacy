@@ -31,6 +31,8 @@ import readme_renderer.rst
 
 import fs.errors
 
+from pyblake2 import blake2b
+
 import tasks
 import packaging.version
 
@@ -1386,12 +1388,13 @@ class Store:
         safe_execute(cursor, '''update journals set name=%s where name=%s''',
                      (new, old))
         # move all files on disk
-        sql = '''select id, python_version, filename, path
+        sql = '''select id, blake2_256_digest, filename, path
             from release_files where name=%s'''
         safe_execute(cursor, sql, (new,))
-        for fid, pyversion, filename, path in cursor.fetchall():
+        for fid, digest, filename, path in cursor.fetchall():
+            assert digest is not None, "Cannot Move a file without a blake2 digest"
             oldname = path
-            newname = self.gen_file_path(pyversion, new, filename)
+            newname = self.gen_file_path(digest, filename)
             safe_execute(
                 cursor,
                 "update release_files set path=%s where id=%s",
@@ -2034,25 +2037,28 @@ class Store:
         if results:
             return os.path.join(prefix, results[0][0])
 
-    def gen_file_path(self, pyversion, name, filename):
+    def gen_file_path(self, digest, filename):
         '''Generate the path to the file on disk.'''
-        return os.path.join(pyversion, name[0], name, filename)
+
+        return os.path.join("packages", digest[:2], digest[2:4], digest[4:], filename)
 
     def add_file(self, name, version, content, md5_digest, sha256_digest,
+            blake2_256_digest,
             filetype, pyversion, comment, filename, signature):
         '''Add to the database and store the content to disk.'''
 
-        filepath = self.gen_file_path(pyversion, name, filename)
+        filepath = self.gen_file_path(blake2_256_digest, filename)
 
         cursor = self.get_cursor()
         # add database entry
         sql = '''insert into release_files (name, version, python_version,
             packagetype, comment_text, filename, md5_digest, sha256_digest,
+            blake2_256_digest,
             size, has_signature, path, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
         safe_execute(cursor, sql, (name, version, pyversion, filetype,
-            comment, filename, md5_digest, sha256_digest, len(content),
-            bool(signature), filepath))
+            comment, filename, md5_digest, sha256_digest, blake2_256_digest,
+            len(content), bool(signature), filepath))
 
         # Add an entry to the file registry
         try:
@@ -2834,4 +2840,3 @@ if __name__ == '__main__':
     else:
         print "UNKNOWN COMMAND", sys.argv[2]
     store.close()
-
