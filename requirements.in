@@ -12,6 +12,7 @@ packaging
 passlib
 perfmetrics
 psycopg2
+pyblake2
 pybrowserid
 Pygments
 python-dateutil
