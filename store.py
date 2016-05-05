@@ -796,7 +796,7 @@ class Store:
 
     def get_packages_with_serial(self):
         cursor = self.get_cursor()
-        safe_execute(cursor, "SELECT journals.name, max(id) FROM journals, packages WHERE journals.name = packages.name GROUP BY journals.name")
+        safe_execute(cursor, "SELECT name, last_serial FROM packages")
         return dict((n,i) for n, i in cursor.fetchall())
 
     def get_packages_utf8(self):
@@ -1176,9 +1176,11 @@ class Store:
 
     def last_serial_for_package(self, package):
         cursor = self.get_cursor()
-        safe_execute(cursor, """
-            SELECT id FROM journals WHERE name = %s ORDER BY id DESC LIMIT 1
-        """, (package,))
+        safe_execute(
+            cursor,
+            "SELECT last_serial FROM packages WHERE name = %s",
+            (package,),
+        )
         row = cursor.fetchone()
         if row:
             return row[0]
