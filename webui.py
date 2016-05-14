@@ -970,8 +970,9 @@ class WebUI:
         rpc.handle_request(self)
 
     def purge(self):
-        qs = urlparse.parse_qs(self.env.get("QUERY_STRING", ""))
-        projects = qs.get("project", [])
+        projects = self.form.get("project", [])
+        if not isinstance(projects, list):
+            projects = [projects]
         for project in projects:
             self.store._add_invalidation(project)
 
