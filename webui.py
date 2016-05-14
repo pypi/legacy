@@ -834,7 +834,7 @@ class WebUI:
         file_upload show_md5 doc_upload claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
-        exception login_form'''.split():
+        exception login_form purge'''.split():
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
@@ -968,6 +968,15 @@ class WebUI:
 
     def xmlrpc(self):
         rpc.handle_request(self)
+
+    def purge(self):
+        qs = urlparse.parse_qs(self.env.get("QUERY_STRING", ""))
+        projects = qs.get("project", [])
+        for project in projects:
+            self.store._add_invalidation(project)
+
+        self.write_plain("OK")
+
 
     def simple_body(self, path):
         # Check to see if we're using the normalized name or not.
