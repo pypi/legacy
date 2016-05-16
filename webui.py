@@ -18,6 +18,7 @@ import rq
 import boto.s3
 
 from pyblake2 import blake2b
+from rfc3986 import uri_reference
 
 try:
     import json
@@ -1884,6 +1885,14 @@ class WebUI:
             if not info[column]: continue
             if isinstance(value, basestring) and value.strip() in (
                     'UNKNOWN', '<p>UNKNOWN</p>'): continue
+
+            if column in {"bugtrack_url", "home_page", "download_url"}:
+                uri = uri_reference(value)
+                if not uri.is_valid(require_scheme=True, require_authority=True):
+                    continue
+                if uri.scheme not in {"https", "http"}:
+                    continue
+
             if column in ('name', 'version'): continue
             elif column.endswith('_email'):
                 column = column[:column.find('_')]
@@ -1899,6 +1908,7 @@ class WebUI:
                 value = self.store.get_cheesecake_index(int(value))
             elif column == 'bugtrack_url':
                 bugtrack_url = value
+
             value = info[column]
             release[column] = value
 
@@ -2572,6 +2582,22 @@ class WebUI:
                 if d.has_key(entry):
                     continue
                 raise ValueError, 'Invalid classifier "%s"'%entry
+
+        # Validate that any URLs given to us are safe and valid.
+        for key in {"download_url", "home_page"}:
+            uri = data.get(key)
+            if uri:  # No data?, there's no reason to validate
+                uri = uri_reference(uri)
+                if not uri.is_valid(require_scheme=True, require_authority=True):
+                    raise ValueError("Invalid URI: {!r}".format(uri.unsplit()))
+
+                if uri.scheme not in {"http", "https"}:
+                    raise ValueError(
+                        "Invalid scheme {!r} for URI {!r}".format(
+                            uri.scheme,
+                            uri.unsplit(),
+                        )
+                    )
 
     def pkg_edit(self):
         ''' Edit info about a bunch of packages at one go
