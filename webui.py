@@ -18,6 +18,7 @@ import rq
 import boto.s3
 
 from pyblake2 import blake2b
+from rfc3986 import uri_reference
 
 try:
     import json
@@ -2572,6 +2573,22 @@ class WebUI:
                 if d.has_key(entry):
                     continue
                 raise ValueError, 'Invalid classifier "%s"'%entry
+
+        # Validate that any URLs given to us are safe and valid.
+        for key in {"download_url", "home_page"}:
+            uri = data.get(key)
+            if uri:  # No data?, there's no reason to validate
+                uri = uri_reference(uri)
+                if not uri.is_valid(require_scheme=True, require_authority=True):
+                    raise ValueError("Invalid URI: {!r}".format(uri.unsplit()))
+
+                if uri.scheme not in {"http", "https"}:
+                    raise ValueError(
+                        "Invalid scheme {!r} for URI {!r}".format(
+                            uri.scheme,
+                            uri.unsplit(),
+                        )
+                    )
 
     def pkg_edit(self):
         ''' Edit info about a bunch of packages at one go
