@@ -22,6 +22,7 @@ raven
 readme_renderer
 redis
 requests[security]
+rfc3986
 rq
 six
 times
