@@ -112,10 +112,6 @@
   </li>
 </ul>
 
-<ul class="nodot" tal:condition="not: data/download_counts">
-  <li><strong><font size="3" color="#A00000">Download Counts Temporarily Unavailable</font></strong></li>
-</ul>
-
 <ul class="nodot">
  <li tal:condition="data/release/author | nothing">
   <strong>Author:</strong>

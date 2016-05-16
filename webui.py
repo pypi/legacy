@@ -1948,10 +1948,15 @@ class WebUI:
         files = self.store.list_files(name, version)
 
         # Download Counts from redis
-        try:
-            download_counts = self.store.download_counts(name)
-        except redis.exceptions.ConnectionError as conn_fail:
-            download_counts = False
+        # We've disabled download counts because the statistics collection has
+        # broken and somebody has yet to fix it. This will prevent people from
+        # seeing messages that something has been downloaded zero times in the
+        # last N.
+        # try:
+        #     download_counts = self.store.download_counts(name)
+        # except redis.exceptions.ConnectionError as conn_fail:
+        #     download_counts = False
+        download_counts = False
 
         self.write_template('display.pt',
                             name=name, version=version, release=release,
