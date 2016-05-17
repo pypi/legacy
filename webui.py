@@ -2586,7 +2586,9 @@ class WebUI:
         # Validate that any URLs given to us are safe and valid.
         for key in {"download_url", "home_page"}:
             uri = data.get(key)
-            if uri:  # No data?, there's no reason to validate
+            # Check to see if there is any data to validate, vefore attempting
+            # to validate.
+            if uri and not uri == "UNKNOWN":
                 uri = uri_reference(uri)
                 if not uri.is_valid(require_scheme=True, require_authority=True):
                     raise ValueError("Invalid URI: {!r}".format(uri.unsplit()))
