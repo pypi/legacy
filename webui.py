@@ -5,7 +5,8 @@ defusedxml.xmlrpc.monkey_patch()
 
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
-import time, random, smtplib, base64, email, types, urlparse
+import time,
+, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 import datetime, string, traceback
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -922,7 +923,7 @@ class WebUI:
             self.home()
 
         elif self.env['REQUEST_METHOD'] == "GET":
-            nonce = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(30))
+            nonce = store.generate_random(30)
             headers = {'Set-Cookie': 'login_nonce=%s;secure' % (nonce),
                        'X-FRAME-OPTIONS': 'DENY'}
             self.write_template('login.pt', title="PyPI Login",
@@ -3218,7 +3219,7 @@ class WebUI:
             if 'password' not in info or 'confirm' not in info:
                 if 'openid.assoc_handle' not in self.form:
                     raise FormError, 'password and confirm are required'
-                info['password'] = ''.join([random.choice(store.chars) for x in range(32)])
+                info["password"] = store.generate_random(32)
                 # Recheck OpenID response
                 qs = {}
                 for key, value in self.form.items():
