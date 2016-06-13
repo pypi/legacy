@@ -5,8 +5,7 @@ defusedxml.xmlrpc.monkey_patch()
 
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
-import time,
-, smtplib, base64, email, types, urlparse
+import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 import datetime, string, traceback
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
