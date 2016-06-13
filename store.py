@@ -1648,7 +1648,7 @@ class Store:
 
             if otk:
                 # We want an OTK so we'll generate one
-                otkv = "".join([random.choice(chars) for x in range(32)])
+                otkv = generate_random(32)
                 safe_execute(cursor,
                     """INSERT INTO rego_otk (name, otk, date)
                         VALUES (%s, %s, current_timestamp)
@@ -2279,15 +2279,18 @@ class Store:
             cookie = cursor.fetchall()[0][0]
         except IndexError:
             # no cookie, make one
-            cookie = ''.join(random.choice(alphanum) for i in range(10))
+            cookie = generate_random(10)
 
         # create random data
-        rand = [random.choice(alphanum) for i in range(12)]
+        rand = [generate_random(12)]
         rand.append(str(int(time.time())))
         rand.append(cookie)
-        random.shuffle(rand)
-        rand = hmac.new(''.join(random.choice(alphanum) for i in range(16)),
-                ''.join(rand),digestmod=hashlib.sha1).hexdigest()
+        random.SystemRandom.shuffle(rand)
+        rand = hmac.new(
+            generate_random(16),
+            ''.join(rand),
+            digestmod=hashlib.sha1,
+        ).hexdigest()
         rand = b64encode(rand)
 
         # we may have a current entry which is out of date, delete
@@ -2651,7 +2654,7 @@ class Store:
                 pass
 
 def generate_random(length, chars = string.letters + string.digits):
-    return ''.join([random.choice(chars) for n in range(length)])
+    return ''.join([random.SystemRandom.choice(chars) for n in range(length)])
 
 class OAuthDataStore(oauth.OAuthDataStore):
     '''Manages an OAuth data store over the Store.

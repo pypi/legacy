@@ -83,7 +83,7 @@ class NotAuthenticated(Exception):
 def normalize_uri(uri):
     """Normalize an uri according to OpenID section 7.2. Return a pair
     type,value, where type can be either 'xri' or 'uri'."""
-    
+
     # 7.2 Normalization
     if uri.startswith('xri://'):
         uri = uri[6:]
@@ -155,7 +155,7 @@ def normalize_uri(uri):
 
     # 6.2.3 scheme based normalization
 
-    parts = urlparse.urlparse(uri)    
+    parts = urlparse.urlparse(uri)
     netloc = parts[1]
     if netloc.endswith(':'):
         netloc = netloc[:-1]
@@ -417,7 +417,7 @@ def associate(services, url):
         # Use DH exchange
         req_data['openid.session_type'] = "DH-SHA1"
         # Private key: random number between 1 and dh_prime-1
-        priv = random.randrange(1, dh_prime-1)
+        priv = random.SystemRandom.randrange(1, dh_prime - 1)
         # Public key: 2^priv mod prime
         pubkey = pow(2L, priv, dh_prime)
         dh_public_base64 = base64.b64encode(btwoc(pubkey))
@@ -708,7 +708,7 @@ def verify(response, discovery_cache, find_association, nonce_seen):
         raise NotAuthenticated(NotAuthenticated.INCONSISTENT_IDS)
     # XXX verify protocol version, verify claimed_id wrt. original request,
     # verify return_to URL
-    
+
     # verify the signature
     assoc_handle = response['openid.assoc_handle'][0]
     session = find_association(assoc_handle)

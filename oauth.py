@@ -67,11 +67,11 @@ def generate_timestamp():
 
 def generate_nonce(length=8):
     """Generate pseudorandom number."""
-    return ''.join([str(random.randint(0, 9)) for i in range(length)])
+    return ''.join([str(random.SystemRandom.randint(0, 9)) for i in range(length)])
 
 def generate_verifier(length=8):
     """Generate pseudorandom number."""
-    return ''.join([str(random.randint(0, 9)) for i in range(length)])
+    return ''.join([str(random.SystemRandom.randint(0, 9)) for i in range(length)])
 
 
 class OAuthConsumer(object):
