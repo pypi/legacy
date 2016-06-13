@@ -417,7 +417,7 @@ def associate(services, url):
         # Use DH exchange
         req_data['openid.session_type'] = "DH-SHA1"
         # Private key: random number between 1 and dh_prime-1
-        priv = random.SystemRandom.randrange(1, dh_prime - 1)
+        priv = random.SystemRandom().randrange(1, dh_prime - 1)
         # Public key: 2^priv mod prime
         pubkey = pow(2L, priv, dh_prime)
         dh_public_base64 = base64.b64encode(btwoc(pubkey))

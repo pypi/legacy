@@ -2285,7 +2285,7 @@ class Store:
         rand = [generate_random(12)]
         rand.append(str(int(time.time())))
         rand.append(cookie)
-        random.SystemRandom.shuffle(rand)
+        random.SystemRandom().shuffle(rand)
         rand = hmac.new(
             generate_random(16),
             ''.join(rand),
@@ -2654,7 +2654,7 @@ class Store:
                 pass
 
 def generate_random(length, chars = string.letters + string.digits):
-    return ''.join([random.SystemRandom.choice(chars) for n in range(length)])
+    return ''.join([random.SystemRandom().choice(chars) for n in range(length)])
 
 class OAuthDataStore(oauth.OAuthDataStore):
     '''Manages an OAuth data store over the Store.
