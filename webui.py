@@ -4,7 +4,7 @@ import defusedxml.xmlrpc
 defusedxml.xmlrpc.monkey_patch()
 
 # system imports
-import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip
+import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip, functools
 import time, random, smtplib, base64, email, types, urlparse
 import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
 import datetime, string, traceback
@@ -250,6 +250,15 @@ def decode_form(form):
         else:
             d[k] = transmute(v)
     return d
+
+
+def must_tls(fn):
+    @functools.wraps(fn)
+    def wrapped(self, *args, **kwargs):
+        if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
+            raise Forbidden("Must access using HTTPS instead of HTTP")
+        return fn(self, *args, **kwargs)
+    return wrapped
 
 
 class MultiWriteFS(fs.multifs.MultiFS):
@@ -982,9 +991,11 @@ class WebUI:
     def exception(self):
         FAIL
 
+    @must_tls
     def xmlrpc(self):
         rpc.handle_request(self)
 
+    @must_tls
     def purge(self):
         projects = self.form.get("project", [])
         if not isinstance(projects, list):
@@ -1068,6 +1079,7 @@ class WebUI:
                 best_prio, best_enc = prio, enc
         return best_enc
 
+    @must_tls
     def run_simple(self):
         self.store.set_read_only()
         path = self.env.get('PATH_INFO')
@@ -1137,6 +1149,7 @@ class WebUI:
             "and inform them of PEP 464."
         )
 
+    @must_tls
     def packages(self):
         self.store.set_read_only()
         path = self.env.get('PATH_INFO')
@@ -2122,6 +2135,7 @@ class WebUI:
         self.write_template('index.pt', matches=l, scores=scores,
             title="Index of Packages Matching '%s'"%term)
 
+    @must_tls
     def submit_form(self):
         ''' A form used to submit or edit package metadata.
         '''
@@ -2260,6 +2274,7 @@ class WebUI:
         if self.form.get('CSRFToken') != self.store.get_token(self.username):
             raise FormError, "Form Failure; reset form submission"
 
+    @must_tls
     def submit_pkg_info(self):
         ''' Handle the submission of distro metadata as a PKG-INFO file.
         '''
@@ -2367,6 +2382,7 @@ class WebUI:
         self.form['version'] = data['version']
         self.display(ok_message=message)
 
+    @must_tls
     def submit(self, parameters=None, response=True):
         ''' Handle the submission of distro metadata.
         '''
@@ -2820,6 +2836,7 @@ class WebUI:
         self.wfile.write(digest)
 
     CURRENT_UPLOAD_PROTOCOL = "1"
+    @must_tls
     def file_upload(self, response=True, parameters=None):
         # make sure the user is identified
         if not self.authenticated:
@@ -3027,6 +3044,7 @@ class WebUI:
     #
     # Documentation Upload
     #
+    @must_tls
     def doc_upload(self):
         # make sure the user is identified
         if not self.authenticated:
