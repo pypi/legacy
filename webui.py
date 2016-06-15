@@ -60,6 +60,12 @@ from mini_pkg_resources import safe_name
 from description_utils import extractPackageReadme, trim_docstring
 import oauth
 
+from perfmetrics import statsd_client
+from perfmetrics import set_statsd_client
+
+STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
+set_statsd_client(STATSD_URI)
+
 esc = cgi.escape
 esq = lambda x: cgi.escape(x, True)
 
@@ -453,6 +459,7 @@ class WebUI:
             redis=self.count_redis,
             package_bucket=self.package_bucket,
         )
+        self.statsd = statsd_client()
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
@@ -1408,6 +1415,7 @@ class WebUI:
             return_to = self.config.url+'?:action=openid_return'
             url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
             self.store.commit()
+            self.statsd.incr('openid.client.login')
             raise RedirectTemporary(url)
         if 'openid_identifier' in self.form:
             # OpenID with explicit ID
@@ -1435,6 +1443,7 @@ class WebUI:
             return_to = self.config.url+'?:action=openid_return'
             url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()
+            self.statsd.incr('openid.client.login')
             raise RedirectTemporary(url)
         if not self.authenticated:
             raise Unauthorised
@@ -3633,6 +3642,7 @@ class WebUI:
         return_to = self.config.url+'?:action=openid_return'
         url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
         self.store.commit()
+        self.statsd.incr('openid.client.claim')
         raise RedirectTemporary(url)
 
     def openid_return(self):
@@ -3674,6 +3684,7 @@ class WebUI:
                 return self.fail('replay attack detected')
             self.store.associate_openid(self.username, claimed_id)
             self.store.commit()
+            self.statsd.incr('openid.client.claim')
             return self.register_form()
         if user:
             # Login
@@ -3684,6 +3695,7 @@ class WebUI:
             self.loggedin = self.authenticated = True
             self.usercookie = self.store.create_cookie(self.username)
             self.store.get_token(self.username)
+            self.statsd.incr('openid.client.login')
             return self.home()
         # Fill openid response fields into register form as hidden fields
         del qs[':action']
@@ -3797,6 +3809,7 @@ class WebUI:
                 </XRD>
             </xrds:XRDS>
         ''' % (self.config.url+'?:action=openid_endpoint')
+        self.statsd.incr('openid.provider.discovery')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3816,6 +3829,7 @@ class WebUI:
                 </XRD>
             </xrds:XRDS>
         ''' % (self.config.url+'?:action=openid_endpoint')
+        self.statsd.incr('openid.provider.user')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3831,9 +3845,11 @@ class WebUI:
             self.handler.send_header("Content-type", 'text/plain')
             self.handler.send_header("Content-length", str(len(payload)))
             self.handler.end_headers()
+            self.statsd.incr('openid.provider.proclamation')
             self.handler.wfile.write(payload)
             return
         if orequest.mode in ['checkid_immediate', 'checkid_setup']:
+            self.statsd.incr('openid.provider.checkid')
             if self.openid_is_authorized(orequest):
                 answer = orequest.answer(True, identity=self.openid_user_url())
                 return self.openid_response(answer)
@@ -3842,8 +3858,10 @@ class WebUI:
             else:
                 self.openid_decide_page(orequest)
         elif orequest.mode in ['associate', 'check_authentication']:
+            self.statsd.incr('openid.provider.authenticate')
             self.openid_response(self.oid_server.handleRequest(orequest))
         else:
+            self.statsd.incr('openid.provider.error')
             raise OpenIDError, "Unknown mode: %s" % orequest.mode
 
     def openid_decide_page(self, orequest):
