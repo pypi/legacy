@@ -907,6 +907,8 @@ class WebUI:
 
         self._check_credentials(username, password)
 
+        self.statsd.incr('password_authentication.basic_auth')
+
     def login_form(self):
         if self.env['REQUEST_METHOD'] == "POST":
             nonce = self.form.get('nonce', '')
@@ -926,6 +928,8 @@ class WebUI:
                     self.home()
             else:
                 raise BlockedIP
+
+            self.statsd.incr('password_authentication.login_form')
 
             self.usercookie = self.store.create_cookie(self.username)
             self.store.get_token(self.username)
