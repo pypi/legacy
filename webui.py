@@ -63,6 +63,10 @@ import oauth
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
 
+import config
+root = os.path.dirname(os.path.abspath(__file__))
+conf = config.Config(os.path.join(root, "config.ini"))
+
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
 
