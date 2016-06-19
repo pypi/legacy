@@ -1411,47 +1411,26 @@ class WebUI:
         self.home()
 
     def login(self):
-        if 'provider' in self.form:
-            # OpenID login
-            for p in providers:
-                if p[0] == self.form['provider']:
-                    break
-            else:
-                return self.fail('Unknown provider')
-            stypes, url, assoc_handle = self.store.get_provider_session(p)
-            return_to = self.config.url+'?:action=openid_return'
-            url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
-            self.store.commit()
-            self.statsd.incr('openid.client.login')
-            raise RedirectTemporary(url)
-        if 'openid_identifier' in self.form:
-            # OpenID with explicit ID
-            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
-            if kind == 'xri':
-                res = openid2rp.resolve_xri(claimed_id)
-                if res:
-                    # A.5: XRI resolution requires to use canonical ID
-                    # Original claimed ID may be preserved for display
-                    # purposes
-                    claimed_id = res[0]
-                    res = res[1:]
-            else:
-                res = openid2rp.discover(claimed_id)
-            if not res:
-                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
-            stypes, op_endpoint, op_local = res
-            self.store.store_discovered(claimed_id, stypes, op_endpoint, op_local)
-            if not op_local:
-                op_local = claimed_id
-            try:
-                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
-            except ValueError, e:
-                return self.fail('Cannot establish OpenID session: ' + str(e))
-            return_to = self.config.url+'?:action=openid_return'
-            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
-            self.store.commit()
-            self.statsd.incr('openid.client.login')
-            raise RedirectTemporary(url)
+        from authadapters import PyPIAdapter
+        import authomatic
+        from authomatic.providers import openid
+        CONFIG = {
+            'openid': {
+                'class_': openid.OpenID,
+                'store': self.store.oid_store(),
+            },
+        }
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
+                                           logging_level=logging.CRITICAL,
+                                           secure_cookie=self.config.authomatic_secure)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'openid')
+
+        if result:
+            if result.user:
+                content = result.user.data
+                with open('/tmp/open-id-debug.log', 'a') as fd:
+                    fd.write(content)
+
         if not self.authenticated:
             raise Unauthorised
         self.usercookie = self.store.create_cookie(self.username)
