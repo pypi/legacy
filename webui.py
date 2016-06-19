@@ -724,6 +724,8 @@ class WebUI:
             return self.run_id()
         if script_name == '/google_login':
             return self.google_login()
+        if script_name == '/openid_login':
+            return self.openid_login()
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -1410,33 +1412,55 @@ class WebUI:
             raise Unauthorised, "Clearing basic auth"
         self.home()
 
+
     def login(self):
-        from authadapters import PyPIAdapter
-        import authomatic
-        from authomatic.providers import openid
-        CONFIG = {
-            'openid': {
-                'class_': openid.OpenID,
-                'store': self.store.oid_store(),
-            },
-        }
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
-                                           logging_level=logging.CRITICAL,
-                                           secure_cookie=self.config.authomatic_secure)
-        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'openid')
-
-        if result:
-            if result.user:
-                content = result.user.data
-                with open('/tmp/open-id-debug.log', 'a') as fd:
-                    fd.write(content)
-
         if not self.authenticated:
             raise Unauthorised
         self.usercookie = self.store.create_cookie(self.username)
         self.store.get_token(self.username)
         self.loggedin = 1
         self.home()
+
+    def openid_login(self):
+        from authadapters import PyPIAdapter
+        import authomatic
+        from authomatic.providers import openid
+        CONFIG = {
+            'oi': {
+                'class_': openid.OpenID,
+            },
+        }
+        if 'provider' in self.form:
+            for p in providers:
+                if p[0] == self.form['provider']:
+                    self.form['openid_identifier'] = p[2]
+            self.form['id'] = None
+
+        if 'openid_identifier' in self.form:
+            self.form['id'] = self.form['openid_identifier']
+
+        self.handler.set_status('200 OK')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
+                                           logging_level=logging.CRITICAL,
+                                           secure_cookie=self.config.authomatic_secure,)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
+                                  use_realm=False, store=self.store.oid_store())
+
+        if result:
+            if result.user:
+                content = result.user.data
+                result_openid_id = content.get('guid', None)
+                user = None
+                if result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        user = found_user
+                if user:
+                    self.username = user['name']
+                    self.usercookie = self.store.create_cookie(self.username)
+                    self.store.get_token(self.username)
+                    self.loggedin = self.authenticated = True
+                return self.home()
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -3153,96 +3177,7 @@ class WebUI:
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
         if 'state' in qs and 'code' in qs:
             return self.google_login()
-        if 'openid.mode' not in qs:
-            # Not an indirect call: treat it as RP discovery
-            return self.rp_discovery()
-        mode = qs['openid.mode'][0]
-        if mode == 'cancel':
-            return self.fail('Login cancelled')
-        if mode == 'error':
-            return self.fail('OpenID login failed: '+qs['openid.error'][0])
-        if mode != 'id_res':
-            return self.fail('OpenID login failed')
-        try:
-            signed, claimed_id = openid2rp.verify(qs, self.store.discovered,
-                                                  self.store.find_association,
-                                                  self.store.check_nonce)
-        except Exception, e:
-            return self.fail('Login failed:'+repr(e))
-
-        if 'response_nonce' in signed:
-            nonce = qs['openid.response_nonce'][0]
-        else:
-            # OpenID 1.1
-            nonce = None
-
-        user = self.store.get_user_by_openid(claimed_id)
-        # Three cases: logged-in user claimed some ID,
-        # new login, or registration
-        if self.loggedin:
-            # claimed ID
-            if user:
-                return self.fail('OpenID is already claimed')
-            if nonce and self.store.duplicate_nonce(nonce):
-                return self.fail('replay attack detected')
-            self.store.associate_openid(self.username, claimed_id)
-            self.store.commit()
-            self.statsd.incr('openid.client.claim')
-            return self.register_form()
-        if user:
-            # Login
-            if nonce and self.store.duplicate_nonce(nonce):
-                return self.fail('replay attack detected')
-            self.store.commit()
-            self.username = user['name']
-            self.loggedin = self.authenticated = True
-            self.usercookie = self.store.create_cookie(self.username)
-            self.store.get_token(self.username)
-            self.statsd.incr('openid.client.login')
-            return self.home()
-        # Fill openid response fields into register form as hidden fields
-        del qs[':action']
-        openid_fields = []
-        for key, value in qs.items():
-            openid_fields.append((key, value[0]))
-        # propose email address based on response
-        email = openid2rp.get_email(qs)
-        # propose user name based on response
-        username = openid2rp.get_username(qs)
-        if isinstance(username, tuple):
-            username = '.'.join(username)
-        elif email and not username:
-            username = email.split('@')[0]
-        else:
-            # suggest OpenID host name as username
-            username = urlparse.urlsplit(claimed_id)[1]
-            if ':' in username:
-                username = username.split(':')[0]
-            if '@' in username:
-                username = username.rsplit('@', 1)[0]
-            if not username:
-                username = "nonamegiven"
-
-        username = username.strip()
-        username = username.replace(' ', '.')
-        username = re.sub('[^a-zA-Z0-9._]', '', username)
-
-        if not username:
-            username = "nonamegiven"
-
-        alphanums = set(string.ascii_letters + string.digits)
-        if not safe_username.match(username):
-            if username[0] not in alphanums:
-                username = "openid_" + username
-            if username[-1] not in alphanums:
-                username = username + "_user"
-
-        if self.store.has_user(username):
-            suffix = 2
-            while self.store.has_user("%s_%d" % (username, suffix)):
-                suffix += 1
-            username = "%s_%d" % (username, suffix)
-        return self.register_form(openid_fields, username, email, claimed_id)
+        return self.openid_login()
 
     def dropid(self):
         if not self.loggedin:
