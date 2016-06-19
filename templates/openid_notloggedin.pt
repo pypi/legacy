@@ -5,7 +5,7 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
 
-        <p><b>Notice: The PyPI OpenID Providerwill be retired July 13, 2016</b></p>
+        <p><b>Notice: The PyPI OpenID Provider will be retired July 13, 2016</b></p>
 
         <p>If you want to use your PyPI credentials to log into
         another site, you need to log into PyPI first. If logging
