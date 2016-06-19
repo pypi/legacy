@@ -53,7 +53,6 @@ import readme_renderer.txt
 import store, config, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
-import oauth
 import tasks
 
 from perfmetrics import statsd_client
@@ -111,8 +110,6 @@ class RedirectTemporary(Exception): # 307
 class FormError(Exception):
     pass
 class OpenIDError(Exception):
-    pass
-class OAuthError(Exception):
     pass
 class BlockedIP(Exception):
     pass
@@ -502,9 +499,6 @@ class WebUI:
             except OpenIDError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing OpenID request')
-            except OAuthError, message:
-                message = str(message)
-                self.fail(message, code=400, heading='Error processing OAuth request')
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
@@ -3469,156 +3463,6 @@ class WebUI:
             return "%s/id/%s" % (self.config.scheme_host, self.username)
         else:
             return None
-
-    #
-    # OAuth
-    #
-    def run_oauth(self):
-        if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
-            raise NotFound('HTTPS must be used to access this URL')
-
-        path = self.env.get('PATH_INFO')
-
-        if path == '/request_token':
-            self.oauth_request_token()
-        elif path == '/access_token':
-            self.oauth_access_token()
-        elif path == '/authorise':
-            self.oauth_authorise()
-        elif path == '/add_release':
-            self.oauth_add_release()
-        elif path == '/upload':
-            self.oauth_upload()
-        elif path == '/docupload':
-            self.oauth_docupload()
-        elif path == '/test':
-            self.oauth_test_access()
-        else:
-            raise NotFound()
-
-    def _oauth_request(self):
-        uri = self.url_machine + self.env['REQUEST_URI']
-        if not self.env.get('HTTP_AUTHORIZATION'):
-            raise OAuthError('PyPI OAuth requires header authorization')
-        params = dict(self.form)
-        # don't use file upload in signature
-        if 'content' in params:
-            del params['content']
-        return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']), params)
-
-    def _oauth_server(self):
-        data_store = store.OAuthDataStore(self.store)
-        o = oauth.OAuthSignatureMethod_HMAC_SHA1()
-        signature_methods = {o.get_name(): o}
-        return oauth.OAuthServer(data_store, signature_methods)
-
-    def oauth_request_token(self):
-        s = self._oauth_server()
-        r = self._oauth_request()
-        token = s.fetch_request_token(r)
-        self.store.commit()
-        self.write_plain(str(token))
-
-    def oauth_access_token(self):
-        s = self._oauth_server()
-        r = self._oauth_request()
-        token = s.fetch_access_token(r)
-        if token is None:
-            raise OAuthError('Request Token not authorised')
-        self.store.commit()
-        self.write_plain(str(token))
-
-    def oauth_authorise(self):
-        if 'oauth_token' not in self.form:
-            raise FormError('oauth_token and oauth_callback are required')
-        if not self.authenticated:
-            self.write_template('oauth_notloggedin.pt',
-                title="OAuth authorisation attempt")
-            return
-
-        oauth_token = self.form['oauth_token']
-        oauth_callback = self.form['oauth_callback']
-
-        ok = self.form.get('ok')
-        cancel = self.form.get('cancel')
-
-        s = self._oauth_server()
-
-        if not ok and not cancel:
-            description = s.data_store._get_consumer_description(request_token=oauth_token)
-            action_url = self.url_machine + '/oauth/authorise'
-            return self.write_template('oauth_authorise.pt',
-                title='PyPI - the Python Package Index',
-                action_url=action_url,
-                oauth_token=oauth_token,
-                oauth_callback=oauth_callback,
-                description=description)
-
-        if '%3A' in oauth_callback:
-            oauth_callback = urllib.unquote(oauth_callback)
-
-        if not ok:
-            raise RedirectTemporary(oauth_callback)
-
-        # register the user against the request token
-        s.authorize_token(oauth_token, self.username)
-
-        # commit all changes now
-        self.store.commit()
-
-        url = oauth_callback + '?oauth_token=%s'%oauth_token
-        raise RedirectTemporary(url)
-
-    def _parse_request(self):
-        '''Read OAuth access request information from the request.
-
-        Return the consumer (OAuthConsumer instance), the access token
-        (OAuthToken instance), the parameters (may include non-OAuth parameters
-        accompanying the request) and the user account number authorized by the
-        access token.
-        '''
-        s = self._oauth_server()
-        r = self._oauth_request()
-        consumer, token, params = s.verify_request(r)
-        user = s.data_store._get_user(token)
-        # recognise the user as accessing during this request
-        self.username = user
-        self.store.set_user(user, self.remote_addr, False)
-        self.authenticated = True
-        return consumer, token, params, user
-
-    def oauth_test_access(self):
-        '''A resource that is protected so access without an access token is
-        disallowed.
-        '''
-        consumer, token, params, user = self._parse_request()
-        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
-        self.write_plain(message)
-
-    def oauth_add_release(self):
-        '''Add a new release.
-
-        Returns "OK" if all is well otherwise .. who knows (TODO this needs to
-        be clarified and cleaned up).
-        '''
-        consumer, token, params, user = self._parse_request()
-        self.submit(params, False)
-        self.write_plain('OK')
-
-    def oauth_upload(self):
-        '''Upload a file for a package release.
-        '''
-        consumer, token, params, user = self._parse_request()
-        self.file_upload(False)
-        self.write_plain('OK')
-
-    def oauth_docupload(self):
-        '''Upload a documentation bundle.
-        '''
-        consumer, token, params, user = self._parse_request()
-        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
-        self.write_plain(message)
 
     #
     # Google Login
