@@ -3469,7 +3469,7 @@ class WebUI:
     #
 
     def google_login(self):
-        from oic import PyPIAdapter
+        from authadapters import PyPIAdapter
         from authomatic.providers import oauth2
         import authomatic
         import logging
