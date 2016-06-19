@@ -7,7 +7,7 @@
 
     <p tal:condition="python:not data['openid_fields'] and data['new_user']">
     This form allows "traditional" registration (using a password).
-    Users who want to register with their OpenID (e.g. Google
+    Users who want to register with their OAuth or OpenID (e.g. Google
     or Launchpad account) should follow one of the links
     to the right.
     </p>

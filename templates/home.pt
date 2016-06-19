@@ -47,7 +47,6 @@ Testing? Use <a href="http://wiki.python.org/moin/TestPyPI" class="vt-p">testpyp
 To interoperate with the index
 use the
 <a href="http://wiki.python.org/moin/PyPiJson">JSON</a>,
-<a href="http://wiki.python.org/moin/PyPiOauth">OAuth</a>,
 <a href="http://wiki.python.org/moin/PyPiXmlRpc">XML-RPC</a> or
 <a href="http://www.python.org/dev/peps/pep-0301/">HTTP</a>
 interfaces.
