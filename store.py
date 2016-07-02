@@ -1561,7 +1561,7 @@ class Store:
                             set email = nv.email,
                              verified = nv.verified
                         FROM new_values nv
-                        WHERE ae.user_id = nv.user_id
+                        WHERE ae.user_id = nv.user_id::uuid
                             AND ae.primary = nv.primary
                         RETURNING ae.*
                     )
