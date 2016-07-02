@@ -283,7 +283,7 @@ def _format_es_fields(hit):
     summary = hit['fields'].get('summary', [None])[0]
     if summary is not None:
         summary = summary.encode('utf8')
-    _pypi_hidden = hit['fields']['_pypi_hidden'][0]
+    _pypi_hidden = hit['fields'].get('_pypi_hidden', [False])[0]
     return (name, version, summary, _pypi_hidden)
 
 class Store:
@@ -924,7 +924,7 @@ class Store:
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         r = requests.get(index_url + '/release/_search?' + query_string)
         data = r.json()
-        results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields']['_pypi_hidden'][0] == hidden]
+        results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields'].get('_pypi_hidden', [False])[0] == hidden]
         return Result(None, results, self._Query_Packages)
 
     _Classifiers = FastResultRow('classifier')
