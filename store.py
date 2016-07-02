@@ -283,7 +283,7 @@ def _format_es_fields(hit):
     summary = hit['fields'].get('summary', [None])[0]
     if summary is not None:
         summary = summary.encode('utf8')
-    _pypi_hidden = hit['fields']['_pypi_hidden'][0]
+    _pypi_hidden = hit['fields'].get('_pypi_hidden', [False])[0]
     return (name, version, summary, _pypi_hidden)
 
 class Store:
