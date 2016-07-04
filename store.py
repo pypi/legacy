@@ -1571,7 +1571,7 @@ class Store:
                     FROM new_values
                     WHERE NOT EXISTS (SELECT 1
                                       FROM upsert up
-                                      WHERE up.user_id = new_values.user_id
+                                      WHERE up.user_id = new_values.user_id::uuid
                                         AND up.primary = new_values.primary)
                 """
                 safe_execute(cursor, sql, (user_id, email))
