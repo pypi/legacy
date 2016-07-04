@@ -1567,7 +1567,7 @@ class Store:
                     )
                     INSERT INTO accounts_email
                         (user_id, email, "primary", verified)
-                    SELECT user_id, email, "primary", verified
+                    SELECT user_id::uuid, email, "primary", verified
                     FROM new_values
                     WHERE NOT EXISTS (SELECT 1
                                       FROM upsert up
