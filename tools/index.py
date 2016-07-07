@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 import os
+import time
 
 prefix = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, prefix)
@@ -23,6 +24,8 @@ conf = config.Config(CONFIG_FILE)
 if conf.database_releases_index_name is None or conf.database_releases_index_url is None:
     sys.exit()
 
+new_index = "%s-%s" % (conf.database_releases_index_name, int(time.time()))
+print("creating new index %s" % (new_index,))
 store = store.Store(conf)
 store.open()
 
@@ -37,7 +40,28 @@ while True:
     break
   operations = []
   for release in releases:
-    operations.append(json.dumps({"index": {"_index": conf.database_releases_index_name, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
+    operations.append(json.dumps({"index": {"_index": new_index, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
     release['name_exact'] = release['name'].lower()
     operations.append(json.dumps(release))
   r = requests.post(conf.database_releases_index_url + "/_bulk", data="\n".join(operations))
+
+actions = [{"add": {"index": new_index, "alias": conf.database_releases_index_name}}]
+r = requests.get(conf.database_releases_index_url + "/*/_alias/" + conf.database_releases_index_name)
+for alias, data in r.json().iteritems():
+    if conf.database_releases_index_name in data['aliases'].keys():
+        actions.append({"remove": {"index": alias, "alias": conf.database_releases_index_name}})
+
+print("updating alias for %s to %s" % (conf.database_releases_index_name, new_index))
+r = requests.post(conf.database_releases_index_url + "/_aliases", json={'actions': actions})
+if r.status_code != 200:
+    print("failed to update alias for %s to %s" % (conf.database_releases_index_name, new_index))
+    sys.exit(1)
+
+r = requests.get(conf.database_releases_index_url + "/_stats")
+indicies = [i for i in r.json()['indices'].keys() if i.startswith(conf.database_releases_index_name + '-')]
+for index in indicies:
+    if index != new_index:
+        print('deleting %s, because it is not %s' % (index, new_index))
+        r = requests.delete(conf.database_releases_index_url + "/" + index)
+        if r.status_code != 200:
+            print('failed to delete %s' % (index))
