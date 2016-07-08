@@ -3392,7 +3392,7 @@ class WebUI:
 
         # generate a reset OTK and mail the link - force link to be HTTPS
         url = self.config.url
-        if url.startswith('http'):
+        if url[:4] == 'http':
             url = 'https' + url[4:]
         info = dict(name=user['name'], url=url, email=user['email'],
             otk=self._gen_reset_otk(user))
