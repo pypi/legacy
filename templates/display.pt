@@ -263,7 +263,7 @@
  </li>
 
  <li>
-  <strong><a href="http://usefulinc.com/doap">DOAP</a> record:</strong>
+  <strong><a href="https://github.com/edumbill/doap/wiki">DOAP</a> record:</strong>
   <a tal:content="string:${data/name}-${data/version}.xml"
   tal:attributes="href string:${app/url_path}?:action=doap&amp;name=${data/name}&amp;version=${data/version}" />
  </li>
