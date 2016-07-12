@@ -36,6 +36,8 @@ from pyblake2 import blake2b
 import tasks
 import packaging.version
 
+import redis
+from webui import _PyPiPageTemplate
 
 try:
     import psycopg2
@@ -313,6 +315,15 @@ class Store:
 
         self._changed_packages = set()
         self._deleted_files = set()
+
+        if self.config.cache_redis_url:
+            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
+        else:
+            self.cache_redis = None
+
+        (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
+        self.url_machine = '%s://%s'%(protocol, machine)
+        self.url_path = path
 
     def enqueue(self, func, *args, **kwargs):
         if self.queue is None:
@@ -2652,6 +2663,25 @@ class Store:
                 # ignore all other errors
             except Exception:
                 pass
+
+    def rss_regen(self)
+        context = {}
+        context['app'] = self
+        context['test'] = ''
+        if 'testpypi' in self.config.url:
+            context['test'] = 'Test '
+
+        # generate the releases RSS
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        template = _PyPiPageTemplate('rss.xml', template_dir)
+        content = template(**context)
+        self.cache_redis.set('rss~main', content)
+
+        # generate the packages RSS
+        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+        template = PyPiPageTemplate('packages-rss.xml', template_dir)
+        content = template(**context)
+        self.cache_redis.set('rss~pkgs', content)
 
 def generate_random(length, chars = string.letters + string.digits):
     return ''.join([random.SystemRandom().choice(chars) for n in range(length)])

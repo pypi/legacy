@@ -76,6 +76,19 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
+EMPTY_RSS = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91">
+ <channel>
+  <title>PyPI Recent Updates</title>
+  <link>https://pypi.python.org/pypi</link>
+  <description>Recent updates to the Python Package Index</description>
+  <language>en</language>
+ </channel>
+</rss>
+"""
+
 
 
 
@@ -359,6 +372,10 @@ class WebUI:
             self.queue = rq.Queue(connection=self.queue_redis)
         else:
             self.queue = None
+        if self.config.cache_redis_url:
+            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
+        else:
+            self.cache_redis = None
 
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
@@ -861,9 +878,6 @@ class WebUI:
             #raise NotFound, 'Unknown action %s' % action
             raise NotFound
 
-        if action in 'file_upload submit submit_pkg_info pkg_edit remove_pkg'.split():
-            self.rss_regen()
-
         # commit any database changes
         self.store.commit()
 
@@ -1231,54 +1245,44 @@ class WebUI:
         """Dump the last N days' updates as an RSS feed.
         """
         # determine whether the rss file is up to date
-        if not os.path.exists(self.config.rss_file):
-            self.rss_regen()
+        if self.cache_redis is None:
+            content = EMPTY_RSS
+        else:
+            value = self.cache_redis.get('rss~main')
+            if value:
+                content = value
+            else:
+                self.store.rss_regen()
+                content = self.cache_redis.get('rss~main')
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/xml; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(open(self.config.rss_file).read())
+        self.wfile.write(content)
 
     def packages_rss(self):
         """Dump the last N days' updates as an RSS feed.
         """
         # determine whether the rss file is up to date
-        if not os.path.exists(self.config.packages_rss_file):
-            self.rss_regen()
+        if self.cache_redis is None:
+            content = EMPTY_RSS
+        else:
+            value = self.cache_redis.get('rss~pkgs')
+            if value:
+                content = value
+            else:
+                self.store.rss_regen()
+                content = self.cache_redis.get('rss~pkgs')
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/xml; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(open(self.config.packages_rss_file).read())
+        self.wfile.write(content)
 
     def rss_regen(self):
-        context = {}
-        context['app'] = self
-        context['test'] = ''
-        if 'testpypi' in self.config.url:
-            context['test'] = 'Test '
-
-        # generate the releases RSS
-        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        template = PyPiPageTemplate('rss.xml', template_dir)
-        content = template(**context)
-        f = open(self.config.rss_file, 'w')
-        try:
-            f.write(content.encode('utf-8'))
-        finally:
-            f.close()
-
-        # generate the packages RSS
-        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        template = PyPiPageTemplate('packages-rss.xml', template_dir)
-        content = template(**context)
-        f = open(self.config.packages_rss_file, 'w')
-        try:
-            f.write(content.encode('utf-8'))
-        finally:
-            f.close()
+        self.store.rss_regen()
 
     def lasthour(self):
         self.write_template('rss1hour.xml', **{'content-type':'text/xml; charset=utf-8'})
