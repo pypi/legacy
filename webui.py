@@ -713,7 +713,6 @@ class WebUI:
         ('browse', 'Browse packages'),
         ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
-        ('index', 'List packages'),
         ('rss', 'RSS (latest 40 updates)'),
         ('packages_rss', 'RSS (newest 40 packages)'),
         ('role_form', 'Admin'),
@@ -2052,21 +2051,14 @@ class WebUI:
         '''
         self.nav_current = nav_current
         if releases is None:
-            spec = self.form_metadata()
-            if not spec.has_key('_pypi_hidden'):
-                spec['_pypi_hidden'] = False
-            i=0
-            l = self.store.query_packages(spec)
-            if len(l) == 1:
-                self.form['name'] = l[0]['name']
-                self.form['version'] = l[0]['version']
-                return self.display()
+            data = dict()
+            self.write_template('print_the_world.pt', **data)
         else:
             l = releases
-        data = dict(title="Index of Packages", matches=l)
-        if 'name' in self.form:
-            data['name'] = self.form['name']
-        self.write_template('index.pt', **data)
+            data = dict(title="Index of Packages", matches=l)
+            if 'name' in self.form:
+                data['name'] = self.form['name']
+            self.write_template('index.pt', **data)
 
     STOPWORDS = set([
         "a", "and", "are", "as", "at", "be", "but", "by",
