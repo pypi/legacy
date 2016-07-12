@@ -5,14 +5,14 @@
      xmlns:metal="http://xml.zope.org/namespaces/metal">
  <channel>
   <title><tal:x tal:replace="test" />PyPI Recent Updates</title>
-  <link tal:content="string:${app/url_machine}${app/url_path}" />
+  <link tal:content="string:${url_machine}${url_path}" />
   <description>Recent updates to the <tal:x tal:replace="test" />Python Package Index</description>
   <language>en</language>
 
-  <item tal:repeat="release app/store/latest_releases">
+  <item tal:repeat="release store/latest_releases">
     <title tal:content="string:${release/name} ${release/version}" />
-    <link tal:content="python:'http://pypi.python.org%s'%app.packageURL(
-        release['name'], release['version'])" />
+    <link tal:content="python:'http://pypi.python.org%s'%store.package_url(
+        url_path, release['name'], release['version'])" />
     <description tal:content="release/summary" />
     <pubDate tal:content="python:release['submitted_date'].strftime('%d %b %Y %H:%M:%S GMT')" />
    </item>

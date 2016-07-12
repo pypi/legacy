@@ -1,3 +1,4 @@
+import os
 import urlparse
 
 import redis
@@ -43,3 +44,46 @@ def purge_fastly_tags(domain, api_key, service_id, tags):
     #     #   our list.
     #     if status.json().get("results", {}).get("complete", None):
     #         all_tags.remove(tag)
+
+import config
+import store
+
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+
+
+class PyPiPageTemplate(PageTemplateFile):
+    def pt_getContext(self, args=(), options={}, **kw):
+        """Add our data into ZPT's defaults"""
+        rval = PageTemplateFile.pt_getContext(self, args=args)
+        options.update(rval)
+        return options
+
+def rss_regen():
+    root = os.path.dirname(os.path.abspath(__file__))
+    conf = config.Config(os.path.join(root, "config.ini"))
+    template_dir = os.path.join(root, 'templates')
+
+    if conf.cache_redis_url:
+        cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
+    else:
+        return True
+
+    (protocol, machine, path, x, x, x) = urlparse.urlparse(conf.url)
+
+    context = {}
+    context['store'] = store.Store(conf)
+    context['url_machine'] = '%s://%s'%(protocol, machine)
+    context['url_path'] = path
+    context['test'] = ''
+    if 'testpypi' in conf.url:
+        context['test'] = 'Test '
+
+    # generate the releases RSS
+    template = PyPiPageTemplate('rss.xml', template_dir)
+    content = template(**context)
+    cache_redis.set('rss~main', content)
+
+    # generate the packages RSS
+    template = PyPiPageTemplate('packages-rss.xml', template_dir)
+    content = template(**context)
+    cache_redis.set('rss~pkgs', content)

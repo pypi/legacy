@@ -59,6 +59,7 @@ import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 from description_utils import extractPackageReadme, trim_docstring
 import oauth
+import tasks
 
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
@@ -359,6 +360,11 @@ class WebUI:
             self.queue = rq.Queue(connection=self.queue_redis)
         else:
             self.queue = None
+
+        if self.config.cache_redis_url:
+            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
+        else:
+            self.cache_redis = None
 
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
@@ -1231,27 +1237,43 @@ class WebUI:
         """Dump the last N days' updates as an RSS feed.
         """
         # determine whether the rss file is up to date
-        if not os.path.exists(self.config.rss_file):
-            self.rss_regen()
+        content = None
+        if self.cache_redis is None:
+            content = EMPTY_RSS
+        else:
+            value = self.cache_redis.get('rss~main')
+            if value:
+                content = value
+            else:
+                tasks.rss_regen()
+                content = self.cache_redis.get('rss~main')
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/xml; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(open(self.config.rss_file).read())
+        self.wfile.write(content)
 
     def packages_rss(self):
         """Dump the last N days' updates as an RSS feed.
         """
         # determine whether the rss file is up to date
-        if not os.path.exists(self.config.packages_rss_file):
-            self.rss_regen()
+        content = None
+        if self.cache_redis is None:
+            content = EMPTY_RSS
+        else:
+            value = self.cache_redis.get('rss~pkgs')
+            if value:
+                content = value
+            else:
+                tasks.rss_regen()
+                content = self.cache_redis.get('rss~pkgs')
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
         self.handler.set_content_type('text/xml; charset=utf-8')
         self.handler.end_headers()
-        self.wfile.write(open(self.config.packages_rss_file).read())
+        self.wfile.write(content)
 
     def rss_regen(self):
         context = {}
@@ -3577,14 +3599,7 @@ class WebUI:
     def packageURL(self, name, version):
         ''' return a URL for the link to display a particular package
         '''
-        if not isinstance(name, str): name = name.encode('utf-8')
-        if version is None:
-            # changelog entry with no version
-            version = ''
-        else:
-            if not isinstance(version, str): version = version.encode('utf-8')
-            version = '/'+urllib.quote(version)
-        return u'%s/%s%s'%(self.url_path, urllib.quote(name), version)
+        return self.store.package_url(self.url_path, name, version)
 
     def packageLink(self, name, version):
         ''' return a link to display a particular package
