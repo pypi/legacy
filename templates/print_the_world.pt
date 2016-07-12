@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="standard_template/macros/page">
+<metal:slot fill-slot="body">
+
+<p>
+The list of all packages previously hosted at this URL has been deprecated,
+the resources necessary to render this page have become untenable as PyPI has
+grown.
+</p>
+
+<p>
+If you previously used this list for some purpose, you may consider using the
+simple index itself as a replacement.
+</p>
+
+</metal:slot>
+</html>
