@@ -36,8 +36,6 @@ from pyblake2 import blake2b
 import tasks
 import packaging.version
 
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
-import redis
 
 try:
     import psycopg2
@@ -54,13 +52,6 @@ class PreviouslyUsedFilename(Exception):
 
 class LockedException(Exception):
     pass
-
-class PyPiPageTemplate(PageTemplateFile):
-    def pt_getContext(self, args=(), options={}, **kw):
-        """Add our data into ZPT's defaults"""
-        rval = PageTemplateFile.pt_getContext(self, args=args)
-        options.update(rval)
-        return options
 
 
 # we import both the old and new (PEP 386) methods of handling versions since
@@ -322,15 +313,6 @@ class Store:
 
         self._changed_packages = set()
         self._deleted_files = set()
-
-        if self.config.cache_redis_url:
-            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
-        else:
-            self.cache_redis = None
-
-        (protocol, machine, path, x, x, x) = urlparse.urlparse(self.config.url)
-        self.url_machine = '%s://%s'%(protocol, machine)
-        self.url_path = path
 
     def enqueue(self, func, *args, **kwargs):
         if self.queue is None:
@@ -2670,25 +2652,6 @@ class Store:
                 # ignore all other errors
             except Exception:
                 pass
-
-    def rss_regen(self):
-        context = {}
-        context['app'] = self
-        context['test'] = ''
-        if 'testpypi' in self.config.url:
-            context['test'] = 'Test '
-
-        # generate the releases RSS
-        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        template = PyPiPageTemplate('rss.xml', template_dir)
-        content = template(**context)
-        self.cache_redis.set('rss~main', content)
-
-        # generate the packages RSS
-        template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-        template = PyPiPageTemplate('packages-rss.xml', template_dir)
-        content = template(**context)
-        self.cache_redis.set('rss~pkgs', content)
 
 def generate_random(length, chars = string.letters + string.digits):
     return ''.join([random.SystemRandom().choice(chars) for n in range(length)])
