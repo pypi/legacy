@@ -314,6 +314,18 @@ class Store:
         self._changed_packages = set()
         self._deleted_files = set()
 
+    def package_url(self, url_path, name, version):
+        ''' return a URL for the link to display a particular package
+        '''
+        if not isinstance(name, str): name = name.encode('utf-8')
+        if version is None:
+            # changelog entry with no version
+            version = ''
+        else:
+            if not isinstance(version, str): version = version.encode('utf-8')
+            version = '/'+urllib.quote(version)
+        return u'%s/%s%s'%(url_path, urllib.quote(name), version)
+
     def enqueue(self, func, *args, **kwargs):
         if self.queue is None:
             func(*args, **kwargs)
