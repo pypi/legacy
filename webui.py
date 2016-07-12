@@ -868,7 +868,7 @@ class WebUI:
             raise NotFound
 
         if action in 'file_upload submit submit_pkg_info pkg_edit remove_pkg'.split():
-            self.rss_regen()
+            self.store.enqueue(tasks.rss_regen,)
 
         # commit any database changes
         self.store.commit()
