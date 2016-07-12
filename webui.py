@@ -2051,7 +2051,7 @@ class WebUI:
         '''
         self.nav_current = nav_current
         if releases is None:
-            data = dict()
+            data = dict(title="Index of Packages[Deprecated]")
             self.write_template('print_the_world.pt', **data)
         else:
             l = releases
