@@ -33,7 +33,7 @@ cursor = store._conn.cursor(cursor_factory=RealDictCursor)
 
 cursor.execute("BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE")
 cursor.execute("SET statement_timeout = '600s'")
-cursor.execute("select r.name, array_agg(distinct trove_id) as trove_classifiers, array_agg(distinct t.l2) || array_agg(distinct t.l3) || array_agg(distinct t.l4) || array_agg(distinct t.l5) as categories from release_classifiers r join releases rl on (rl.name=r.name and rl.version=r.version) join trove_classifiers t on r.trove_id=t.id where not rl._pypi_hidden group by r.name")
+cursor.execute("select r.name as name, rl.summary as summary, array_agg(distinct trove_id) as trove_classifiers, array_agg(distinct t.l2) || array_agg(distinct t.l3) || array_agg(distinct t.l4) || array_agg(distinct t.l5) as categories from release_classifiers r join releases rl on (rl.name=r.name and rl.version=r.version) join trove_classifiers t on r.trove_id=t.id where not rl._pypi_hidden group by r.name, rl.summary")
 while True:
     packages = cursor.fetchmany(1000)
     if len(packages) == 0:
