@@ -1947,70 +1947,40 @@ class Store:
                 cursor.execute('update trove_classifiers set %s=%d where id=%d' % (field, value, id))
 
     def browse_tally(self):
-        import time
-        cursor = self.get_cursor()
-        t = self.trove()
-        cursor.execute("select value from timestamps where name='browse_tally'")
-        date = cursor.fetchone()[0]
-        if time.time() - time.mktime(date.timetuple()) > 10*60:
-            # Regenerate tally. First, release locks we hold on the timestamps
-            self._conn.commit()
-            # Clear old tally
-            if self.can_lock:
-                cursor.execute("lock table browse_tally")
-            cursor.execute("delete from browse_tally")
-            # Regenerate tally; see browse() below
-            cursor.execute("""insert into browse_tally
-            select res.l2, count(*) from (select t.l2, rc.name, rc.version
-            from trove_classifiers t, release_classifiers rc, releases r
-            where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
-            group by t.l2, rc.name, rc.version) res group by res.l2""")
-            cursor.execute("update timestamps set value=current_timestamp where name='browse_tally'")
-            self._conn.commit()
-        cursor.execute("select trove_id, tally from browse_tally")
-        return [], cursor.fetchall()
+        return self.browse([0])
 
     def browse(self, selected_classifiers):
-        t = self.trove()
-        cursor = self.get_cursor()
-        if not selected_classifiers:
-            # This is not used; see browse_tally above
-            tally = """select res.l2, count(*) from (select t.l2, rc.name, rc.version
-            from trove_classifiers t, release_classifiers rc, releases r
-            where rc.name=r.name and rc.version=r.version and not r._pypi_hidden and rc.trove_id=t.id
-            group by t.l2, rc.name, rc.version) res group by res.l2"""
-            cursor.execute(tally)
-            return [], cursor.fetchall()
 
-        # First compute statement to produce all packages still selected
-        pkgs = "select name, version, summary from releases where _pypi_hidden="+self.false
-        for c in selected_classifiers:
-            level = t.trove[c].level
-            pkgs = """select distinct a.name, a.version, summary from (%s) a, release_classifiers rc, trove_classifiers t
-             where a.name=rc.name and a.version=rc.version and rc.trove_id=t.id and
-             t.l%d=%d""" % (pkgs, level, c)
-        # Next download all selected releases
-        cursor.execute(pkgs)
+        query = {
+            "fields": ["name", "version", "summary"],
+            "size": 100000,
+            "query": {
+              "filtered": {
+                "query": {
+                  "match_all": {}
+                },
+                "filter": {
+                  "bool": {
+                    "must": [{"term": {"categories": cat_id}} for cat_id in selected_classifiers]
+                  }
+                }
+              }
+            },
+            "facets": {
+              "categories": {"terms": {"field": "categories", "size": 10000}}
+            }
+        }
+
+        index_url = "/".join([self.config.database_releases_index_url, "trove-%s" % (self.config.database_releases_index_name,)])
+        r = requests.get(index_url + "/_search", json=query)
+
         releases = []
-        for name, version, summary in cursor.fetchall():
-            if summary: summary = summary.decode('utf-8')
-            releases.append((name.decode('utf-8'), version, summary))
-        # Finally, compute the tally
-        tally = """select tl.id,count(*) from (select distinct t.id, a.name,
-        a.version from (%s) a, release_classifiers rc, trove_classifiers t, trove_classifiers t2
-        where a.name=rc.name and a.version=rc.version and rc.trove_id=t2.id""" % pkgs
-        # tally all level-2 classifiers
-        tally += " and (t.id=t2.l2"
-        # then tally for all level n+1 classifiers of selected_classifiers
-        for c in selected_classifiers:
-            level = t.trove[c].level
-            if level==5:
-                # There are no level 6 classifiers
-                continue
-            tally += " or (t.id=t2.l%d and t2.l%d=%s)" % (level+1, level, c)
-        tally += ")) tl group by tl.id"
-        cursor.execute(tally)
-        tally = cursor.fetchall()
+        for hit in r.json()['hits']['hits']:
+            name = hit['fields']['name'][0]
+            summary = hit['fields'].get('summary', [''])[0]
+            releases.append((name, '', summary))
+
+        tally = [(f['term'], f['count']) for f in r.json()['facets']['categories']['terms'] if f['term'] != 0]
         return releases, tally
 
     def get_package_from_filename(self, filename):
