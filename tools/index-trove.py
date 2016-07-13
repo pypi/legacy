@@ -41,7 +41,7 @@ while True:
     operations = []
     for package in packages:
         operations.append(json.dumps({"index": {"_index": new_index, "_type": "release_classifiers", "_id": package['name']}}))
-        operations.append(json.dumps({"trove_classifiers": package['trove_classifiers']}))
+        operations.append(json.dumps(package)
     r = requests.post(conf.database_releases_index_url + "/_bulk", data="\n".join(operations))
 
 actions = [{"add": {"index": new_index, "alias": "trove-%s" % (conf.database_releases_index_name,)}}]
