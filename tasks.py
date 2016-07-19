@@ -17,7 +17,7 @@ def purge_redis_cache(cache_redis_url, tags):
 
 def purge_fastly_tags(domain, api_key, service_id, tags):
     session = requests.session()
-    headers = {"X-Fastly-Key": api_key, "Accept": "application/json"}
+    headers = {"Fastly-Key": api_key, "Accept": "application/json"}
 
     all_tags = set(tags)
     purges = {}
