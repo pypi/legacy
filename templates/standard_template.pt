@@ -209,7 +209,7 @@
           <div id="footer">
             <div id="credits">
               <div style="float: left; margin-right: 1em;" id="badges">
-                <tal:x tal:condition="python:'testpypi' in app.config.url">
+                <tal:x tal:condition="python:'testpypi' not in app.config.url">
                 <a href='http://ipv6-test.com/validate.php?url=referer'><img src='http://ipv6-test.com/button-ipv6-80x15.png' alt='ipv6 ready' title='ipv6 ready' border='0' /></a>
                 </tal:x>
               </div>
