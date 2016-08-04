@@ -803,7 +803,7 @@ class Store:
         ''' Fetch the complete list of packages from the database.
         '''
         cursor = self.get_cursor()
-        safe_execute(cursor, 'select name from packages order by name')
+        safe_execute(cursor, 'select name from packages')
         return Result(None, cursor.fetchall(), self._Packages)
 
     def get_packages_with_serial(self):
