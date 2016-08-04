@@ -79,7 +79,7 @@
 
     <tal:block tal:condition="data/new_user">
       <p><b>A confirmation email will be sent to the address you nominate above.</b></p>
-      <p>Please ensure you will be able to receive email from cheeseshop@python.org
+      <p>Please ensure you will be able to receive email from admin@mail.pypi.python.org
       (check any "sender confirmation" systems you might be using.)</p>
       <p>To complete the registration process, you must visit the link indicated in the
       email.</p>
