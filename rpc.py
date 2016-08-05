@@ -20,7 +20,6 @@ import redis
 import config
 
 from store import dependency
-from store import normalize_package_name
 from fncache import RedisLru
 
 root = os.path.dirname(os.path.abspath(__file__))
@@ -110,19 +109,19 @@ class RequestHandler(SimpleXMLRPCDispatcher):
 @metric
 def package_hosting_mode(store, package_name):
     """Returns the hosting mode for a given package."""
-    return store.get_package_hosting_mode(normalize_package_name(package_name))
+    return store.get_package_hosting_mode(package_name)
 
 @metric
 @cache_by_pkg
 def release_downloads(store, package_name, version):
     '''Return download count for given release.'''
-    return store.get_release_downloads(normalize_package_name(package_name), version)
+    return store.get_release_downloads(package_name, version)
 
 @metric
 @cache_by_pkg
 def package_roles(store, package_name):
     '''Return associated users and package roles.'''
-    result = store.get_package_roles(normalize_package_name(package_name))
+    result = store.get_package_roles(package_name)
     return [tuple(fields.values())for fields in result]
 
 @metric
@@ -147,19 +146,19 @@ def package_releases(store, package_name, show_hidden=False):
         hidden = None
     else:
         hidden = False
-    result = store.get_package_releases(normalize_package_name(package_name), hidden=hidden)
+    result = store.get_package_releases(package_name, hidden=hidden)
     return [row['version'] for row in result]
 
 @metric
 def release_urls(store, package_name, version):
     result = []
-    for file in store.list_files(normalize_package_name(package_name), version):
+    for file in store.list_files(package_name, version):
         info = file.as_dict()
         info['url'] = store.gen_file_url(info['python_version'],
-            normalize_package_name(package_name), info['filename'])
+            package_name, info['filename'])
         result.append(info)
     # TODO do something with release_urls when there is something to do
-    #info = store.get_package(normalize_package_name(package_name), version)
+    #info = store.get_package(package_name, version)
     #if info['download_url']:
     #    result.append({'url': info['download_url']})
     return result
@@ -169,25 +168,25 @@ package_urls = release_urls     # "deprecated"
 @metric
 @cache_by_pkg
 def release_data(store, package_name, version):
-    info = store.get_package(normalize_package_name(package_name), version)
+    info = store.get_package(package_name, version)
     if not info:
         return {}
     info = info.as_dict()
     if "description_html" in info:
         del info['description_html']
     dependencies = defaultdict(list)
-    for kind, specifier in store.get_release_dependencies(normalize_package_name(package_name), version):
+    for kind, specifier in store.get_release_dependencies(package_name, version):
         dependencies[dependency.by_val[kind]].append(specifier)
     info.update(dependencies)
-    classifiers = [r[0] for r in store.get_release_classifiers(normalize_package_name(package_name),
+    classifiers = [r[0] for r in store.get_release_classifiers(package_name,
         version)]
     info['classifiers' ] = classifiers
-    info['package_url'] = 'http://pypi.python.org/pypi/%s' % normalize_package_name(package_name)
-    info['release_url'] = 'http://pypi.python.org/pypi/%s/%s' % (normalize_package_name(package_name),
+    info['package_url'] = 'http://pypi.python.org/pypi/%s' % package_name
+    info['release_url'] = 'http://pypi.python.org/pypi/%s/%s' % (package_name,
         version)
-    info['docs_url'] = store.docs_url(normalize_package_name(package_name))
+    info['docs_url'] = store.docs_url(package_name)
     try:
-        info['downloads'] = store.download_counts(normalize_package_name(package_name))
+        info['downloads'] = store.download_counts(package_name)
     except redis.exceptions.ConnectionError as conn_fail:
         info['downloads'] = {'last_month': 0, 'last_week': 0, 'last_day': 0}
     return info
