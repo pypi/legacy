@@ -89,7 +89,7 @@ def enumerate(sequence):
 #   - Starts with letter or digit
 legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
-safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
+safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|tbz|egg|dmg|msi|whl)$', re.I)
 
 # Must begin and end with an alphanumeric, interior can also contain ._-
 safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
