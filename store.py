@@ -1021,6 +1021,11 @@ class Store:
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
 
+    def package_allows_legacy(self, name):
+        cursor = self.get_cursor()
+        safe_execute(cursor, "select allow_legacy_files from packages where name=%s", [name])
+        return cursor.fetchall()[0][0]
+
     def get_package_hosting_mode(self, name):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select hosting_mode from packages where name=%s',
