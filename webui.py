@@ -89,7 +89,10 @@ def enumerate(sequence):
 #   - Starts with letter or digit
 legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
-safe_filenames = re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I)
+safe_filenames = {
+    True: re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I),
+    False: re.compile(r".+?\.(tar\.gz|zip|whl|egg)$", re.I),
+}
 
 # Must begin and end with an alphanumeric, interior can also contain ._-
 safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
@@ -2947,14 +2950,19 @@ class WebUI:
         elif filetype not in (None, 'sdist'):
             raise FormError, 'Python version is required for binary distribution uploads'
 
+        allow_legacy_files = self.store.package_allows_legacy(name)
+
         # check for valid filenames
         if not hasattr(content, 'filename'):
             # I would say the only way this can happen is someone messing
             # with the form...
             raise FormError, 'invalid upload'
         filename = content.filename
-        if not safe_filenames.match(filename):
+        if not safe_filenames[allow_legacy_files].search(filename):
             raise FormError, 'invalid distribution file'
+
+        if not allow_legacy_files and filetype not in {"sdist", "bdist_egg", "bdist_wheel"}:
+            raise FormError, "Invalid file type"
 
         # check existing filename
         if self.store.has_file(name, version, filename):
