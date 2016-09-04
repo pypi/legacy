@@ -2156,16 +2156,21 @@ class Store:
         if not row[0]:
             raise LockedException
 
-    def set_has_docs(self, name):
+    def set_has_docs(self, name, value=True):
         cursor = self.get_cursor()
-        sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
+        if value:
+            sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
+        else:
+            sql = "UPDATE packages SET has_docs = 'f' WHERE name = %s"
         safe_execute(cursor, sql, (name,))
 
-    def log_docs(self, name, version):
+    def log_docs(self, name, version, operation=None):
+        if operation is None:
+            operation = 'docupdate'
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "docupdate", date,
-                                                self.username, self.userip)
+        self.add_journal_entry(name, version, operation, date,
+                               self.username, self.userip)
 
     def docs_url(self, name):
         '''Determine the local (pythonhosted.org) documentation URL, if any.
