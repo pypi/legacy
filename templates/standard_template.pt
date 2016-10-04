@@ -210,8 +210,8 @@
             <div id="credits">
               <div style="float: left; margin-right: 1em;" id="badges">
                 <tal:x tal:condition="python:'https://pypi.python.org/pypi' == app.config.url">
-                <a href=''><img src="https://img.shields.io/badge/ipv6-go!-green.svg" alt='ipv6 ready' title='ipv6 ready' border='0'/></a><br />
-                <a href=''><img src="https://img.shields.io/badge/http2-go!-green.svg" alt='http2 ready' title='http2 ready' border='0'/></a>
+                <img src="https://img.shields.io/badge/ipv6-go!-green.svg" alt='ipv6 ready' title='ipv6 ready' border='0'/><br />
+                <img src="https://img.shields.io/badge/http2-go!-green.svg" alt='http2 ready' title='http2 ready' border='0'/>
                 </tal:x>
               </div>
               <div style="float: right" id="donations">
