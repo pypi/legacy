@@ -345,12 +345,16 @@ def _simple_body_internal(path, urls):
                 href.startswith('http://www.python.org/pypi'):
             # Suppress URLs that point to us
             continue
+        if rel:
+            rel = ' rel="{}"'.format(cgi.escape(rel))
+        else:
+            rel = ''
         href = cgi.escape(href, quote=True)
         text = cgi.escape(text)
         data_attr = ''
         if requires_python:
             data_attr = ' data-requires-python="{}"'.format(cgi.escape(requires_python, quote=True)) 
-        html.append("""<a%s href="%s">%s</a><br/>\n""" % (data_attr, href, text))
+        html.append("""<a{} href="{}"{}>{}</a><br/>\n""".format(data_attr, href, rel, text))
     html.append("</body></html>")
     html = ''.join(html)
     return html
