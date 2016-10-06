@@ -346,7 +346,7 @@ def _simple_body_internal(path, urls):
             # Suppress URLs that point to us
             continue
         if rel:
-            rel = ' rel="{}"'.format(cgi.escape(rel))
+            rel = ' rel="{}"'.format(cgi.escape(rel, quote=True))
         else:
             rel = ''
         href = cgi.escape(href, quote=True)
