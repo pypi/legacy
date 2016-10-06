@@ -1,4 +1,5 @@
 # import defusedxml before anything else
+from __future__ import print_function
 import defusedxml
 import defusedxml.xmlrpc
 defusedxml.xmlrpc.monkey_patch()
@@ -257,14 +258,18 @@ def decode_form(form):
             d[k] = transmute(v)
     return d
 
+if os.environ.get('PYPI_LEGACY_ALLOW_NO_TLS_FOR_TESTING_PURPOSE_ONLY', 'False') == '1':
+    def must_tls(fn):
+        return fn
+else:
 
-def must_tls(fn):
-    @functools.wraps(fn)
-    def wrapped(self, *args, **kwargs):
-        if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
-            raise Forbidden("Must access using HTTPS instead of HTTP")
-        return fn(self, *args, **kwargs)
-    return wrapped
+    def must_tls(fn):
+        @functools.wraps(fn)
+        def wrapped(self, *args, **kwargs):
+            if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
+                raise Forbidden("Must access using HTTPS instead of HTTP")
+            return fn(self, *args, **kwargs)
+        return wrapped
 
 
 class MultiWriteFS(fs.multifs.MultiFS):
@@ -415,17 +420,20 @@ class WebUI:
         self.usercookie = None
         self.failed = None # error message if initialization already produced a failure
 
+        self.package_bucket = None
+        if self.config.database_aws_access_key_id and self.config.database_aws_secret_access_key:
+            self.s3conn = boto.s3.connect_to_region(
+                "us-west-2",
+                aws_access_key_id=self.config.database_aws_access_key_id,
+                aws_secret_access_key=self.config.database_aws_secret_access_key,
+            )
 
-        self.s3conn = boto.s3.connect_to_region(
-            "us-west-2",
-            aws_access_key_id=self.config.database_aws_access_key_id,
-            aws_secret_access_key=self.config.database_aws_secret_access_key,
-        )
-
-        self.package_bucket = self.s3conn.get_bucket(
-            self.config.database_files_bucket,
-            validate=False,
-        )
+            self.package_bucket = self.s3conn.get_bucket(
+                self.config.database_files_bucket,
+                validate=False,
+            )
+        else:
+            print("AWS database not fully configured. Getting the package files will be unavailable.", file=sys.stderr)
 
         if self.config.database_docs_bucket is not None:
             self.docs_fs = NoDirS3FS(
@@ -434,7 +442,10 @@ class WebUI:
                 aws_secret_key=self.config.database_aws_secret_access_key,
             )
         else:
-            self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
+            try:
+                self.docs_fs = fs.osfs.OSFS(self.config.database_docs_dir)
+            except Exception as e:
+                import pdb; pdb.set_trace()
 
         # XMLRPC request or not?
         if self.env.get('CONTENT_TYPE') != 'text/xml':

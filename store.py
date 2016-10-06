@@ -1,14 +1,14 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
+
+from __future__ import print_function
+
 import sys, os, re, time, hashlib, random, types, math, stat, errno
 import logging, string, datetime, calendar, binascii, urllib, urllib2, cgi
 import posixpath
 from collections import defaultdict
 import cPickle as pickle
-try:
-    import psycopg2
-except ImportError:
-    pass
+import psycopg2
 try:
     import sqlite3
     sqlite3_cursor = sqlite3.Cursor
@@ -2845,5 +2845,5 @@ if __name__ == '__main__':
         store.update_upload_times()
         store.commit()
     else:
-        print "UNKNOWN COMMAND", sys.argv[2]
+        print("UNKNOWN COMMAND", sys.argv[2])
     store.close()
