@@ -1,0 +1,3 @@
+requests_oauthlib
+pytest>2.9
+egenix-mx-base

@@ -2,8 +2,9 @@
 #logging.basicConfig(level=logging.DEBUG)
 
 import requests
-from requests.auth import OAuth1
+from requests_oauthlib import OAuth1
 from urlparse import parse_qs
+import pytest
 
 CONSUMER_KEY = u'sekrit'
 CONSUMER_SECRET = u'123'
@@ -69,7 +70,7 @@ def register():
         verify=False)
     print response.text
 
-
+@pytest.mark.skip(reason='This seem to be a utility function')
 def test(ACCESS_TOKEN, ACCESS_SECRET, **params):
     '''Access the test resource passing optional parameters.
 

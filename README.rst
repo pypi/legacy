@@ -223,3 +223,10 @@ Users reporting stale data being displayed? Try:
 To see what fastly thinks it knows about a page (or how it's getting to you) try:
 
   curl -I -H 'Fastly-Debug: 1'  https://pypi.python.org/pypi/setuptools
+
+Running the Tests
+=================
+
+The dependencies necessary to run the tests are in the
+``requirements-tests.txt`` file and can be installed with ``pip install -r
+requirements-test.txt``.
