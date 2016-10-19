@@ -3240,7 +3240,7 @@ class WebUI:
                 raise FormError, 'Email is invalid (ASCII only)'
             if '@' not in info['email'] or '.' not in info['email']:
                 raise FormError, 'Email is invalid'
-            domain = re.search("@[\w.]+", s)
+            domain = re.search("@[\w.]+", info['email'])
             if domain in DOMAIN_BLACKLIST:
                 raise FormError, 'Disposable email addresses not allowed'
         gpgid = info.get('gpg_keyid', '')
