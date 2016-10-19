@@ -64,6 +64,8 @@ import tasks
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
 
+from constants import DOMAIN_BLACKLIST
+
 import config
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
@@ -3238,6 +3240,9 @@ class WebUI:
                 raise FormError, 'Email is invalid (ASCII only)'
             if '@' not in info['email'] or '.' not in info['email']:
                 raise FormError, 'Email is invalid'
+            domain = info['email'].split('@')[1]
+            if domain in DOMAIN_BLACKLIST:
+                raise FormError, 'Disposable email addresses not allowed'
         gpgid = info.get('gpg_keyid', '')
         gpgid = gpgid.strip()
         if gpgid:

@@ -1,17 +1,21 @@
 Required packages
 -----------------
 
-To run the PyPI software, you need Python 2.5+ and PostgreSQL
+To run the PyPI software, you need Python 2.7+ and PostgreSQL
 
 
 Quick development setup
 -----------------------
 
-Make sure you read http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints
-and you have a working PostgreSQL DB.
+It is recommended to read
+http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints though
+this document is quite out of date, but contain some useful informations.
+
+Make sure you have a working PostgreSQL Database Available, by getting a local
+development install of _Warehouse_. See the Database Setup Below.
 
 Make sure your config.ini is up-to-date, initially copying from
-config.ini.template. Change CONFIG_FILE at the begining of pypi.wsgi,
+config.ini.template. Change CONFIG_FILE at the beginning of ``pypi.wsgi``,
 so it looks like this::
 
     CONFIG_FILE = 'config.ini'
@@ -40,6 +44,63 @@ Postgres
 
     These instruction are in progress.
 
+
+Connect Legacy-PYPI to warehouse
+````````````````````````````````
+
+It is highly recommended, and simpler to connect legacy-pypi to an already
+working `warehouse <https://github.com/pypa/warehouse>`_ setup.
+
+Once you have a working warehouse setup, it should expose the PostgreSQL
+database on port 5433, you can check that in the ``docker-compose.yml`` file
+which should contain a ``ports`` section like so::
+
+  db:
+    image: postgres:9.5
+    ports:
+        - "5433:5433"
+
+
+Modify the pypi-legacy ``config.ini`` ``[database]`` section to connect to this
+database, You can find the required information as follows. In the
+``docker-compose.yml`` file find the line the set the DATABASE_URL::
+
+    DATABASE_URL: postgresql://postgres@db/warehouse
+
+It is structure in the following way: ``DATABASE_URL: postgresql://<user_name>@<host>/<database_name>``
+
+Use the ``docker-machine env`` to find the Docker IP, for example::
+
+
+    $ docker-machine env
+    export DOCKER_TLS_VERIFY="1"
+    export DOCKER_HOST="tcp://192.168.99.100:2376"
+    export DOCKER_CERT_PATH="$HOME/.docker/machine/machines/default"
+    export DOCKER_MACHINE_NAME="default"
+
+Here the docker-ip is ``192.168.99.100``.
+
+The final ``config.ini`` will be like::
+
+    [database]
+
+    ;Postgres Database using
+    ;warehouse's docker-compose
+    host = 192.168.99.100
+    port = 5433
+    name = warehouse
+    user = postgres
+
+Start warehouse as usual before starting PyPI-legacy, then start pypi-legacy
+that should now connect to the local warehouse database.
+
+
+Run a local Postgres Database
+`````````````````````````````
+
+It is recommended not to use a local PostgreSQL database as all the Database
+migration and maintenance tasks are performed by warehouse.
+
 To fill a database, run ``pkgbase_schema.sql`` on an empty Postgres database.
 Then run ``tools/demodata`` to populate the database with dummy data.
 
@@ -51,13 +112,13 @@ root of this repository, and issue the following::
   $ chmod 700 tmp
   $ initdb -D tmp
 
-The `initdb` step will likely tell you how to start a database server; likely
+The ``initdb`` step will likely tell you how to start a database server; likely
 something along the line of::
 
   $ pg_ctl -D tmp -l logfile start
 
 You want to start that in a separate terminal, in the folder where you
-created the previous `tmp` directory, and run the above command.
+created the previous ``tmp`` directory, and run the above command.
 
 
 Back to our initial terminal use the following to list all available Postgres
@@ -77,7 +138,7 @@ above, ``postgres``, and the _user_ name. In our case ``guido_vr``, they will
 be of use to configure the database in the ``config.ini`` file later.
 
 We now need to populate the database with an example data. For example,
-[``example.sql``](https://github.com/pypa/warehouse/tree/master/dev) that can
+`example.sql <https://github.com/pypa/warehouse/tree/master/dev>`_ that can
 be found on the warehouse repository. After having it downloaded and unpacked,
 use the following::
 
@@ -93,13 +154,14 @@ instance we just started::
 
   ;Postgres Database
   host = localhost
-  port = 5432
+  port = 5433
   name = postgres
   user = guido_vr
 
 
-The default _host_ is likely ``localhost``, and the _port_ number ``5432`` as
-well. Adapt ``name`` and ``user`` with the value noted before.
+The default _host_ is likely ``localhost``, and the _port_ number ``5433`` as well.
+adapt ``name`` and ``user`` with the value noted before.
+
 
 Sqlite
 ~~~~~~
