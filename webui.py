@@ -862,7 +862,7 @@ class WebUI:
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
-        file_upload show_md5 doc_upload claim openid openid_return dropid
+        file_upload show_md5 doc_upload doc_destroy claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
         exception login_form purge'''.split():

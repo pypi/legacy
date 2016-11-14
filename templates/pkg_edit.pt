@@ -99,7 +99,7 @@ Only static pages are supported. The zip file must have a top-level
 <p>If you would like to <b>DESTROY</b> any existing documentation hosted at
 <a tal:attributes="href string:http://pythonhosted.org/${data/name}"
 tal:content="string:http://pythonhosted.org/${data/name}"></a>
-Use this button. There is <b>no undo</b>.
+Use this button, There is <b>no undo</b>.
 </p>
 <form tal:attributes="action app/url_path" method="POST"
     enctype="multipart/form-data">
