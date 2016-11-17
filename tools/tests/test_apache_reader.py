@@ -100,7 +100,7 @@ class TestApacheReader(unittest.TestCase):
         self.assertEquals(logs[45]['useragent'], 
                           'Python-urllib/2.5 setuptools/0.6c7')
 
-    @pytest.mark.skip(reason="No clue how this one is supposed to work")
+    @pytest.mark.xfail(reason="No clue how this one is supposed to work")
     def test_apache_count(self):
 
         # creating stats so they can be used by 
