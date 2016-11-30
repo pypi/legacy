@@ -333,6 +333,34 @@ def _valid_platform_tag(platform_tag):
         return True
     return False
 
+def _simple_body_internal(path, urls):
+    """
+    Inner method for testing sql injections of requires_python
+    """
+    html = []
+    html.append("""<!DOCTYPE html><html><head><title>Links for %s</title></head>"""
+                % cgi.escape(path))
+    html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
+    for href, rel, text, requires_python in urls:
+        if href.startswith('http://cheeseshop.python.org/pypi') or \
+                href.startswith('http://pypi.python.org/pypi') or \
+                href.startswith('http://www.python.org/pypi'):
+            # Suppress URLs that point to us
+            continue
+        if rel:
+            rel = ' rel="{}"'.format(cgi.escape(rel, quote=True))
+        else:
+            rel = ''
+        href = cgi.escape(href, quote=True)
+        text = cgi.escape(text)
+        data_attr = ''
+        if requires_python:
+            data_attr = ' data-requires-python="{}"'.format(cgi.escape(requires_python, quote=True)) 
+        html.append("""<a{} href="{}"{}>{}</a><br/>\n""".format(data_attr, href, rel, text))
+    html.append("</body></html>")
+    html = ''.join(html)
+    return html
+
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -1040,27 +1068,8 @@ class WebUI:
         if urls is None:
             raise NotFound, path + " does not have any releases"
 
-        html = []
-        html.append("""<html><head><title>Links for %s</title><meta name="api-version" value="2" /></head>"""
-                    % cgi.escape(path))
-        html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
-        for href, rel, text in urls:
-            if href.startswith('http://cheeseshop.python.org/pypi') or \
-                    href.startswith('http://pypi.python.org/pypi') or \
-                    href.startswith('http://www.python.org/pypi'):
-                # Suppress URLs that point to us
-                continue
-            if rel:
-                rel = ' rel="%s"' % rel
-            else:
-                rel = ''
-            href = cgi.escape(href, quote=True)
-            text = cgi.escape(text)
-            html.append("""<a href="%s"%s>%s</a><br/>\n""" % (href, rel, text))
-        html.append("</body></html>")
-        html = ''.join(html)
-        return html
-
+        return _simple_body_internal(path, urls)
+            
     def get_accept_encoding(self, supported):
         accept_encoding = self.env.get('HTTP_ACCEPT_ENCODING')
         if not accept_encoding:
