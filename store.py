@@ -1559,7 +1559,7 @@ class Store:
 
             if password:
                 # We've been given a new password for this user
-                password = self.config.passlib.encrypt(password)
+                password = self.config.passlib.hash(password)
                 safe_execute(cursor,
                     """UPDATE accounts_user
                         SET password = %s
@@ -1626,7 +1626,7 @@ class Store:
                         "Email address already belongs to a different user")
 
             # Hash our password
-            hashed_pw = self.config.passlib.encrypt(password)
+            hashed_pw = self.config.passlib.hash(password)
 
             # Create a new User
             safe_execute(cursor,
@@ -2561,7 +2561,7 @@ class Store:
 
     def setpasswd(self, username, password, hashed=False):
         if not hashed:
-            password = self.config.passlib.encrypt(password)
+            password = self.config.passlib.hash(password)
 
         safe_execute(self.get_cursor(), '''update accounts_user set password=%s
             where username=%s''', (password, username))
