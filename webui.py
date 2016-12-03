@@ -333,6 +333,34 @@ def _valid_platform_tag(platform_tag):
         return True
     return False
 
+def _simple_body_internal(path, urls):
+    """
+    Inner method for testing sql injections of requires_python
+    """
+    html = []
+    html.append("""<!DOCTYPE html><html><head><title>Links for %s</title></head>"""
+                % cgi.escape(path))
+    html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
+    for href, rel, text, requires_python in urls:
+        if href.startswith('http://cheeseshop.python.org/pypi') or \
+                href.startswith('http://pypi.python.org/pypi') or \
+                href.startswith('http://www.python.org/pypi'):
+            # Suppress URLs that point to us
+            continue
+        if rel:
+            rel = ' rel="{}"'.format(cgi.escape(rel, quote=True))
+        else:
+            rel = ''
+        href = cgi.escape(href, quote=True)
+        text = cgi.escape(text)
+        data_attr = ''
+        if requires_python:
+            data_attr = ' data-requires-python="{}"'.format(cgi.escape(requires_python, quote=True)) 
+        html.append("""<a{} href="{}"{}>{}</a><br/>\n""".format(data_attr, href, rel, text))
+    html.append("</body></html>")
+    html = ''.join(html)
+    return html
+
 
 class WebUI:
     ''' Handle a request as defined by the "env" parameter. "handler" gives
@@ -862,7 +890,7 @@ class WebUI:
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
-        file_upload show_md5 doc_upload claim openid openid_return dropid
+        file_upload show_md5 doc_upload doc_destroy claim openid openid_return dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
         exception login_form purge'''.split():
@@ -1040,27 +1068,8 @@ class WebUI:
         if urls is None:
             raise NotFound, path + " does not have any releases"
 
-        html = []
-        html.append("""<html><head><title>Links for %s</title><meta name="api-version" value="2" /></head>"""
-                    % cgi.escape(path))
-        html.append("<body><h1>Links for %s</h1>" % cgi.escape(path))
-        for href, rel, text in urls:
-            if href.startswith('http://cheeseshop.python.org/pypi') or \
-                    href.startswith('http://pypi.python.org/pypi') or \
-                    href.startswith('http://www.python.org/pypi'):
-                # Suppress URLs that point to us
-                continue
-            if rel:
-                rel = ' rel="%s"' % rel
-            else:
-                rel = ''
-            href = cgi.escape(href, quote=True)
-            text = cgi.escape(text)
-            html.append("""<a href="%s"%s>%s</a><br/>\n""" % (href, rel, text))
-        html.append("</body></html>")
-        html = ''.join(html)
-        return html
-
+        return _simple_body_internal(path, urls)
+            
     def get_accept_encoding(self, supported):
         accept_encoding = self.env.get('HTTP_ACCEPT_ENCODING')
         if not accept_encoding:
@@ -3124,7 +3133,7 @@ class WebUI:
         try:
             self.store.lock_docs(name)
         except store.LockedException:
-            raise FormError, "Error: Another doc upload is in progress."
+            raise FormError, "Error: Another doc modification is in progress."
 
         # Assume the file is valid; remove any previous data
         if self.docs_fs.exists(name):
@@ -3150,10 +3159,55 @@ class WebUI:
         except Exception, e:
             raise FormError, "Error unpacking zipfile:" + str(e)
 
-        self.store.set_has_docs(name)
-        self.store.log_docs(name, version)
+        self.store.set_has_docs(name, value=True)
+        self.store.log_docs(name, version, 'docupdate')
         self.store.changed()
         raise Redirect("https://pythonhosted.org/%s/" % name)
+
+    #
+    # Documentation Destruction
+    #
+    @must_tls
+    def doc_destroy(self):
+        # make sure the user is identified
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        # only allow via WebUI
+        self.csrf_check()
+
+        # figure the package name and version
+        name = version = None
+        if self.form.has_key('name'):
+            name = self.form['name']
+        if not name:
+            raise FormError, 'No package name given'
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        try:
+            self.store.lock_docs(name)
+        except store.LockedException:
+            raise FormError, "Error: Another doc modification is in progress."
+
+        # Assume the file is valid; remove any previous data
+        if self.docs_fs.exists(name):
+            for dirname, files in self.docs_fs.walk(name, search="depth"):
+                for filename in files:
+                    self.docs_fs.remove(os.path.join(dirname, filename))
+                self.docs_fs.removedir(dirname)
+
+        self.store.set_has_docs(name, value=False)
+        self.store.log_docs(name, version, 'docdestroy')
+        self.store.changed()
+        self.write_template('message.pt', title='Documentation Destroyed',
+                            message='Documentation Destroyed for %s.' % (name,),)
 
     #
     # Reverse download for Google AppEngine

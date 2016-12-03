@@ -718,15 +718,18 @@ class Store:
         file_urls = []
 
         # uploaded files
-        safe_execute(cursor, '''select filename, python_version, md5_digest
-            from release_files where name=%s''', (name,))
-        for fname, pyversion, md5 in cursor.fetchall():
+        safe_execute(cursor,
+        '''
+        SELECT filename, requires_python, md5_digest
+        FROM release_files
+        WHERE release_files.name=%s
+        ''', (name,))
+        for fname, requires_python, md5 in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
-            url = self.gen_file_url(pyversion, name, fname, relative) + \
+            url = self.gen_file_url('<not used arg>', name, fname, relative) + \
                 "#md5=" + md5
-            file_urls.append((url, "internal", fname))
-
+            file_urls.append((url, "internal", fname, requires_python))
         return sorted(file_urls)
 
     def get_uploaded_file_urls(self, name):
@@ -1556,7 +1559,7 @@ class Store:
 
             if password:
                 # We've been given a new password for this user
-                password = self.config.passlib.encrypt(password)
+                password = self.config.passlib.hash(password)
                 safe_execute(cursor,
                     """UPDATE accounts_user
                         SET password = %s
@@ -1623,7 +1626,7 @@ class Store:
                         "Email address already belongs to a different user")
 
             # Hash our password
-            hashed_pw = self.config.passlib.encrypt(password)
+            hashed_pw = self.config.passlib.hash(password)
 
             # Create a new User
             safe_execute(cursor,
@@ -2156,16 +2159,21 @@ class Store:
         if not row[0]:
             raise LockedException
 
-    def set_has_docs(self, name):
+    def set_has_docs(self, name, value=True):
         cursor = self.get_cursor()
-        sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
+        if value:
+            sql = "UPDATE packages SET has_docs = 't' WHERE name = %s"
+        else:
+            sql = "UPDATE packages SET has_docs = 'f' WHERE name = %s"
         safe_execute(cursor, sql, (name,))
 
-    def log_docs(self, name, version):
+    def log_docs(self, name, version, operation=None):
+        if operation is None:
+            operation = 'docupdate'
         cursor = self.get_cursor()
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "docupdate", date,
-                                                self.username, self.userip)
+        self.add_journal_entry(name, version, operation, date,
+                               self.username, self.userip)
 
     def docs_url(self, name):
         '''Determine the local (pythonhosted.org) documentation URL, if any.
@@ -2553,7 +2561,7 @@ class Store:
 
     def setpasswd(self, username, password, hashed=False):
         if not hashed:
-            password = self.config.passlib.encrypt(password)
+            password = self.config.passlib.hash(password)
 
         safe_execute(self.get_cursor(), '''update accounts_user set password=%s
             where username=%s''', (password, username))

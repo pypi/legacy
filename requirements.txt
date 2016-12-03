@@ -4,9 +4,10 @@
 #
 #    pip-compile requirements.in
 #
+argon2-cffi==16.3.0
 arrow==0.7.0              # via times
 authomatic==0.1.0.post1
-bcrypt==2.0.0
+bcrypt==3.1.1
 bleach==1.4.2
 boto==2.40.0
 cffi==1.6.0               # via bcrypt, cryptography
@@ -24,7 +25,7 @@ ipaddress==1.0.16         # via cryptography
 itsdangerous==0.24
 ndg-httpsclient==0.4.0    # via requests
 packaging==16.7
-passlib==1.6.5
+passlib==1.7
 perfmetrics==2.0
 psycopg2==2.6.1
 pyasn1==0.1.9             # via cryptography, requests

@@ -22,7 +22,7 @@ class bcrypt_sha1(uh.StaticHandler):
         secret = hashlib.sha1(secret).hexdigest()
 
         # Hash it with bcrypt
-        return passlib_bcrypt.encrypt(secret)
+        return passlib_bcrypt.hash(secret)
 
     def to_string(self):
         assert self.checksum is not None

@@ -122,6 +122,7 @@ class Config:
                 # Unless we've manually specified a list of deprecated
                 #   algorithms assume we will deprecate all but the default.
                 deprecated=["auto"],
+                truncate_error=True,
             )
 
         # Configure a passlib context from the config file
