@@ -79,7 +79,17 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
-
+EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91">
+ <channel>
+  <title>PyPI Recent Updates</title>
+  <link>https://pypi.python.org/pypi</link>
+  <description>Recent updates to the Python Package Index</description>
+  <language>en</language>
+ </channel>
+</rss>
+"""
 
 
 # Requires:
@@ -1266,12 +1276,15 @@ class WebUI:
         if self.cache_redis is None:
             content = EMPTY_RSS
         else:
-            value = self.cache_redis.get('rss~main')
-            if value:
-                content = value
-            else:
-                tasks.rss_regen()
-                content = self.cache_redis.get('rss~main')
+            try:
+                value = self.cache_redis.get('rss~main')
+                if value:
+                    content = value
+                else:
+                    tasks.rss_regen()
+                    content = self.cache_redis.get('rss~main')
+            except redis.ConnectionError:
+                content = EMPTY_RSS
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
@@ -1287,12 +1300,15 @@ class WebUI:
         if self.cache_redis is None:
             content = EMPTY_RSS
         else:
-            value = self.cache_redis.get('rss~pkgs')
-            if value:
-                content = value
-            else:
-                tasks.rss_regen()
-                content = self.cache_redis.get('rss~pkgs')
+            try:
+                value = self.cache_redis.get('rss~pkgs')
+                if value:
+                    content = value
+                else:
+                    tasks.rss_regen()
+                    content = self.cache_redis.get('rss~pkgs')
+            except redis.ConnectionError:
+                content = EMPTY_RSS
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
