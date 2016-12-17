@@ -135,6 +135,8 @@ class OpenIDError(Exception):
     pass
 class OAuthError(Exception):
     pass
+class PkgInfoError(Exception):
+    pass
 class BlockedIP(Exception):
     pass
 class MultipleReleases(Exception):
@@ -559,6 +561,9 @@ class WebUI:
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
+            except PkgInfoError, message:
+                message = str(message)
+                self.fail(message, code=400, heading='Error processing PKG-INFO data')
             except OpenIDError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing OpenID request')
@@ -2332,7 +2337,7 @@ class WebUI:
             try:
                 pkginfo = pkginfo.decode('utf8')
             except UnicodeDecodeError:
-                raise FormError, \
+                raise PkgInfoError, \
                     "Your PKG-INFO file must be either ASCII or UTF-8. " \
                     "If this is inconvenient, use 'python setup.py register'."
         mess = email.message_from_file(cStringIO.StringIO(pkginfo))
@@ -2381,7 +2386,7 @@ class WebUI:
         try:
             self.validate_metadata(data)
         except ValueError, message:
-            raise FormError, message
+            raise PkgInfoError, message
 
         name = data['name']
         version = data['version']
