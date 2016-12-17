@@ -392,27 +392,33 @@ class WebUI:
         self.config = handler.config
         self.wfile = handler.wfile
         self.sentry_client = None
+
+        self.redis_kwargs = {
+            'socket_connect_timeout': 0.1,
+            'socket_timeout': 0.05,
+        }
+
         if self.config.sentry_dsn:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
         if self.config.count_redis_url:
-            self.count_redis = redis.Redis.from_url(self.config.count_redis_url)
+            self.count_redis = redis.Redis.from_url(self.config.count_redis_url, **self.redis_kwargs)
         else:
             self.count_redis = None
         if self.config.queue_redis_url:
-            self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url)
+            self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url, **self.redis_kwargs)
             self.queue = rq.Queue(connection=self.queue_redis)
         else:
             self.queue = None
 
         if self.config.cache_redis_url:
-            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
+            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url, **self.redis_kwargs)
         else:
             self.cache_redis = None
 
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
         if self.config.block_redis_url:
-            self.block_redis = redis.Redis.from_url(self.config.block_redis_url)
+            self.block_redis = redis.Redis.from_url(self.config.block_redis_url, **self.redis_kwargs)
         else:
             self.block_redis = None
 
