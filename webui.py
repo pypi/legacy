@@ -994,36 +994,48 @@ class WebUI:
 
     def _failed_login_ip(self):
         if self.block_redis:
-            if not self.block_redis.exists(self.remote_addr):
-                self.block_redis.set(self.remote_addr, 1)
-                self.block_redis.expire(self.remote_addr,
-                                        int(self.config.blocked_timeout))
-            else:
-                self.block_redis.incr(self.remote_addr)
+            try:
+                if not self.block_redis.exists(self.remote_addr):
+                    self.block_redis.set(self.remote_addr, 1)
+                    self.block_redis.expire(self.remote_addr,
+                                            int(self.config.blocked_timeout))
+                else:
+                    self.block_redis.incr(self.remote_addr)
+            except redis.ConnectionError:
+                pass
 
     def _failed_login_user(self, username):
         if self.block_redis:
-            if not self.block_redis.exists(username):
-                self.block_redis.set(username, 1)
-                self.block_redis.expire(username,
-                                        int(self.config.blocked_timeout))
-            else:
-                self.block_redis.incr(username)
+            try:
+                if not self.block_redis.exists(username):
+                    self.block_redis.set(username, 1)
+                    self.block_redis.expire(username,
+                                            int(self.config.blocked_timeout))
+                else:
+                    self.block_redis.incr(username)
+            except redis.ConnectionError:
+                pass
 
     def _check_blocked_ip(self):
         if self.block_redis:
-            if (self.block_redis.exists(self.remote_addr) and
-                    int(self.block_redis.get(self.remote_addr)) >
-                    int(self.config.blocked_attempts_ip)):
-                return True
+            try:
+                if (self.block_redis.exists(self.remote_addr) and
+                        int(self.block_redis.get(self.remote_addr)) >
+                        int(self.config.blocked_attempts_ip)):
+                    return True
+            except redis.ConnectionError:
+                return False
         return False
 
     def _check_blocked_user(self, username):
         if self.block_redis:
-            if (self.block_redis.exists(username) and
-                    int(self.block_redis.get(username)) >
-                    int(self.config.blocked_attempts_user)):
-                return True
+            try:
+                if (self.block_redis.exists(username) and
+                        int(self.block_redis.get(username)) >
+                        int(self.config.blocked_attempts_user)):
+                    return True
+            except redis.ConnectionError:
+                return False
         return False
 
     def exception(self):
