@@ -79,7 +79,17 @@ esq = lambda x: cgi.escape(x, True)
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
-
+EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91">
+ <channel>
+  <title>PyPI Recent Updates</title>
+  <link>https://pypi.python.org/pypi</link>
+  <description>Recent updates to the Python Package Index</description>
+  <language>en</language>
+ </channel>
+</rss>
+"""
 
 
 # Requires:
@@ -384,27 +394,33 @@ class WebUI:
         self.config = handler.config
         self.wfile = handler.wfile
         self.sentry_client = None
+
+        self.redis_kwargs = {
+            'socket_connect_timeout': 0.1,
+            'socket_timeout': 0.05,
+        }
+
         if self.config.sentry_dsn:
             self.sentry_client = raven.Client(self.config.sentry_dsn)
         if self.config.count_redis_url:
-            self.count_redis = redis.Redis.from_url(self.config.count_redis_url)
+            self.count_redis = redis.Redis.from_url(self.config.count_redis_url, **self.redis_kwargs)
         else:
             self.count_redis = None
         if self.config.queue_redis_url:
-            self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url)
+            self.queue_redis = redis.Redis.from_url(self.config.queue_redis_url, **self.redis_kwargs)
             self.queue = rq.Queue(connection=self.queue_redis)
         else:
             self.queue = None
 
         if self.config.cache_redis_url:
-            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url)
+            self.cache_redis = redis.StrictRedis.from_url(self.config.cache_redis_url, **self.redis_kwargs)
         else:
             self.cache_redis = None
 
         # block redis is used to store blocked users, IPs, etc to prevent brute
         # force attacks
         if self.config.block_redis_url:
-            self.block_redis = redis.Redis.from_url(self.config.block_redis_url)
+            self.block_redis = redis.Redis.from_url(self.config.block_redis_url, **self.redis_kwargs)
         else:
             self.block_redis = None
 
@@ -999,36 +1015,48 @@ class WebUI:
 
     def _failed_login_ip(self):
         if self.block_redis:
-            if not self.block_redis.exists(self.remote_addr):
-                self.block_redis.set(self.remote_addr, 1)
-                self.block_redis.expire(self.remote_addr,
-                                        int(self.config.blocked_timeout))
-            else:
-                self.block_redis.incr(self.remote_addr)
+            try:
+                if not self.block_redis.exists(self.remote_addr):
+                    self.block_redis.set(self.remote_addr, 1)
+                    self.block_redis.expire(self.remote_addr,
+                                            int(self.config.blocked_timeout))
+                else:
+                    self.block_redis.incr(self.remote_addr)
+            except redis.ConnectionError:
+                pass
 
     def _failed_login_user(self, username):
         if self.block_redis:
-            if not self.block_redis.exists(username):
-                self.block_redis.set(username, 1)
-                self.block_redis.expire(username,
-                                        int(self.config.blocked_timeout))
-            else:
-                self.block_redis.incr(username)
+            try:
+                if not self.block_redis.exists(username):
+                    self.block_redis.set(username, 1)
+                    self.block_redis.expire(username,
+                                            int(self.config.blocked_timeout))
+                else:
+                    self.block_redis.incr(username)
+            except redis.ConnectionError:
+                pass
 
     def _check_blocked_ip(self):
         if self.block_redis:
-            if (self.block_redis.exists(self.remote_addr) and
-                    int(self.block_redis.get(self.remote_addr)) >
-                    int(self.config.blocked_attempts_ip)):
-                return True
+            try:
+                if (self.block_redis.exists(self.remote_addr) and
+                        int(self.block_redis.get(self.remote_addr)) >
+                        int(self.config.blocked_attempts_ip)):
+                    return True
+            except redis.ConnectionError:
+                return False
         return False
 
     def _check_blocked_user(self, username):
         if self.block_redis:
-            if (self.block_redis.exists(username) and
-                    int(self.block_redis.get(username)) >
-                    int(self.config.blocked_attempts_user)):
-                return True
+            try:
+                if (self.block_redis.exists(username) and
+                        int(self.block_redis.get(username)) >
+                        int(self.config.blocked_attempts_user)):
+                    return True
+            except redis.ConnectionError:
+                return False
         return False
 
     def exception(self):
@@ -1259,12 +1287,15 @@ class WebUI:
         if self.cache_redis is None:
             content = EMPTY_RSS
         else:
-            value = self.cache_redis.get('rss~main')
-            if value:
-                content = value
-            else:
-                tasks.rss_regen()
-                content = self.cache_redis.get('rss~main')
+            try:
+                value = self.cache_redis.get('rss~main')
+                if value:
+                    content = value
+                else:
+                    tasks.rss_regen()
+                    content = self.cache_redis.get('rss~main')
+            except redis.ConnectionError:
+                content = EMPTY_RSS
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
@@ -1280,12 +1311,15 @@ class WebUI:
         if self.cache_redis is None:
             content = EMPTY_RSS
         else:
-            value = self.cache_redis.get('rss~pkgs')
-            if value:
-                content = value
-            else:
-                tasks.rss_regen()
-                content = self.cache_redis.get('rss~pkgs')
+            try:
+                value = self.cache_redis.get('rss~pkgs')
+                if value:
+                    content = value
+                else:
+                    tasks.rss_regen()
+                    content = self.cache_redis.get('rss~pkgs')
+            except redis.ConnectionError:
+                content = EMPTY_RSS
 
         # TODO: throw in a last-modified header too?
         self.handler.send_response(200, 'OK')
