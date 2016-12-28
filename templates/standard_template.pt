@@ -216,14 +216,14 @@
               </div>
               <div style="float: right" id="donations">
                 <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
-                <a href="https://www.fastly.com/" title="Real-time CDN services provided by Fastly">Real-time CDN by Fastly</a> / 
+                <a href="https://www.fastly.com/" title="Real-time CDN services provided by Fastly">Real-time CDN by Fastly</a> /
                 <a href="http://developer.rackspace.com/" title="Server hosting by Rackspace Open Source support">Hosting by Rackspace</a><br />
                 <a href="https://aws.amazon.com/s3/" title="Object storage provided by Amazon S3">Object storage by Amazon S3</a> /
                 <a href="http://www.timparkin.co.uk/" title="Design by Tim Parkin, Yorkshire man, photographer and developer">Design by Tim Parkin</a>
               </div>
             </div>
             Copyright © 1990-<span tal:replace="python:modules['time'].strftime('%Y')"></span>, <a href="http://www.python.org/psf">Python Software Foundation</a><br />
-            <a href="http://www.python.org/about/legal">Legal Statements</a>
+            <a href="https://pypi.org/policy/terms-of-use/">Terms of Use</a>
           </div>
         </div>
       </div>
