@@ -51,6 +51,7 @@ href="https://packaging.python.org/en/latest/distributing.html#uploading-your-pr
     <option value="3.3">3.3</option>
     <option value="3.4">3.4</option>
     <option value="3.5">3.5</option>
+    <option value="3.6">3.6</option>
    </select> (not needed for source distributions)
   </td>
  </tr>
