@@ -145,6 +145,11 @@ class Config:
         self.blocked_attempts_user = c.get("blocking", "blocked_attempts_user")
         self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
 
+        if c.has_option("xmlrpc", "request_log_file"):
+            self.xmlrpc_request_log_file = c.get("xmlrpc", "request_log_file")
+        else:
+            self.xmlrpc_request_log_file = None
+
         # Get Authomatic Secret
         self.authomatic_secure = c.get("authomatic", "secure")
         self.authomatic_secret = c.get("authomatic", "secret")

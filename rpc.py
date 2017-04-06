@@ -6,6 +6,7 @@ import datetime
 import logging
 import re
 import time
+import json
 from cStringIO import StringIO
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 from collections import defaultdict
@@ -36,6 +37,22 @@ cache_by_pkg = package_tag_lru.decorator
 
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
+
+
+def log_xmlrpc_request(remote_addr, data):
+    if conf.xmlrpc_request_log_file:
+        try:
+            with open(conf.xmlrpc_request_log_file, 'a') as f:
+                params, method = xmlrpclib.loads(data)
+                record = json.dumps({
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'remote_addr': remote_addr,
+                    'method': method,
+                    'params': params,
+                })
+                f.write(record + '\n')
+        except Exception:
+            pass
 
 
 class RequestHandler(SimpleXMLRPCDispatcher):
@@ -87,6 +104,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
                 allow_none=self.allow_none
             )
         else:
+            log_xmlrpc_request(webui_obj.remote_addr, data)
             # errors here are handled by _marshaled_dispatch
             response = self._marshaled_dispatch(data)
             # remove non-printable ASCII control codes from the response

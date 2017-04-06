@@ -124,6 +124,10 @@ blocked_timeout = 600  ; in seconds
 blocked_attempts_ip = 10
 blocked_attempts_user = 1000
 
+; XMLRPC Settings
+[xmlrpc]
+request_log_file = /tmp/rpclog
+
 ; Authomatic
 [authomatic]
 secure = true
