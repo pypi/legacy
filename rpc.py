@@ -43,7 +43,7 @@ else:
 
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
-
+statsd_reporter = statsd_client()
 
 def log_xmlrpc_request(remote_addr, data):
     if conf.xmlrpc_request_log_file:
@@ -81,21 +81,26 @@ def throttle_concurrent(remote_addr):
     throttled = False
     try:
         if xmlrpc_redis:
+            statsd_reporter.incr('rpc-rl.invoke')
             pipeline = xmlrpc_redis.pipeline()
             pipeline.incr(remote_addr)
             pipeline.expire(remote_addr, 60)
             current = pipeline.execute()[0]
             if current >= conf.xmlrpc_concurrent_requests:
+                statsd_reporter.incr('rpc-rl.over')
                 log_xmlrpc_throttle(remote_addr, conf.xmlrpc_enforce)
                 if conf.xmlrpc_enforce:
+                    statsd_reporter.incr('rpc-rl.enforce')
                     throttled = True
     except Exception:
+        statsd_reporter.incr('rpc-rl.context.before.error')
         pass
     yield throttled
     try:
         if xmlrpc_redis:
             xmlrpc_redis.decr(remote_addr)
     except Exception:
+        statsd_reporter.incr('rpc-rl.context.after.error')
         pass
 
 class RequestHandler(SimpleXMLRPCDispatcher):
