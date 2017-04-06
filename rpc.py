@@ -150,6 +150,7 @@ def package_releases(store, package_name, show_hidden=False):
     return [row['version'] for row in result]
 
 @metric
+@cache_by_pkg
 def release_urls(store, package_name, version):
     result = []
     for file in store.list_files(package_name, version):
