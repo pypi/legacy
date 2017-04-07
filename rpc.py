@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from perfmetrics import metric
 from perfmetrics import metricmethod
 from perfmetrics import set_statsd_client
+from perfmetrics import statsd_client
 
 import redis
 
