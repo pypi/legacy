@@ -11,6 +11,7 @@ queue_redis_url = redis://localhost:6379/0
 count_redis_url = redis://localhost:6379/1
 cache_redis_url = redis://localhost:6379/2
 block_redis_url = redis://localhost:6379/3
+xmlrpc_redis_url = redis://localhost:6379/4
 
 ; ElasticSearch
 ; releases_index_url = http://127.0.0.1:9200
@@ -123,6 +124,12 @@ service_id =
 blocked_timeout = 600  ; in seconds
 blocked_attempts_ip = 10
 blocked_attempts_user = 1000
+
+; XMLRPC Settings
+[xmlrpc]
+max_concurrent = 10
+enforce = false
+request_log_file = /tmp/rpclog
 
 ; Authomatic
 [authomatic]

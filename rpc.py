@@ -6,13 +6,16 @@ import datetime
 import logging
 import re
 import time
+import json
 from cStringIO import StringIO
 from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 from collections import defaultdict
+from contextlib import contextmanager
 
 from perfmetrics import metric
 from perfmetrics import metricmethod
 from perfmetrics import set_statsd_client
+from perfmetrics import statsd_client
 
 import redis
 
@@ -34,9 +37,72 @@ else:
 package_tag_lru = RedisLru(cache_redis, expires=86400, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
 cache_by_pkg = package_tag_lru.decorator
 
+if conf.xmlrpc_redis_url is None:
+    xmlrpc_redis = None
+else:
+    xmlrpc_redis = redis.StrictRedis.from_url(conf.xmlrpc_redis_url)
+
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
+statsd_reporter = statsd_client()
 
+def log_xmlrpc_request(remote_addr, data):
+    if conf.xmlrpc_request_log_file:
+        try:
+            with open(conf.xmlrpc_request_log_file, 'a') as f:
+                params, method = xmlrpclib.loads(data)
+                record = json.dumps({
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'remote_addr': remote_addr,
+                    'method': method,
+                    'params': params,
+                })
+                f.write(record + '\n')
+        except Exception:
+            pass
+
+
+def log_xmlrpc_throttle(remote_addr, enforced):
+    if conf.xmlrpc_request_log_file:
+        try:
+            with open(conf.xmlrpc_request_log_file, 'a') as f:
+                record = json.dumps({
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'remote_addr': remote_addr,
+                    'method': 'throttled',
+                    'throttle_enforced': enforced,
+                })
+                f.write(record + '\n')
+        except Exception:
+            pass
+
+
+@contextmanager
+def throttle_concurrent(remote_addr):
+    throttled = False
+    try:
+        if xmlrpc_redis:
+            statsd_reporter.incr('rpc-rl.invoke')
+            pipeline = xmlrpc_redis.pipeline()
+            pipeline.incr(remote_addr)
+            pipeline.expire(remote_addr, 60)
+            current = pipeline.execute()[0]
+            if current >= conf.xmlrpc_concurrent_requests:
+                statsd_reporter.incr('rpc-rl.over')
+                log_xmlrpc_throttle(remote_addr, conf.xmlrpc_enforce)
+                if conf.xmlrpc_enforce:
+                    statsd_reporter.incr('rpc-rl.enforce')
+                    throttled = True
+    except Exception:
+        statsd_reporter.incr('rpc-rl.context.before.error')
+        pass
+    yield throttled
+    try:
+        if xmlrpc_redis:
+            xmlrpc_redis.decr(remote_addr)
+    except Exception:
+        statsd_reporter.incr('rpc-rl.context.after.error')
+        pass
 
 class RequestHandler(SimpleXMLRPCDispatcher):
     """A request dispatcher for the PyPI XML-RPC API."""
@@ -87,10 +153,19 @@ class RequestHandler(SimpleXMLRPCDispatcher):
                 allow_none=self.allow_none
             )
         else:
-            # errors here are handled by _marshaled_dispatch
-            response = self._marshaled_dispatch(data)
-            # remove non-printable ASCII control codes from the response
-            response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
+            log_xmlrpc_request(webui_obj.remote_addr, data)
+            with throttle_concurrent(webui_obj.remote_addr) as is_throttled:
+                if is_throttled:
+                    response = xmlrpclib.dumps(
+                        xmlrpclib.Fault(429, 'max concurrent requests exceeded'),
+                        encoding=self.encoding,
+                        allow_none=self.allow_none
+                    )
+                else:
+                    # errors here are handled by _marshaled_dispatch
+                    response = self._marshaled_dispatch(data)
+                    # remove non-printable ASCII control codes from the response
+                    response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
         webui_obj.handler.wfile.write(response)
 
     @metricmethod
