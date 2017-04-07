@@ -116,6 +116,11 @@ class Config:
         else:
             self.block_redis_url = None
 
+        if c.has_option('database', 'xmlrpc_redis_url'):
+            self.xmlrpc_redis_url = c.get('database', 'xmlrpc_redis_url')
+        else:
+            self.xmlrpc_redis_url = None
+
         self.sentry_dsn = c.get('sentry', 'dsn')
 
         self.passlib = CryptContext(
@@ -144,6 +149,21 @@ class Config:
         self.blocked_timeout = c.get("blocking", "blocked_timeout")
         self.blocked_attempts_user = c.get("blocking", "blocked_attempts_user")
         self.blocked_attempts_ip = c.get("blocking", "blocked_attempts_ip")
+
+        if c.has_option("xmlrpc", "max_concurrent"):
+            self.xmlrpc_concurrent_requests = c.getint("xmlrpc", "max_concurrent")
+        else:
+            self.xmlrpc_concurrent_requests = 9999
+
+        if c.has_option("xmlrpc", "enforce"):
+            self.xmlrpc_enforce = c.getboolean("xmlrpc", "enforce")
+        else:
+            self.xmlrpc_enforce = False
+
+        if c.has_option("xmlrpc", "request_log_file"):
+            self.xmlrpc_request_log_file = c.get("xmlrpc", "request_log_file")
+        else:
+            self.xmlrpc_request_log_file = None
 
         # Get Authomatic Secret
         self.authomatic_secure = c.get("authomatic", "secure")
