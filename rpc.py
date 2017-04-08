@@ -46,7 +46,7 @@ STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
 statsd_reporter = statsd_client()
 
-def log_xmlrpc_request(remote_addr, data):
+def log_xmlrpc_request(remote_addr, user_agent, data):
     if conf.xmlrpc_request_log_file:
         try:
             with open(conf.xmlrpc_request_log_file, 'a') as f:
@@ -54,6 +54,7 @@ def log_xmlrpc_request(remote_addr, data):
                 record = json.dumps({
                     'timestamp': datetime.datetime.utcnow().isoformat(),
                     'remote_addr': remote_addr,
+                    'user_agent': user_agent,
                     'method': method,
                     'params': params,
                 })
@@ -153,7 +154,8 @@ class RequestHandler(SimpleXMLRPCDispatcher):
                 allow_none=self.allow_none
             )
         else:
-            log_xmlrpc_request(webui_obj.remote_addr, data)
+            user_agent = webui_obj.env.get('HTTP_USER_AGENT', None)
+            log_xmlrpc_request(webui_obj.remote_addr, user_agent, data)
             with throttle_concurrent(webui_obj.remote_addr) as is_throttled:
                 if is_throttled:
                     response = xmlrpclib.dumps(
