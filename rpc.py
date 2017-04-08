@@ -298,9 +298,6 @@ def changelog_last_serial(store):
 
 @metric
 def changelog(store, since, with_ids=False):
-    last_serial = store.changelog_last_serial()
-    if last_serial - since > 200000:
-        raise ValueError, 'since must be within 200,000 serials of changelog_last_serial()'
     result = []
     for row in store.changelog(since):
         if isinstance(row['submitted_date'], str):
@@ -317,6 +314,9 @@ def changelog(store, since, with_ids=False):
 @metric
 def changelog_since_serial(store, since_serial):
     'return the changes since the nominated event serial (id)'
+    last_serial = store.changelog_last_serial()
+    if last_serial - since_serial > 200000:
+        raise ValueError, 'since must be within 200,000 serials of changelog_last_serial()'
     result = []
     for row in store.changelog_since_serial(since_serial):
         if isinstance(row['submitted_date'], str):
