@@ -333,56 +333,12 @@ class Store:
             self.queue.enqueue(func, *args, **kwargs)
 
     def download_counts(self, name):
-        # Download Counts from redis
-        download_counts = {}
-        if self.count_redis is not None:
-            # Get the current utc time
-            current = datetime.datetime.utcnow()
-
-            # Get the download count for the last 24 hours (roughly)
-            keys = [
-                make_key(
-                    PRECISIONS[0],
-                    current - datetime.timedelta(hours=x),
-                    name,
-                )
-                for x in xrange(25)
-            ]
-            last_1 = sum(
-                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
-            )
-
-            # Get the download count for the last 7 days (roughly)
-            keys = [
-                make_key(
-                    PRECISIONS[1],
-                    current - datetime.timedelta(days=x),
-                    name,
-                )
-                for x in xrange(8)
-            ]
-            last_7 = sum(
-                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
-            )
-
-            # Get the download count for the last month (roughly)
-            keys = [
-                make_key(
-                    PRECISIONS[1],
-                    current - datetime.timedelta(days=x),
-                    name,
-                )
-                for x in xrange(31)
-            ]
-            last_30 = sum(
-                [int(x) for x in self.count_redis.mget(*keys) if x is not None]
-            )
-
-            download_counts = {
-                "last_day": last_1,
-                "last_week": last_7,
-                "last_month": last_30,
-            }
+        # Report Zero, skip redis
+        download_counts = {
+            "last_day": 0,
+            "last_week": 0,
+            "last_month": 0,
+        }
         return download_counts
 
     def last_id(self, tablename):
