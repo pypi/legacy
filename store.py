@@ -1125,7 +1125,7 @@ class Store:
             select name, version, submitted_date, action, id
             from journals j
             where j.submitted_date > %s
-            order by submitted_date
+            order by j.submitted_date
         '''
         if not full:
             query += 'limit 50000'
@@ -1144,6 +1144,7 @@ class Store:
         query = '''
             select name, version, submitted_date, action, id
             from journals j where j.id > %s
+            order by j.id
         '''
         if not full:
             query += 'limit 50000'
