@@ -1114,32 +1114,41 @@ class Store:
                 self._Updated_Releases)
 
     _Changelog = FastResultRow('name version submitted_date! action id!')
-    def changelog(self, since):
+    def changelog(self, since, full=False):
         '''Fetch (name, version, submitted_date, action, id) since 'since'
         argument.
         '''
         assert isinstance(since, int)
 
         cursor = self.get_cursor()
-        safe_execute(cursor, '''
+        query = '''
             select name, version, submitted_date, action, id
             from journals j
             where j.submitted_date > %s
-        ''', (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),))
+            order by j.submitted_date
+        '''
+        if not full:
+            query += 'limit 50000'
+        params = (time.strftime('%Y-%m-%d %H:%M:%S +0000', time.gmtime(since)),)
+        safe_execute(cursor, query, params)
 
         return Result(None, cursor.fetchall(), self._Changelog)
 
-    def changelog_since_serial(self, since):
+    def changelog_since_serial(self, since, full=False):
         '''Fetch (name, version, submitted_date, action, id) since 'since' id
         argument.
         '''
         assert isinstance(since, int)
 
         cursor = self.get_cursor()
-        safe_execute(cursor, '''
+        query = '''
             select name, version, submitted_date, action, id
             from journals j where j.id > %s
-        ''', (since,))
+            order by j.id
+        '''
+        if not full:
+            query += 'limit 50000'
+        safe_execute(cursor, query, (since,))
 
         return Result(None, cursor.fetchall(), self._Changelog)
 
@@ -1170,7 +1179,7 @@ class Store:
         return [r[0] for r in cursor.fetchall()]
 
     def changelog_last_hour(self):
-        return self.changelog(int(time.time())-3600)
+        return self.changelog(int(time.time())-3600, full=True)
 
     _Latest_Packages = FastResultRow('name version submitted_date! summary')
     def latest_packages(self, num=40):
