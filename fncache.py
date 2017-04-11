@@ -113,6 +113,6 @@ class RedisLru(object):
                     if self.kwarg_name is not None:
                         tag = self.tag % (kwargs[self.kwarg_name])
                     return self.get(func.__name__, key, tag) or self.add(func.__name__, key, func(*args, **kwargs), tag)
-                except redis.exceptions.ConnectionError as conn_fail:
+                except redis.exceptions.RedisError:
                     return func(*args, **kwargs)
         return wrapper
