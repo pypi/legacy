@@ -28,10 +28,15 @@ from fncache import RedisLru
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
 
+redis_kwargs = {
+    'socket_connect_timeout': 0.1,
+    'socket_timeout': 0.05,
+}
+
 if conf.cache_redis_url is None:
     cache_redis = None
 else:
-    cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url)
+    cache_redis = redis.StrictRedis.from_url(conf.cache_redis_url, **redis_kwargs)
 
 # Note: slice object is to cut off the instance of Store that would be passed along
 package_tag_lru = RedisLru(cache_redis, expires=86400, tag="pkg~%s", arg_index=1, slice_obj=slice(1, None))
@@ -40,7 +45,7 @@ cache_by_pkg = package_tag_lru.decorator
 if conf.xmlrpc_redis_url is None:
     xmlrpc_redis = None
 else:
-    xmlrpc_redis = redis.StrictRedis.from_url(conf.xmlrpc_redis_url)
+    xmlrpc_redis = redis.StrictRedis.from_url(conf.xmlrpc_redis_url, **redis_kwargs)
 
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
