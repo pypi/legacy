@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+<metal:fill fill-slot="body">
+
+<p tal:replace="structure app/release_nav" />
+
+<form tal:attributes="action app/url_path" method="POST"
+    enctype="multipart/form-data">
+<input type="hidden" name=":action" value="submit" />
+<table class="form">
+
+<tr tal:replace="structure data/fields" />
+
+<tr><th class="required">highlighted</th><td>information is required</td></tr>
+<tr><td></td><td><input id="manual_submit" type="submit" value="Update Information"/></td></tr>
+</table>
+</form>
+
+</metal:fill>
+</html>
