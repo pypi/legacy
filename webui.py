@@ -2227,6 +2227,7 @@ class WebUI:
         # are we editing a specific entry?
         info = {}
         name = version = None
+        template = 'submit_form.pt'
         if self.form.has_key('name') and self.form.has_key('version'):
             name = self.form['name']
             version = self.form['version']
@@ -2238,6 +2239,7 @@ class WebUI:
                 raise Forbidden, 'Not Owner or Maintainer'
 
             # get the stored info
+            template = 'edit_form.pt'
             for k,v in self.store.get_package(name, version).items():
                 info[k] = v
 
@@ -2337,7 +2339,7 @@ class WebUI:
 
         w('''</select></td></tr>''')
 
-        self.write_template('submit_form.pt',
+        self.write_template(template,
             title='Submitting package information',
             fields=content.getvalue().decode('utf8'))
 
