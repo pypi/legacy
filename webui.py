@@ -2898,8 +2898,7 @@ class WebUI:
 
     def show_md5(self):
         if not self.form.has_key('digest'):
-            return NotFound
-            #raise ValueError, 'invalid MD5 digest'
+            raise NotFound
         digest = self.form['digest']
         try:
             self.store.get_file_info(digest)
