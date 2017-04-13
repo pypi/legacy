@@ -1391,7 +1391,7 @@ class WebUI:
         # XXX with 18 classifiers, postgres runs out of memory
         # So limit the number of simultaneous classifiers
         if len(cat_ids) > 8:
-            self.fail("Too many classifiers", code=500)
+            self.fail("Too many classifiers", code=400)
             return
 
         # Fetch data from the database
