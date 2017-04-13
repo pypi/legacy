@@ -1928,7 +1928,7 @@ class Store:
 
         query = {
             "fields": ["name", "version", "summary"],
-            "size": 100000,
+            "size": 200000,
             "query": {
               "filtered": {
                 "query": {
