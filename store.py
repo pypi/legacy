@@ -1961,15 +1961,28 @@ class Store:
         }
 
         index_url = "/".join([self.config.database_releases_index_url, "trove-%s" % (self.config.database_releases_index_name,)])
-        r = requests.get(index_url + "/_search", json=query)
+
+        start_time = int(round(time.time() * 1000))
+        try:
+            r = requests.get(index_url + "/_search", json=query, timeout=1.0)
+            data = r.json()
+        except requests.exceptions.Timeout:
+            self.statsd_reporter.incr('store.browse.timeout')
+            data = {}
+        end_time = int(round(time.time() * 1000))
+        self.statsd_reporter.timing('store.browse', end_time - start_time)
 
         releases = []
-        for hit in r.json()['hits']['hits']:
-            name = hit['fields']['name'][0]
-            summary = hit['fields'].get('summary', [''])[0]
-            releases.append((name, '', summary))
+        tally = []
+        if 'hits' in data.keys():
+            for hit in data['hits']['hits']:
+                name = hit['fields']['name'][0]
+                summary = hit['fields'].get('summary', [''])[0]
+                releases.append((name, '', summary))
 
-        tally = [(f['term'], f['count']) for f in r.json()['facets']['categories']['terms'] if f['term'] != 0]
+        if 'facets' in data.keys():
+            tally = [(f['term'], f['count']) for f in data['facets']['categories']['terms'] if f['term'] != 0]
+
         return releases, tally
 
     def get_package_from_filename(self, filename):
