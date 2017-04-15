@@ -895,8 +895,11 @@ class Store:
         query_string = urllib.urlencode(query_params)
 
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
-        r = requests.get(index_url + '/release/_search?' + query_string)
-        data = r.json()
+        try:
+            r = requests.get(index_url + '/release/_search?' + query_string, timeout=0.25)
+            data = r.json()
+        except requests.exceptions.Timeout:
+            data = {}
         results = []
         if 'hits' in data.keys():
             results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields'].get('_pypi_hidden', [False])[0] == hidden]
