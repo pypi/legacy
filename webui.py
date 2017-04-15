@@ -2171,7 +2171,7 @@ class WebUI:
                     else:
                         # may find score in d_new
                         e = d_new.get(key, [0, r])
-                    if col == 'name' and t == r['name'].lower():
+                    if col == 'name' and safe_name(t).lower() == safe_name(r['name']).lower():
                         e[0] += score*2
                     else:
                         e[0] += score
