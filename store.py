@@ -60,6 +60,8 @@ class LockedException(Exception):
 from distutils.version import LooseVersion
 from verlib import NormalizedVersion, suggest_normalized_version
 
+from perfmetrics import statsd_client_from_uri
+
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
@@ -310,6 +312,9 @@ class Store:
 
         self.queue = queue
         self.count_redis = redis
+
+        self.statsd_uri = "statsd://127.0.0.1:8125?prefix=%s" % (config.database_name)
+        self.statsd_reporter = statsd_client_from_uri(self.statsd_uri)
 
         self.package_bucket = package_bucket
 
@@ -899,6 +904,7 @@ class Store:
             r = requests.get(index_url + '/release/_search?' + query_string, timeout=0.25)
             data = r.json()
         except requests.exceptions.Timeout:
+            self.statsd_reporter.incr('store.search-packages.timeout')
             data = {}
         results = []
         if 'hits' in data.keys():
