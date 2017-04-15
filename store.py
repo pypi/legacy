@@ -234,6 +234,8 @@ def FastResultRow(cols):
             return res
 
         def items(self):
+            if not self.info:
+                return []
             res = [None] * len(self.info)
             for i, col in enumerate(self.cols):
                 res[i] = (col, self[col])
