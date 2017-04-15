@@ -900,12 +900,15 @@ class Store:
         query_string = urllib.urlencode(query_params)
 
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
+        start_time = int(round(time.time() * 1000))
         try:
             r = requests.get(index_url + '/release/_search?' + query_string, timeout=0.25)
             data = r.json()
         except requests.exceptions.Timeout:
             self.statsd_reporter.incr('store.search-packages.timeout')
             data = {}
+        end_time = int(round(time.time() * 1000))
+        self.statsd_reporter.timing('store.search-packages', end_time - start_time)
         results = []
         if 'hits' in data.keys():
             results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields'].get('_pypi_hidden', [False])[0] == hidden]
