@@ -885,7 +885,7 @@ class Store:
 
             if type(v) != type([]): v = [v]
             if k == 'name':
-                terms.extend(["(name_exact:%s OR name:*%s*)" % (s.encode('utf-8').lower(), s.encode('utf-8')) for s in v])
+                terms.extend(["(name:*%s* OR name_exact:%s)" % (s.encode('utf-8'), safe_name(s).lower().encode('utf-8')) for s in v])
             else:
                 terms.extend(["%s:*%s*" % (k, s.encode('utf-8')) for s in v])
 

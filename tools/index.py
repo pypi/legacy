@@ -16,6 +16,7 @@ import requests
 
 import config
 import store
+from pkg_resources import safe_name
 
 CONFIG_FILE = os.environ.get("PYPI_CONFIG", os.path.join(prefix, 'config.ini'))
 
@@ -41,7 +42,7 @@ while True:
   operations = []
   for release in releases:
     operations.append(json.dumps({"index": {"_index": new_index, "_type": "release", "_id": "%s-%s" % (release['name'], release['version'])}}))
-    release['name_exact'] = release['name'].lower()
+    release['name_exact'] = safe_name(release['name']).lower()
     operations.append(json.dumps(release))
   r = requests.post(conf.database_releases_index_url + "/_bulk", data="\n".join(operations))
 
