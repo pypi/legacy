@@ -868,7 +868,7 @@ class WebUI:
         if self.form.has_key(':action'):
             action = self.form[':action']
             if isinstance(action, list):
-                raise RuntimeError("Multiple actions: %r" % action)
+                raise FormError("Multiple actions not allowed: %r" % action)
         elif path:
             # Split into path items, drop leading slash
             try:
