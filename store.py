@@ -902,7 +902,7 @@ class Store:
         index_url = "/".join([self.config.database_releases_index_url, self.config.database_releases_index_name])
         start_time = int(round(time.time() * 1000))
         try:
-            r = requests.get(index_url + '/release/_search?' + query_string, timeout=0.25)
+            r = requests.get(index_url + '/release/_search?' + query_string, timeout=0.5)
             data = r.json()
         except requests.exceptions.Timeout:
             self.statsd_reporter.incr('store.search-packages.timeout')
