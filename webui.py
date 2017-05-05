@@ -802,6 +802,8 @@ class WebUI:
             return self.mirrors()
         if script_name == '/security':
             return self.security()
+        if script_name == '/tos':
+            return self.tos()
         if script_name == '/daytime':
             return self.daytime()
         if script_name == '/serial':
@@ -3724,10 +3726,12 @@ class WebUI:
         self.write_template('mirrors.pt', **options)
 
     def security(self):
-        ''' display the list of mirrors
-        '''
         options = {'title': 'PyPI Security'}
         self.write_template('security.pt', **options)
+
+    def tos(self):
+        options = {'title': 'PyPI Terms of Service'}
+        self.write_template('tos.pt', **options)
 
     def current_serial(self):
         # Provide an endpoint for quickly determining the current serial

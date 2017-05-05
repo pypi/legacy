@@ -80,6 +80,7 @@
                 <tal:for-nav repeat="link app/navlinks_html">
                   <span tal:replace="structure link"/>
                 </tal:for-nav>
+        <li><a href="/tos">Terms of Service</a></li>
         <li><a href="http://wiki.python.org/moin/CheeseShopTutorial">PyPI Tutorial</a></li>
         <li><a href="/security">PyPI Security</a></li>
         <li><a href="http://sourceforge.net/tracker/?group_id=66150&amp;atid=513504">PyPI Support</a></li>
