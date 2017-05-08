@@ -33,6 +33,19 @@ Then you can launch the server using the pypi.wsgi script::
 
 PyPI will be available in your browser at http://localhost:8000
 
+You can use the `--port` option to change the port, in particular some browsers
+do not accept TLS connections except on port 443 and 8443. Alternatively you
+can also set the environment variable
+``PYPI_LEGACY_ALLOW_NO_TLS_FOR_TESTING_PURPOSE_ONLY`` to ``1`` for local
+testing and have PyPI legacy accept non-TLS connections. Use this if you see
+the following message when accessing your local PyPI:
+
+.. :
+
+   Forbidden
+
+   Must access using HTTPS instead of HTTP
+
 Database Setup
 --------------
 

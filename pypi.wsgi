@@ -120,7 +120,7 @@ def application(environ, start_response):
         r = Request(environ, start_response)
         webui.WebUI(r, environ).run()
         return [r.wfile.getvalue()]
-    except Exception, e:
+    except Exception as e:
         import traceback;traceback.print_exc()
         return ['Ooops, there was a problem (%s)' % e]
 #application=debug
@@ -152,7 +152,12 @@ def site_fake(app, environ, start_response):
 
 if __name__ == '__main__':
     # very simple wsgi server so we can play locally
+
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", help="port to listen on", type=int, default=8000)
+    args = parser.parse_args()
     from wsgiref.simple_server import make_server
-    httpd = make_server('', 8000, partial(site_fake, application))
-    print "Serving on port 8000..."
+    httpd = make_server('', args.port, partial(site_fake, application))
+    print("Serving on port %s..." % args.port)
     httpd.serve_forever()
