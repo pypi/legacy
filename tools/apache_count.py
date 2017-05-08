@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-import sys, os, re, psycopg, ConfigParser, urlparse, gzip, bz2
+from __future__ import print_function
+
+import sys, os, re, psycopg2, ConfigParser, urlparse, gzip, bz2
 from mx.DateTime import DateTime
 from mx.DateTime.Timezone import utc_offset
 
@@ -16,7 +18,7 @@ for i in range(12):
 
 def main(argv):
     if len(argv) != 3:
-        print "Usage: apache_count.py configfile logfile"
+        print("Usage: apache_count.py configfile logfile")
         raise SystemExit
     # Read config file
     p = ConfigParser.ConfigParser()
@@ -27,7 +29,7 @@ def main(argv):
     dbname = p.get('database', 'name')
     dbuser = p.get('database', 'user')
     dbpass = p.get('database', 'password')
-    dbconn = psycopg.connect(database=dbname, user=dbuser, password=dbpass)
+    dbconn = psycopg2.connect(database=dbname, user=dbuser, password=dbpass)
     cursor = dbconn.cursor()
 
     filename = argv[2]
@@ -85,7 +87,7 @@ def main(argv):
         cursor.execute("update release_files set downloads=%s "
                        "where filename=%s", (count, filename))
     # Update the download timestamp
-    date = psycopg.TimestampFromMx(date)
+    date = psycopg2.TimestampFromMx(date)
     cursor.execute("update timestamps set value=%s "
                    "where name='http'", (date,))
     dbconn.commit()
