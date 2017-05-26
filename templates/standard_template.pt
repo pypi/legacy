@@ -213,8 +213,8 @@
                 <tal:x tal:condition="python:'https://pypi.python.org/pypi' == app.config.url">
                 <img src="https://img.shields.io/badge/ipv6-go!-green.svg" alt='ipv6 ready' title='ipv6 ready' border='0'/><br />
                 <img src="https://img.shields.io/badge/http2-go!-green.svg" alt='http2 ready' title='http2 ready' border='0'/><br />
-                <img src="/static/images/PythonPoweredAnimSmall.gif" alt='darn right it is' title='Python Powered' border='0'/>
                 </tal:x>
+                <img src="/static/images/PythonPoweredAnimSmall.gif" alt='darn right it is' title='Python Powered' border='0'/>
               </div>
               <div style="float: right" id="donations">
                 <a href="http://www.python.org/about/website">Website maintained by the Python community</a><br />
