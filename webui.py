@@ -2403,18 +2403,11 @@ class WebUI:
         # make sure relationships are lists
         for name in ('requires', 'provides', 'obsoletes',
                      'requires_dist', 'provides_dist',
-                     'obsoletes_dist',
+                     'obsoletes_dist', 'classifier'
                      'requires_external', 'project_url'):
             if data.has_key(name) and not isinstance(data[name],
                     types.ListType):
                 data[name] = [data[name]]
-
-        # rename classifiers
-        if data.has_key('classifier'):
-            classifiers = data['classifier']
-            if not isinstance(classifiers, types.ListType):
-                classifiers = [classifiers]
-            data['classifiers'] = classifiers
 
         # Trim docstrings
         if "description" in data:
