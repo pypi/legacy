@@ -132,7 +132,7 @@ href="https://packaging.python.org/en/latest/distributing.html#uploading-your-pr
 
  <tr tal:condition="data/maintainer">
   <td colspan="7" id="last">
-   <input type="submit" name="submit_remove" value="Remove" />
+   <input type="submit" name="submit_remove" value="Remove" onclick="return confirm('You can never use this/these filename(s) again, are you sure?');"/>
   </td>
  </tr>
 
