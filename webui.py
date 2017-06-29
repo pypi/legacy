@@ -2449,7 +2449,8 @@ class WebUI:
         # so we can use its check() method
         metadata = Metadata()
         for key, value in data.items():
-            metadata[key] = value
+            if key not in ('blake2_256_digest', 'comment', 'filetype', 'md5_digest', 'protcol_version', 'pyversion', 'sha256_digest'):
+                metadata[key] = value
         metadata['Metadata-Version'] = '1.2'
         missing, warnings = metadata.check()
 
