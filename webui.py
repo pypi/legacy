@@ -2359,10 +2359,7 @@ class WebUI:
         raise Gone(
             ("This API has been deprecated and removed from legacy PyPI in favor of "
              " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). This is a 24h brownout of the "
-             "API and access will be restored on June 30th. Please switch to "
-             "PyPI.ORG for uploads prior to July 3rd when this API will be "
-             "removed for good. For more information about migrating your "
+             "(located at https://pypi.org/). For more information about migrating your "
              "use of this API to PyPI.org, please see {}. For more information about "
              "the sunsetting of this API, please see "
              "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
@@ -2373,17 +2370,15 @@ class WebUI:
     @must_tls
     def submit(self, parameters=None, response=True):
         raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in favor of "
-             " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). This is a 24h brownout of the "
-             "API and access will be restored on June 30th. Please switch to "
-             "PyPI.ORG for uploads prior to July 3rd when this API will be "
-             "removed for good. For more information about migrating your "
-             "use of this API to PyPI.org, please see {}. For more information about "
-             "the sunsetting of this API, please see "
+            ("This API has been deprecated and removed from legacy PyPI in "
+             "favor of using the APIs available in the new PyPI.org "
+             "implementation of PyPI (located at https://pypi.org/). For more "
+             "information about migrating your use of this API to PyPI.org, "
+             "please see {}. For more information about the sunsetting of "
+             "this API, please see "
              "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
                 WAREHOUSE_UPLOAD_MIGRATION_URL,
-             )
+            )
         )
 
     def form_metadata(self, submitted_data=None):
@@ -2437,17 +2432,15 @@ class WebUI:
 
     def verify(self):
         raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in favor of "
-             " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). This is a 24h brownout of the "
-             "API and access will be restored on June 30th. Please switch to "
-             "PyPI.ORG for uploads prior to July 3rd when this API will be "
-             "removed for good. For more information about migrating your "
-             "use of this API to PyPI.org, please see {}. For more information about "
-             "the sunsetting of this API, please see "
+            ("This API has been deprecated and removed from legacy PyPI in "
+             "favor of using the APIs available in the new PyPI.org "
+             "implementation of PyPI (located at https://pypi.org/). For more "
+             "information about migrating your use of this API to PyPI.org, "
+             "please see {}. For more information about the sunsetting of "
+             "this API, please see "
              "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
                 WAREHOUSE_UPLOAD_MIGRATION_URL,
-             )
+            )
         )
 
     def _validate_metadata_1_2(self, data):
@@ -2792,17 +2785,15 @@ class WebUI:
     @must_tls
     def file_upload(self, response=True, parameters=None):
         raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in favor of "
-             " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). This is a 24h brownout of the "
-             "API and access will be restored on June 30th. Please switch to "
-             "PyPI.ORG for uploads prior to July 3rd when this API will be "
-             "removed for good. For more information about migrating your "
-             "use of this API to PyPI.org, please see {}. For more information about "
-             "the sunsetting of this API, please see "
+            ("This API has been deprecated and removed from legacy PyPI in "
+             "favor of using the APIs available in the new PyPI.org "
+             "implementation of PyPI (located at https://pypi.org/). For more "
+             "information about migrating your use of this API to PyPI.org, "
+             "please see {}. For more information about the sunsetting of "
+             "this API, please see "
              "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
                 WAREHOUSE_UPLOAD_MIGRATION_URL,
-             )
+            )
         )
 
     #
@@ -2811,17 +2802,15 @@ class WebUI:
     @must_tls
     def doc_upload(self):
         raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in favor of "
-             " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). This is a 24h brownout of the "
-             "API and access will be restored on June 30th. Please switch to "
-             "PyPI.ORG for uploads prior to July 3rd when this API will be "
-             "removed for good. For more information about migrating your "
-             "use of this API to PyPI.org, please see {}. For more information about "
-             "the sunsetting of this API, please see "
+            ("This API has been deprecated and removed from legacy PyPI in "
+             "favor of using the APIs available in the new PyPI.org "
+             "implementation of PyPI (located at https://pypi.org/). For more "
+             "information about migrating your use of this API to PyPI.org, "
+             "please see {}. For more information about the sunsetting of "
+             "this API, please see "
              "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
                 WAREHOUSE_UPLOAD_MIGRATION_URL,
-             )
+            )
         )
 
     #
