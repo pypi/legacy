@@ -10,7 +10,6 @@ import re, logging, Cookie, subprocess, hashlib
 import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
-from distutils2.metadata import Metadata
 from xml.etree import cElementTree
 import itsdangerous
 import redis
@@ -92,11 +91,6 @@ EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 
 WAREHOUSE_UPLOAD_MIGRATION_URL = "https://packaging.python.org/guides/migrating-to-pypi-org/#uploading"
 
-
-safe_filenames = {
-    True: re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I),
-    False: re.compile(r".+?\.(tar\.gz|zip|whl|egg)$", re.I),
-}
 
 # Must begin and end with an alphanumeric, interior can also contain ._-
 safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
