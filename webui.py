@@ -92,9 +92,6 @@ EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-WAREHOUSE_UPLOAD_MIGRATION_URL = "https://packaging.python.org/guides/migrating-to-pypi-org/#uploading"
-
-
 # Requires:
 #   - ASCII letters
 #   - ASCII digits
@@ -370,7 +367,7 @@ def _simple_body_internal(path, urls):
         text = cgi.escape(text)
         data_attr = ''
         if requires_python:
-            data_attr = ' data-requires-python="{}"'.format(cgi.escape(requires_python, quote=True))
+            data_attr = ' data-requires-python="{}"'.format(cgi.escape(requires_python, quote=True)) 
         html.append("""<a{} href="{}"{}>{}</a><br/>\n""".format(data_attr, href, rel, text))
     html.append("</body></html>")
     html = ''.join(html)
@@ -768,6 +765,7 @@ class WebUI:
 
     navlinks = (
         ('browse', 'Browse packages'),
+        ('submit_form', 'Package submission'),
         ('list_classifiers', 'List trove classifiers'),
         ('rss', 'RSS (latest 40 updates)'),
         ('packages_rss', 'RSS (newest 40 packages)'),
@@ -1106,7 +1104,7 @@ class WebUI:
             raise NotFound, path + " does not have any releases"
 
         return _simple_body_internal(path, urls)
-
+            
     def get_accept_encoding(self, supported):
         accept_encoding = self.env.get('HTTP_ACCEPT_ENCODING')
         if not accept_encoding:
@@ -2356,30 +2354,163 @@ class WebUI:
 
     @must_tls
     def submit_pkg_info(self):
-        raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in favor of "
-             " using the APIs available in the new PyPI.org implementation of PyPI "
-             "(located at https://pypi.org/). For more information about migrating your "
-             "use of this API to PyPI.org, please see {}. For more information about "
-             "the sunsetting of this API, please see "
-             "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
-                WAREHOUSE_UPLOAD_MIGRATION_URL,
-             )
-        )
+        ''' Handle the submission of distro metadata as a PKG-INFO file.
+        '''
+        # make sure the user is identified
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to store package information"
+
+        if not self.form.has_key('pkginfo'):
+            raise FormError, \
+                "You must supply the PKG-INFO file"
+
+        self.csrf_check()
+
+        # get the data
+        pkginfo = self.form['pkginfo']
+        if isinstance(pkginfo, FileUpload):
+            pkginfo = pkginfo.value
+        elif isinstance(pkginfo, str):
+            try:
+                pkginfo = pkginfo.decode('utf8')
+            except UnicodeDecodeError:
+                raise PkgInfoError, \
+                    "Your PKG-INFO file must be either ASCII or UTF-8. " \
+                    "If this is inconvenient, use 'python setup.py register'."
+        mess = email.message_from_file(cStringIO.StringIO(pkginfo))
+        data = {}
+        for k, v in mess.items():
+            # clean up the keys and values, normalise "-" to "_"
+            k = k.lower().replace('-', '_')
+            v = v.strip()
+
+            # Platform, Classifiers, ...?
+            if data.has_key(k):
+                l = data[k]
+                if isinstance(l, types.ListType):
+                    l.append(v)
+                else:
+                    data[k] = [l, v]
+            else:
+                data[k] = v
+
+        # flatten platforms into one string
+        platform = data.get('platform', '')
+        if isinstance(platform, types.ListType):
+            data['platform'] = ','.join(data['platform'])
+
+        # make sure relationships are lists
+        for name in ('requires', 'provides', 'obsoletes',
+                     'requires_dist', 'provides_dist',
+                     'obsoletes_dist',
+                     'requires_external', 'project_url'):
+            if data.has_key(name) and not isinstance(data[name],
+                    types.ListType):
+                data[name] = [data[name]]
+
+        # rename classifiers
+        if data.has_key('classifier'):
+            classifiers = data['classifier']
+            if not isinstance(classifiers, types.ListType):
+                classifiers = [classifiers]
+            data['classifiers'] = classifiers
+
+        # Trim docstrings
+        if "description" in data:
+            data["description"] = trim_docstring(data["description"])
+
+        # validate the data
+        try:
+            self.validate_metadata(data)
+        except ValueError, message:
+            raise PkgInfoError, message
+
+        name = data['name']
+        version = data['version']
+
+        if name.lower() in ('requirements.txt', 'rrequirements.txt',
+                'requirements-txt', 'rrequirements-txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
+
+        # don't hide by default
+        if not data.has_key('_pypi_hidden'):
+            data['_pypi_hidden'] = '0'
+
+        # make sure the user has permission to do stuff
+        has_package = self.store.has_package(name)
+        if has_package and not (
+                self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to store '%s' package information"%name
+
+        if not has_package:
+            names = self.store.find_package(name)
+            if names:
+                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
+
+        # save off the data
+        message = self.store.store_package(name, version, data)
+        self.store.changed()
+
+        # return a display of the package
+        self.form['name'] = data['name']
+        self.form['version'] = data['version']
+        self.display(ok_message=message)
 
     @must_tls
     def submit(self, parameters=None, response=True):
-        raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in "
-             "favor of using the APIs available in the new PyPI.org "
-             "implementation of PyPI (located at https://pypi.org/). For more "
-             "information about migrating your use of this API to PyPI.org, "
-             "please see {}. For more information about the sunsetting of "
-             "this API, please see "
-             "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
-                WAREHOUSE_UPLOAD_MIGRATION_URL,
-            )
-        )
+        ''' Handle the submission of distro metadata.
+        '''
+        # make sure the user is identified
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to store package information"
+
+        if parameters is None:
+            parameters = self.form
+
+        # pull the package information out of the form submission
+        data = self.form_metadata(parameters)
+
+        # validate the data
+        try:
+            self.validate_metadata(data)
+        except ValueError, message:
+            raise FormError, message
+
+        name = data['name']
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
+        version = data['version']
+
+        # make sure the user has permission to do stuff
+        has_package = self.store.has_package(name)
+        if has_package and not (
+                self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to store '%s' package information"%name
+
+        if not has_package:
+            names = self.store.find_package(name)
+            if names:
+                raise Forbidden, "Package name conflicts with existing package '%s'" % names[0]
+
+        # make sure the _pypi_hidden flag is set
+        if not data.has_key('_pypi_hidden'):
+            data['_pypi_hidden'] = False
+
+        # save off the data
+        message = self.store.store_package(name, version, data)
+        self.store.changed()
+
+        if response:
+            # return a display of the package
+            self.display(ok_message=message)
 
     def form_metadata(self, submitted_data=None):
         ''' Extract metadata from the form.
@@ -2431,17 +2562,17 @@ class WebUI:
         return data
 
     def verify(self):
-        raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in "
-             "favor of using the APIs available in the new PyPI.org "
-             "implementation of PyPI (located at https://pypi.org/). For more "
-             "information about migrating your use of this API to PyPI.org, "
-             "please see {}. For more information about the sunsetting of "
-             "this API, please see "
-             "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
-                WAREHOUSE_UPLOAD_MIGRATION_URL,
-            )
-        )
+        ''' Validate the input data.
+        '''
+        data = self.form_metadata()
+        try:
+            self.validate_metadata(data)
+        except ValueError, message:
+            self.fail(str(message), code=400, heading='Package verification')
+            return
+
+        self.write_template('message.pt', title='Package verification',
+            message='Validated OK')
 
     def _validate_metadata_1_2(self, data):
         # loading the metadata into
@@ -2784,34 +2915,296 @@ class WebUI:
     CURRENT_UPLOAD_PROTOCOL = "1"
     @must_tls
     def file_upload(self, response=True, parameters=None):
-        raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in "
-             "favor of using the APIs available in the new PyPI.org "
-             "implementation of PyPI (located at https://pypi.org/). For more "
-             "information about migrating your use of this API to PyPI.org, "
-             "please see {}. For more information about the sunsetting of "
-             "this API, please see "
-             "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
-                WAREHOUSE_UPLOAD_MIGRATION_URL,
-            )
-        )
+        # make sure the user is identified
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        if parameters is None:
+            parameters = self.form
+
+        # can't perform CSRF check as this is invoked by tools
+        #self.csrf_check()
+
+        # Verify protocol version
+        if parameters.has_key('protocol_version'):
+            protocol_version = parameters['protocol_version']
+        else:
+            protocol_version = self.CURRENT_UPLOAD_PROTOCOL
+
+        if protocol_version!=self.CURRENT_UPLOAD_PROTOCOL:
+            # If a new protocol version is added, backward compatibility
+            # with old distutils upload commands needs to be preserved
+            raise NotImplementedError("Unsupported file upload protocol (%r)" %
+                protocol_version)
+
+        # figure the package name and version
+        name = version = None
+        if parameters.has_key('name'):
+            name = parameters['name']
+        if parameters.has_key('version'):
+            version = parameters['version']
+        if not name or not version:
+            raise FormError, 'Name and version are required'
+
+        if name.lower() in ('requirements.txt', 'rrequirements.txt'):
+            raise Forbidden, "Package name '%s' invalid" % name
+
+        # Get the "real" name
+        possible_names = self.store.find_package(name)
+        if possible_names and possible_names[0] != name:
+            name = possible_names[0]
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        # verify the release exists
+        if self.store.has_release(name, version):
+            release_metadata = self.store.get_package(name, version)
+            description = release_metadata['description']
+        else:
+            # auto-register the release...
+            release_metadata = self.form_metadata(parameters)
+            description = release_metadata.get('description')
+            try:
+                self.validate_metadata(release_metadata)
+            except ValueError, message:
+                raise FormError, message
+            release_metadata['_pypi_hidden'] = False
+            self.store.store_package(name, version, release_metadata)
+            self.store.changed()
+
+        # distutils handily substitutes blank descriptions with "UNKNOWN"
+        if description == 'UNKNOWN':
+            description = ''
+
+        # verify we have enough information
+        pyversion = 'source'
+        content = filetype = md5_digest = comment = None
+        if parameters.has_key('content'):
+            content = parameters['content']
+        if parameters.has_key('filetype'):
+            filetype = parameters['filetype']
+            if filetype == 'sdist':
+                parameters['pyversion'] = 'source'
+        if not content or not filetype:
+            raise FormError, 'Both content and filetype are required'
+
+        md5_digest = parameters.get('md5_digest', '')
+        comment = parameters.get('comment', '')
+
+        # python version?
+        if parameters.get('pyversion', ''):
+            pyversion = parameters['pyversion']
+        elif filetype not in (None, 'sdist'):
+            raise FormError, 'Python version is required for binary distribution uploads'
+
+        allow_legacy_files = self.store.package_allows_legacy(name)
+
+        # check for valid filenames
+        if not hasattr(content, 'filename'):
+            # I would say the only way this can happen is someone messing
+            # with the form...
+            raise FormError, 'invalid upload'
+        filename = content.filename
+        if not safe_filenames[allow_legacy_files].search(filename):
+            raise FormError, 'invalid distribution file'
+
+        if not allow_legacy_files and filetype not in {"sdist", "bdist_egg", "bdist_wheel"}:
+            raise FormError, "Invalid file type"
+
+        # check existing filename
+        if self.store.has_file(name, version, filename):
+            raise FormError, 'A file named "%s" already exists for ' \
+                ' %s-%s. To fix problems with that file you' \
+                ' should create a new release.'%(filename, name, version)
+
+        # check for dodgy filenames
+        if '/' in filename or '\\' in filename:
+            raise FormError, 'invalid distribution file'
+
+        # check whether file name matches package name
+        prefix = safe_name(name.lower())
+        if not safe_name(filename.lower()).startswith(prefix):
+            raise FormError, 'The filename for %s must start with "%s" (any case)' % (name, prefix)
+
+        # check for valid content-type
+        mt = content.type or 'image/invalid'
+        if mt.startswith('image/'):
+            raise FormError, 'invalid distribution file'
+
+        # grab content
+        content = content.value
+
+        if parameters.has_key('gpg_signature'):
+            signature = parameters['gpg_signature']
+            try:
+                # If the signature is present, it may come
+                # as an empty string, or as a file upload
+                signature = signature.value
+            except AttributeError:
+                pass
+        else:
+            signature = None
+
+        # nothing over 60M please
+        if len(content) > 60*1024*1024:
+            raise FormError, 'distribution file too large'
+        if signature and len(signature) > 100*1024:
+            raise FormError, 'invalid signature'
+
+        # check the file for valid contents based on the type
+        if not verify_filetype.is_distutils_file(content, filename, filetype):
+            raise FormError, 'invalid distribution file'
+
+        # Check that if it's a binary wheel, it's on a supported platform
+        #   TODO(dstufft): Remove this once we have a better binary distribution
+        #       story for Linux and such
+        if filename.endswith(".whl"):
+            wheel_info = wheel_file_re.match(filename)
+            plats = wheel_info.group('plat').split('.')
+            for plat in plats:
+                if not _valid_platform_tag(plat):
+                    raise FormError, "Binary wheel for an unsupported platform"
+
+        # Check whether signature is ASCII-armored
+        if signature and not signature.startswith("-----BEGIN PGP SIGNATURE-----"):
+            raise FormError, "signature is not ASCII-armored"
+
+        # Determine whether we could use a README to fill out a missing
+        # description
+        if not description:
+            description = extractPackageReadme(content, filename, filetype)
+            if description:
+                self.store.set_description(
+                    name, version, description, from_readme=True,
+                )
+
+        # digest content
+        m = hashlib.md5()
+        m.update(content)
+        calc_digest = m.hexdigest()
+
+        sha256_m = hashlib.sha256()
+        sha256_m.update(content)
+
+        blake2_256_m = blake2b(digest_size=32)
+        blake2_256_m.update(content)
+
+        if not md5_digest:
+            md5_digest = calc_digest
+        elif md5_digest != calc_digest:
+            self.fail(heading='MD5 digest mismatch',
+                message='''The MD5 digest supplied does not match a
+                digest calculated from the uploaded file (m =
+                hashlib.md5(); m.update(content); digest =
+                m.hexdigest())''')
+            return
+
+        try:
+            self.store.add_file(name, version, content, md5_digest,
+                sha256_m.hexdigest().lower(),
+                blake2_256_m.hexdigest().lower(),
+                filetype, pyversion, comment, filename, signature)
+        except IntegrityError, e:
+            raise FormError, 'Duplicate file upload detected.'
+        except store.PreviouslyUsedFilename:
+            raise FormError, "This filename has previously been used, you should use a different version."
+
+        self.store.changed()
+
+        if response:
+            self.handler.send_response(200, 'OK')
+            self.handler.set_content_type('text/plain')
+            self.handler.end_headers()
+            self.wfile.write('OK\n')
 
     #
     # Documentation Upload
     #
     @must_tls
     def doc_upload(self):
-        raise Gone(
-            ("This API has been deprecated and removed from legacy PyPI in "
-             "favor of using the APIs available in the new PyPI.org "
-             "implementation of PyPI (located at https://pypi.org/). For more "
-             "information about migrating your use of this API to PyPI.org, "
-             "please see {}. For more information about the sunsetting of "
-             "this API, please see "
-             "https://mail.python.org/pipermail/distutils-sig/2017-June/030766.html").format(
-                WAREHOUSE_UPLOAD_MIGRATION_URL,
-            )
-        )
+        # make sure the user is identified
+        if not self.authenticated:
+            raise Unauthorised, \
+                "You must be identified to edit package information"
+
+        # can't perform CSRF check as this is invoked by tools
+        #self.csrf_check()
+
+        # figure the package name and version
+        name = version = None
+        if self.form.has_key('name'):
+            name = self.form['name']
+        if not name:
+            raise FormError, 'No package name given'
+
+        # make sure the user has permission to do stuff
+        if not (self.store.has_role('Owner', name) or
+                self.store.has_role('Admin', name) or
+                self.store.has_role('Maintainer', name)):
+            raise Forbidden, \
+                "You are not allowed to edit '%s' package information"%name
+
+        if not self.form.has_key('content'):
+            raise FormError, "No file uploaded"
+
+        try:
+            data = self.form['content'].value
+        except AttributeError:
+            # error trying to get the .value *probably* means we didn't get
+            # a file uploaded in the content element
+            raise FormError, "No file uploaded"
+
+        if len(data) > 100*1024*1024:
+            raise FormError, "Documentation zip file is too large"
+        data = cStringIO.StringIO(data)
+        try:
+            data = zipfile.ZipFile(data)
+            members = data.namelist()
+        except Exception,e:
+            raise FormError, "Error uncompressing zipfile:" + str(e)
+
+        if 'index.html' not in members:
+            raise FormError, 'Error: top-level "index.html" missing in the zipfile'
+
+        try:
+            self.store.lock_docs(name)
+        except store.LockedException:
+            raise FormError, "Error: Another doc modification is in progress."
+
+        # Assume the file is valid; remove any previous data
+        if self.docs_fs.exists(name):
+            for dirname, files in self.docs_fs.walk(name, search="depth"):
+                for filename in files:
+                    self.docs_fs.remove(os.path.join(dirname, filename))
+                self.docs_fs.removedir(dirname)
+
+        try:
+            for fname in members:
+                fpath = os.path.normpath(os.path.join(name, fname))
+                if not fpath.startswith(name):
+                    raise ValueError, "invalid path name:"+fname
+
+                self.docs_fs.makedir(
+                    os.path.dirname(fpath),
+                    recursive=True, allow_recreate=True,
+                )
+
+                self.docs_fs.setcontents(fpath, data.read(fname))
+                if hasattr(self.docs_fs, "makepublic"):
+                    self.docs_fs.makepublic(fpath)
+        except Exception, e:
+            raise FormError, "Error unpacking zipfile:" + str(e)
+
+        self.store.set_has_docs(name, value=True)
+        self.store.log_docs(name, version, 'docupdate')
+        self.store.changed()
+        raise Redirect("https://pythonhosted.org/%s/" % name)
 
     #
     # Documentation Destruction
