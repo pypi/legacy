@@ -53,7 +53,7 @@ import readme_renderer.rst
 import readme_renderer.txt
 
 # local imports
-import store, config, versionpredicate, verify_filetype, rpc
+import store, config, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 import oauth
@@ -92,15 +92,6 @@ EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 
 WAREHOUSE_UPLOAD_MIGRATION_URL = "https://packaging.python.org/guides/migrating-to-pypi-org/#uploading"
 
-
-# Requires:
-#   - ASCII letters
-#   - ASCII digits
-#   - underscores
-#   - dashes
-#   - periods
-#   - Starts with letter or digit
-legal_package_name = re.compile(r"^[a-z0-9\._-]+$", re.IGNORECASE)
 
 safe_filenames = {
     True: re.compile(r'.+?\.(exe|tar\.gz|bz2|rpm|deb|zip|tgz|egg|dmg|msi|whl)$', re.I),
@@ -319,22 +310,6 @@ class NoDirS3FS(fs.s3fs.S3FS):
 
     def removedir(self, *args, **kwargs):
         pass  # Noop this, S3 doesn't need directories
-
-
-# Wheel platform checking
-# These platforms can be handled by a simple static list:
-_allowed_platforms = {
-    "any",
-    "win32", "win_amd64", "win_ia64",
-    "manylinux1_x86_64", "manylinux1_i686",
-}
-# macosx is a little more complicated:
-_macosx_platform_re = re.compile("macosx_10_(\d+)+_(?P<arch>.*)")
-_macosx_arches = {
-    "ppc", "ppc64",
-    "i386", "x86_64",
-    "intel", "fat", "fat32", "fat64", "universal",
-}
 
 
 def _simple_body_internal(path, urls):
