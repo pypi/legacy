@@ -40,8 +40,6 @@ import raven
 import raven.utils.wsgi
 from raven.handlers.logging import SentryHandler
 
-import packaging.version
-
 # Filesystem Handling
 import fs.errors
 import fs.multifs
@@ -52,7 +50,7 @@ import readme_renderer.rst
 import readme_renderer.txt
 
 # local imports
-import store, config, verify_filetype, rpc
+import store, config, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
 import oauth
@@ -63,7 +61,6 @@ from perfmetrics import set_statsd_client
 
 from constants import DOMAIN_BLACKLIST
 
-import config
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
 
