@@ -1,8 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, time, hashlib, random, types, math, stat, errno
-import logging, string, datetime, calendar, binascii, urllib, urllib2, cgi
-import posixpath
+import sys, os, time, hashlib, random
+import string, datetime, calendar, binascii, urllib, urllib2, cgi
 from collections import defaultdict
 import cPickle as pickle
 try:
@@ -23,15 +22,8 @@ from base64 import b64encode
 import openid.store.sqlstore
 import oauth
 import requests
-import urlparse
-import time
-from functools import wraps
 import itertools
 import readme_renderer.rst
-
-import fs.errors
-
-from pyblake2 import blake2b
 
 import tasks
 import packaging.version
@@ -2031,56 +2023,6 @@ class Store:
         '''Generate the path to the file on disk.'''
 
         return os.path.join(digest[:2], digest[2:4], digest[4:], filename)
-
-    def add_file(self, name, version, content, md5_digest, sha256_digest,
-            blake2_256_digest,
-            filetype, pyversion, comment, filename, signature):
-        '''Add to the database and store the content to disk.'''
-
-        filepath = self.gen_file_path(blake2_256_digest, filename)
-
-        cursor = self.get_cursor()
-        # add database entry
-        sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest, sha256_digest,
-            blake2_256_digest,
-            size, has_signature, path, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
-        safe_execute(cursor, sql, (name, version, pyversion, filetype,
-            comment, filename, md5_digest, sha256_digest, blake2_256_digest,
-            len(content), bool(signature), filepath))
-
-        # Add an entry to the file registry
-        try:
-            sql = """ INSERT INTO file_registry (filename)
-                      VALUES (%s)
-                  """
-            safe_execute(cursor, sql, (filename,))
-        except IntegrityError:
-            raise PreviouslyUsedFilename
-
-        # store file to disk
-        k = self.package_bucket.new_key(os.path.join("packages", filepath))
-        k.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
-        k.set_metadata("version", version)
-        k.set_metadata("package-type", filetype)
-        k.set_metadata("python-version", pyversion)
-        k.set_contents_from_string(content)
-
-        # Store signature next to the file
-        if signature:
-            sk = self.package_bucket.new_key(os.path.join("packages", filepath + ".asc"))
-            sk.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
-            sk.set_metadata("version", version)
-            sk.set_metadata("package-type", filetype)
-            sk.set_metadata("python-version", pyversion)
-            sk.set_contents_from_string(signature)
-
-        # add journal entry
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(
-            name, version, "add %s file %s" % (pyversion, filename), date,
-            self.username, self.userip)
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
     filename md5_digest path size! has_sig! downloads! upload_time!''')

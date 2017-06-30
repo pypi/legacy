@@ -4,10 +4,10 @@ import defusedxml.xmlrpc
 defusedxml.xmlrpc.monkey_patch()
 
 # system imports
-import sys, os, urllib, cStringIO, traceback, cgi, binascii, gzip, functools
-import time, random, smtplib, base64, email, types, urlparse
-import re, zipfile, logging, shutil, Cookie, subprocess, hashlib
-import datetime, string, traceback
+import sys, os, urllib, cStringIO, traceback, cgi, binascii, functools
+import time, smtplib, base64, types, urlparse
+import re, logging, Cookie, subprocess, hashlib
+import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from distutils2.metadata import Metadata
@@ -17,7 +17,6 @@ import redis
 import rq
 import boto.s3
 
-from pyblake2 import blake2b
 from rfc3986 import uri_reference
 
 try:
@@ -57,7 +56,6 @@ import readme_renderer.txt
 import store, config, versionpredicate, verify_filetype, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
-from description_utils import extractPackageReadme, trim_docstring
 import oauth
 import tasks
 
@@ -338,15 +336,6 @@ _macosx_arches = {
     "intel", "fat", "fat32", "fat64", "universal",
 }
 
-
-# Actual checking code;
-def _valid_platform_tag(platform_tag):
-    if platform_tag in _allowed_platforms:
-        return True
-    m = _macosx_platform_re.match(platform_tag)
-    if m and m.group("arch") in _macosx_arches:
-        return True
-    return False
 
 def _simple_body_internal(path, urls):
     """
@@ -2443,144 +2432,6 @@ class WebUI:
             )
         )
 
-    def _validate_metadata_1_2(self, data):
-        # loading the metadata into
-        # a DistributionMetadata instance
-        # so we can use its check() method
-        metadata = Metadata()
-        for key, value in data.items():
-            metadata[key] = value
-        metadata['Metadata-Version'] = '1.2'
-        missing, warnings = metadata.check()
-
-        # raising the first problem
-        if len(missing) > 0:
-            raise ValueError, '"%s" is missing' % missing[0]
-
-        if len(warnings) > 0:
-            raise ValueError, warnings[0]
-
-    def validate_metadata(self, data):
-        ''' Validate the contents of the metadata.
-        '''
-        if not data.get('name', ''):
-            raise ValueError, 'Missing required field "name"'
-        if not data.get('version', ''):
-            raise ValueError, 'Missing required field "version"'
-        if data.has_key('metadata_version'):
-            metadata_version = data['metadata_version']
-            del data['metadata_version']
-        else:
-            metadata_version = '1.0'  # default
-
-        # Ensure that package names follow a restricted set of characters.
-        # These characters are:
-        #     * ASCII letters (``[a-zA-Z]``)
-        #     * ASCII digits (``[0-9]``)
-        #     * underscores (``_``)
-        #     * hyphens (``-``)
-        #     * periods (``.``)
-        # The reasoning for this restriction is codified in PEP426. For the
-        # time being this check is only validated against brand new packages
-        # and not pre-existing packages because of existing names that violate
-        # this policy.
-        if not self.store.find_package(safe_name(data["name"]).lower()):
-            if legal_package_name.search(data["name"]) is None:
-                raise ValueError("Invalid package name. Names must contain "
-                                 "only ASCII letters, digits, underscores, "
-                                 "hyphens, and periods")
-
-            if not data["name"][0].isalnum():
-                raise ValueError("Invalid package name. Names must start with "
-                                 "an ASCII letter or digit")
-
-            if not data["name"][-1].isalnum():
-                raise ValueError("Invalid package name. Names must end with "
-                                 "an ASCII letter or digit")
-
-
-        # Traditionally, package names are restricted only for
-        # technical reasons; / is not allowed because it may be
-        # possible to break path names for file and documentation
-        # uploads
-        if '/' in data['name']:
-            raise ValueError, "Invalid package name"
-
-
-        # again, this is a restriction required by the implementation and not
-        # mentiond in documentation; ensure name and version are valid for URLs
-        if re.search('[<>%#"]', data['name'] + data['version']):
-            raise ValueError('Invalid package name or version (URL safety)')
-
-        # Parse our version
-        parsed_version = packaging.version.parse(data["version"])
-
-        # Make sure that our version is a valid PEP 440 version
-        if data["version"].strip() != data["version"]:
-            raise ValueError(
-                "Invalid version, cannot have leading or trailing whitespace."
-            )
-
-        if not isinstance(parsed_version, packaging.version.Version):
-            raise ValueError(
-                "Invalid version, cannot be parsed as a valid PEP 440 version."
-            )
-
-        # Make sure that our version does not have a local version.
-        if parsed_version.local is not None:
-            raise ValueError(
-                "Invalid version, cannot use PEP 440 local versions on PyPI."
-            )
-
-        # check requires and obsoletes
-        def validate_version_predicates(col, sequence):
-            try:
-                map(versionpredicate.VersionPredicate, sequence)
-            except ValueError, message:
-                raise ValueError, 'Bad "%s" syntax: %s'%(col, message)
-        for col in ('requires', 'obsoletes'):
-            if data.has_key(col) and data[col]:
-                validate_version_predicates(col, data[col])
-
-        # check provides
-        if data.has_key('provides') and data['provides']:
-            try:
-                map(versionpredicate.check_provision, data['provides'])
-            except ValueError, message:
-                raise ValueError, 'Bad "provides" syntax: %s'%message
-
-        # check PEP 345 fields
-        if metadata_version == '1.2':
-            self._validate_metadata_1_2(data)
-
-        # check classifiers
-        if data.has_key('classifiers'):
-            d = {}
-            for entry in self.store.get_classifiers():
-                d[entry['classifier']] = 1
-            for entry in data['classifiers']:
-                if d.has_key(entry):
-                    continue
-                raise ValueError, 'Invalid classifier "%s"'%entry
-
-        # Validate that any URLs given to us are safe and valid.
-        for key in {"download_url", "home_page"}:
-            uri = data.get(key)
-            # Check to see if there is any data to validate, vefore attempting
-            # to validate.
-            if uri and not uri == "UNKNOWN":
-                uri = uri_reference(uri)
-                if not uri.is_valid(require_scheme=True, require_authority=True):
-                    raise ValueError("Invalid URI: {!r}".format(uri.unsplit()))
-
-                if uri.scheme not in {"http", "https"}:
-                    raise ValueError(
-                        "Invalid scheme {!r} for URI {!r}".format(
-                            uri.scheme,
-                            uri.unsplit(),
-                        )
-                    )
-
     def pkg_edit(self):
         ''' Edit info about a bunch of packages at one go
         '''
@@ -2781,7 +2632,6 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(digest)
 
-    CURRENT_UPLOAD_PROTOCOL = "1"
     @must_tls
     def file_upload(self, response=True, parameters=None):
         raise Gone(
@@ -3877,7 +3727,6 @@ class WebUI:
         from oic import PyPIAdapter
         from authomatic.providers import oauth2
         import authomatic
-        import requests
         import logging
         from browserid.jwt import parse
 
