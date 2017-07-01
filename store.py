@@ -690,54 +690,6 @@ class Store:
             urls.append(self.gen_file_url(pyversion, name, fname))
         return urls
 
-    _Description_URLs = FastResultRow('id! version url')
-    def list_description_urls(self, name, version=None):
-        if version is None:
-            sql = "SELECT id, version, url FROM description_urls WHERE name=%s"
-            params = [name]
-        else:
-            sql = """SELECT id, version, url FROM description_urls
-                WHERE name=%s AND version=%s"""
-            params = [name, version]
-
-        cursor = self.get_cursor()
-        safe_execute(cursor, sql, params)
-        return Result(None, cursor.fetchall(), self._Description_URLs)
-
-    def add_description_url(self, name, version, url):
-        cursor = self.get_cursor()
-        safe_execute(cursor, """INSERT INTO description_urls (name, version, url)
-             VALUES (%s, %s, %s)""", [name, version, url])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "add url " + url, date,
-                                                self.username, self.userip)
-
-    def remove_description_url(self, url_id):
-        cursor = self.get_cursor()
-        sql = "SELECT name, version, url FROM description_urls WHERE id=%s"
-        safe_execute(cursor, sql, [url_id])
-        results = cursor.fetchone()
-        if results is None:
-            return
-
-        name, version, url = results
-
-        sql = "DELETE FROM description_urls WHERE id=%s"
-        safe_execute(cursor, sql, [url_id])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "remove url " + url, date,
-                                                self.username, self.userip)
-
-    def get_stable_version(self, name):
-        ''' Retrieve the version marked as a package:s stable version.
-        '''
-        cursor = self.get_cursor()
-        sql = 'select stable_version from packages where name=%s'
-        safe_execute(cursor, sql, (name, ))
-        return cursor.fetchone()[0]
-
     def top_packages(self, num=None):
         cursor = self.get_cursor()
         sql = """SELECT name, SUM(downloads) AS downloads FROM release_files
@@ -982,29 +934,11 @@ class Store:
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
 
-    def package_allows_legacy(self, name):
-        cursor = self.get_cursor()
-        safe_execute(cursor, "select allow_legacy_files from packages where name=%s", [name])
-        return cursor.fetchall()[0][0]
-
     def get_package_hosting_mode(self, name):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select hosting_mode from packages where name=%s',
                      [name])
         return cursor.fetchall()[0][0]
-
-    def set_package_hosting_mode(self, name, value):
-        if value not in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl",
-                         "pypi-only"]:
-            raise ValueError("Invalid value for hosting_mode")
-
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'update packages set hosting_mode=%s where name=%s',
-                     [value, name])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, None, "update hosting_mode", date,
-                                                    self.username, self.userip)
 
     def set_description(self, name, version, desc_text,
             from_readme=False):

@@ -1,12 +1,10 @@
 
-import sys, os, urllib, StringIO, traceback, cgi, binascii, getopt, shutil
+import sys, os, StringIO, shutil
 import zipfile, gzip, tarfile
-#sys.path.append('/usr/local/pypi/lib')
 
 # Filesystem Handling
 import fs.errors
 import fs.multifs
-import fs.osfs
 
 import redis
 import rq
@@ -369,4 +367,3 @@ if __name__ == '__main__':
         st.changed()
     finally:
         st.close()
-
