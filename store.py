@@ -46,12 +46,6 @@ class LockedException(Exception):
     pass
 
 
-# we import both the old and new (PEP 386) methods of handling versions since
-# some version strings are not compatible with the new method and we can fall
-# back on the old version
-from distutils.version import LooseVersion
-from verlib import NormalizedVersion, suggest_normalized_version
-
 from perfmetrics import statsd_client_from_uri
 
 def enumerate(sequence):
