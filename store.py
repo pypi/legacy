@@ -1,8 +1,7 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
-import sys, os, re, time, hashlib, random, types, math, stat, errno
-import logging, string, datetime, calendar, binascii, urllib, urllib2, cgi
-import posixpath
+import sys, os, time, hashlib, random
+import string, datetime, calendar, binascii, urllib, urllib2, cgi
 from collections import defaultdict
 import cPickle as pickle
 try:
@@ -23,15 +22,8 @@ from base64 import b64encode
 import openid.store.sqlstore
 import oauth
 import requests
-import urlparse
-import time
-from functools import wraps
 import itertools
 import readme_renderer.rst
-
-import fs.errors
-
-from pyblake2 import blake2b
 
 import tasks
 import packaging.version
@@ -53,12 +45,6 @@ class PreviouslyUsedFilename(Exception):
 class LockedException(Exception):
     pass
 
-
-# we import both the old and new (PEP 386) methods of handling versions since
-# some version strings are not compatible with the new method and we can fall
-# back on the old version
-from distutils.version import LooseVersion
-from verlib import NormalizedVersion, suggest_normalized_version
 
 from perfmetrics import statsd_client_from_uri
 
@@ -704,54 +690,6 @@ class Store:
             urls.append(self.gen_file_url(pyversion, name, fname))
         return urls
 
-    _Description_URLs = FastResultRow('id! version url')
-    def list_description_urls(self, name, version=None):
-        if version is None:
-            sql = "SELECT id, version, url FROM description_urls WHERE name=%s"
-            params = [name]
-        else:
-            sql = """SELECT id, version, url FROM description_urls
-                WHERE name=%s AND version=%s"""
-            params = [name, version]
-
-        cursor = self.get_cursor()
-        safe_execute(cursor, sql, params)
-        return Result(None, cursor.fetchall(), self._Description_URLs)
-
-    def add_description_url(self, name, version, url):
-        cursor = self.get_cursor()
-        safe_execute(cursor, """INSERT INTO description_urls (name, version, url)
-             VALUES (%s, %s, %s)""", [name, version, url])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "add url " + url, date,
-                                                self.username, self.userip)
-
-    def remove_description_url(self, url_id):
-        cursor = self.get_cursor()
-        sql = "SELECT name, version, url FROM description_urls WHERE id=%s"
-        safe_execute(cursor, sql, [url_id])
-        results = cursor.fetchone()
-        if results is None:
-            return
-
-        name, version, url = results
-
-        sql = "DELETE FROM description_urls WHERE id=%s"
-        safe_execute(cursor, sql, [url_id])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, version, "remove url " + url, date,
-                                                self.username, self.userip)
-
-    def get_stable_version(self, name):
-        ''' Retrieve the version marked as a package:s stable version.
-        '''
-        cursor = self.get_cursor()
-        sql = 'select stable_version from packages where name=%s'
-        safe_execute(cursor, sql, (name, ))
-        return cursor.fetchone()[0]
-
     def top_packages(self, num=None):
         cursor = self.get_cursor()
         sql = """SELECT name, SUM(downloads) AS downloads FROM release_files
@@ -996,29 +934,11 @@ class Store:
         safe_execute(cursor, 'update packages set autohide=%s where name=%s',
                      [value, name])
 
-    def package_allows_legacy(self, name):
-        cursor = self.get_cursor()
-        safe_execute(cursor, "select allow_legacy_files from packages where name=%s", [name])
-        return cursor.fetchall()[0][0]
-
     def get_package_hosting_mode(self, name):
         cursor = self.get_cursor()
         safe_execute(cursor, 'select hosting_mode from packages where name=%s',
                      [name])
         return cursor.fetchall()[0][0]
-
-    def set_package_hosting_mode(self, name, value):
-        if value not in ["pypi-explicit", "pypi-scrape", "pypi-scrape-crawl",
-                         "pypi-only"]:
-            raise ValueError("Invalid value for hosting_mode")
-
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'update packages set hosting_mode=%s where name=%s',
-                     [value, name])
-
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(name, None, "update hosting_mode", date,
-                                                    self.username, self.userip)
 
     def set_description(self, name, version, desc_text,
             from_readme=False):
@@ -2031,56 +1951,6 @@ class Store:
         '''Generate the path to the file on disk.'''
 
         return os.path.join(digest[:2], digest[2:4], digest[4:], filename)
-
-    def add_file(self, name, version, content, md5_digest, sha256_digest,
-            blake2_256_digest,
-            filetype, pyversion, comment, filename, signature):
-        '''Add to the database and store the content to disk.'''
-
-        filepath = self.gen_file_path(blake2_256_digest, filename)
-
-        cursor = self.get_cursor()
-        # add database entry
-        sql = '''insert into release_files (name, version, python_version,
-            packagetype, comment_text, filename, md5_digest, sha256_digest,
-            blake2_256_digest,
-            size, has_signature, path, upload_time) values
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, current_timestamp)'''
-        safe_execute(cursor, sql, (name, version, pyversion, filetype,
-            comment, filename, md5_digest, sha256_digest, blake2_256_digest,
-            len(content), bool(signature), filepath))
-
-        # Add an entry to the file registry
-        try:
-            sql = """ INSERT INTO file_registry (filename)
-                      VALUES (%s)
-                  """
-            safe_execute(cursor, sql, (filename,))
-        except IntegrityError:
-            raise PreviouslyUsedFilename
-
-        # store file to disk
-        k = self.package_bucket.new_key(os.path.join("packages", filepath))
-        k.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
-        k.set_metadata("version", version)
-        k.set_metadata("package-type", filetype)
-        k.set_metadata("python-version", pyversion)
-        k.set_contents_from_string(content)
-
-        # Store signature next to the file
-        if signature:
-            sk = self.package_bucket.new_key(os.path.join("packages", filepath + ".asc"))
-            sk.set_metadata("project", re.sub(r"[-_.]+", "-", name).lower())
-            sk.set_metadata("version", version)
-            sk.set_metadata("package-type", filetype)
-            sk.set_metadata("python-version", pyversion)
-            sk.set_contents_from_string(signature)
-
-        # add journal entry
-        date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        self.add_journal_entry(
-            name, version, "add %s file %s" % (pyversion, filename), date,
-            self.username, self.userip)
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
     filename md5_digest path size! has_sig! downloads! upload_time!''')
