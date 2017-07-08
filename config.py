@@ -77,6 +77,7 @@ class Config:
         self.adminemail = c.get('webui', 'adminemail')
         self.replyto = c.get('webui', 'replyto')
         self.url = c.get('webui', 'url')
+        self.baseurl = c.get('webui', 'url').rstrip('/pypi')
         self.scheme_host = urlunsplit(urlsplit(self.url)[:2]+('','',''))
         if c.has_option('webui', 'statuspage_id'):
           self.statuspage_id = c.get('webui', 'statuspage_id')

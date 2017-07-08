@@ -20,10 +20,7 @@ class PyPIAdapter(BaseAdapter):
     @property
     def url(self):
         parse = urlparse.urlparse(self.config.url)
-        if self.return_url is None:
-            return urlparse.urlunparse(parse._replace(path="pypi", query=":action=openid_return"))
-        else:
-            return urlparse.urlunparse(parse._replace(path=self.return_url))
+        return urlparse.urlunparse(parse._replace(path=self.return_url))
 
     @property
     def cookies(self):

@@ -827,7 +827,7 @@ class WebUI:
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
-        file_upload show_md5 doc_upload doc_destroy claim openid openid_return dropid
+        file_upload show_md5 doc_upload doc_destroy claim openid dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
         exception login_form purge'''.split():
@@ -1440,7 +1440,7 @@ class WebUI:
             self.form['id'] = self.form['openid_identifier']
 
         qs = cgi.parse_qs(self.env['QUERY_STRING'])
-        if 'id' not in self.form and 'openid.mode' not in qs and self.form.get(':action', '') != 'openid_return':
+        if 'id' not in self.form and 'openid.mode' not in qs:
             self.write_template('openid.pt', title='OpenID Login')
             return
 
@@ -3160,7 +3160,7 @@ class WebUI:
                 assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
             except ValueError, e:
                 return self.fail('Cannot establish OpenID session: ' + str(e))
-            return_to = self.config.url+'?:action=openid_return'
+            return_to = self.config.baseurl+'/openid_login'
             url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
             self.store.commit()
             raise RedirectTemporary(url)
@@ -3172,18 +3172,11 @@ class WebUI:
         else:
             return self.fail('Unknown provider')
         stypes, url, assoc_handle = self.store.get_provider_session(p)
-        return_to = self.config.url+'?:action=openid_return'
+        return_to = self.config.baseurl+'/openid_return'
         url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
         self.store.commit()
         self.statsd.incr('openid.client.claim')
         raise RedirectTemporary(url)
-
-    def openid_return(self):
-        '''Return from OpenID provider.'''
-        qs = cgi.parse_qs(self.env['QUERY_STRING'])
-        if 'state' in qs and 'code' in qs:
-            return self.google_login()
-        return self.openid_login()
 
     def dropid(self):
         if not self.loggedin:
@@ -3209,7 +3202,7 @@ class WebUI:
                      </Service>
                 </XRD>
                 </xrds:XRDS>
-        ''' % (self.config.url+'?:action=openid_return')
+        ''' % (self.config.baseurl+'/openid_login')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3402,7 +3395,7 @@ class WebUI:
                 'consumer_key': self.config.google_consumer_id,
                 'consumer_secret': self.config.google_consumer_secret,
                 'scope': ['email', 'openid', 'profile'],
-                'redirect_uri': self.config.url+'?:action=openid_return',
+                'redirect_uri': self.config.baseurl+'/google_login',
                 'user_authorization_params': {
                     'openid.realm': self.config.url+'?:action=openid_return'
                 }
