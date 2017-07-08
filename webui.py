@@ -67,11 +67,6 @@ conf = config.Config(os.path.join(root, "config.ini"))
 STATSD_URI = "statsd://127.0.0.1:8125?prefix=%s" % (conf.database_name)
 set_statsd_client(STATSD_URI)
 
-esc = cgi.escape
-esq = lambda x: cgi.escape(x, True)
-
-def enumerate(sequence):
-    return [(i, sequence[i]) for i in range(len(sequence))]
 
 EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
