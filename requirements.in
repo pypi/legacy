@@ -1,4 +1,5 @@
 authomatic
+argon2-cffi
 bcrypt
 bleach
 boto
