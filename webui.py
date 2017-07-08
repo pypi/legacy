@@ -1447,9 +1447,10 @@ class WebUI:
         self.handler.set_status('200 OK')
         authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
                                            logging_level=logging.CRITICAL,
-                                           secure_cookie=self.config.authomatic_secure,)
+                                           secure_cookie=self.config.authomatic_secure)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
-                                  use_realm=False, store=self.store.oid_store())
+                                  use_realm=False, store=self.store.oid_store(),
+                                  return_url=self.config.baseurl+'/openid_login')
 
         if result:
             if result.user:
@@ -3403,8 +3404,9 @@ class WebUI:
         }
 
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure)
-        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure,)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google',
+                                  return_url=self.config.baseurl+'/google_login',)
         if result:
             if result.user:
                 content = result.user.data
