@@ -5,16 +5,7 @@
       metal:use-macro="standard_template/macros/page">
   <metal:fill fill-slot="body">
   
-      <form tal:attributes="action data/url_path" method="POST">
-        <p>The site <b tal:content="data/trust_root" /> is asking for confirmation that 
-        <b tal:content="data/pending_id"/> is your identity.</p>
-        <input type="submit" name="allow" value="Allow"/>
-        <input type="submit" name="allow_always" value="Allow Always"/>
-        <input type="submit" name="no_thanks" value="No Thanks"/>
-        <div tal:repeat="item python:data['orequest'].items()" tal:omit-tag="">
-            <input type="hidden" tal:attributes="name python:item[0];value python:item[1]"/>
-        </div>
-      </form>
+    <p>Sorry! No new OpenID Associations allowed. OpenID Provider functionality for PyPI will be terminated on <b>August 15, 2017</b></p>
       
   </metal:fill>
 </html>
