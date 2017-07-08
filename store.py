@@ -2308,17 +2308,6 @@ class Store:
         cursor = self.get_cursor()
         safe_execute(cursor, 'delete from openids where id=%s', (openid,))
 
-    def set_openid_trustedroot(self, username, trusted_root):
-        now = datetime.datetime.now()
-        cursor = self.get_cursor()
-        safe_execute(cursor, '''select * from openid_whitelist
-                     where name=%s and trust_root=%s''',
-                     (username, trusted_root))
-        if not cursor.fetchone():
-            safe_execute(cursor, '''insert into openid_whitelist(
-                     name, trust_root, created) values(%s,%s,%s)''',
-                     (username, trusted_root, now))
-
     def check_openid_trustedroot(self, username, trusted_root):
         """Check trusted_root is in user's whitelist"""
         cursor = self.get_cursor()
