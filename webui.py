@@ -90,15 +90,6 @@ safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
 safe_email = re.compile(r'^[a-zA-Z0-9._+@-]+$')
 botre = re.compile(r'^$|brains|yeti|myie2|findlinks|ia_archiver|psycheclone|badass|crawler|slurp|spider|bot|scooter|infoseek|looksmart|jeeves', re.I)
 
-wheel_file_re = re.compile(
-                r"""^(?P<namever>(?P<name>.+?)(-(?P<ver>\d.+?))?)
-                ((-(?P<build>\d.*?))?-(?P<pyver>.+?)-(?P<abi>.+?)-(?P<plat>.+?)
-                \.whl|\.dist-info)$""",
-                re.VERBOSE)
-
-packages_path_to_package_name = re.compile(
-    '^/([0-9\.]+|any|source)/./([a-zA-Z0-9][a-zA-Z0-9_\-\.]*)')
-
 class NotFound(Exception):
     pass
 class Gone(Exception):
@@ -122,8 +113,6 @@ class FormError(Exception):
 class OpenIDError(Exception):
     pass
 class OAuthError(Exception):
-    pass
-class PkgInfoError(Exception):
     pass
 class BlockedIP(Exception):
     pass
@@ -255,22 +244,6 @@ def must_tls(fn):
             raise Forbidden("Must access using HTTPS instead of HTTP")
         return fn(self, *args, **kwargs)
     return wrapped
-
-
-class MultiWriteFS(fs.multifs.MultiFS):
-
-    @fs.multifs.synchronize
-    def remove(self, path):
-        # raise FormError, "Deleting files has been disabled."
-
-        found = False
-        for fs in self:
-            if fs.exists(path):
-                found = True
-                fs.remove(path)
-
-        if not found:
-            raise fs.multifs.ResourceNotFoundError(path)
 
 
 class NoDirS3FS(fs.s3fs.S3FS):
@@ -526,9 +499,6 @@ class WebUI:
             except FormError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing form')
-            except PkgInfoError, message:
-                message = str(message)
-                self.fail(message, code=400, heading='Error processing PKG-INFO data')
             except OpenIDError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing OpenID request')
@@ -1317,8 +1287,6 @@ class WebUI:
             return
 
         self.nav_current = nav_current
-        content = cStringIO.StringIO()
-        w = content.write
 
         trove = self.store.trove()
         qs = cgi.parse_qsl(self.env.get('QUERY_STRING', ''))
@@ -2057,7 +2025,6 @@ class WebUI:
             spec = self.form_metadata()
             if not spec.has_key('_pypi_hidden'):
                 spec['_pypi_hidden'] = False
-            i=0
             l = self.store.query_packages(spec)
             if len(l) == 1:
                 self.form['name'] = l[0]['name']
@@ -2929,8 +2896,6 @@ class WebUI:
                 'url': self.config.url, 'admin': self.config.adminemail,
                 'email': user['email'], 'name':user['name']}
             self.send_email(info['email'], rego_message%info)
-            response = 'Registration OK'
-            message = 'You should receive a confirmation email shortly.'
             self.write_template('message.pt', title="Resending registration key",
                 message='Email with registration key resent')
 
@@ -3288,7 +3253,6 @@ class WebUI:
         username = username.strip()
         username = username.replace(' ', '.')
         username = re.sub('[^a-zA-Z0-9._]', '', username)
-        error = 'Please choose a username to complete registration'
 
         if not username:
             username = "nonamegiven"

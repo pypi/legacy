@@ -940,15 +940,6 @@ class Store:
                      [name])
         return cursor.fetchall()[0][0]
 
-    def set_description(self, name, version, desc_text,
-            from_readme=False):
-        cursor = self.get_cursor()
-        safe_execute(cursor, '''update releases set description=%s,
-            description_from_readme=%s where name=%s
-            and version=%s''', [desc_text, from_readme, name, version])
-
-        self._add_invalidation(name)
-
     def _get_package_url(self, name):
         name = name.split()[0]
         cursor = self.get_cursor()
