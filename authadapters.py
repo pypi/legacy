@@ -1,6 +1,7 @@
 from authomatic.adapters import BaseAdapter
 import urlparse
 import Cookie
+from wsgiref.util import request_uri
 
 
 class PyPIAdapter(BaseAdapter):
@@ -19,8 +20,7 @@ class PyPIAdapter(BaseAdapter):
 
     @property
     def url(self):
-        parse = urlparse.urlparse(self.config.url)
-        return urlparse.urlunparse(parse._replace(path=self.return_url))
+        return request_uri(self.env, include_query=False)
 
     @property
     def cookies(self):
