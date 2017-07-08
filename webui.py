@@ -3425,14 +3425,6 @@ class WebUI:
 
     def openid_decide_post(self):
         """Handle POST request from decide form"""
-        if self.env['REQUEST_METHOD'] != "POST":
-            raise OpenIDError, "OpenID request must be a POST"
-
-        from openid.message import Message
-        del self.form[':action']
-        message = Message.fromPostArgs(self.form)
-        orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
-
         raise OpenIDError, "No New OpenID Associations allowed, OpenID Logins will be disabled August 15, 2017"
 
     def openid_response(self, oresponse):
