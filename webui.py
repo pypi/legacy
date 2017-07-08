@@ -3478,19 +3478,7 @@ class WebUI:
         message = Message.fromPostArgs(self.form)
         orequest = OpenIDServer.CheckIDRequest.fromMessage(message, self.oid_server.op_endpoint)
 
-        if self.form.has_key('allow'):
-            answer = orequest.answer(True, identity=self.openid_user_url())
-            return self.openid_response(answer)
-        elif self.form.has_key('allow_always'):
-            answer = orequest.answer(True, identity=self.openid_user_url())
-            self.store.set_openid_trustedroot(self.username, orequest.trust_root)
-            self.store.commit()
-            return self.openid_response(answer)
-        elif self.form.has_key('no_thanks'):
-            answer = orequest.answer(False)
-            return self.openid_response(answer)
-        else:
-            raise OpenIDError, "OpenID post request failure"
+        raise OpenIDError, "No New OpenID Associations allowed, OpenID Logins will be disabled August 15, 2017"
 
     def openid_response(self, oresponse):
         """Convert a webresponse from the OpenID library into a
