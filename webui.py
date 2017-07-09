@@ -774,6 +774,9 @@ class WebUI:
             return self.google_login()
         if script_name == '/openid_login':
             return self.openid_login()
+        if script_name == '/openid_claim':
+            return self.openid_claim()
+
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -827,7 +830,7 @@ class WebUI:
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
-        file_upload show_md5 doc_upload doc_destroy claim openid dropid
+        file_upload show_md5 doc_upload doc_destroy openid dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
         exception login_form purge'''.split():
@@ -1435,9 +1438,10 @@ class WebUI:
                 if p[0] == self.form['provider']:
                     self.form['openid_identifier'] = p[2]
             self.form['id'] = None
-
         if 'openid_identifier' in self.form:
             self.form['id'] = self.form['openid_identifier']
+        elif 'realm' not in self.form:
+            self.write_template('openid.pt', title='OpenID Login')
 
         self.handler.set_status('200 OK')
         authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
@@ -1466,6 +1470,63 @@ class WebUI:
                 else:
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
         self.handler.end_headers()
+
+    def openid_claim(self):
+        '''Claim an OpenID.'''
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if 'openid_identifier' in self.form and self.env['REQUEST_METHOD'] != "POST":
+            return self.fail('OpenID Claims must be POST')
+        if self.env['REQUEST_METHOD'] == "POST":
+            self.csrf_check()
+        if 'openid_identifier' in self.form:
+            self.form['id'] = self.form['openid_identifier']
+
+        from authadapters import PyPIAdapter
+        import authomatic
+        from authomatic.providers import openid
+        CONFIG = {
+            'oi': {
+                'class_': openid.OpenID,
+            },
+        }
+
+        self.handler.set_status('200 OK')
+        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
+                                           logging_level=logging.CRITICAL,
+                                           secure_cookie=self.config.authomatic_secure)
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
+                                  use_realm=False, store=self.store.oid_store(),
+                                  return_url=self.config.baseurl+'/openid_claim')
+
+        if result:
+            if result.user:
+                content = result.user.data
+                result_openid_id = content.get('guid', None)
+                user = None
+                if result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        return self.fail('OpenID is already claimed')
+                    self.store.associate_openid(self.username, result_openid_id)
+                    self.store.commit()
+                    self.statsd.incr('openid.client.claim')
+                    self.home()
+        self.handler.end_headers()
+
+
+    def dropid(self):
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if 'openid' not in self.form:
+            raise FormError, "ID missing"
+        openid = self.form['openid']
+        for i in self.store.get_openids(self.username):
+            if openid == i['id']:break
+        else:
+            raise Forbidden, "You don't own this ID"
+        self.store.drop_openid(openid)
+        return self.register_form()
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -2689,7 +2750,7 @@ class WebUI:
             info['name'] = username
             info['email'] = email
             info['action'] = 'Register'
-            info['title'] = 'Manual user registration'
+            info['title'] = 'User Registration'
             self.nav_current = 'register_form'
 
         self.write_template('register.pt', **info)
@@ -3132,61 +3193,6 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(time.strftime("%Y%m%dT%H:%M:%S\n", time.gmtime(time.time())))
 
-
-    def claim(self):
-        '''Claim an OpenID.'''
-        if not self.loggedin:
-            return self.fail('You are not logged in')
-
-        if self.env['REQUEST_METHOD'] != "POST":
-            return self.fail('OpenID claim request must be a POST')
-
-        self.csrf_check()
-
-        if 'openid_identifier' in self.form:
-            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
-            if kind == 'xri':
-                return self.fail('XRI resolution is not supported')
-            res = openid2rp.discover(claimed_id)
-            if not res:
-                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
-            stypes, op_endpoint, op_local = res
-            if not op_local:
-                op_local = claimed_id
-            try:
-                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
-            except ValueError, e:
-                return self.fail('Cannot establish OpenID session: ' + str(e))
-            return_to = self.config.baseurl+'/openid_login'
-            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
-            self.store.commit()
-            raise RedirectTemporary(url)
-        if not self.form.has_key("provider"):
-            return self.fail('Missing parameter')
-        for p in providers:
-            if p[0] == self.form['provider']:
-                break
-        else:
-            return self.fail('Unknown provider')
-        stypes, url, assoc_handle = self.store.get_provider_session(p)
-        return_to = self.config.baseurl+'/openid_login'
-        url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
-        self.store.commit()
-        self.statsd.incr('openid.client.claim')
-        raise RedirectTemporary(url)
-
-    def dropid(self):
-        if not self.loggedin:
-            return self.fail('You are not logged in')
-        if 'openid' not in self.form:
-            raise FormError, "ID missing"
-        openid = self.form['openid']
-        for i in self.store.get_openids(self.username):
-            if openid == i['id']:break
-        else:
-            raise Forbidden, "You don't own this ID"
-        self.store.drop_openid(openid)
-        return self.register_form()
 
     def rp_discovery(self):
         payload = '''<xrds:XRDS
