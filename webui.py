@@ -722,10 +722,6 @@ class WebUI:
             return self.current_serial()
         if script_name == '/id':
             return self.run_id()
-        if script_name == '/google_login':
-            return self.google_login()
-        if script_name == '/openid_login':
-            return self.openid_login()
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -774,6 +770,10 @@ class WebUI:
         # Now we have a username try running OAuth if necessary
         if script_name == '/oauth':
             raise Gone, "OAuth has been disabled."
+        if script_name == '/google_login':
+            return self.google_login()
+        if script_name == '/openid_login':
+            return self.openid_login()
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -1439,11 +1439,6 @@ class WebUI:
         if 'openid_identifier' in self.form:
             self.form['id'] = self.form['openid_identifier']
 
-        qs = cgi.parse_qs(self.env['QUERY_STRING'])
-        if 'id' not in self.form and 'openid.mode' not in qs:
-            self.write_template('openid.pt', title='OpenID Login')
-            return
-
         self.handler.set_status('200 OK')
         authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
                                            logging_level=logging.CRITICAL,
@@ -1463,13 +1458,13 @@ class WebUI:
                         user = found_user
                 if user:
                     self.username = user['name']
+                    self.loggedin = self.authenticated = True
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
-                    self.loggedin = self.authenticated = True
+                    return self.home()
                 else:
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
-                return self.home()
-            return self.fail('OpenID: {0}'.format(result.error.message))
+        self.handler.end_headers()
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -3173,7 +3168,7 @@ class WebUI:
         else:
             return self.fail('Unknown provider')
         stypes, url, assoc_handle = self.store.get_provider_session(p)
-        return_to = self.config.baseurl+'/openid_return'
+        return_to = self.config.baseurl+'/openid_login'
         url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
         self.store.commit()
         self.statsd.incr('openid.client.claim')
@@ -3397,9 +3392,6 @@ class WebUI:
                 'consumer_secret': self.config.google_consumer_secret,
                 'scope': ['email', 'openid', 'profile'],
                 'redirect_uri': self.config.baseurl+'/google_login',
-                'user_authorization_params': {
-                    'openid.realm': self.config.url+'?:action=openid_return'
-                }
             }
         }
 
