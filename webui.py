@@ -1497,13 +1497,13 @@ class WebUI:
             return self.fail('OpenID Claims must be POST')
         if self.env['REQUEST_METHOD'] == "POST":
             self.csrf_check()
-        if 'openid_identifier' in self.form:
-            self.form['id'] = self.form['openid_identifier']
         if 'provider' in self.form:
             for p in providers:
                 if p[0] == self.form['provider']:
                     self.form['openid_identifier'] = p[2]
             self.form['id'] = None
+        if 'openid_identifier' in self.form:
+            self.form['id'] = self.form['openid_identifier']
 
         self.handler.set_status('200 OK')
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
@@ -3228,7 +3228,7 @@ class WebUI:
         for r in providers:
             r = Provider(*r)
             r.login = "/openid_login?provider=%s" % (r.name,)
-            r.claim = "/openid_claim&provider=%s" % (r.name,)
+            r.claim = "/openid_claim?provider=%s" % (r.name,)
             res.append(r)
         return res
 
