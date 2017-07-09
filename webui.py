@@ -7,6 +7,7 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, functools
 import time, smtplib, base64, types, urlparse
 import re, logging, Cookie, subprocess, hashlib
+import logging
 import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
@@ -60,6 +61,13 @@ from perfmetrics import set_statsd_client
 
 from constants import DOMAIN_BLACKLIST
 
+# Authomatic
+from authadapters import PyPIAdapter
+import authomatic
+from authomatic.providers import openid
+from authomatic.providers import oauth2
+from browserid.jwt import parse
+
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
 
@@ -82,6 +90,26 @@ EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 
 WAREHOUSE_UPLOAD_MIGRATION_URL = "https://packaging.python.org/guides/migrating-to-pypi-org/#uploading"
 
+AUTHOMATIC_CONFIG = {
+        'google': {
+            'id': 1,
+            'class_': oauth2.Google,
+            'consumer_key': conf.google_consumer_id,
+            'consumer_secret': conf.google_consumer_secret,
+            'scope': ['email', 'openid', 'profile'],
+            'redirect_uri': conf.baseurl+'/google_login',
+        },
+        'oi': {
+            'class_': openid.OpenID,
+        },
+}
+
+authomatic = authomatic.Authomatic(
+        config=AUTHOMATIC_CONFIG,
+        secret=conf.authomatic_secret,
+        logging_level=logging.CRITICAL,
+        secure_cookie=conf.authomatic_secure,
+    )
 
 # Must begin and end with an alphanumeric, interior can also contain ._-
 safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
@@ -1425,14 +1453,6 @@ class WebUI:
         self.home()
 
     def openid_login(self):
-        from authadapters import PyPIAdapter
-        import authomatic
-        from authomatic.providers import openid
-        CONFIG = {
-            'oi': {
-                'class_': openid.OpenID,
-            },
-        }
         if 'provider' in self.form:
             for p in providers:
                 if p[0] == self.form['provider']:
@@ -1444,9 +1464,6 @@ class WebUI:
             self.write_template('openid.pt', title='OpenID Login')
 
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
-                                           logging_level=logging.CRITICAL,
-                                           secure_cookie=self.config.authomatic_secure)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
                                   use_realm=False, store=self.store.oid_store(),
                                   return_url=self.config.baseurl+'/openid_login')
@@ -1482,19 +1499,7 @@ class WebUI:
         if 'openid_identifier' in self.form:
             self.form['id'] = self.form['openid_identifier']
 
-        from authadapters import PyPIAdapter
-        import authomatic
-        from authomatic.providers import openid
-        CONFIG = {
-            'oi': {
-                'class_': openid.OpenID,
-            },
-        }
-
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret,
-                                           logging_level=logging.CRITICAL,
-                                           secure_cookie=self.config.authomatic_secure)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
                                   use_realm=False, store=self.store.oid_store(),
                                   return_url=self.config.baseurl+'/openid_claim')
@@ -3385,25 +3390,7 @@ class WebUI:
     #
 
     def google_login(self):
-        from authadapters import PyPIAdapter
-        from authomatic.providers import oauth2
-        import authomatic
-        import logging
-        from browserid.jwt import parse
-
-        CONFIG = {
-            'google': {
-                'id': 1,
-                'class_': oauth2.Google,
-                'consumer_key': self.config.google_consumer_id,
-                'consumer_secret': self.config.google_consumer_secret,
-                'scope': ['email', 'openid', 'profile'],
-                'redirect_uri': self.config.baseurl+'/google_login',
-            }
-        }
-
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure,)
         result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google',
                                   return_url=self.config.baseurl+'/google_login',)
         if result:
