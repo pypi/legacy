@@ -3422,6 +3422,7 @@ class WebUI:
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
                     self.store.commit()
+                    self.statsd.incr('google_authentication.login')
                     self.home()
                 else:
                     return self.fail("No PyPI user found associated with that Google Account, Associating new accounts has been deprecated.", code=400)
