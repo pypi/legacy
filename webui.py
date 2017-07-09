@@ -1453,8 +1453,6 @@ class WebUI:
         self.home()
 
     def openid_login(self):
-        if self.env['REQUEST_METHOD'] == "POST":
-            self.csrf_check()
         if 'provider' in self.form:
             for p in providers:
                 if p[0] == self.form['provider']:
