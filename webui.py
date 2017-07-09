@@ -1483,6 +1483,7 @@ class WebUI:
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
                     self.store.commit()
+                    self.statsd.incr('openid.client.login')
                     self.home()
                 else:
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
