@@ -138,7 +138,7 @@
                     <li><a tal:attributes="href python: app.link_action('login_form')">Login</a></li>
                     <li><a tal:attributes="href python: app.link_action('register_form')">Register</a></li>
                     <li><a tal:attributes="href python: app.link_action('forgotten_password_form')">Lost Login?</a></li>
-		    <li>Use <a tal:attributes="href string:${app/url_path}?:action=openid">OpenID</a>
+		    <li><a href="/openid_login">Login with OpenID</a>
                       <tal:block tal:repeat="prov data/providers">
                         <a style="border: none;" tal:attributes="href prov/login"><img width="16" height="16" tal:attributes="src prov/favicon; title prov/title; alt prov/title"/></a>
                       </tal:block>

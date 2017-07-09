@@ -7,6 +7,7 @@ defusedxml.xmlrpc.monkey_patch()
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, functools
 import time, smtplib, base64, types, urlparse
 import re, logging, Cookie, subprocess, hashlib
+import logging
 import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
@@ -53,13 +54,19 @@ import readme_renderer.txt
 import store, config, rpc
 import MailingLogger, openid2rp, gae
 from mini_pkg_resources import safe_name
-import oauth
 import tasks
 
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
 
 from constants import DOMAIN_BLACKLIST
+
+# Authomatic
+from authadapters import PyPIAdapter
+import authomatic
+from authomatic.providers import openid
+from authomatic.providers import oauth2
+from browserid.jwt import parse
 
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
@@ -83,6 +90,26 @@ EMPTY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 
 WAREHOUSE_UPLOAD_MIGRATION_URL = "https://packaging.python.org/guides/migrating-to-pypi-org/#uploading"
 
+AUTHOMATIC_CONFIG = {
+        'google': {
+            'id': 1,
+            'class_': oauth2.Google,
+            'consumer_key': conf.google_consumer_id,
+            'consumer_secret': conf.google_consumer_secret,
+            'scope': ['email', 'openid', 'profile'],
+            'redirect_uri': conf.baseurl+'/google_login',
+        },
+        'oi': {
+            'class_': openid.OpenID,
+        },
+}
+
+authomatic = authomatic.Authomatic(
+        config=AUTHOMATIC_CONFIG,
+        secret=conf.authomatic_secret,
+        logging_level=logging.CRITICAL,
+        secure_cookie=conf.authomatic_secure,
+    )
 
 # Must begin and end with an alphanumeric, interior can also contain ._-
 safe_username = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.I)
@@ -111,8 +138,6 @@ class RedirectTemporary(Exception): # 307
 class FormError(Exception):
     pass
 class OpenIDError(Exception):
-    pass
-class OAuthError(Exception):
     pass
 class BlockedIP(Exception):
     pass
@@ -150,11 +175,11 @@ the link below:
 This will present a form in which you may set your new password.
 '''
 
-_prov = '<p>You may also login or register using <a href="%(url_path)s?:action=openid">OpenID</a>'
+_prov = '<p>You may also login using <a href="/openid_login">OpenID</a>'
 for title, favicon, login in providers:
     _prov += '''
-    <a href="%s"><img src="%s" title="%s"/></a>
-    ''' %  (login, favicon, title)
+    <a href="/openid_login?provider=%s"><img src="%s" title="%s"/></a>
+    ''' %  (title, favicon, title)
 _prov += "</p>"
 unauth_message = '''
 <p>If you are a new user, <a href="%(url_path)s?:action=register_form">please
@@ -502,9 +527,6 @@ class WebUI:
             except OpenIDError, message:
                 message = str(message)
                 self.fail(message, code=400, heading='Error processing OpenID request')
-            except OAuthError, message:
-                message = str(message)
-                self.fail(message, code=400, heading='Error processing OAuth request')
             except IOError, error:
                 # ignore broken pipe errors (client vanished on us)
                 if error.errno != 32: raise
@@ -728,8 +750,6 @@ class WebUI:
             return self.current_serial()
         if script_name == '/id':
             return self.run_id()
-        if script_name == '/google_login':
-            return self.google_login()
 
         # on logout, we set the cookie to "logged_out"
         self.cookie = Cookie.SimpleCookie(self.env.get('HTTP_COOKIE', ''))
@@ -778,6 +798,13 @@ class WebUI:
         # Now we have a username try running OAuth if necessary
         if script_name == '/oauth':
             raise Gone, "OAuth has been disabled."
+        if script_name == '/google_login':
+            return self.google_login()
+        if script_name == '/openid_login':
+            return self.openid_login()
+        if script_name == '/openid_claim':
+            return self.openid_claim()
+
 
         if self.env.get('CONTENT_TYPE') == 'text/xml':
             self.xmlrpc()
@@ -831,7 +858,7 @@ class WebUI:
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
         role role_form list_classifiers login logout files
-        file_upload show_md5 doc_upload doc_destroy claim openid openid_return dropid
+        file_upload show_md5 doc_upload doc_destroy openid dropid
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen openid_endpoint openid_decide_post packages_rss
         exception login_form purge'''.split():
@@ -1416,54 +1443,95 @@ class WebUI:
             raise Unauthorised, "Clearing basic auth"
         self.home()
 
+
     def login(self):
-        if 'provider' in self.form:
-            # OpenID login
-            for p in providers:
-                if p[0] == self.form['provider']:
-                    break
-            else:
-                return self.fail('Unknown provider')
-            stypes, url, assoc_handle = self.store.get_provider_session(p)
-            return_to = self.config.url+'?:action=openid_return'
-            url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
-            self.store.commit()
-            self.statsd.incr('openid.client.login')
-            raise RedirectTemporary(url)
-        if 'openid_identifier' in self.form:
-            # OpenID with explicit ID
-            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
-            if kind == 'xri':
-                res = openid2rp.resolve_xri(claimed_id)
-                if res:
-                    # A.5: XRI resolution requires to use canonical ID
-                    # Original claimed ID may be preserved for display
-                    # purposes
-                    claimed_id = res[0]
-                    res = res[1:]
-            else:
-                res = openid2rp.discover(claimed_id)
-            if not res:
-                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
-            stypes, op_endpoint, op_local = res
-            self.store.store_discovered(claimed_id, stypes, op_endpoint, op_local)
-            if not op_local:
-                op_local = claimed_id
-            try:
-                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
-            except ValueError, e:
-                return self.fail('Cannot establish OpenID session: ' + str(e))
-            return_to = self.config.url+'?:action=openid_return'
-            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
-            self.store.commit()
-            self.statsd.incr('openid.client.login')
-            raise RedirectTemporary(url)
         if not self.authenticated:
             raise Unauthorised
         self.usercookie = self.store.create_cookie(self.username)
         self.store.get_token(self.username)
         self.loggedin = 1
         self.home()
+
+    def openid_login(self):
+        if 'provider' in self.form:
+            for p in providers:
+                if p[0] == self.form['provider']:
+                    self.form['openid_identifier'] = p[2]
+            self.form['id'] = None
+        if 'openid_identifier' in self.form:
+            self.form['id'] = self.form['openid_identifier']
+        elif 'realm' not in self.form:
+            self.write_template('openid.pt', title='OpenID Login')
+
+        self.handler.set_status('200 OK')
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
+                                  use_realm=False, store=self.store.oid_store(),
+                                  return_url=self.config.baseurl+'/openid_login')
+
+        if result:
+            if result.user:
+                content = result.user.data
+                result_openid_id = content.get('guid', None)
+                user = None
+                if result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        user = found_user
+                if user:
+                    self.username = user['name']
+                    self.loggedin = self.authenticated = True
+                    self.usercookie = self.store.create_cookie(self.username)
+                    self.store.get_token(self.username)
+                    self.store.commit()
+                    self.home()
+                else:
+                    return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
+        self.handler.end_headers()
+
+    def openid_claim(self):
+        '''Claim an OpenID.'''
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if 'openid_identifier' in self.form and self.env['REQUEST_METHOD'] != "POST":
+            return self.fail('OpenID Claims must be POST')
+        if self.env['REQUEST_METHOD'] == "POST":
+            self.csrf_check()
+        if 'openid_identifier' in self.form:
+            self.form['id'] = self.form['openid_identifier']
+
+        self.handler.set_status('200 OK')
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'oi',
+                                  use_realm=False, store=self.store.oid_store(),
+                                  return_url=self.config.baseurl+'/openid_claim')
+
+        if result:
+            if result.user:
+                content = result.user.data
+                result_openid_id = content.get('guid', None)
+                user = None
+                if result_openid_id:
+                    found_user = self.store.get_user_by_openid(result_openid_id)
+                    if found_user:
+                        return self.fail('OpenID is already claimed')
+                    self.store.associate_openid(self.username, result_openid_id)
+                    self.store.commit()
+                    self.statsd.incr('openid.client.claim')
+                    self.home()
+        self.handler.end_headers()
+
+
+    def dropid(self):
+        if not self.loggedin:
+            return self.fail('You are not logged in')
+        if 'openid' not in self.form:
+            raise FormError, "ID missing"
+        openid = self.form['openid']
+        for i in self.store.get_openids(self.username):
+            if openid == i['id']:break
+        else:
+            raise Forbidden, "You don't own this ID"
+        self.store.drop_openid(openid)
+        return self.register_form()
 
     def role_form(self):
         ''' A form used to maintain user Roles
@@ -2687,7 +2755,7 @@ class WebUI:
             info['name'] = username
             info['email'] = email
             info['action'] = 'Register'
-            info['title'] = 'Manual user registration'
+            info['title'] = 'User Registration'
             self.nav_current = 'register_form'
 
         self.write_template('register.pt', **info)
@@ -3130,159 +3198,6 @@ class WebUI:
         self.handler.end_headers()
         self.wfile.write(time.strftime("%Y%m%dT%H:%M:%S\n", time.gmtime(time.time())))
 
-    def openid(self):
-        self.write_template('openid.pt', title='OpenID Login')
-
-    def claim(self):
-        '''Claim an OpenID.'''
-        if not self.loggedin:
-            return self.fail('You are not logged in')
-
-        if self.env['REQUEST_METHOD'] != "POST":
-            return self.fail('OpenID claim request must be a POST')
-
-        self.csrf_check()
-
-        if 'openid_identifier' in self.form:
-            kind, claimed_id = openid2rp.normalize_uri(self.form['openid_identifier'])
-            if kind == 'xri':
-                return self.fail('XRI resolution is not supported')
-            res = openid2rp.discover(claimed_id)
-            if not res:
-                return self.fail('Discovery failed. If you think this is in error, please submit a bug report.')
-            stypes, op_endpoint, op_local = res
-            if not op_local:
-                op_local = claimed_id
-            try:
-                assoc_handle = self.store.get_session_for_endpoint(op_endpoint, stypes)
-            except ValueError, e:
-                return self.fail('Cannot establish OpenID session: ' + str(e))
-            return_to = self.config.url+'?:action=openid_return'
-            url = openid2rp.request_authentication(stypes, op_endpoint, assoc_handle, return_to, claimed_id, op_local)
-            self.store.commit()
-            raise RedirectTemporary(url)
-        if not self.form.has_key("provider"):
-            return self.fail('Missing parameter')
-        for p in providers:
-            if p[0] == self.form['provider']:
-                break
-        else:
-            return self.fail('Unknown provider')
-        stypes, url, assoc_handle = self.store.get_provider_session(p)
-        return_to = self.config.url+'?:action=openid_return'
-        url = openid2rp.request_authentication(stypes, url, assoc_handle, return_to)
-        self.store.commit()
-        self.statsd.incr('openid.client.claim')
-        raise RedirectTemporary(url)
-
-    def openid_return(self):
-        '''Return from OpenID provider.'''
-        qs = cgi.parse_qs(self.env['QUERY_STRING'])
-        if 'state' in qs and 'code' in qs:
-            return self.google_login()
-        if 'openid.mode' not in qs:
-            # Not an indirect call: treat it as RP discovery
-            return self.rp_discovery()
-        mode = qs['openid.mode'][0]
-        if mode == 'cancel':
-            return self.fail('Login cancelled')
-        if mode == 'error':
-            return self.fail('OpenID login failed: '+qs['openid.error'][0])
-        if mode != 'id_res':
-            return self.fail('OpenID login failed')
-        try:
-            signed, claimed_id = openid2rp.verify(qs, self.store.discovered,
-                                                  self.store.find_association,
-                                                  self.store.check_nonce)
-        except Exception, e:
-            return self.fail('Login failed:'+repr(e))
-
-        if 'response_nonce' in signed:
-            nonce = qs['openid.response_nonce'][0]
-        else:
-            # OpenID 1.1
-            nonce = None
-
-        user = self.store.get_user_by_openid(claimed_id)
-        # Three cases: logged-in user claimed some ID,
-        # new login, or registration
-        if self.loggedin:
-            # claimed ID
-            if user:
-                return self.fail('OpenID is already claimed')
-            if nonce and self.store.duplicate_nonce(nonce):
-                return self.fail('replay attack detected')
-            self.store.associate_openid(self.username, claimed_id)
-            self.store.commit()
-            self.statsd.incr('openid.client.claim')
-            return self.register_form()
-        if user:
-            # Login
-            if nonce and self.store.duplicate_nonce(nonce):
-                return self.fail('replay attack detected')
-            self.store.commit()
-            self.username = user['name']
-            self.loggedin = self.authenticated = True
-            self.usercookie = self.store.create_cookie(self.username)
-            self.store.get_token(self.username)
-            self.statsd.incr('openid.client.login')
-            return self.home()
-        # Fill openid response fields into register form as hidden fields
-        del qs[':action']
-        openid_fields = []
-        for key, value in qs.items():
-            openid_fields.append((key, value[0]))
-        # propose email address based on response
-        email = openid2rp.get_email(qs)
-        # propose user name based on response
-        username = openid2rp.get_username(qs)
-        if isinstance(username, tuple):
-            username = '.'.join(username)
-        elif email and not username:
-            username = email.split('@')[0]
-        else:
-            # suggest OpenID host name as username
-            username = urlparse.urlsplit(claimed_id)[1]
-            if ':' in username:
-                username = username.split(':')[0]
-            if '@' in username:
-                username = username.rsplit('@', 1)[0]
-            if not username:
-                username = "nonamegiven"
-
-        username = username.strip()
-        username = username.replace(' ', '.')
-        username = re.sub('[^a-zA-Z0-9._]', '', username)
-
-        if not username:
-            username = "nonamegiven"
-
-        alphanums = set(string.ascii_letters + string.digits)
-        if not safe_username.match(username):
-            if username[0] not in alphanums:
-                username = "openid_" + username
-            if username[-1] not in alphanums:
-                username = username + "_user"
-
-        if self.store.has_user(username):
-            suffix = 2
-            while self.store.has_user("%s_%d" % (username, suffix)):
-                suffix += 1
-            username = "%s_%d" % (username, suffix)
-        return self.register_form(openid_fields, username, email, claimed_id)
-
-    def dropid(self):
-        if not self.loggedin:
-            return self.fail('You are not logged in')
-        if 'openid' not in self.form:
-            raise FormError, "ID missing"
-        openid = self.form['openid']
-        for i in self.store.get_openids(self.username):
-            if openid == i['id']:break
-        else:
-            raise Forbidden, "You don't own this ID"
-        self.store.drop_openid(openid)
-        return self.register_form()
 
     def rp_discovery(self):
         payload = '''<xrds:XRDS
@@ -3295,7 +3210,7 @@ class WebUI:
                      </Service>
                 </XRD>
                 </xrds:XRDS>
-        ''' % (self.config.url+'?:action=openid_return')
+        ''' % (self.config.baseurl+'/openid_login')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3306,8 +3221,8 @@ class WebUI:
         res = []
         for r in providers:
             r = Provider(*r)
-            r.login = "%s?:action=login&provider=%s" % (self.url_path, r.name)
-            r.claim = "%s?:action=claim&provider=%s" % (self.url_path, r.name)
+            r.login = "/openid_login?provider=%s" % (r.name,)
+            r.claim = "/openid_claim&provider=%s" % (r.name,)
             res.append(r)
         return res
 
@@ -3471,183 +3386,13 @@ class WebUI:
             return None
 
     #
-    # OAuth
-    #
-    def run_oauth(self):
-        if self.env.get('HTTP_X_FORWARDED_PROTO') != 'https':
-            raise NotFound('HTTPS must be used to access this URL')
-
-        path = self.env.get('PATH_INFO')
-
-        if path == '/request_token':
-            self.oauth_request_token()
-        elif path == '/access_token':
-            self.oauth_access_token()
-        elif path == '/authorise':
-            self.oauth_authorise()
-        elif path == '/add_release':
-            self.oauth_add_release()
-        elif path == '/upload':
-            self.oauth_upload()
-        elif path == '/docupload':
-            self.oauth_docupload()
-        elif path == '/test':
-            self.oauth_test_access()
-        else:
-            raise NotFound()
-
-    def _oauth_request(self):
-        uri = self.url_machine + self.env['REQUEST_URI']
-        if not self.env.get('HTTP_AUTHORIZATION'):
-            raise OAuthError('PyPI OAuth requires header authorization')
-        params = dict(self.form)
-        # don't use file upload in signature
-        if 'content' in params:
-            del params['content']
-        return oauth.OAuthRequest.from_request(self.env['REQUEST_METHOD'],
-            uri, dict(Authorization=self.env['HTTP_AUTHORIZATION']), params)
-
-    def _oauth_server(self):
-        data_store = store.OAuthDataStore(self.store)
-        o = oauth.OAuthSignatureMethod_HMAC_SHA1()
-        signature_methods = {o.get_name(): o}
-        return oauth.OAuthServer(data_store, signature_methods)
-
-    def oauth_request_token(self):
-        s = self._oauth_server()
-        r = self._oauth_request()
-        token = s.fetch_request_token(r)
-        self.store.commit()
-        self.write_plain(str(token))
-
-    def oauth_access_token(self):
-        s = self._oauth_server()
-        r = self._oauth_request()
-        token = s.fetch_access_token(r)
-        if token is None:
-            raise OAuthError('Request Token not authorised')
-        self.store.commit()
-        self.write_plain(str(token))
-
-    def oauth_authorise(self):
-        if 'oauth_token' not in self.form:
-            raise FormError('oauth_token and oauth_callback are required')
-        if not self.authenticated:
-            self.write_template('oauth_notloggedin.pt',
-                title="OAuth authorisation attempt")
-            return
-
-        oauth_token = self.form['oauth_token']
-        oauth_callback = self.form['oauth_callback']
-
-        ok = self.form.get('ok')
-        cancel = self.form.get('cancel')
-
-        s = self._oauth_server()
-
-        if not ok and not cancel:
-            description = s.data_store._get_consumer_description(request_token=oauth_token)
-            action_url = self.url_machine + '/oauth/authorise'
-            return self.write_template('oauth_authorise.pt',
-                title='PyPI - the Python Package Index',
-                action_url=action_url,
-                oauth_token=oauth_token,
-                oauth_callback=oauth_callback,
-                description=description)
-
-        if '%3A' in oauth_callback:
-            oauth_callback = urllib.unquote(oauth_callback)
-
-        if not ok:
-            raise RedirectTemporary(oauth_callback)
-
-        # register the user against the request token
-        s.authorize_token(oauth_token, self.username)
-
-        # commit all changes now
-        self.store.commit()
-
-        url = oauth_callback + '?oauth_token=%s'%oauth_token
-        raise RedirectTemporary(url)
-
-    def _parse_request(self):
-        '''Read OAuth access request information from the request.
-
-        Return the consumer (OAuthConsumer instance), the access token
-        (OAuthToken instance), the parameters (may include non-OAuth parameters
-        accompanying the request) and the user account number authorized by the
-        access token.
-        '''
-        s = self._oauth_server()
-        r = self._oauth_request()
-        consumer, token, params = s.verify_request(r)
-        user = s.data_store._get_user(token)
-        # recognise the user as accessing during this request
-        self.username = user
-        self.store.set_user(user, self.remote_addr, False)
-        self.authenticated = True
-        return consumer, token, params, user
-
-    def oauth_test_access(self):
-        '''A resource that is protected so access without an access token is
-        disallowed.
-        '''
-        consumer, token, params, user = self._parse_request()
-        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
-        self.write_plain(message)
-
-    def oauth_add_release(self):
-        '''Add a new release.
-
-        Returns "OK" if all is well otherwise .. who knows (TODO this needs to
-        be clarified and cleaned up).
-        '''
-        consumer, token, params, user = self._parse_request()
-        self.submit(params, False)
-        self.write_plain('OK')
-
-    def oauth_upload(self):
-        '''Upload a file for a package release.
-        '''
-        consumer, token, params, user = self._parse_request()
-        self.file_upload(False)
-        self.write_plain('OK')
-
-    def oauth_docupload(self):
-        '''Upload a documentation bundle.
-        '''
-        consumer, token, params, user = self._parse_request()
-        message = 'Access allowed for %s (ps. I got params=%r)'%(user, params)
-        self.write_plain(message)
-
-    #
     # Google Login
     #
 
     def google_login(self):
-        from oic import PyPIAdapter
-        from authomatic.providers import oauth2
-        import authomatic
-        import logging
-        from browserid.jwt import parse
-
-        CONFIG = {
-            'google': {
-                'id': 1,
-                'class_': oauth2.Google,
-                'consumer_key': self.config.google_consumer_id,
-                'consumer_secret': self.config.google_consumer_secret,
-                'scope': ['email', 'openid', 'profile'],
-                'redirect_uri': self.config.url+'?:action=openid_return',
-                'user_authorization_params': {
-                    'openid.realm': self.config.url+'?:action=openid_return'
-                }
-            }
-        }
-
         self.handler.set_status('200 OK')
-        authomatic = authomatic.Authomatic(config=CONFIG, secret=self.config.authomatic_secret, logging_level=logging.CRITICAL, secure_cookie=self.config.authomatic_secure)
-        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google')
+        result = authomatic.login(PyPIAdapter(self.env, self.config, self.handler, self.form), 'google',
+                                  return_url=self.config.baseurl+'/google_login',)
         if result:
             if result.user:
                 content = result.user.data
@@ -3670,9 +3415,10 @@ class WebUI:
                     self.loggedin = self.authenticated = True
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
+                    self.store.commit()
+                    self.home()
                 else:
                     return self.fail("No PyPI user found associated with that Google Account, Associating new accounts has been deprecated.", code=400)
 
-                return self.home()
 
         self.handler.end_headers()
