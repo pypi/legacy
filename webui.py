@@ -1461,7 +1461,8 @@ class WebUI:
                     self.loggedin = self.authenticated = True
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
-                    return self.home()
+                    self.store.commit()
+                    self.home()
                 else:
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
         self.handler.end_headers()
@@ -3421,9 +3422,10 @@ class WebUI:
                     self.loggedin = self.authenticated = True
                     self.usercookie = self.store.create_cookie(self.username)
                     self.store.get_token(self.username)
+                    self.store.commit()
+                    self.home()
                 else:
                     return self.fail("No PyPI user found associated with that Google Account, Associating new accounts has been deprecated.", code=400)
 
-                return self.home()
 
         self.handler.end_headers()
