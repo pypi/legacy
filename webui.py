@@ -175,7 +175,7 @@ the link below:
 This will present a form in which you may set your new password.
 '''
 
-_prov = '<p>You may also login or register using <a href="/openid_login">OpenID</a>'
+_prov = '<p>You may also login using <a href="/openid_login">OpenID</a>'
 for title, favicon, login in providers:
     _prov += '''
     <a href="/openid_login?provider=%s"><img src="%s" title="%s"/></a>
@@ -1453,6 +1453,8 @@ class WebUI:
         self.home()
 
     def openid_login(self):
+        if self.env['REQUEST_METHOD'] == "POST":
+            self.csrf_check()
         if 'provider' in self.form:
             for p in providers:
                 if p[0] == self.form['provider']:
