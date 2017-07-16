@@ -2100,10 +2100,10 @@ class WebUI:
             self.write_template('print_the_world.pt', **data)
         else:
             l = releases
-        data = dict(title="Index of Packages", matches=l)
-        if 'name' in self.form:
-            data['name'] = self.form['name']
-        self.write_template('index.pt', **data)
+            data = dict(title="Index of Packages", matches=l)
+            if 'name' in self.form:
+                data['name'] = self.form['name']
+            self.write_template('index.pt', **data)
 
     STOPWORDS = set([
         "a", "and", "are", "as", "at", "be", "but", "by",
