@@ -2096,14 +2096,8 @@ class WebUI:
         '''
         self.nav_current = nav_current
         if releases is None:
-            spec = self.form_metadata()
-            if not spec.has_key('_pypi_hidden'):
-                spec['_pypi_hidden'] = False
-            l = self.store.query_packages(spec)
-            if len(l) == 1:
-                self.form['name'] = l[0]['name']
-                self.form['version'] = l[0]['version']
-                return self.display()
+            data = dict(title="Index of Packages[Deprecated]")
+            self.write_template('print_the_world.pt', **data)
         else:
             l = releases
         data = dict(title="Index of Packages", matches=l)
