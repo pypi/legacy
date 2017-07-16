@@ -62,6 +62,26 @@ def log_xmlrpc_request(remote_addr, user_agent, data):
                     'user_agent': user_agent,
                     'method': method,
                     'params': params,
+                    'type': 'request',
+                })
+                f.write(record + '\n')
+        except Exception:
+            pass
+
+
+def log_xmlrpc_response(remote_addr, user_agent, data, response_size):
+    if conf.xmlrpc_request_log_file:
+        try:
+            with open(conf.xmlrpc_request_log_file, 'a') as f:
+                params, method = xmlrpclib.loads(data)
+                record = json.dumps({
+                    'timestamp': datetime.datetime.utcnow().isoformat(),
+                    'remote_addr': remote_addr,
+                    'user_agent': user_agent,
+                    'method': method,
+                    'params': params,
+                    'response_size': response_size,
+                    'type': 'response',
                 })
                 f.write(record + '\n')
         except Exception:
@@ -173,6 +193,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
                     response = self._marshaled_dispatch(data)
                     # remove non-printable ASCII control codes from the response
                     response = re.sub('([\x00-\x08]|[\x0b-\x0c]|[\x0e-\x1f])+', '', response)
+            log_xmlrpc_response(webui_obj.remote_addr, user_agent, data, len(response))
         webui_obj.handler.wfile.write(response)
 
     @metricmethod
