@@ -19,6 +19,8 @@ from functools import wraps
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
 
+from dogadapter import dogstatsd
+
 import config
 
 root = os.path.dirname(os.path.abspath(__file__))
@@ -53,6 +55,7 @@ class RedisLru(object):
         self.kwarg_name = kwarg_name
         self.slice = slice_obj
         self.statsd = statsd_client()
+        self.dogstatsd = dogstatsd
 
     def format_key(self, func_name, tag):
         if tag is not None:
@@ -61,6 +64,7 @@ class RedisLru(object):
 
     def eject(self, func_name):
         self.statsd.incr('rpc-lru.eject')
+        self.dogstatsd.increment('xmlrpc.lru.eject')
         count = min((self.capacity / 10) or 1, 1000)
         cache_keys = self.format_key(func_name, '*')
         if self.conn.zcard(cache_keys) >= self.capacity:
@@ -74,13 +78,16 @@ class RedisLru(object):
         value = self.conn.hget(self.format_key(func_name, tag), key)
         if value:
             self.statsd.incr('rpc-lru.hit')
+            self.dogstatsd.increment('xmlrpc.lru.hit')
             value = json.loads(value)
         else:
             self.statsd.incr('rpc-lru.miss')
+            self.dogstatsd.increment('xmlrpc.lru.miss')
         return value
 
     def add(self, func_name, key, value, tag):
         self.statsd.incr('rpc-lru.add')
+        self.dogstatsd.increment('xmlrpc.lru.add')
         self.eject(func_name)
         pipeline = self.conn.pipeline()
         pipeline.hset(self.format_key(func_name, tag), key, json.dumps(value))
@@ -90,6 +97,7 @@ class RedisLru(object):
 
     def purge(self, tag):
         self.statsd.incr('rpc-lru.purge')
+        self.dogstatsd.incr('xmlrpc.lru.purge')
         keys = self.conn.scan_iter(":".join([self.prefix, tag, '*']))
         pipeline = self.conn.pipeline()
         for key in keys:

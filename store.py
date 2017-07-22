@@ -47,6 +47,8 @@ class LockedException(Exception):
 
 from perfmetrics import statsd_client_from_uri
 
+from dogadapter import dogstatsd
+
 def enumerate(sequence):
     return [(i, sequence[i]) for i in range(len(sequence))]
 
@@ -300,6 +302,7 @@ class Store:
 
         self.statsd_uri = "statsd://127.0.0.1:8125?prefix=%s" % (config.database_name)
         self.statsd_reporter = statsd_client_from_uri(self.statsd_uri)
+        self.dogstatsd = dogstatsd
 
         self.package_bucket = package_bucket
 
@@ -843,9 +846,11 @@ class Store:
             data = r.json()
         except requests.exceptions.Timeout:
             self.statsd_reporter.incr('store.search-packages.timeout')
+            self.dogstatsd.increment('store.search-packages.timeout')
             data = {}
         end_time = int(round(time.time() * 1000))
         self.statsd_reporter.timing('store.search-packages', end_time - start_time)
+        self.dogstatsd.timing('store.search-packages', end_time - start_time)
         results = []
         if 'hits' in data.keys():
             results = [_format_es_fields(r) for r in data['hits']['hits'] if r['fields'].get('_pypi_hidden', [False])[0] == hidden]
@@ -1878,9 +1883,11 @@ class Store:
             data = r.json()
         except requests.exceptions.Timeout:
             self.statsd_reporter.incr('store.browse.timeout')
+            self.dogstatsd.increment('store.browse.timeout')
             data = {}
         end_time = int(round(time.time() * 1000))
         self.statsd_reporter.timing('store.browse', end_time - start_time)
+        self.dogstatsd.timing('store.browse', end_time - start_time)
 
         releases = []
         tally = []

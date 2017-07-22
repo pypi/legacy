@@ -174,6 +174,16 @@ class Config:
         self.google_consumer_id = c.get("google", "client_id")
         self.google_consumer_secret = c.get("google", "client_secret")
 
+        if c.has_option('datadog', 'dogstatsd_port'):
+            self.datadog_dogstatsd_port = c.getint('datadog', 'dogstatsd_port')
+        else:
+            self.datadog_dogstatsd_port = 8125
+
+        if c.has_option('datadog', 'tags'):
+            self.datadog_tags = c.get('datadog', 'tags').split(',')
+        else:
+            self.datadog_tags = []
+
 
     def make_https(self):
         if self.url.startswith("http:"):

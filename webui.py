@@ -59,6 +59,8 @@ import tasks
 from perfmetrics import statsd_client
 from perfmetrics import set_statsd_client
 
+from dogadapter import dogstatsd
+
 from constants import DOMAIN_BLACKLIST
 
 # Authomatic
@@ -477,6 +479,7 @@ class WebUI:
             package_bucket=self.package_bucket,
         )
         self.statsd = statsd_client()
+        self.dogstatsd = dogstatsd
         try:
             try:
                 self.store.get_cursor() # make sure we can connect
@@ -923,6 +926,7 @@ class WebUI:
         self._check_credentials(username, password)
 
         self.statsd.incr('password_authentication.basic_auth')
+        self.dogstatsd.increment('password_authentication.basic_auth')
 
     def login_form(self):
         if self.env['REQUEST_METHOD'] == "POST":
@@ -945,6 +949,7 @@ class WebUI:
                 raise BlockedIP
 
             self.statsd.incr('password_authentication.login_form')
+            self.dogstatsd.increment('password_authentication.login_form')
 
             self.usercookie = self.store.create_cookie(self.username)
             self.store.get_token(self.username)
@@ -1484,6 +1489,7 @@ class WebUI:
                     self.store.get_token(self.username)
                     self.store.commit()
                     self.statsd.incr('openid.client.login')
+                    self.dogstatsd.increment('openid.client.login')
                     self.home()
                 else:
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
@@ -1522,6 +1528,7 @@ class WebUI:
                     self.store.associate_openid(self.username, result_openid_id)
                     self.store.commit()
                     self.statsd.incr('openid.client.claim')
+                    self.dogstatsd.increment('openid.client.claim')
                     self.home()
         self.handler.end_headers()
 
@@ -3254,6 +3261,7 @@ class WebUI:
             </xrds:XRDS>
         ''' % (self.config.url+'?:action=openid_endpoint')
         self.statsd.incr('openid.provider.discovery')
+        self.dogstatsd.increment('openid.provider.discovery')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3274,6 +3282,7 @@ class WebUI:
             </xrds:XRDS>
         ''' % (self.config.url+'?:action=openid_endpoint')
         self.statsd.incr('openid.provider.user')
+        self.dogstatsd.increment('openid.provider.user')
         self.handler.send_response(200)
         self.handler.send_header("Content-type", 'application/xrds+xml')
         self.handler.send_header("Content-length", str(len(payload)))
@@ -3290,10 +3299,12 @@ class WebUI:
             self.handler.send_header("Content-length", str(len(payload)))
             self.handler.end_headers()
             self.statsd.incr('openid.provider.proclamation')
+            self.dogstatsd.increment('openid.provider.proclamation')
             self.handler.wfile.write(payload)
             return
         if orequest.mode in ['checkid_immediate', 'checkid_setup']:
             self.statsd.incr('openid.provider.checkid')
+            self.dogstatsd.increment('openid.provider.checkid')
             if self.openid_is_authorized(orequest):
                 answer = orequest.answer(True, identity=self.openid_user_url())
                 return self.openid_response(answer)
@@ -3303,9 +3314,11 @@ class WebUI:
                 self.openid_decide_page(orequest)
         elif orequest.mode in ['associate', 'check_authentication']:
             self.statsd.incr('openid.provider.authenticate')
+            self.dogstatsd.increment('openid.provider.authenticate')
             self.openid_response(self.oid_server.handleRequest(orequest))
         else:
             self.statsd.incr('openid.provider.error')
+            self.dogstatsd.increment('openid.provider.error')
             raise OpenIDError, "Unknown mode: %s" % orequest.mode
 
     def openid_decide_page(self, orequest):
@@ -3417,6 +3430,7 @@ class WebUI:
                     self.store.get_token(self.username)
                     self.store.commit()
                     self.statsd.incr('google_authentication.login')
+                    self.dogstatsd.increment('google_authentication.login')
                     self.home()
                 else:
                     return self.fail("No PyPI user found associated with that Google Account, Associating new accounts has been deprecated.", code=400)

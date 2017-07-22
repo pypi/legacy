@@ -14,6 +14,8 @@ cffi==1.6.0               # via argon2-cffi, bcrypt, cryptography
 click==6.6                # via rq
 contextlib2==0.5.3        # via raven
 cryptography==1.3.2       # via pyopenssl
+datadog==0.16.0
+decorator==4.1.1          # via datadog
 defusedxml==0.4.1
 docutils==0.12
 enum34==1.1.6             # via argon2-cffi, cryptography
@@ -42,6 +44,7 @@ redis==2.10.5
 requests[security]==2.10.0
 rfc3986==0.3.1
 rq==0.6.0
+simplejson==3.11.1        # via datadog
 six==1.10.0
 times==0.7
 transaction==1.5.0        # via zope.traversing

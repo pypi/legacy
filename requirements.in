@@ -3,6 +3,7 @@ argon2-cffi
 bcrypt
 bleach
 boto
+datadog
 defusedxml
 docutils
 fs

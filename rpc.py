@@ -25,6 +25,8 @@ import config
 from store import dependency
 from fncache import RedisLru
 
+from dogadapter import dogstatsd
+
 root = os.path.dirname(os.path.abspath(__file__))
 conf = config.Config(os.path.join(root, "config.ini"))
 
@@ -56,6 +58,7 @@ def log_xmlrpc_request(remote_addr, user_agent, data):
         try:
             with open(conf.xmlrpc_request_log_file, 'a') as f:
                 params, method = xmlrpclib.loads(data)
+                dogstatsd.increment('xmlrpc.request', tags=['method:{}'.format(method)])
                 record = json.dumps({
                     'timestamp': datetime.datetime.utcnow().isoformat(),
                     'remote_addr': remote_addr,
@@ -74,6 +77,8 @@ def log_xmlrpc_response(remote_addr, user_agent, data, response_size):
         try:
             with open(conf.xmlrpc_request_log_file, 'a') as f:
                 params, method = xmlrpclib.loads(data)
+                dogstatsd.increment('xmlrpc.response', tags=['method:{}'.format(method)])
+                dogstatsd.histogram('xmlrpc.response.size', response_size, tags=['method:{}'.format(method)])
                 record = json.dumps({
                     'timestamp': datetime.datetime.utcnow().isoformat(),
                     'remote_addr': remote_addr,
@@ -92,6 +97,7 @@ def log_xmlrpc_throttle(remote_addr, enforced):
     if conf.xmlrpc_request_log_file:
         try:
             with open(conf.xmlrpc_request_log_file, 'a') as f:
+                dogstatsd.increment('xmlrpc.throttled', tags=['remote_addr:{}'.format(remote_addr), 'enforced:{}'.format(enforced)])
                 record = json.dumps({
                     'timestamp': datetime.datetime.utcnow().isoformat(),
                     'remote_addr': remote_addr,
@@ -108,18 +114,22 @@ def throttle_concurrent(remote_addr):
     throttled = False
     try:
         if xmlrpc_redis:
+            dogstatsd.increment('xmlrpc.rate-limit.invoke')
             statsd_reporter.incr('rpc-rl.invoke')
             pipeline = xmlrpc_redis.pipeline()
             pipeline.incr(remote_addr)
             pipeline.expire(remote_addr, 60)
             current = pipeline.execute()[0]
             if current >= conf.xmlrpc_concurrent_requests:
+                dogstatsd.increment('xmlrpc.rate-limit.over')
                 statsd_reporter.incr('rpc-rl.over')
                 log_xmlrpc_throttle(remote_addr, conf.xmlrpc_enforce)
                 if conf.xmlrpc_enforce:
+                    dogstatsd.increment('xmlrpc.rate-limit.enforce')
                     statsd_reporter.incr('rpc-rl.enforce')
                     throttled = True
     except Exception:
+        dogstatsd.increment('xmlrpc.rate-limit.context.before.error')
         statsd_reporter.incr('rpc-rl.context.before.error')
         pass
     yield throttled
@@ -127,6 +137,7 @@ def throttle_concurrent(remote_addr):
         if xmlrpc_redis:
             xmlrpc_redis.decr(remote_addr)
     except Exception:
+        dogstatsd.increment('xmlrpc.rate-limit.context.after.error')
         statsd_reporter.incr('rpc-rl.context.after.error')
         pass
 
@@ -158,6 +169,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
         self.register_introspection_functions()
         self.register_multicall_functions()
 
+    @dogstatsd.timed('xmlrpc.call')
     @metricmethod
     def __call__(self, webui_obj):
         webui_obj.handler.send_response(200, 'OK')
@@ -196,6 +208,7 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             log_xmlrpc_response(webui_obj.remote_addr, user_agent, data, len(response))
         webui_obj.handler.wfile.write(response)
 
+    @dogstatsd.timed('xmlrpc.dispatch')
     @metricmethod
     def _dispatch(self, method, params):
         if not method.startswith('system.'):
@@ -203,23 +216,27 @@ class RequestHandler(SimpleXMLRPCDispatcher):
             params = (self.store,)+tuple(params)
         return SimpleXMLRPCDispatcher._dispatch(self, method, params)
 
+    @dogstatsd.timed('xmlrpc.multicall')
     @metricmethod
     def system_multicall(self, call_list):
         if len(call_list) > 100:
             raise Fault, "multicall too large"
         return SimpleXMLRPCDispatcher.system_multicall(self, call_list)
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:package_hosting_mode'])
 @metric
 def package_hosting_mode(store, package_name):
     """Returns the hosting mode for a given package."""
     return store.get_package_hosting_mode(package_name)
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:release_downloads'])
 @metric
 @cache_by_pkg
 def release_downloads(store, package_name, version):
     '''Return download count for given release.'''
     return store.get_release_downloads(package_name, version)
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:package_roles'])
 @metric
 @cache_by_pkg
 def package_roles(store, package_name):
@@ -227,21 +244,25 @@ def package_roles(store, package_name):
     result = store.get_package_roles(package_name)
     return [tuple(fields.values())for fields in result]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:user_packages'])
 @metric
 def user_packages(store, user):
     '''Return associated packages for user.'''
     result = store.get_user_packages(user)
     return [tuple(fields.values()) for fields in result]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:list_packages'])
 @metric
 def list_packages(store):
     result = store.get_packages()
     return [row['name'] for row in result]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:list_packages_with_serial'])
 @metric
 def list_packages_with_serial(store):
     return store.get_packages_with_serial()
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:package_releases'])
 @metric
 @cache_by_pkg
 def package_releases(store, package_name, show_hidden=False):
@@ -252,6 +273,7 @@ def package_releases(store, package_name, show_hidden=False):
     result = store.get_package_releases(package_name, hidden=hidden)
     return [row['version'] for row in result]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:release_urls'])
 @metric
 def release_urls(store, package_name, version):
     result = []
@@ -268,6 +290,7 @@ def release_urls(store, package_name, version):
 package_urls = release_urls     # "deprecated"
 
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:release_data'])
 @metric
 @cache_by_pkg
 def release_data(store, package_name, version):
@@ -295,11 +318,13 @@ def release_data(store, package_name, version):
     return info
 package_data = release_data     # "deprecated"
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:search'])
 @metric
 def search(store, spec, operator='and'):
     spec['_pypi_hidden'] = 'FALSE'
     return [row.as_dict() for row in store.search_packages(spec, operator)]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:browse'])
 @metric
 def browse(store, categories):
     if not isinstance(categories, list):
@@ -313,17 +338,20 @@ def browse(store, categories):
     packages, tally = store.browse(ids)
     return [(name, version) for name, version, desc in packages]
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:updated_releases'])
 @metric
 def updated_releases(store, since):
     result = store.updated_releases(since)
     return [(row['name'], row['version']) for row in result]
 
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:changelog_last_serial'])
 @metric
 def changelog_last_serial(store):
     "return the last changelog event's serial"
     return store.changelog_last_serial()
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:changelog'])
 @metric
 def changelog(store, since, with_ids=False):
     result = []
@@ -339,6 +367,7 @@ def changelog(store, since, with_ids=False):
         result.append(t)
     return result
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:changelog_since_serial'])
 @metric
 def changelog_since_serial(store, since_serial):
     'return the changes since the nominated event serial (id)'
@@ -353,10 +382,12 @@ def changelog_since_serial(store, since_serial):
             row['action'], row['id']))
     return result
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:changed_packages'])
 @metric
 def changed_packages(store, since):
     return store.changed_packages(since)
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:post_cheesecake_for_release'])
 @metric
 def post_cheesecake_for_release(store, name, version, score_data, password):
     if password != store.config.cheesecake_password:
@@ -366,6 +397,7 @@ def post_cheesecake_for_release(store, name, version, score_data, password):
     store.commit()
 
 
+@dogstatsd.timed('xmlrpc.function', tags=['function:top_packages'])
 @metric
 def top_packages(store, num=None):
     return store.top_packages(num=num)
