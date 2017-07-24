@@ -879,10 +879,12 @@ class WebUI:
     def _check_credentials(self, username, password):
 
         if not self.store.has_user(username):
+            self.dogstatsd.increment('authentication.failure', tags=['method:password', 'reason:no_user'])
             raise UserNotFound
 
         if self._check_blocked_user(username):
             username = password = ''
+            self.dogstatsd.increment('authentication.failure', tags=['method:password', 'reason:blocked_user'])
             raise UserNotFound
 
 
@@ -896,6 +898,7 @@ class WebUI:
         #   error.
         if not ok:
             self._failed_login_user(username)
+            self.dogstatsd.increment('authentication.failure', tags=['method:password', 'reason:incorrect_password'])
             raise Unauthorised, 'Incorrect password'
 
         if new_hash:
@@ -910,11 +913,13 @@ class WebUI:
         #   as we only want to do this once a minute.
         last_login = user['last_login']
         update_last_login = not last_login or (time.time()-time.mktime(last_login.timetuple()) > 60)
+        self.dogstatsd.increment('authentication.success', tags=['method:password'])
         self.store.set_user(username, self.remote_addr, update_last_login)
 
     def _handle_basic_auth(self, auth):
         if not auth.lower().startswith('basic '):
             return
+        self.dogstatsd.increment('authentication.start', tags=['method:basic_auth'])
 
         authtype, auth = auth.split(None, 1)
         try:
@@ -926,10 +931,11 @@ class WebUI:
         self._check_credentials(username, password)
 
         self.statsd.incr('password_authentication.basic_auth')
-        self.dogstatsd.increment('password_authentication.basic_auth')
+        self.dogstatsd.increment('authentication.complete', tags=['method:basic_auth'])
 
     def login_form(self):
         if self.env['REQUEST_METHOD'] == "POST":
+            self.dogstatsd.increment('authentication.start', tags=['method:login_form'])
             nonce = self.form.get('nonce', '')
             username = self.form.get('username', '')
             password = self.form.get('password', '')
@@ -949,7 +955,7 @@ class WebUI:
                 raise BlockedIP
 
             self.statsd.incr('password_authentication.login_form')
-            self.dogstatsd.increment('password_authentication.login_form')
+            self.dogstatsd.increment('authentication.complete', tags=['method:login_form'])
 
             self.usercookie = self.store.create_cookie(self.username)
             self.store.get_token(self.username)
@@ -1489,9 +1495,10 @@ class WebUI:
                     self.store.get_token(self.username)
                     self.store.commit()
                     self.statsd.incr('openid.client.login')
-                    self.dogstatsd.increment('openid.client.login')
+                    self.dogstatsd.increment('authentication.complete', tags=['method:openid'])
                     self.home()
                 else:
+                    self.dogstatsd.increment('authentication.failure', tags=['method:openid'])
                     return self.fail('OpenID: No associated user for {0}'.format(result_openid_id))
         self.handler.end_headers()
 
@@ -3430,9 +3437,10 @@ class WebUI:
                     self.store.get_token(self.username)
                     self.store.commit()
                     self.statsd.incr('google_authentication.login')
-                    self.dogstatsd.increment('google_authentication.login')
+                    self.dogstatsd.increment('authentication.complete', tags=['method:google_auth'])
                     self.home()
                 else:
+                    self.dogstatsd.increment('authentication.failure', tags=['method:google_auth'])
                     return self.fail("No PyPI user found associated with that Google Account, Associating new accounts has been deprecated.", code=400)
 
 
