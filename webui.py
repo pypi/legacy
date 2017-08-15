@@ -6,9 +6,8 @@ defusedxml.xmlrpc.monkey_patch()
 # system imports
 import sys, os, urllib, cStringIO, traceback, cgi, binascii, functools
 import time, smtplib, base64, types, urlparse
-import re, logging, Cookie, subprocess, hashlib
+import re, Cookie, subprocess, hashlib
 import logging
-import string
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from distutils.util import rfc822_escape
 from xml.etree import cElementTree
@@ -1506,7 +1505,6 @@ class WebUI:
             if result.user:
                 content = result.user.data
                 result_openid_id = content.get('guid', None)
-                user = None
                 if result_openid_id:
                     found_user = self.store.get_user_by_openid(result_openid_id)
                     if found_user:
@@ -2817,7 +2815,6 @@ class WebUI:
                                     otk=info['otk'], user=user)
                 return
         elif self.username is None:
-            nonce = None
             for param in 'name email'.split():
                 if not info.has_key(param):
                     raise FormError, '%s is required'%param
@@ -2843,9 +2840,7 @@ class WebUI:
             olduser = self.store.get_user_by_email(info['email'])
             if olduser:
                 raise FormError, 'You have already registered as user '+olduser['name']
-            # we are about to commit the user; check the reply nonce
-            if nonce and self.store.duplicate_nonce(nonce):
-                return self.fail('replay attack detected')
+
             info['otk'] = self.store.store_user(name, info['password'],
                 info['email'], info.get('gpg_keyid', ''))
             if claimed_id:
