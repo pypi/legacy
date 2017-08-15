@@ -14,7 +14,7 @@ try:
 except ImportError:
     sqlite3_cursor = type(None)
 from defusedxml import ElementTree
-import trove, openid2rp
+import trove
 from mini_pkg_resources import safe_name
 # csrf modules
 import hmac
@@ -2201,66 +2201,6 @@ class Store:
         else:
             return None
 
-    def get_provider_session(self, provider):
-        cursor = self.get_cursor()
-        # discover service URL, possibly from cache
-        res = self.discovered(provider[2])
-        if not res:
-            res = openid2rp.discover(provider[2])
-            assert res
-            self.store_discovered(provider[2], *res)
-        stypes, url, op_local = res
-        # Check for existing session
-        sql = '''select assoc_handle from openid_sessions
-                 where url=%s and expires>current_timestamp'''
-        safe_execute(cursor, sql, (url,))
-        sessions = cursor.fetchall()
-        if sessions:
-            assoc_handle = sessions[0][0]
-            return stypes, url, assoc_handle
-
-        # start from scratch:
-        # associate session
-        now = datetime.datetime.now()
-        session = openid2rp.associate(stypes, url)
-        # store it
-        sql = '''insert into openid_sessions
-                 (url, assoc_handle, expires, mac_key)
-                 values (%s, %s, %s, %s)'''
-        safe_execute(cursor, sql, (url,
-                                   session['assoc_handle'],
-                                   now+datetime.timedelta(0,int(session['expires_in'])),
-                                   session['mac_key']))
-        return stypes, url, session['assoc_handle']
-
-    def get_session_for_endpoint(self, endpoint, stypes):
-        '''Return the assoc_handle for the a claimed ID/endpoint pair;
-        create a new session if necessary. Discovery is supposed to be
-        done by the caller.'''
-        cursor = self.get_cursor()
-        # Check for existing session
-        sql = '''select assoc_handle from openid_sessions
-                 where url=%s and expires>current_timestamp'''
-        safe_execute(cursor, sql, (endpoint,))
-        sessions = cursor.fetchall()
-        if sessions:
-            return sessions[0][0]
-
-        # associate new session
-        now = datetime.datetime.now()
-        session = openid2rp.associate(stypes, endpoint)
-        # store it
-        sql = '''insert into openid_sessions
-                 (url, assoc_handle, expires, mac_key)
-                 values (%s, %s, %s, %s)'''
-        safe_execute(cursor, sql, (endpoint,
-                                   session['assoc_handle'],
-                                   now+datetime.timedelta(0,int(session['expires_in'])),
-                                   session['mac_key']))
-        safe_execute(cursor, 'select %s' % self.last_id('openid_sessions'))
-        session_id = cursor.fetchone()[0]
-        return session['assoc_handle']
-
     def find_association(self, assoc_handle):
         cursor = self.get_cursor()
         sql ='select mac_key from openid_sessions where assoc_handle=%s'
@@ -2269,24 +2209,6 @@ class Store:
         if sessions:
             return {'assoc_handle':assoc_handle, 'mac_key':sessions[0][0]}
         return None
-
-    def duplicate_nonce(self, nonce, checkonly = False):
-        '''Return true if we might have seen this nonce before.'''
-        stamp = openid2rp.parse_nonce(nonce)
-        utc = calendar.timegm(stamp.utctimetuple())
-        if utc < time.time()-3600:
-            # older than 1h: this is probably a replay
-            # the cronjob deletes old nonces after 1day
-            return True
-        cursor = self.get_cursor()
-        safe_execute(cursor, 'select * from openid_nonces where nonce=%s',
-                     (nonce,))
-        if cursor.fetchone():
-            return True
-        if not checkonly:
-            safe_execute(cursor, '''insert into openid_nonces(created, nonce)
-            values(%s,%s)''', (stamp, nonce))
-        return False
 
     def check_nonce(self, nonce):
         return self.duplicate_nonce(nonce, checkonly=True)
