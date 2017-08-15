@@ -2807,7 +2807,7 @@ class WebUI:
                 self.store.activate_user(user)
                 self.write_template('message.pt', title='Registration complete',
                                     message='You are now registered.',
-                                    url='%s?:action=login' % self.url_path,
+                                    url='%s?:action=login_form' % self.url_path,
                                     url_text='Proceed to login')
                 return
             else:
