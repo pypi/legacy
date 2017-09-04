@@ -23,7 +23,7 @@ assigned to users for this project.</p>
 
  <table class="list" style="width: auto">
   <tr><th>Remove?</th><th>Version</th><th>Hide?</th><th>Summary</th>
-      <th colspan="4">Links</th></tr>
+      <th colspan="3">Links</th></tr>
 
   <tr tal:repeat="release data/releases"
       tal:attributes="class repeat/release/parity">
@@ -47,7 +47,6 @@ assigned to users for this project.</p>
    <td><input size="40" tal:attributes="name string:sum_${release/version};
         value release/summary" /></td>
    <td><a tal:attributes="href string:${app/url_path}?:action=display&amp;name=${data/name}&amp;version=${release/version}">show</a></td>
-   <td><a tal:attributes="href string:${app/url_path}?:action=submit_form&amp;name=${data/name}&amp;version=${release/version}">edit</a></td>
    <td><a tal:attributes="href string:${app/url_path}?:action=files&amp;name=${data/name}&amp;version=${release/version}">files</a></td>
    <td><a tal:attributes="href string:${app/url_path}?:action=urls&amp;name=${data/name}&amp;version=${release/version}">urls</a></td>
   </tr>

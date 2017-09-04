@@ -842,7 +842,7 @@ class WebUI:
 
         # handle the action
         if action in '''home browse rss index search submit doap
-        display_pkginfo submit_pkg_info remove_pkg pkg_edit verify submit_form
+        display_pkginfo submit_pkg_info remove_pkg pkg_edit verify
         display register_form user user_form
         forgotten_password_form forgotten_password
         password_reset pw_reset pw_reset_change
@@ -1872,10 +1872,9 @@ class WebUI:
   <a href="%s?:action=role_form&amp;package_name=%s">roles</a> |
   <a href="%s?:action=pkg_edit&amp;name=%s">releases</a> |
   <a href="%s&amp;:action=display">view</a> |
-  <a href="%s&amp;:action=submit_form">edit</a> |
   <a href="%s&amp;:action=files">files</a> |
   <a href="%s&amp;:action=display_pkginfo">PKG-INFO</a>
-</p>'''%(self.url_path, un, self.url_path, un, url, url, url, url)
+</p>'''%(self.url_path, un, self.url_path, un, url, url, url)
 
     def quote_plus(self, data):
         return urllib.quote_plus(data)
@@ -2186,140 +2185,6 @@ class WebUI:
 
         self.write_template('index.pt', matches=l, scores=scores,
             title="Index of Packages Matching '%s'"%term)
-
-    @must_tls
-    def submit_form(self):
-        ''' A form used to submit or edit package metadata.
-        '''
-        # submission of this form requires a login, so we should check
-        # before someone fills it in ;)
-        if not self.authenticated:
-            raise Unauthorised, 'You must log in.'
-
-        if not self.loggedin:
-            # Authenticated, but not logged in - auto-login
-            self.loggedin = True
-            self.usercookie = self.store.create_cookie(self.username)
-            token = self.store.get_token(self.username)
-
-        # are we editing a specific entry?
-        info = {}
-        name = version = None
-        template = 'submit_form.pt'
-        if self.form.has_key('name') and self.form.has_key('version'):
-            name = self.form['name']
-            version = self.form['version']
-
-            # permission to do this?
-            if not (self.store.has_role('Owner', name) or
-                    self.store.has_role('Admin', name) or
-                    self.store.has_role('Maintainer', name)):
-                raise Forbidden, 'Not Owner or Maintainer'
-
-            # get the stored info
-            template = 'edit_form.pt'
-            for k,v in self.store.get_package(name, version).items():
-                info[k] = v
-
-        self.nav_current = 'submit_form'
-
-        content= cStringIO.StringIO()
-        w = content.write
-
-        # display all the properties
-        for property in 'name version author author_email maintainer maintainer_email home_page license summary description keywords platform download_url _pypi_hidden bugtrack_url'.split():
-            # get the existing entry
-            if self.form.has_key(property):
-                value = self.form[property]
-            else:
-                value = info.get(property, '')
-            if value is None:
-                value = ''
-
-            # form field
-            if property in ('name', 'version'):
-                # not editable
-                field = '<input id="%s" type="hidden" name="%s" value="%s">'%(
-                    "property_%s" % property, property, urllib.quote(value.encode('utf-8')))
-            if property == '_pypi_hidden':
-                a = b = ''
-                if value:
-                    b = ' selected'
-                else:
-                    a = ' selected'
-                field = '''<select name="_pypi_hidden">
-                            <option value="0"%s>No</option>
-                            <option value="1"%s>Yes</option>
-                           </select>'''%(a,b)
-            elif property in ('license', 'platform'):
-                field = '''\
-                    <textarea name="%s" rows="5" cols="80">%s</textarea>
-                    <br />You should enter a full
-                    description here only if appropriate classifiers aren\'t
-                    available (see below).'''%(property, cgi.escape(value))
-            elif property.endswith('description'):
-                field = '''\
-                    <textarea name="%s" rows="25" cols="80">%s</textarea>
-                    <br /> You may use
-                    <a target="_new" href="http://docutils.sf.net/rst.html">ReStructuredText</a>
-                    formatting for this field.'''%(property,
-                    cgi.escape(value))
-            else:
-                field = '<input id="%s" size="60" name="%s" value="%s">'%(
-                    "property_%s" % property, property, cgi.escape(value))
-
-            # now spit out the form line
-            label = property.replace('_', '&nbsp;').capitalize()
-            if label in ('Name', 'Version'):
-                req = 'class="required"'
-            elif property == 'download_url':
-                label = "Download URL"
-            elif property == '_pypi_hidden':
-                label = "Hidden"
-            elif property == 'CSRFToken':
-                field = '<input type="hidden" name="CSRFToken" value="%s">' % (
-                        token,)
-            else:
-                req = ''
-            w('<tr><th %s>%s:</th><td>%s</td></tr>\n'%(req, label,
-                field.encode('utf8')))
-
-        # format relationships
-        def relationship_input(relationship, value):
-            w('''<tr><th>%s:</th>
-   <td><textarea name="%s" cols="40" rows="5">%s</textarea></td>'''%(
-    relationship.capitalize(), relationship,
-    '\n'.join([v['specifier'] for v in value])))
-        for col in ('requires', 'provides', 'obsoletes'):
-            if name is not None:
-                l = self.store.get_release_relationships(name, version, col)
-            else:
-                l = []
-            relationship_input(col, l)
-
-        # if we're editing
-        if name is not None:
-            release_cifiers = {}
-            for classifier in self.store.get_release_classifiers(name, version):
-                release_cifiers[classifier['classifier']] = 1
-        else:
-            release_cifiers = {}
-
-        # now list 'em all
-        w('''<tr><th>Classifiers:</th>
-  <td><select multiple name="classifiers" size="10">
-''')
-        for classifier in self.store.get_classifiers():
-            ctext = classifier['classifier']
-            selected = release_cifiers.has_key(ctext) and ' selected' or ''
-            htext = cgi.escape(ctext)
-            w('<option%s value="%s">%s</option>'%(selected, htext, htext))
-
-        w('''</select></td></tr>''')
-
-        self.write_template(template,
-            title='Submitting package information',
-            fields=content.getvalue().decode('utf8'))
 
     def csrf_check(self):
         '''Check that the required CSRF token is present in the form
