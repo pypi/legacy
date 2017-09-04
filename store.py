@@ -1,13 +1,8 @@
 ''' Implements a store of disutils PKG-INFO entries, keyed off name, version.
 '''
 import sys, os, time, hashlib, random
-import string, datetime, calendar, binascii, urllib, urllib2, cgi
+import string, datetime, binascii, urllib, urllib2, cgi
 from collections import defaultdict
-import cPickle as pickle
-try:
-    import psycopg2
-except ImportError:
-    pass
 try:
     import sqlite3
     sqlite3_cursor = sqlite3.Cursor
@@ -2117,7 +2112,6 @@ class Store:
         '''Return csrf current token for user.'''
         cursor = self.get_cursor()
         sql = '''select token from csrf_tokens where name=%s'''
-        now = datetime.datetime.now()
         safe_execute(cursor, sql, (username,))
         token = cursor.fetchall()
         if not token:
@@ -2126,7 +2120,6 @@ class Store:
 
     def create_token(self, username):
         '''Create and return a new csrf token for user.'''
-        alphanum = string.ascii_letters + string.digits
         # dependency on cookie existence
         cursor = self.get_cursor()
         safe_execute(cursor, 'select cookie from cookies where name=%s',
@@ -2179,28 +2172,6 @@ class Store:
 
     # OpenID
 
-    def store_discovered(self, url, services, op_endpoint, op_local):
-        cursor = self.get_cursor()
-        sql = '''delete from openid_discovered where url = %s'''
-        safe_execute(cursor, sql, (url,))
-        services = binary(cursor, pickle.dumps(services, pickle.HIGHEST_PROTOCOL))
-        sql = '''insert into openid_discovered(created, url, services, op_endpoint, op_local)
-        values(%s, %s, %s, %s, %s)'''
-        now = datetime.datetime.now()
-        safe_execute(cursor, sql, (now, url, services, op_endpoint, op_local))
-
-    def discovered(self, url):
-        cursor = self.get_cursor()
-        sql = '''select services, op_endpoint, op_local from openid_discovered where url=%s'''
-        safe_execute(cursor, sql, (url,))
-        result = cursor.fetchall()
-        if result:
-            services, endpoint, local = result[0]
-            services = pickle.loads(str(services))
-            return services, endpoint, local
-        else:
-            return None
-
     def find_association(self, assoc_handle):
         cursor = self.get_cursor()
         sql ='select mac_key from openid_sessions where assoc_handle=%s'
@@ -2209,9 +2180,6 @@ class Store:
         if sessions:
             return {'assoc_handle':assoc_handle, 'mac_key':sessions[0][0]}
         return None
-
-    def check_nonce(self, nonce):
-        return self.duplicate_nonce(nonce, checkonly=True)
 
     def associate_openid(self, username, openid):
         cursor = self.get_cursor()
