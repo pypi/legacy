@@ -8,14 +8,15 @@
 <h2>Reporting</h2>
 
 <p>If you have a query or report to make regarding security please contact
-Richard Jones, Donald Stufft and/or Martin von Löwis. All have GPG keys on key
+Donald Stufft, Ernest W. Durbin III, or Richard Jones. All have GPG keys on key
 servers like pgp.mit.edu.</p>
 
-<p>Richard's GPG key has key id 41C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930) and his email address is richard&#64;python&#46;org</p>
 
-<p>Donald's GPG key has key id 3372DCFA (full fingerprint 7C6B 7C5D 5E2B 6356 A926 F04F 6E3C BCE9 3372 DCFA) and his email address is donald&#64;python&#46;org</p>
+<p>Donald's GPG key has key id 0x6E3CBCE93372DCFA (full fingerprint 7C6B 7C5D 5E2B 6356 A926 F04F 6E3C BCE9 3372 DCFA) and his email address is donald&#64;python&#46;org</p>
 
-<p>Martin's GPG key has key id 7D9DC8D2 (full fingerprint CBC5 4797 8A39 64D1 4B9A  B36A 6AF0 53F0 7D9D C8D2) and his email address is martin&#64;v&#46;loewis&#46;de</p>
+<p>Ernest's GPG key has key id 0x88159C24830F6F7E (full fingerprint 11CD 3DD9 8D7E 61C7 6D1A  3224 8815 9C24 830F 6F7E) and his email address is ernest&#64;python&#46;org</p>
+
+<p>Richard's GPG key has key id 0xAC68AC0441C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930) and his email address is richard&#64;python&#46;org</p>
 
 <p>You may also report issues in the <a href="https://sourceforge.net/tracker/?func=add&amp;group_id=66150&amp;atid=513503">PyPI bug tracker</a> where reports may be made private.</p>
 
