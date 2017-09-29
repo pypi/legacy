@@ -25,8 +25,6 @@ servers like pgp.mit.edu.</p>
 
 <p>You may sign your uploads with GPG using the "--sign" argument to "python setup.py upload".</p>
 
-<p>Additionally you may avoid using the default HTTP authentication used on the site and instead <a href="http://pypi.python.org/pypi/pypissh">upload using ssh</a>.</p>
-
 <p>The MD5 hash provided with files on PyPI exists <b>only</b> to provide some download corruption protection. It is <b>not</b> intended to provide any sort of security regarding tampering. Please use GPG signing for that.</p>
 
  </metal:fill>
