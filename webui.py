@@ -2449,8 +2449,15 @@ class WebUI:
                     fids = [fids]
 
                 for digest in fids:
+                    file_info = self.store.get_file_info(digest)
                     try:
-                        self.store.remove_file(digest)
+                        if self.store.has_role('Maintainer', file_info['name']) or \
+                               self.store.has_role('Admin', file_info['name']) or \
+                               self.store.has_role('Owner', file_info['name']):
+                               self.store.remove_file(digest)
+                        else:
+                            raise Forbidden, \
+                                "You are not allowed to edit '%s' package information"%file_info['name']
                     except KeyError:
                         return self.fail('No such files to remove', code=200)
                     else:
