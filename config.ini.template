@@ -41,7 +41,6 @@ adminemail = richard@python.org
 replyto = richard@python.org
 
 ; Secrets
-;sshkeys_update = /opt/devpypi/src/sshkeys_update
 key_dir = .
 cheesecake_password = secret
 ; this is the secret used to sign password reset efforts - keep it secret!
