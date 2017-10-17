@@ -2767,7 +2767,6 @@ class WebUI:
                 "ssh-rsa or ecdsa-sha2-nistp*")
         self.store.add_sshkey(self.username, key)
         self.store.commit()
-        self.update_sshkeys()
         return self.register_form()
 
     def delkey(self):
@@ -3052,16 +3051,6 @@ class WebUI:
             r.claim = "/openid_claim?provider=%s" % (r.name,)
             res.append(r)
         return res
-
-    def update_sshkeys(self):
-        if not self.config.sshkeys_update:
-            return
-        p = subprocess.Popen([self.config.sshkeys_update],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        stdout = p.communicate()[0]
-        if p.returncode != 0:
-            raise FormError, "Key processing failed. Please contact the administrator. Detail: "+stdout
 
     #
     # Google Login
