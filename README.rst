@@ -195,7 +195,7 @@ TestPyPI Database Setup
 -----------------------
 
 testpypi runs under postgres; because I don't care to fill my head with such
-trivialities, the setup commands are:
+trivialities, the setup commands are::
 
    createdb -O testpypi testpypi
    psql -U testpypi testpypi <pkgbase_schema.sql
@@ -206,6 +206,8 @@ Restarting PyPI
 
 PyPI has 2 different pieces that need started, web server and the task runner.
 
+::
+
     # Restart the web server
     $ /etc/init.d/pypi restart
     # Restart the task runner
@@ -214,12 +216,12 @@ PyPI has 2 different pieces that need started, web server and the task runner.
 Clearing a stuck cache
 ----------------------
 
-Users reporting stale data being displayed? Try:
+Users reporting stale data being displayed? Try::
 
   curl -X PURGE https://pypi.python.org/pypi/setuptools
 
 (where the URL is the relevant one to the issue, I presume)
 
-To see what fastly thinks it knows about a page (or how it's getting to you) try:
+To see what fastly thinks it knows about a page (or how it's getting to you) try::
 
   curl -I -H 'Fastly-Debug: 1'  https://pypi.python.org/pypi/setuptools
