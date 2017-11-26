@@ -850,6 +850,7 @@ class WebUI:
         clear_auth addkey delkey lasthour json gae_file about delete_user
         rss_regen packages_rss
         exception login_form purge'''.split():
+            self.dogstatsd.increment('dispatch_action', tags=['action:{}'.format(action)])
             getattr(self, action)()
         else:
             #raise NotFound, 'Unknown action %s' % action
