@@ -97,7 +97,7 @@ class RedisLru(object):
 
     def purge(self, tag):
         self.statsd.incr('rpc-lru.purge')
-        self.dogstatsd.incr('xmlrpc.lru.purge')
+        self.dogstatsd.increment('xmlrpc.lru.purge')
         keys = self.conn.scan_iter(":".join([self.prefix, tag, '*']))
         pipeline = self.conn.pipeline()
         for key in keys:
