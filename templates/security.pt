@@ -25,7 +25,7 @@ servers like pgp.mit.edu.</p>
 
 <p>You may sign your uploads with GPG using the "--sign" argument to "python setup.py upload".</p>
 
-<p>The MD5 hash provided with files on PyPI exists <b>only</b> to provide some download corruption protection. It is <b>not</b> intended to provide any sort of security regarding tampering. Please use GPG signing for that.</p>
+<p>The file checksums provided with files on PyPI exists <b>only</b> to provide some download corruption protection. It is <b>not</b> intended to provide any sort of security regarding tampering. Please use GPG signing and verification via your <a href="https://en.wikipedia.org/wiki/Web_of_trust">Web of Trust</a> for that.</p>
 
  </metal:fill>
 </html>

@@ -1572,9 +1572,6 @@ class WebUI:
         for assignment in self.store.get_package_roles(name):
             username = assignment[1]
             user = self.store.get_user(username)
-            keyid = user['gpg_keyid']
-            if keyid:
-                username = "%s (PGP key %s)" % (username, keyid)
             l.append('<tr><td>%s</td><td>%s</td></tr>'%(
                 cgi.escape(username),
                 cgi.escape(assignment[0])))
@@ -2600,7 +2597,7 @@ class WebUI:
         ''' Throw up a form for registering.
         '''
         info = {'name': '', 'password': '', 'confirm': '', 'email': '',
-                'gpg_keyid': '', 'openids': [], 'openid_fields': openid_fields,
+                'openids': [], 'openid_fields': openid_fields,
                 'openid': openid}
         if self.username:
             user = self.store.get_user(self.username)
@@ -2609,7 +2606,6 @@ class WebUI:
             info['name'] = user['name']
             info['email'] = user['email']
             info['action'] = 'Update details'
-            info['gpg_keyid'] = user['gpg_keyid'] or ""
             info['title'] = 'User profile'
             info['openids'] = self.store.get_openids(self.username)
             info['sshkeys'] = self.store.get_sshkeys(self.username)
@@ -2635,15 +2631,12 @@ class WebUI:
         message = ''
 
         info = {}
-        for param in 'name password email otk confirm gpg_keyid'.split():
+        for param in 'name password email otk confirm'.split():
             v = self.form.get(param, '').strip()
             if v:
                 info[param] = v
-            else:
-                if param == "gpg_keyid":
-                    info[param] = ""
 
-        # validate email and gpg key syntax
+        # validate email syntax
         if info.has_key('email'):
             if not safe_email.match(info['email']):
                 raise FormError, 'Email is invalid (ASCII only)'
@@ -2652,11 +2645,6 @@ class WebUI:
             domain = info['email'].split('@')[1]
             if domain in DOMAIN_BLACKLIST:
                 raise FormError, 'Disposable email addresses not allowed'
-        gpgid = info.get('gpg_keyid', '')
-        gpgid = gpgid.strip()
-        if gpgid:
-            if not re.match("^[A-Fa-f0-9]{8,8}$", gpgid):
-                raise FormError, 'GPG key ID is invalid'
 
         # email requirement check
         if 'email' not in info and 'otk' not in info:
@@ -2714,8 +2702,7 @@ class WebUI:
             if olduser:
                 raise FormError, 'You have already registered as user '+olduser['name']
 
-            info['otk'] = self.store.store_user(name, info['password'],
-                info['email'], info.get('gpg_keyid', ''))
+            info['otk'] = self.store.store_user(name, info['password'], info['email'])
             if claimed_id:
                 self.store.associate_openid(name, claimed_id)
             info['url'] = self.config.url
@@ -2742,8 +2729,7 @@ class WebUI:
                 if msg:
                     return self.fail(msg, heading='User profile')
             email = info.get('email', user['email'])
-            gpg_keyid = info.get('gpg_keyid', user['gpg_keyid'])
-            self.store.store_user(self.username, password, email, gpg_keyid)
+            self.store.store_user(self.username, password, email)
             response = 'Details updated OK'
 
         self.write_template('message.pt', title=response, message=message)
