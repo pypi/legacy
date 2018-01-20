@@ -1567,7 +1567,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
                     WHERE username = %s
@@ -1583,7 +1583,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
                     WHERE u.id = (
@@ -1603,7 +1603,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
                     WHERE u.username = (
@@ -1622,7 +1622,7 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
                     WHERE u.username = (
