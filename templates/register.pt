@@ -47,14 +47,6 @@
 	  <td><input name="email" tal:attributes="value data/email" /></td>
 	</tr>
 	<tr>
-	  <th>PGP Key ID (optional):</th>
-	  <td><input name="gpg_keyid" tal:attributes="value data/gpg_keyid" />
-          (This identifies a <a
-          href="http://www.gnupg.org/documentation/howtos.html">PGP or GPG
-          key</a>)
-          </td>
-	</tr>
-	<tr>
 	  <th></th>
 	  <td><input type="submit" tal:attributes="value data/action" /></td>
 	</tr>

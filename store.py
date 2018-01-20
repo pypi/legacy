@@ -1430,7 +1430,7 @@ class Store:
         safe_execute(cursor, sql, (name,))
         return int(cursor.fetchone()[0])
 
-    def store_user(self, name, password, email, gpg_keyid="", otk=True):
+    def store_user(self, name, password, email, otk=True):
         ''' Store info about the user to the database.
 
             The "password" argument is passed in cleartext and sha-ed
@@ -1487,23 +1487,6 @@ class Store:
                 """
                 safe_execute(cursor, sql, (user_id, email))
 
-            if gpg_keyid is not None:
-                # We've been given a new GPG Key ID for this user
-
-                # Delete existing GPG Key IDs
-                safe_execute(cursor,
-                    "DELETE FROM accounts_gpgkey WHERE user_id = %s",
-                    (user_id,)
-                )
-
-                if gpg_keyid:
-                    # Create a new GPG Key for the user
-                    safe_execute(cursor,
-                        """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
-                            VALUES (%s, %s, FALSE)
-                        """,
-                        (user_id, gpg_keyid)
-                    )
         else:
             # New User so we will create new entries
 
@@ -1548,15 +1531,6 @@ class Store:
                     (user_id, email)
                 )
 
-            if gpg_keyid:
-                # We have a gpg key id for this user
-                safe_execute(cursor,
-                    """INSERT INTO accounts_gpgkey (user_id, key_id, verified)
-                        VALUES (%s, %s, FALSE)
-                    """,
-                    (user_id, gpg_keyid)
-                )
-
             if otk:
                 # We want an OTK so we'll generate one
                 otkv = generate_random(32)
@@ -1585,7 +1559,7 @@ class Store:
         sql = "UPDATE accounts_user SET is_active = TRUE WHERE username = %s"
         safe_execute(cursor, sql, (username,))
 
-    _User = FastResultRow('name password email gpg_keyid last_login!')
+    _User = FastResultRow('name password email last_login!')
     def get_user(self, name):
         ''' Retrieve info about the user from the database.
 
@@ -1593,10 +1567,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
-                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
                     WHERE username = %s
         """
         safe_execute(cursor, sql, (name,))
@@ -1610,10 +1583,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
-                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
                     WHERE u.id = (
                                     SELECT user_id
                                     FROM accounts_email
@@ -1631,10 +1603,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
-                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
                     WHERE u.username = (
                                     SELECT name FROM openids WHERE id = %s
                                 )
@@ -1651,10 +1622,9 @@ class Store:
             such user.
         '''
         cursor = self.get_cursor()
-        sql = """SELECT username, password, email, key_id, last_login
+        sql = """SELECT username, password, email, last_login
                     FROM accounts_user u
                         LEFT OUTER JOIN accounts_email e ON (e.user_id = u.id)
-                        LEFT OUTER JOIN accounts_gpgkey g ON (g.user_id = u.id)
                     WHERE u.username = (
                                     SELECT name FROM openids WHERE sub = %s
                                 )
