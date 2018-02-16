@@ -8,7 +8,7 @@
 <h2>Reporting</h2>
 
 <p>If you have a query or report to make regarding security please contact
-Donald Stufft, Ernest W. Durbin III, or Richard Jones. All have GPG keys on key
+Donald Stufft and/or Ernest W. Durbin III. Both have GPG keys on key
 servers like pgp.mit.edu.</p>
 
 
@@ -16,10 +16,7 @@ servers like pgp.mit.edu.</p>
 
 <p>Ernest's GPG key has key id 0x88159C24830F6F7E (full fingerprint 11CD 3DD9 8D7E 61C7 6D1A  3224 8815 9C24 830F 6F7E) and his email address is ernest&#64;python&#46;org</p>
 
-<p>Richard's GPG key has key id 0xAC68AC0441C6E930 (full fingerprint 0145 FD2B 52E8 0A8E 329A  16C7 AC68 AC04 41C6 E930) and his email address is richard&#64;python&#46;org</p>
-
 <p>You may also report issues in the <a href="https://sourceforge.net/tracker/?func=add&amp;group_id=66150&amp;atid=513503">PyPI bug tracker</a> where reports may be made private.</p>
-
 
 <h2>Your Security</h2>
 
