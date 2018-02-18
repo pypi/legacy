@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      metal:use-macro="standard_template/macros/page">
+  <metal:fill fill-slot="body">
+
+  <p>Registration via this site is no longer supported.</p>
+
+  <p>Please register via
+    <tal:x tal:condition="python:'testpypi' in app.config.url">
+    <a href="https://test.pypi.org/account/register/">the Warehouse test instance</a>
+    </tal:x>
+    <tal:x tal:condition="python:'testpypi' not in app.config.url">
+    <a href="https://pypi.org/account/register/">Warehouse</a>
+    </tal:x>
+    in order to continue.
+  </p>
+
+  <p>This change is occuring a bit earlier than we hoped due to ongoing concerns regarding spammers attacking PyPI.</p>
+
+  </metal:fill>
+</html>
