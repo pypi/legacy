@@ -2586,39 +2586,32 @@ class WebUI:
     #
     # User handling code (registration, password changing)
     #
-    def user_form(self):
+    def user_form(self, openid_fields = (), username='', email='', openid=''):
         ''' Make the user authenticate before viewing the "register" form.
         '''
         if not self.authenticated:
             raise Unauthorised, 'You must authenticate'
-        self.register_form()
-
-    def register_form(self, openid_fields = (), username='', email='', openid=''):
-        ''' Throw up a form for registering.
-        '''
         info = {'name': '', 'password': '', 'confirm': '', 'email': '',
                 'openids': [], 'openid_fields': openid_fields,
                 'openid': openid}
-        if self.username:
-            user = self.store.get_user(self.username)
-            info['new_user'] = False
-            info['owns_packages'] = bool(self.store.user_packages(self.username, True))
-            info['name'] = user['name']
-            info['email'] = user['email']
-            info['action'] = 'Update details'
-            info['title'] = 'User profile'
-            info['openids'] = self.store.get_openids(self.username)
-            info['sshkeys'] = self.store.get_sshkeys(self.username)
-            self.nav_current = 'user_form'
-        else:
-            info['new_user'] = True
-            info['name'] = username
-            info['email'] = email
-            info['action'] = 'Register'
-            info['title'] = 'User Registration'
-            self.nav_current = 'register_form'
-
+        user = self.store.get_user(self.username)
+        info['new_user'] = False
+        info['owns_packages'] = bool(self.store.user_packages(self.username, True))
+        info['name'] = user['name']
+        info['email'] = user['email']
+        info['action'] = 'Update details'
+        info['title'] = 'User profile'
+        info['openids'] = self.store.get_openids(self.username)
+        info['sshkeys'] = self.store.get_sshkeys(self.username)
+        self.nav_current = 'user_form'
         self.write_template('register.pt', **info)
+
+    def register_form(self):
+        self.nav_current = 'register_form'
+        info = {}
+        info['title'] = 'User Registration'
+        info['action'] = 'Register'
+        self.write_template('register_gone.pt', **info)
 
     def user(self):
         ''' Register, update or validate a user.
