@@ -41,17 +41,16 @@
       <img src="/static/images/testing-site-right.png" style="z-index: 100; position: absolute; top: 0; right: 0; border: 0;" alt="Testing Site" />
      </tal:x>
 
-     <tal:if-user condition="app/loggedin">
-        <div style="text-align: center; position: relative; top: -5.5em; font-size: .5em;">
-        Pssssst! Check out <a href="https://pyfound.blogspot.com/2018/02/python-package-maintainers-help-test.html">the next generation PyPI</a>
-        </div>
-     </tal:if-user>
-
       <!--  Logo  -->
       <h1 id="logoheader">
        <a accesskey="1" href="http://www.python.org" id="logolink">
           <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
        </a>
+       <tal:if-user condition="app/loggedin">
+          <div style="text-align: center; position: relative; top: -5.5em; font-size: .5em;">
+          Pssssst! Check out <a href="https://pyfound.blogspot.com/2018/02/python-package-maintainers-help-test.html">the next generation PyPI</a>
+          </div>
+       </tal:if-user>
       </h1>
       <!--  Skip to Navigation  -->
       <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="/static/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
