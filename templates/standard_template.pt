@@ -47,7 +47,7 @@
           <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
        </a>
        <tal:if-user condition="app/loggedin">
-          <div style="text-align: center; position: relative; top: -5.3em; font-size: .5em; z-index: 666; color: darkviolet;">
+          <div style="text-align: center; position: relative; top: -2em; font-size: 2em; z-index: 666; color: darkviolet;">
           Pssssst! Check out <a style="color: darkviolet;" href="https://pyfound.blogspot.com/2018/02/python-package-maintainers-help-test.html">the next generation PyPI</a>
           </div>
        </tal:if-user>
