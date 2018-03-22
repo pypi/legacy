@@ -1915,18 +1915,18 @@ class Store:
         return os.path.join(digest[:2], digest[2:4], digest[4:], filename)
 
     _List_Files = FastResultRow('''packagetype python_version comment_text
-    filename md5_digest path size! has_sig! downloads! upload_time!''')
+    filename md5_digest sha256_digest path size! has_sig! downloads! upload_time!''')
     def list_files(self, name, version, show_missing=False):
         cursor = self.get_cursor()
         sql = '''select packagetype, python_version, comment_text,
-            filename, md5_digest, downloads, size, has_signature, path,
+            filename, md5_digest, sha256_digest, downloads, size, has_signature, path,
             upload_time
             from release_files
             where name=%s and version=%s'''
         safe_execute(cursor, sql, (name, version))
         l = []
-        for pt, pv, ct, fn, m5, dn, size, has_sig, path, ut in cursor.fetchall():
-            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, path, size, has_sig, dn, ut)))
+        for pt, pv, ct, fn, m5, s256, dn, size, has_sig, path, ut in cursor.fetchall():
+            l.append(self._List_Files(None, (pt, pv, ct, fn, m5, s256, path, size, has_sig, dn, ut)))
         l.sort(key=lambda r:r['filename'])
         return l
 

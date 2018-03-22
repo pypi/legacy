@@ -281,6 +281,7 @@ def release_urls(store, package_name, version):
         info = file.as_dict()
         info['url'] = store.gen_file_url(info['python_version'],
             package_name, info['filename'])
+        info['digests'] = {'md5': file['md5_digest'], 'sha256': file['sha256_digest']}
         result.append(info)
     # TODO do something with release_urls when there is something to do
     #info = store.get_package(package_name, version)

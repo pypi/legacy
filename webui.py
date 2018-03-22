@@ -1765,6 +1765,7 @@ class WebUI:
         for release, release_files in d['releases'].iteritems():
             for file in release_files:
                 file['upload_time'] = file['upload_time'].strftime('%Y-%m-%dT%H:%M:%S')
+                file['digests'] = {'md5': file['md5_digest'], 'sha256': file['sha256_digest']}
         self.handler.send_response(200, "OK")
         self.handler.set_content_type('application/json; charset="UTF-8"')
         self.handler.send_header('Content-Disposition', 'inline')
