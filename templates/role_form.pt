@@ -5,45 +5,16 @@
       metal:use-macro="standard_template/macros/page">
 <metal:fill fill-slot="body">
 
-<p>Use this form to add or remove a user's Role for a Package. The
-available Roles are defined as:
-<dl><dt><b>Owner</b></dt><dd>
-  Owns a package name, may assign Maintainer Role for that name.  The
-  first user to register information about a package is deemed Owner
-  of the package name.  The Admin user may change this if necessary.
-  May submit updates for the package name.
-  </dd>
-<dt><b>Maintainer</b></dt><dd>
-  Can submit and update info for a particular package name.
-  </dd></dl>
-        </p>
-<p> </p>
-
-<form tal:attributes="action app/url_path" method="POST">
-<input type="hidden" name=":action" value="role" />
-<table class="form">
-<tr><th>User Name:</th>
-    <td><input type="text" name="user_name" /></td>
-</tr>
-
-<tr tal:content="structure data/package" />
-
-<tr><th>Role to Add:</th>
-    <td><select name="role_name">
-        <option value="Owner">Owner</option>
-        <option value="Maintainer">Maintainer</option>
-        <option tal:condition="python:app.store.has_role('Admin', None)"
-            value="Admin">Admin</option>
-        </select></td>
-</tr>
-<tr><td> </td>
-    <td><input type="submit" name=":operation" value="Add Role" />
-        <input type="submit" name=":operation" value="Remove Role" /></td></tr>
-</table>
-</form>
-
-<tal:block replace="structure python:app.package_role_list(data['name'],
-    'Existing Roles')" />
+<p>
+You must use
+    <tal:x tal:condition="python:'testpypi' in app.config.url">
+    <a href="https://test.pypi.org/manage/projects/">the Warehouse test instance</a>
+    </tal:x>
+    <tal:x tal:condition="python:'testpypi' not in app.config.url">
+    <a href="https://pypi.org/manage/projects/">Warehouse</a>
+    </tal:x>
+to manage roles now.
+</p>
 
 </metal:fill>
 </html>
