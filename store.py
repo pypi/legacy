@@ -360,56 +360,15 @@ class Store:
 
     def store_package(self, name, version, info):
         ''' Store info about the package to the database.
-
-        If the name doesn't exist, we add a new package with the current
-        user as the Owner of the package.
-
-        If the version doesn't exist, we add a new release, hiding all
-        previous releases.
-
-        If the name and version do exist, we just edit (in place) and add a
-        journal entry.
+        If the name and version do exist, we just edit (in place)
         '''
         date = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         cursor = self.get_cursor()
-        # see if we're inserting or updating a package
-        if not self.has_package(name):
-            # insert the new package entry
-            cols = 'name'
-            vals = '%s'
-            args = (name,)
-
-            # if a bugtracker url is provided then insert it too
-            if 'bugtrack_url' in info:
-                cols += ', bugtrack_url'
-                vals += ', %s'
-                args += (info['bugtrack_url'], )
-
-            sql = 'insert into packages (%s) values (%s)' % (cols, vals)
-            safe_execute(cursor, sql, args)
-
-            # journal entry
-            self.add_journal_entry(name, None, "create", date,
-                                                self.username, self.userip)
-
-            # first person to add an entry may be considered owner - though
-            # make sure they don't already have the Role (this might just
-            # be a new version, or someone might have already given them
-            # the Role)
-            if not self.has_role('Owner', name):
-                self.add_role(self.username, 'Owner', name)
-
-            self._add_invalidation(None)
-
-        # extract the Trove classifiers
-        classifiers = info.get('classifiers', [])
-        classifiers.sort()
 
         # now see if we're inserting or updating a release
         message = None
         relationships = defaultdict(set)
         old_cifiers = []
-        html = readme_renderer.rst.render(info.get('description', ''))
         if self.has_release(name, version):
             # figure the changes
             existing = self.get_package(name, version)
@@ -428,114 +387,21 @@ class Store:
             for k, v in existing.items():
                 if not info.has_key(k):
                     continue
-                if k not in specials and info.get(k, None) != v:
+                if k == '_pypi_hidden' and info.get(k, None) != v:
                     old.append(k)
                     cols.append(k)
                     vals.append(info[k])
             vals.extend([name, version])
 
-            # pull out the bugtrack_url and put it in the packages table
-            # instead
-            if 'bugtrack_url' in cols:
-                sql = 'update packages set bugtrack_url=%s where name=%s'
-                safe_execute(cursor, sql, (info['bugtrack_url'], name))
-                del vals[cols.index('bugtrack_url')]
-                cols.remove('bugtrack_url')
-
-            # get old classifiers list
-            old_cifiers = self.get_release_classifiers(name, version)
-            old_cifiers.sort()
-            if info.has_key('classifiers') and old_cifiers != classifiers:
-                old.append('classifiers')
-
-            # get old classifiers list
-            for kind, specifier in self.get_release_dependencies(name, version):
-                relationships[kind].add(specifier)
-            for nkind, skind in dependency.by_val.items():
-                # numerical kinds in relationships; string kinds in info
-                try:
-                    new_val = set(info[skind])
-                except KeyError:
-                    # value not provided
-                    continue
-                if relationships[skind] != new_val:
-                    old.append(skind)
-
             # no update when nothing changes
             if not old:
                 return None
-
-            # create the journal/user message
-            message = 'update %s'%', '.join(old)
 
             # update
             if cols:
                 cols = ','.join(['%s=%%s'%x for x in cols])
                 safe_execute(cursor, '''update releases set %s where name=%%s
                     and version=%%s'''%cols, vals)
-
-            # journal the update
-            self.add_journal_entry(name, version, message, date,
-                                                self.username, self.userip)
-        else:
-            # round off the information (make sure name and version are in
-            # the info dict)
-            info['name'] = name
-            info['version'] = version
-
-            # figure the ordering
-            info['_pypi_ordering'] = self.fix_ordering(name, version)
-
-            # perform the insert
-            cols = ('name version author author_email maintainer '
-                    'maintainer_email home_page license summary description '
-                    'keywords platform requires_python '
-                    'download_url _pypi_ordering _pypi_hidden').split()
-            args = tuple([info.get(k, None) for k in cols])
-            params = ','.join(['%s']*len(cols))
-            scols = ','.join(cols)
-            sql = 'insert into releases (%s) values (%s)'%(scols, params)
-            safe_execute(cursor, sql, args)
-
-            # journal entry
-            self.add_journal_entry(name, version, "new release", date,
-                                                self.username, self.userip)
-
-            # hide all other releases of this package if thus configured
-            if self.get_package_autohide(name):
-                safe_execute(cursor, 'update releases set _pypi_hidden=%s where '
-                             'name=%s and version <> %s', (self.true, name, version))
-
-        # add description urls
-        if html:
-            # grab the packages hosting_mode
-            hosting_mode = self.get_package_hosting_mode(name)
-
-            if hosting_mode in ["pypi-scrape-crawl", "pypi-scrape"]:
-                self.update_description_urls(name, version, get_description_urls(html))
-
-        # handle trove information
-        if info.has_key('classifiers') and old_cifiers != classifiers:
-            safe_execute(cursor, 'delete from release_classifiers where name=%s'
-                ' and version=%s', (name, version))
-            for classifier in classifiers:
-                safe_execute(cursor, 'select id from trove_classifiers where'
-                    ' classifier=%s', (classifier, ))
-                trove_id = cursor.fetchone()[0]
-                safe_execute(cursor, 'insert into release_classifiers '
-                    '(name, version, trove_id) values (%s, %s, %s)',
-                    (name, version, trove_id))
-
-        # handle relationship specifiers
-        for nkind, skind in dependency.by_val.items():
-            if not info.has_key(skind) or relationships[nkind] == set(info[skind]):
-                continue
-            safe_execute(cursor, '''delete from release_dependencies where name=%s
-                and version=%s and kind=%s''', (name, version, nkind))
-            for specifier in info[skind]:
-                safe_execute(cursor, '''insert into release_dependencies (name, version,
-                    kind, specifier) values (%s, %s, %s, %s)''', (name,
-                    version, nkind, specifier))
 
         self._add_invalidation(name)
 
