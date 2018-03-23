@@ -673,7 +673,7 @@ class Store:
         for fname, requires_python, md5, path in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
-            url = self.gen_file_url('<not used arg>', name, fname, relative, path=path) + \
+            url = self.gen_file_url('<not used arg>', name, fname, path=path, prefix=relative) + \
                 "#md5=" + md5
             file_urls.append((url, "internal", fname, requires_python))
         return sorted(file_urls)
