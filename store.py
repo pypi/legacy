@@ -666,11 +666,12 @@ class Store:
         # uploaded files
         safe_execute(cursor,
         '''
-        SELECT filename, requires_python, md5_digest, path
+        SELECT filename, version, requires_python, md5_digest, path
         FROM release_files
         WHERE release_files.name=%s
         ''', (name,))
-        for fname, requires_python, md5, path in cursor.fetchall():
+        files = sorted(cursor.fetchall(), key=lambda f: (normalize_version_number(f[1]), f[0]))
+        for fname, _, requires_python, md5, path in files:
             # Put files first, to have setuptools consider
             # them before going to other sites
             url = self.gen_file_url('<not used arg>', name, fname, path=path, prefix=relative) + \
