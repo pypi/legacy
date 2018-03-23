@@ -35,8 +35,6 @@ assigned to users for this project.</p>
 
   <tr tal:repeat="release data/releases"
       tal:attributes="class repeat/release/parity">
-   <td><input type="checkbox" name="version"
-        tal:attributes="value release/version" /></td>
    <td tal:content="release/version" />
    <td>
     <select tal:attributes="name string:hid_${release/version}">
