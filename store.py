@@ -677,7 +677,7 @@ class Store:
             url = self.gen_file_url('<not used arg>', name, fname, path=path, prefix=relative) + \
                 "#md5=" + md5
             file_urls.append((url, "internal", fname, requires_python))
-        return sorted(file_urls)
+        return file_urls
 
     def get_uploaded_file_urls(self, name):
         cursor = self.get_cursor()
