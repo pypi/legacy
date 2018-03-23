@@ -668,7 +668,6 @@ class Store:
         '''
         SELECT filename, requires_python, md5_digest, path
         FROM release_files
-        ORDER BY version, filename
         WHERE release_files.name=%s
         ''', (name,))
         for fname, requires_python, md5, path in cursor.fetchall():
