@@ -666,14 +666,14 @@ class Store:
         # uploaded files
         safe_execute(cursor,
         '''
-        SELECT filename, requires_python, md5_digest
+        SELECT filename, requires_python, md5_digest, path
         FROM release_files
         WHERE release_files.name=%s
         ''', (name,))
-        for fname, requires_python, md5 in cursor.fetchall():
+        for fname, requires_python, md5, path in cursor.fetchall():
             # Put files first, to have setuptools consider
             # them before going to other sites
-            url = self.gen_file_url('<not used arg>', name, fname, relative) + \
+            url = self.gen_file_url('<not used arg>', name, fname, relative, path=path) + \
                 "#md5=" + md5
             file_urls.append((url, "internal", fname, requires_python))
         return sorted(file_urls)
@@ -681,10 +681,10 @@ class Store:
     def get_uploaded_file_urls(self, name):
         cursor = self.get_cursor()
         urls = []
-        safe_execute(cursor, '''select filename, python_version
+        safe_execute(cursor, '''select filename, python_version, path
             from release_files where name=%s''', (name,))
-        for fname, pyversion in cursor.fetchall():
-            urls.append(self.gen_file_url(pyversion, name, fname))
+        for fname, pyversion, path in cursor.fetchall():
+            urls.append(self.gen_file_url(pyversion, name, fname, path=path))
         return urls
 
     def top_packages(self, num=None):
@@ -1894,20 +1894,23 @@ class Store:
     #
     # File handling
     #
-    def gen_file_url(self, pyversion, name, filename, prefix=None):
+    def gen_file_url(self, pyversion, name, filename, path=None, prefix=None):
         '''Generate the URL for a given file download.'''
         if not prefix:
             prefix = self.config.files_url
 
-        cursor = self.get_cursor()
-        safe_execute(
-            cursor,
-            "SELECT path FROM release_files WHERE filename = %s",
-            (filename,),
-        )
-        results = cursor.fetchall()
-        if results:
-            return os.path.join(prefix, results[0][0])
+        if path is None:
+            cursor = self.get_cursor()
+            safe_execute(
+                cursor,
+                "SELECT path FROM release_files WHERE filename = %s",
+                (filename,),
+            )
+            results = cursor.fetchall()
+            path = results[0][0]
+
+        if path is not None:
+            return os.path.join(prefix, path)
 
     def gen_file_path(self, digest, filename):
         '''Generate the path to the file on disk.'''
