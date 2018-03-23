@@ -16,13 +16,13 @@
 <p>Administer the <a tal:attributes="href string:${app/url_path}?:action=role_form&amp;package_name=${app/form/name}">Role</a>
 assigned to users for this project.</p>
 
-<p>For all activities relating to Project/Release changes except for hiding releases, you must use
+<p><b>For all activities relating to Project/Release changes except for hiding releases, you must use
     <tal:x tal:condition="python:'testpypi' in app.config.url">
     <a href="https://test.pypi.org/manage/projects/">the Warehouse test instance</a>
     </tal:x>
     <tal:x tal:condition="python:'testpypi' not in app.config.url">
     <a href="https://pypi.org/manage/projects/">Warehouse</a>
-    </tal:x>
+    </tal:x></b>
 </p>
 
 <form tal:attributes="action app/url_path" method="POST">
