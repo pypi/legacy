@@ -85,16 +85,14 @@ uncheck the button below</p>
 
 <p>If you would like to <b>DESTROY</b> any existing documentation hosted at
 <a tal:attributes="href string:http://pythonhosted.org/${data/name}"
-tal:content="string:http://pythonhosted.org/${data/name}"></a>
-Use this button, There is <b>no undo</b>.
+tal:content="string:http://pythonhosted.org/${data/name}"></a>: Please use
+<tal:x tal:condition="python:'testpypi' in app.config.url">
+<a href="https://test.pypi.org/manage/projects/">the Warehouse test instance</a>
+</tal:x>
+<tal:x tal:condition="python:'testpypi' not in app.config.url">
+<a href="https://pypi.org/manage/projects/">Warehouse</a>
+</tal:x>
 </p>
-<form tal:attributes="action app/url_path" method="POST"
-    enctype="multipart/form-data">
-<input type="hidden" name=":action" value="doc_destroy" />
-<input type="hidden" name="name" tal:attributes="value data/name" />
-<input type="submit" value="Destroy Documentation" />
-</form>
-
 <p></p>
 
 </metal:fill>
