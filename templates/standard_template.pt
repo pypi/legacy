@@ -46,11 +46,9 @@
        <a accesskey="1" href="http://www.python.org" id="logolink">
           <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
        </a>
-       <tal:if-user condition="app/loggedin">
-          <div style="text-align: center; position: relative; top: -5.3em; font-size: .5em; z-index: 666; color: darkviolet;">
-          Pssssst! Check out <a style="color: darkviolet;" href="https://pyfound.blogspot.com/2018/02/python-package-maintainers-help-test.html">the next generation PyPI</a>
-          </div>
-       </tal:if-user>
+       <div style="text-align: center; position: relative; top: -5.3em; font-size: .5em; z-index: 666; color: darkviolet;">
+       Check out <a style="color: darkviolet;" href="https://pypi.org">the all new PyPI!</a>(More information <a href="http://pyfound.blogspot.com/2018/03/warehouse-all-new-pypi-is-now-in-beta.html">here</a>)
+       </div>
       </h1>
       <!--  Skip to Navigation  -->
       <div class="skiptonav"><a accesskey="2" href="#left-hand-navigation"><img src="/static/images/trans.gif" alt="skip to navigation" border="0" id="skiptonav" /></a></div>
