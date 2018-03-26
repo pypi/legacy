@@ -47,7 +47,7 @@
           <img src="/static/images/python-logo.png" alt="homepage" border="0" id="logo" />
        </a>
        <div style="text-align: center; position: relative; top: -5.3em; font-size: .5em; z-index: 666; color: darkviolet;">
-       Check out <a style="color: darkviolet;" href="https://pypi.org">the all new PyPI!</a>(More information <a href="http://pyfound.blogspot.com/2018/03/warehouse-all-new-pypi-is-now-in-beta.html">here</a>)
+       Check out <a style="color: darkviolet;" href="https://pypi.org">the all new PyPI!</a> (More information <a style="color: darkviolet;" href="http://pyfound.blogspot.com/2018/03/warehouse-all-new-pypi-is-now-in-beta.html">here</a>)
        </div>
       </h1>
       <!--  Skip to Navigation  -->
