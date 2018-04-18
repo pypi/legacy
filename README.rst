@@ -1,3 +1,12 @@
+NO LONGER IN SERVICE
+====================
+
+This repository houses the deposed codebase that powered pypi.python.org
+for nearly 15 years.
+
+`warehouse <https://github.com/pypa/warehouse>`_ now powers pypi.org, the
+next-generation PyPI!
+
 Required packages
 -----------------
 
